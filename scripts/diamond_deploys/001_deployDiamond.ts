@@ -15,12 +15,6 @@ export async function deployDiamond() {
   const diamondCutFacet: Contract = await DiamondCutFacetFactory.deploy();
   await diamondCutFacet.deployed();
   log('DiamondCutFacet deployed:', diamondCutFacet.address);
-  // // Verify DiamondCutFacet
-  // await verifyContract({
-  //   contractAddress: diamondCutFacet.address,
-  //   signer: contractOwner,
-  //   txHash: diamondCutFacet.deployTransaction.hash,
-  // });
   // // deploy Diamond
   log('Diamond deploying...');
 
@@ -28,25 +22,11 @@ export async function deployDiamond() {
   const diamond: Contract = await Diamond.deploy(contractOwner.address, diamondCutFacet.address);
   await diamond.deployed();
   log('Diamond deployed:', diamond.address);
-  // await verifyContract({
-  //   contractAddress: diamond.address,
-  //   signer: contractOwner,
-  //   constructorArguments: [contractOwner.address, diamondCutFacet.address],
-  //   txHash: diamond.deployTransaction.hash,
-  // });
-  // deploy DiamondInit
-  // DiamondInit provides a function that is called when the diamond is upgraded to initialize state variables
-  // Read about how the diamondCut function works here: https://eips.ethereum.org/EIPS/eip-2535#addingreplacingremoving-functions
   log('DiamondInit deploying...');
   const DiamondInit: ContractFactory = await ethers.getContractFactory('DiamondInit');
   const diamondInit: Contract = await DiamondInit.deploy();
   await diamondInit.deployed();
   log('DiamondInit deployed:', diamondInit.address);
-  // await verifyContract({
-  //   contractAddress: diamondInit.address,
-  //   signer: contractOwner,
-  //   txHash: diamondInit.deployTransaction.hash,
-  // });
 
   // deploy facets
   log('Deploying facets');
