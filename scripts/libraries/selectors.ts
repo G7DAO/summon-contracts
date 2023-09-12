@@ -22,6 +22,7 @@ export function getSelectors(contract: Contract): string[] {
 
 export function getSelectorsFacet(contract: Contract) {
   const signatures = Object.keys(contract.interface.functions);
+  // log function names and signatures
   const selectors = signatures.reduce((acc, val) => {
     if (val !== 'init(bytes)' && val !== 'supportsInterface(bytes4)') {
       // @ts-ignore
@@ -31,4 +32,13 @@ export function getSelectorsFacet(contract: Contract) {
   }, []);
 
   return selectors;
+}
+
+export function getSelectorNames(contract: Contract, contractName: string) {
+  const signatures = Object.keys(contract.interface.functions);
+
+  signatures.forEach((sig) => {
+    console.log('Contract Name: ', contractName);
+    console.log(sig, contract.interface.getSighash(sig));
+  });
 }

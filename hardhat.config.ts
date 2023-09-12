@@ -27,6 +27,11 @@ const config: HardhatUserConfig = {
       accounts: [DEPLOYER_PRIVATE_KEY || PRIVATE_KEY],
       chainId: ChainId.Mantle,
     },
+    mantleWadsley: {
+      url: 'https://rpc.testnet.mantle.xyz/',
+      accounts: [DEPLOYER_PRIVATE_KEY || PRIVATE_KEY],
+      chainId: ChainId.MantleWadsley,
+    },
     polygon: {
       url: `${process.env.POLYGON_PROVIDER_URL}`,
       accounts: [DEPLOYER_PRIVATE_KEY || PRIVATE_KEY],
@@ -36,11 +41,6 @@ const config: HardhatUserConfig = {
       url: 'https://rpc-mumbai.maticvigil.com',
       accounts: [PRIVATE_KEY],
       chainId: ChainId.PolygonMumbai,
-    },
-    mantleWadsley: {
-      url: 'https://rpc.testnet.mantle.xyz/',
-      accounts: [PRIVATE_KEY],
-      chainId: ChainId.MantleWadsley,
     },
   },
   gasReporter: {

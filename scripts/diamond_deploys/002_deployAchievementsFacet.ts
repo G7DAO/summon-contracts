@@ -7,7 +7,7 @@ import { DiamondCutFacet } from '../../typechain-types';
 export async function deployFacet() {
   try {
     const [deployer] = await ethers.getSigners();
-    const diamondAddress = process.env.DIAMOND_ADDRESS || '0x39505218D6b46523e11ca8F4A2EcC6f2cead1492';
+    const diamondAddress = process.env.DIAMOND_ADDRESS || 'FILL_ME';
     // const diamondAddress = process.env.DIAMOND_ADDRESS || '0x627203D940DE013a1582190b320A0CC1EA0FDA2d';
 
     // Deploy the AchievementFacet

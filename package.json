@@ -11,7 +11,7 @@
     "deployDiamond:mumbai": "hardhat run scripts/deploys/001_deployDiamond.ts --network polygonMumbai",
     "deployDiamond:polygon": "hardhat run scripts/deploys/001_deployDiamond.ts --network polygon",
     "deployDiamond:localhost": "hardhat run scripts/deploys/001_deployDiamond.ts --network localhost",
-    "deployDiamond:wasdley": "hardhat run scripts/deploys/001_deployDiamond.ts --network mantleWasdley",
+    "deployDiamond:wadsley": "hardhat run scripts/deploys/001_deployDiamond.ts --network mantleWadsley",
     "deployDiamond:mantle": "hardhat run scripts/deploys/001_deployDiamond.ts --network mantle",
     "test": "REPORT_GAS=true hardhat test --network hardhat",
     "lint": "eslint --config ./.eslintrc.js --ignore-path ./.eslintignore ./deploy/**/*.ts ./tasks/**/*.ts ./test/**/*.ts ./helpers/**/*.ts",
