@@ -9,18 +9,18 @@ pragma solidity ^0.8.17;
 import "@openzeppelin/contracts/token/ERC1155/ERC1155.sol";
 import "@openzeppelin/contracts/access/AccessControl.sol";
 import "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
+import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
 
 
-contract GameAchievements is ERC1155, AccessControl {
+
+contract GameAchievements is ERC1155, AccessControl, ReentrancyGuard {
   bytes32 public constant MINTER_ROLE = keccak256("MINTER_ROLE");
   bytes32 public constant HYPERPLAY_ROLE = keccak256("HYPERPLAY_ROLE");
-  string public STORE_NAME = "STEAM";
 
   event GameSaved(address indexed indexer, uint256 indexed gameId);
   event GameUpdated(address indexed indexer, uint256 indexed gameId);
-  event GameSummaryMinted(address indexed indexer, uint256 indexed gameId, uint256 achievementCount);
-  event AchievementMinted(address indexed indexer, uint256 indexed gameAchievementId);
-  event AchievementUpdated(address indexed indexer, uint256 indexed gameId, uint256 achievementId);
+  event GameSummaryMinted(address indexed player, uint256 indexed gameId, uint256 achievementCount);
+  event AchievementMinted(address indexed player, uint256 indexed gameAchievementId);
   event SignerAdded(address signer);
   event SignerRemoved(address signer);
   event AchievementMintPaused(bool paused);
@@ -93,10 +93,10 @@ contract GameAchievements is ERC1155, AccessControl {
     string memory gameURI,
     uint256[] calldata achievements,
     GameSource source
-  ) public onlyRole(MINTER_ROLE) notPaused {
+  ) private {
     // This function will mint a summary of the game achievements by game id
     // Create a simple token ID based on hashing game and achievement details
-    uint256 tokenId = uint256(keccak256(abi.encodePacked(gameId, achievements.length)));
+    uint256 tokenId = concat(gameId, achievements.length);
     for (uint i = 0; i < achievements.length; i++) {
       uint256 achievementId = achievements[i];
       Achievement memory newAchievement = Achievement({
@@ -112,7 +112,30 @@ contract GameAchievements is ERC1155, AccessControl {
     emit GameSummaryMinted(msg.sender, gameId, achievements.length);
   }
 
-  function addAchievement(
+  function adminMintGameSummary(
+    uint256 gameId,
+    string memory gameName,
+    string memory gameURI,
+    uint256[] calldata achievements,
+    GameSource source
+  ) public onlyRole(MINTER_ROLE) notPaused {
+    mintGameSummary(gameId, gameName, gameURI, achievements, source);
+  }
+
+  function mintGameSummaryWithSignature(
+    uint256 gameId,
+    string memory gameName,
+    string memory gameURI,
+    uint256[] calldata achievements,
+    GameSource source,
+    uint256 nonce,
+    bytes memory signature
+  ) public nonReentrant notPaused {
+    require(verifySignature(nonce, signature), "GameAchievements: Invalid signature");
+    mintGameSummary(gameId, gameName, gameURI, achievements, source);
+  }
+
+  function adminMint(
     address player,
     uint256 gameId,
     GameSource source,
@@ -120,9 +143,30 @@ contract GameAchievements is ERC1155, AccessControl {
     uint256 achievementId,
     string memory achievementURI,
     string memory achievementDescription
-  ) public notPaused onlyRole(MINTER_ROLE)  {
+  ) public onlyRole(MINTER_ROLE) notPaused {
+    mintAchievement(player, gameId, source, amount, achievementId, achievementURI, achievementDescription);
+  }
+
+  function concat(uint256 a, uint256 b) private pure returns (uint256) {
+    uint256 temp = b;
+    while (temp != 0) {
+      a *= 10;
+      temp /= 10;
+    }
+    return a + b;
+  }
+
+  function mintAchievement(
+    address player,
+    uint256 gameId,
+    GameSource source,
+    uint256 amount,
+    uint256 achievementId,
+    string memory achievementURI,
+    string memory achievementDescription
+  ) private {
     // Create a simple token ID based on hashing game and achievement details
-    uint256 tokenId = uint256(keccak256(abi.encodePacked(gameId, achievementId)));
+    uint256 tokenId = concat(gameId, achievementId);
     upsertGame(gameId, "", "");
     Achievement memory newAchievement = Achievement({
       source: source,
@@ -133,10 +177,10 @@ contract GameAchievements is ERC1155, AccessControl {
 
     playerAchievements[player][tokenId] = newAchievement;
     _mint(player, tokenId, amount, "");
-    emit AchievementMinted(msg.sender, tokenId);
+    emit AchievementMinted(player, tokenId);
   }
 
-  function addAchievementWithSignature(
+  function mintAchievementWithSignature(
     address player,
     uint256 gameId,
     GameSource source,
@@ -146,9 +190,9 @@ contract GameAchievements is ERC1155, AccessControl {
     string memory achievementDescription,
     uint256 nonce,
     bytes memory signature
-  ) public notPaused {
+  ) public notPaused nonReentrant {
     require(verifySignature(nonce, signature), "GameAchievements: Invalid signature");
-    addAchievement(player, gameId, source, amount, achievementId, achievementURI, achievementDescription);
+    mintAchievement(player, gameId, source, amount, achievementId, achievementURI, achievementDescription);
   }
 
   function safeTransferFrom(address _from, address _to, uint256 _id, uint256 _amount, bytes memory _data) public virtual override {
@@ -193,4 +237,5 @@ contract GameAchievements is ERC1155, AccessControl {
   function supportsInterface(bytes4 interfaceId) public view override(ERC1155, AccessControl) returns (bool) {
     return super.supportsInterface(interfaceId);
   }
+
 }
