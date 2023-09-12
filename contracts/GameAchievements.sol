@@ -88,6 +88,7 @@ contract GameAchievements is ERC1155, AccessControl, ReentrancyGuard {
   }
 
   function mintGameSummary(
+    address player,
     uint256 gameId,
     string memory gameName,
     string memory gameURI,
@@ -95,9 +96,8 @@ contract GameAchievements is ERC1155, AccessControl, ReentrancyGuard {
     GameSource source
   ) private {
     // This function will mint a summary of the game achievements by game id
-    // Create a simple token ID based on hashing game and achievement details
-    uint256 tokenId = concat(gameId, achievements.length);
     for (uint i = 0; i < achievements.length; i++) {
+      uint256 tokenId = concat(gameId, achievements[i]);
       uint256 achievementId = achievements[i];
       Achievement memory newAchievement = Achievement({
         source: source,
@@ -105,21 +105,22 @@ contract GameAchievements is ERC1155, AccessControl, ReentrancyGuard {
         uri: "",
         description: ""
       });
-      playerAchievements[msg.sender][tokenId] = newAchievement;
+      playerAchievements[player][tokenId] = newAchievement;
+      _mint(player, tokenId, 1, "");
     }
     upsertGame(gameId, gameName, gameURI);
-    _mint(msg.sender, tokenId, 1, "");
-    emit GameSummaryMinted(msg.sender, gameId, achievements.length);
+    emit GameSummaryMinted(player, gameId, achievements.length);
   }
 
   function adminMintGameSummary(
+    address to,
     uint256 gameId,
     string memory gameName,
     string memory gameURI,
     uint256[] calldata achievements,
     GameSource source
   ) public onlyRole(MINTER_ROLE) notPaused {
-    mintGameSummary(gameId, gameName, gameURI, achievements, source);
+    mintGameSummary(to, gameId, gameName, gameURI, achievements, source);
   }
 
   function mintGameSummaryWithSignature(
@@ -132,7 +133,7 @@ contract GameAchievements is ERC1155, AccessControl, ReentrancyGuard {
     bytes memory signature
   ) public nonReentrant notPaused {
     require(verifySignature(nonce, signature), "GameAchievements: Invalid signature");
-    mintGameSummary(gameId, gameName, gameURI, achievements, source);
+    mintGameSummary(msg.sender, gameId, gameName, gameURI, achievements, source);
   }
 
   function adminMint(
