@@ -26,5 +26,12 @@ describe('GameAchievements', function () {
     expect(Number(balance)).to.equal(1);
   });
 
-  // TODO: finish the rest of the tests
+  it('As admin must mint game summary achievement for players', async function () {
+    const GAME_ID = 1;
+    const randomArray = Array.from({ length: 100 }, () => Math.floor(Math.random() * 100)).filter((value, index, self) => self.indexOf(value) === index);
+    const tx = await gameAchievements.adminMintGameSummary(playerAccount.address, GAME_ID, 'Omar Game', 'https://game.gg', randomArray, 2);
+    await tx.wait();
+    const balanceOfPlayer = await gameAchievements.balanceOf(playerAccount.address, Number(`${GAME_ID}${randomArray[0]}`));
+    expect(Number(balanceOfPlayer)).to.equal(1);
+  });
 });
