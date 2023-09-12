@@ -11,15 +11,15 @@ import "@openzeppelin/contracts/access/AccessControl.sol";
 import "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
 
 
-contract AchievoGames is ERC1155, AccessControl {
+contract GameAchievements is ERC1155, AccessControl {
   bytes32 public constant MINTER_ROLE = keccak256("MINTER_ROLE");
   bytes32 public constant HYPERPLAY_ROLE = keccak256("HYPERPLAY_ROLE");
   string public STORE_NAME = "STEAM";
 
   event GameSaved(address indexed indexer, uint256 indexed gameId);
   event GameUpdated(address indexed indexer, uint256 indexed gameId);
-  event AchievementMinted(address indexed creator, uint256 indexed tokenId, address indexed userAddress);
-  event AchievementSaved(address indexed indexer, uint256 indexed gameId, uint256 achievementId);
+  event GameSummaryMinted(address indexed indexer, uint256 indexed gameId, uint256 achievementCount);
+  event AchievementMinted(address indexed indexer, uint256 indexed gameAchievementId);
   event AchievementUpdated(address indexed indexer, uint256 indexed gameId, uint256 achievementId);
   event SignerAdded(address signer);
   event SignerRemoved(address signer);
@@ -28,21 +28,29 @@ contract AchievoGames is ERC1155, AccessControl {
   string private baseUri;
   bool public achievementMintPaused = false;
 
+  enum GameSource { Steam, EpicGames, GOG, HyperPlay, Other }
+
   struct Game {
     uint256 gameId;
     string name;
     string image;
   }
 
-  // Player => AchievementId => AchievementSoulBounded
-  mapping(address => mapping(uint256 => bool)) public achievementSoulBounded;
+  struct Achievement {
+    GameSource source;
+    uint256 achievementId;
+    string uri;
+    string description;
+  }
+
+  mapping(address => mapping(uint256 => Achievement)) public playerAchievements;
 
   mapping(address => bool) public whitelistSigners;
 
   mapping(uint256 => Game) public games;
 
-  modifier noPaused() {
-    require(achievementMintPaused == false, "AchievoGames: Sorry, this function is paused");
+  modifier notPaused() {
+    require(achievementMintPaused == false, "GameAchievements: Sorry, this function is paused");
     _;
   }
 
@@ -51,7 +59,7 @@ contract AchievoGames is ERC1155, AccessControl {
     _grantRole(DEFAULT_ADMIN_ROLE, msg.sender);
   }
 
-  function upsertGame(uint256 _gameId, string memory _name, string memory _image) public onlyRole(DEFAULT_ADMIN_ROLE) {
+  function upsertGame(uint256 _gameId, string memory _name, string memory _image) public notPaused onlyRole(DEFAULT_ADMIN_ROLE) {
     // check if the game is already saved
     if(games[_gameId].gameId == 0) {
       games[_gameId] = Game(_gameId, _name, _image);
@@ -68,48 +76,79 @@ contract AchievoGames is ERC1155, AccessControl {
   }
 
   function pauseAchievementMint() public onlyRole(DEFAULT_ADMIN_ROLE) {
-    require(!achievementMintPaused, "AchievoGames: Minting is already paused");
+    require(!achievementMintPaused, "GameAchievements: Minting is already paused");
     achievementMintPaused = true;
     emit AchievementMintPaused(achievementMintPaused);
   }
 
   function unpauseAchievementMint() public onlyRole(DEFAULT_ADMIN_ROLE) {
-    require(achievementMintPaused, "AchievoGames: Minting is not paused");
+    require(achievementMintPaused, "GameAchievements: Minting is not paused");
     achievementMintPaused = false;
     emit AchievementMintPaused(achievementMintPaused);
   }
 
-  function mintAchievements(
-    address _to,
-    uint256 _gameId,
-    string memory _gameImageURI,
-    string memory _gameName,
-    uint256[] calldata achievements
-  ) public onlyRole(MINTER_ROLE) noPaused {
-    // This will save the game as token id
-    _mint(_to, _gameId, 1, "");
-    games[_gameId].image = _gameImageURI;
-    games[_gameId].name = _gameName;
-    for (uint256 i = 0; i < achievements.length; i++) {
+  function mintGameSummary(
+    uint256 gameId,
+    string memory gameName,
+    string memory gameURI,
+    uint256[] calldata achievements,
+    GameSource source
+  ) public onlyRole(MINTER_ROLE) notPaused {
+    // This function will mint a summary of the game achievements by game id
+    // Create a simple token ID based on hashing game and achievement details
+    uint256 tokenId = uint256(keccak256(abi.encodePacked(gameId, achievements.length)));
+    for (uint i = 0; i < achievements.length; i++) {
       uint256 achievementId = achievements[i];
-      achievementSoulBounded[_to][achievementId] = true;
-      emit AchievementMinted(msg.sender, achievementId, _to);
+      Achievement memory newAchievement = Achievement({
+        source: source,
+        achievementId: achievementId,
+        uri: "",
+        description: ""
+      });
+      playerAchievements[msg.sender][tokenId] = newAchievement;
     }
+    upsertGame(gameId, gameName, gameURI);
+    _mint(msg.sender, tokenId, 1, "");
+    emit GameSummaryMinted(msg.sender, gameId, achievements.length);
   }
 
-  // TODO: create a batchMint function
+  function addAchievement(
+    address player,
+    uint256 gameId,
+    GameSource source,
+    uint256 amount,
+    uint256 achievementId,
+    string memory achievementURI,
+    string memory achievementDescription
+  ) public notPaused onlyRole(MINTER_ROLE)  {
+    // Create a simple token ID based on hashing game and achievement details
+    uint256 tokenId = uint256(keccak256(abi.encodePacked(gameId, achievementId)));
+    upsertGame(gameId, "", "");
+    Achievement memory newAchievement = Achievement({
+      source: source,
+      achievementId: achievementId,
+      uri: achievementURI,
+      description: achievementDescription
+    });
 
-  function mintWithSignature(
-    address _to,
-    uint256 _gameId,
-    string memory _gameImageURI,
-    string memory _gameName,
-    uint256[] calldata achievements,
+    playerAchievements[player][tokenId] = newAchievement;
+    _mint(player, tokenId, amount, "");
+    emit AchievementMinted(msg.sender, tokenId);
+  }
+
+  function addAchievementWithSignature(
+    address player,
+    uint256 gameId,
+    GameSource source,
+    uint256 amount,
+    uint256 achievementId,
+    string memory achievementURI,
+    string memory achievementDescription,
     uint256 nonce,
     bytes memory signature
-  ) public noPaused {
-    require(verifySignature(nonce, signature), "AchievoGames: Invalid signature");
-    mintAchievements(_to, _gameId, _gameImageURI, _gameName, achievements);
+  ) public notPaused {
+    require(verifySignature(nonce, signature), "GameAchievements: Invalid signature");
+    addAchievement(player, gameId, source, amount, achievementId, achievementURI, achievementDescription);
   }
 
   function safeTransferFrom(address _from, address _to, uint256 _id, uint256 _amount, bytes memory _data) public virtual override {
@@ -126,8 +165,8 @@ contract AchievoGames is ERC1155, AccessControl {
     return;
   }
 
-  function uri(uint256 _achievementIdAndGameId) public view override returns (string memory) {
-    return string(abi.encodePacked(baseUri, "/",Strings.toString(_achievementIdAndGameId), ".json"));
+  function uri(uint256 _tokenId) public view override returns (string memory) {
+    return string(abi.encodePacked(baseUri, "/", Strings.toString(_tokenId), ".json"));
   }
 
   function setSigner(address _signer) public onlyRole(DEFAULT_ADMIN_ROLE) {
