@@ -53,7 +53,7 @@ contract GameAchievements is ERC1155, AccessControl, ReentrancyGuard {
 
   mapping(address => bool) public whitelistSigners;
 
-  modifier notPaused() {
+  modifier notAchievementMintPaused() {
     require(achievementMintPaused == false, "GameAchievements: Sorry, this function is paused");
     _;
   }
@@ -77,6 +77,14 @@ contract GameAchievements is ERC1155, AccessControl, ReentrancyGuard {
     require(achievementMintPaused, "GameAchievements: Minting is not paused");
     achievementMintPaused = false;
     emit AchievementMintPaused(achievementMintPaused);
+  }
+
+  function getGameSummaries() public view returns (GameSummary[] memory) {
+    return playerGameSummaries[msg.sender];
+  }
+
+  function getPlayerSummaries(address player) public view onlyRole(DEFAULT_ADMIN_ROLE) returns (GameSummary[] memory) {
+    return playerGameSummaries[player];
   }
 
   function mintGameSummary(
@@ -112,7 +120,7 @@ contract GameAchievements is ERC1155, AccessControl, ReentrancyGuard {
     string memory gameURI,
     uint256[] calldata achievements,
     uint256 storeId
-  ) public onlyRole(MINTER_ROLE) notPaused {
+  ) public onlyRole(MINTER_ROLE) notAchievementMintPaused {
     mintGameSummary(to, gameId, gameName, gameURI, achievements, storeId);
   }
 
@@ -124,7 +132,7 @@ contract GameAchievements is ERC1155, AccessControl, ReentrancyGuard {
     uint256 storeId,
     uint256 nonce,
     bytes memory signature
-  ) public nonReentrant notPaused {
+  ) public nonReentrant notAchievementMintPaused {
     require(verifySignature(nonce, signature), "GameAchievements: Invalid signature");
     mintGameSummary(msg.sender, gameId, gameName, gameURI, achievements, storeId);
   }
@@ -136,7 +144,7 @@ contract GameAchievements is ERC1155, AccessControl, ReentrancyGuard {
     uint256 achievementId,
     string memory achievementURI,
     string memory achievementDescription
-  ) public onlyRole(MINTER_ROLE) notPaused {
+  ) public onlyRole(MINTER_ROLE) notAchievementMintPaused {
     mintAchievement(player, gameId, amount, achievementId, achievementURI, achievementDescription);
   }
 
@@ -178,7 +186,7 @@ contract GameAchievements is ERC1155, AccessControl, ReentrancyGuard {
     string memory achievementDescription,
     uint256 nonce,
     bytes memory signature
-  ) public notPaused nonReentrant {
+  ) public notAchievementMintPaused nonReentrant {
     require(verifySignature(nonce, signature), "GameAchievements: Invalid signature");
     mintAchievement(player, gameId, amount, achievementId, achievementURI, achievementDescription);
   }
