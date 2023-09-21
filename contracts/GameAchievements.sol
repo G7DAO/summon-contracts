@@ -43,6 +43,7 @@ contract GameAchievements is ERC1155, AccessControl, ReentrancyGuard {
     string description;
   }
 
+  // player address => concat (game id + achievement id)  => achievement
   mapping(address => mapping(uint256 => Achievement)) public playerAchievements;
 
   mapping(address => bool) public whitelistSigners;
@@ -99,14 +100,21 @@ contract GameAchievements is ERC1155, AccessControl, ReentrancyGuard {
     for (uint i = 0; i < achievements.length; i++) {
       uint256 tokenId = concat(gameId, achievements[i]);
       uint256 achievementId = achievements[i];
-      Achievement memory newAchievement = Achievement({
-        source: source,
-        achievementId: achievementId,
-        uri: "",
-        description: ""
-      });
-      playerAchievements[player][tokenId] = newAchievement;
-      _mint(player, tokenId, 1, "");
+      // check in the playerAchievements mapping if the achievement has been minted for this player
+      // if not, mint it, otherwise skip it
+      if(playerAchievements[player][tokenId].achievementId != achievementId) {
+        Achievement memory newAchievement = Achievement({
+          source: source,
+          achievementId: achievementId,
+          uri: "",
+          description: ""
+        });
+        playerAchievements[player][tokenId] = newAchievement;
+        _mint(player, tokenId, 1, "");
+        emit GameSummaryMinted(player, gameId, achievementId);
+      } else {
+        continue;
+      }
     }
     upsertGame(gameId, gameName, gameURI);
     emit GameSummaryMinted(player, gameId, achievements.length);
@@ -176,6 +184,9 @@ contract GameAchievements is ERC1155, AccessControl, ReentrancyGuard {
       description: achievementDescription
     });
 
+    // check in the playerAchievements mapping if the achievement has been minted
+    // if not, mint it, otherwise skip
+    require(playerAchievements[player][tokenId].achievementId != achievementId, "GameAchievements: Achievement already minted");
     playerAchievements[player][tokenId] = newAchievement;
     _mint(player, tokenId, amount, "");
     emit AchievementMinted(player, tokenId);

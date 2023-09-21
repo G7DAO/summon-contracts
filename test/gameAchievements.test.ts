@@ -26,6 +26,15 @@ describe('GameAchievements', function () {
     expect(Number(balance)).to.equal(1);
   });
 
+  it('As player you CANT mint twice the same achievement from the same game', async function () {
+    const tx = await gameAchievements.adminMint(playerAccount.address, 1, 1, 1, 33, '', '');
+    await tx.wait();
+    const balance = await gameAchievements.balanceOf(playerAccount.address, 133);
+    expect(Number(balance)).to.equal(1);
+
+    await expect(gameAchievements.adminMint(playerAccount.address, 1, 1, 1, 33, '', '')).to.be.revertedWith('GameAchievements: Achievement already minted');
+  });
+
   it('As admin must mint game summary achievement for players', async function () {
     const GAME_ID = 1;
     const randomArray = Array.from({ length: 100 }, () => Math.floor(Math.random() * 100)).filter((value, index, self) => self.indexOf(value) === index);
