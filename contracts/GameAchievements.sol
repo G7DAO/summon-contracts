@@ -11,11 +11,9 @@ import "@openzeppelin/contracts/access/AccessControl.sol";
 import "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
 import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
 
-
-
 contract GameAchievements is ERC1155, AccessControl, ReentrancyGuard {
   bytes32 public constant MINTER_ROLE = keccak256("MINTER_ROLE");
-  bytes32 public constant HYPERPLAY_ROLE = keccak256("HYPERPLAY_ROLE");
+  bytes32 public constant BURNER_ROLE = keccak256("BURNER_ROLE");
 
   event GameSaved(address indexed indexer, uint256 indexed gameId);
   event GameUpdated(address indexed indexer, uint256 indexed gameId);
@@ -24,31 +22,36 @@ contract GameAchievements is ERC1155, AccessControl, ReentrancyGuard {
   event SignerAdded(address signer);
   event SignerRemoved(address signer);
   event AchievementMintPaused(bool paused);
+  event TokenBurned(address indexed player, uint256 indexed tokenId, uint256 amount, address indexed recoveryAddress);
 
   string private baseUri;
   bool public achievementMintPaused = false;
-
-  enum GameSource { Steam, EpicGames, GOG, HyperPlay, Other }
-
-  struct Game {
-    uint256 gameId;
-    string name;
-    string image;
-  }
+  bool public gameSummaryMintPaused = false;
 
   struct Achievement {
-    GameSource source;
     uint256 achievementId;
     string uri;
     string description;
   }
 
+  struct GameSummary {
+    uint256 storeId;
+    uint256 gameId;
+    string name;
+    string image;
+    uint256 achievements;
+  }
+
+  // player address => game summary
+  mapping(address => GameSummary[]) public playerGameSummaries;
+
   // player address => concat (game id + achievement id)  => achievement
   mapping(address => mapping(uint256 => Achievement)) public playerAchievements;
 
-  mapping(address => bool) public whitelistSigners;
+  // player address => whitelisted recovery address
+  mapping(address => bool) public recoveryList;
 
-  mapping(uint256 => Game) public games;
+  mapping(address => bool) public whitelistSigners;
 
   modifier notPaused() {
     require(achievementMintPaused == false, "GameAchievements: Sorry, this function is paused");
@@ -58,18 +61,6 @@ contract GameAchievements is ERC1155, AccessControl, ReentrancyGuard {
   constructor(string memory _uri) ERC1155(_uri) {
     baseUri = _uri;
     _grantRole(DEFAULT_ADMIN_ROLE, msg.sender);
-  }
-
-  function upsertGame(uint256 _gameId, string memory _name, string memory _image) public notPaused onlyRole(DEFAULT_ADMIN_ROLE) {
-    // check if the game is already saved
-    if(games[_gameId].gameId == 0) {
-      games[_gameId] = Game(_gameId, _name, _image);
-      emit GameSaved(msg.sender, _gameId);
-      } else {
-      games[_gameId].name = _name;
-      games[_gameId].image = _image;
-      emit GameUpdated(msg.sender, _gameId);
-    }
   }
 
   function setBaseUri(string memory _uri) public onlyRole(DEFAULT_ADMIN_ROLE) {
@@ -94,29 +85,23 @@ contract GameAchievements is ERC1155, AccessControl, ReentrancyGuard {
     string memory gameName,
     string memory gameURI,
     uint256[] calldata achievements,
-    GameSource source
+    uint256 storeId
   ) private {
-    // This function will mint a summary of the game achievements by game id
     for (uint i = 0; i < achievements.length; i++) {
       uint256 tokenId = concat(gameId, achievements[i]);
       uint256 achievementId = achievements[i];
       // check in the playerAchievements mapping if the achievement has been minted for this player
       // if not, mint it, otherwise skip it
-      if(playerAchievements[player][tokenId].achievementId != achievementId) {
-        Achievement memory newAchievement = Achievement({
-          source: source,
-          achievementId: achievementId,
-          uri: "",
-          description: ""
-        });
+      if (playerAchievements[player][tokenId].achievementId != achievementId) {
+        Achievement memory newAchievement = Achievement({ achievementId: achievementId, uri: "", description: "" });
         playerAchievements[player][tokenId] = newAchievement;
         _mint(player, tokenId, 1, "");
-        emit GameSummaryMinted(player, gameId, achievementId);
+        emit AchievementMinted(player, tokenId);
       } else {
         continue;
       }
     }
-    upsertGame(gameId, gameName, gameURI);
+    playerGameSummaries[player].push(GameSummary({ gameId: gameId, name: gameName, image: gameURI, achievements: achievements.length, storeId: storeId }));
     emit GameSummaryMinted(player, gameId, achievements.length);
   }
 
@@ -126,9 +111,9 @@ contract GameAchievements is ERC1155, AccessControl, ReentrancyGuard {
     string memory gameName,
     string memory gameURI,
     uint256[] calldata achievements,
-    GameSource source
+    uint256 storeId
   ) public onlyRole(MINTER_ROLE) notPaused {
-    mintGameSummary(to, gameId, gameName, gameURI, achievements, source);
+    mintGameSummary(to, gameId, gameName, gameURI, achievements, storeId);
   }
 
   function mintGameSummaryWithSignature(
@@ -136,24 +121,23 @@ contract GameAchievements is ERC1155, AccessControl, ReentrancyGuard {
     string memory gameName,
     string memory gameURI,
     uint256[] calldata achievements,
-    GameSource source,
+    uint256 storeId,
     uint256 nonce,
     bytes memory signature
   ) public nonReentrant notPaused {
     require(verifySignature(nonce, signature), "GameAchievements: Invalid signature");
-    mintGameSummary(msg.sender, gameId, gameName, gameURI, achievements, source);
+    mintGameSummary(msg.sender, gameId, gameName, gameURI, achievements, storeId);
   }
 
   function adminMint(
     address player,
     uint256 gameId,
-    GameSource source,
     uint256 amount,
     uint256 achievementId,
     string memory achievementURI,
     string memory achievementDescription
   ) public onlyRole(MINTER_ROLE) notPaused {
-    mintAchievement(player, gameId, source, amount, achievementId, achievementURI, achievementDescription);
+    mintAchievement(player, gameId, amount, achievementId, achievementURI, achievementDescription);
   }
 
   function concat(uint256 a, uint256 b) private pure returns (uint256) {
@@ -168,7 +152,6 @@ contract GameAchievements is ERC1155, AccessControl, ReentrancyGuard {
   function mintAchievement(
     address player,
     uint256 gameId,
-    GameSource source,
     uint256 amount,
     uint256 achievementId,
     string memory achievementURI,
@@ -176,13 +159,7 @@ contract GameAchievements is ERC1155, AccessControl, ReentrancyGuard {
   ) private {
     // Create a simple token ID based on hashing game and achievement details
     uint256 tokenId = concat(gameId, achievementId);
-    upsertGame(gameId, "", "");
-    Achievement memory newAchievement = Achievement({
-      source: source,
-      achievementId: achievementId,
-      uri: achievementURI,
-      description: achievementDescription
-    });
+    Achievement memory newAchievement = Achievement({ achievementId: achievementId, uri: achievementURI, description: achievementDescription });
 
     // check in the playerAchievements mapping if the achievement has been minted
     // if not, mint it, otherwise skip
@@ -195,7 +172,6 @@ contract GameAchievements is ERC1155, AccessControl, ReentrancyGuard {
   function mintAchievementWithSignature(
     address player,
     uint256 gameId,
-    GameSource source,
     uint256 amount,
     uint256 achievementId,
     string memory achievementURI,
@@ -204,21 +180,24 @@ contract GameAchievements is ERC1155, AccessControl, ReentrancyGuard {
     bytes memory signature
   ) public notPaused nonReentrant {
     require(verifySignature(nonce, signature), "GameAchievements: Invalid signature");
-    mintAchievement(player, gameId, source, amount, achievementId, achievementURI, achievementDescription);
+    mintAchievement(player, gameId, amount, achievementId, achievementURI, achievementDescription);
   }
 
   function safeTransferFrom(address _from, address _to, uint256 _id, uint256 _amount, bytes memory _data) public virtual override {
-    return;
+    if (playerAchievements[_from][_id].achievementId != 0) {
+      require(playerAchievements[_from][_id].achievementId != _id, "GameAchievements: You can't transfer this token");
+    }
+
+    super.safeTransferFrom(_from, _to, _id, _amount, _data);
   }
 
-  function safeBatchTransferFrom(
-    address _from,
-    address _to,
-    uint256[] memory _ids,
-    uint256[] memory _amounts,
-    bytes memory _data
-  ) public virtual override {
-    return;
+  function safeBatchTransferFrom(address _from, address _to, uint256[] memory _ids, uint256[] memory _amounts, bytes memory _data) public virtual override {
+    for (uint i = 0; i < _ids.length; i++) {
+      if (playerAchievements[_from][_ids[i]].achievementId != 0) {
+        require(playerAchievements[_from][_ids[i]].achievementId != _ids[i], "GameAchievements: You can't transfer this token");
+      }
+    }
+    super.safeBatchTransferFrom(_from, _to, _ids, _amounts, _data);
   }
 
   function uri(uint256 _tokenId) public view override returns (string memory) {
@@ -235,19 +214,49 @@ contract GameAchievements is ERC1155, AccessControl, ReentrancyGuard {
     emit SignerRemoved(signer);
   }
 
-  function verifySignature(uint256 nonce, bytes memory signature) public view returns (bool) {
+  function addToRecoveryList(address account) public onlyRole(DEFAULT_ADMIN_ROLE) {
+    recoveryList[account] = true;
+  }
+
+  function removeFromRecoveryList(address account) public onlyRole(DEFAULT_ADMIN_ROLE) {
+    recoveryList[account] = false;
+  }
+
+  function recoverAddress(uint256 nonce, bytes memory signature) private view returns (address) {
     bytes32 message = keccak256(abi.encodePacked(msg.sender, nonce));
     bytes32 hash = ECDSA.toEthSignedMessageHash(message);
     address signer = ECDSA.recover(hash, signature);
-    if(whitelistSigners[signer]) {
+    return signer;
+  }
+
+  function verifySignature(uint256 nonce, bytes memory signature) public view returns (bool) {
+    address signer = recoverAddress(nonce, signature);
+    if (whitelistSigners[signer]) {
       return true;
     } else {
       return false;
     }
   }
 
+  function burn(address account, uint256 id, uint256 amount, uint256 nonce, bytes memory signature) public onlyRole(BURNER_ROLE) {
+    address signer = recoverAddress(nonce, signature);
+    require(signer == account, "GameAchievements: The account can't burn tokens because is in the recovery list");
+    require(recoveryList[signer], "GameAchievements: The signer is not in the recovery list");
+    _safeTransferFrom(account, signer, id, amount, "");
+    emit TokenBurned(account, id, amount, signer);
+  }
+
+  function burnBatch(address account, uint256[] memory ids, uint256[] memory amounts, uint256 nonce, bytes memory signature) public onlyRole(BURNER_ROLE) {
+    address signer = recoverAddress(nonce, signature);
+    require(signer == account, "GameAchievements: The account can't burn tokens because is in the recovery list");
+    require(recoveryList[signer], "GameAchievements: The signer is not in the recovery list");
+    for (uint i = 0; i < ids.length; i++) {
+      _safeTransferFrom(account, signer, ids[i], amounts[i], "");
+      emit TokenBurned(account, ids[i], amounts[i], signer);
+    }
+  }
+
   function supportsInterface(bytes4 interfaceId) public view override(ERC1155, AccessControl) returns (bool) {
     return super.supportsInterface(interfaceId);
   }
-
 }
