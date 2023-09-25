@@ -15,8 +15,7 @@ contract GameAchievements is ERC1155, AccessControl, ReentrancyGuard {
   bytes32 public constant MINTER_ROLE = keccak256("MINTER_ROLE");
   bytes32 public constant BURNER_ROLE = keccak256("BURNER_ROLE");
 
-  event GameSaved(address indexed indexer, uint256 indexed gameId);
-  event GameUpdated(address indexed indexer, uint256 indexed gameId);
+  event GameSummaryUpdated(address indexed indexer, uint256 indexed gameId);
   event GameSummaryMinted(address indexed player, uint256 indexed gameId, uint256 achievementCount);
   event AchievementMinted(address indexed player, uint256 indexed gameAchievementId);
   event SignerAdded(address signer);
@@ -42,8 +41,8 @@ contract GameAchievements is ERC1155, AccessControl, ReentrancyGuard {
     uint256 achievements;
   }
 
-  // player address => game summary
-  mapping(address => GameSummary[]) public playerGameSummaries;
+  // player address => gameId => game summary
+  mapping(address => mapping(uint256 => GameSummary[])) public playerGameSummaries;
 
   // player address => concat (game id + achievement id)  => achievement
   mapping(address => mapping(uint256 => Achievement)) public playerAchievements;
@@ -79,12 +78,24 @@ contract GameAchievements is ERC1155, AccessControl, ReentrancyGuard {
     emit AchievementMintPaused(achievementMintPaused);
   }
 
-  function getGameSummaries() public view returns (GameSummary[] memory) {
-    return playerGameSummaries[msg.sender];
+  function getGameSummary(uint256 gameId) public view returns (GameSummary memory) {
+    return playerGameSummaries[msg.sender][gameId][0];
   }
 
-  function getPlayerSummaries(address player) public view onlyRole(DEFAULT_ADMIN_ROLE) returns (GameSummary[] memory) {
-    return playerGameSummaries[player];
+  function getGameSummaries(uint256[] memory gameIds) public view returns (GameSummary[] memory) {
+    GameSummary[] memory summaries = new GameSummary[](gameIds.length);
+    for (uint i = 0; i < gameIds.length; i++) {
+      summaries[i] = playerGameSummaries[msg.sender][gameIds[i]][0];
+    }
+    return summaries;
+  }
+
+  //TODO: this function could be create an off-sync ids between the original achievement length minted and the game summary length, because if this decrease the achievements, the previous achievements minted must be burned
+  function updateGameSummary(address player, uint256 gameId, uint256 newAchievementsLength) public onlyRole(DEFAULT_ADMIN_ROLE) {
+    require(playerGameSummaries[player][gameId].length > 0, "GameAchievements: You don't have any game summary");
+    GameSummary storage gameSummary = playerGameSummaries[player][gameId][0];
+    gameSummary.achievements = newAchievementsLength;
+    emit GameSummaryUpdated(player, gameId);
   }
 
   function mintGameSummary(
@@ -109,7 +120,7 @@ contract GameAchievements is ERC1155, AccessControl, ReentrancyGuard {
         continue;
       }
     }
-    playerGameSummaries[player].push(GameSummary({ gameId: gameId, name: gameName, image: gameURI, achievements: achievements.length, storeId: storeId }));
+    playerGameSummaries[player][gameId].push(GameSummary({ gameId: gameId, name: gameName, image: gameURI, achievements: achievements.length, storeId: storeId }));
     emit GameSummaryMinted(player, gameId, achievements.length);
   }
 
