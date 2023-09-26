@@ -71,7 +71,7 @@ describe('GameAchievements', function () {
     }
   });
 
-  it('As player must mint game summary achievement using the signature', async function () {
+  it('As Admin must mint a game summary achievements for a player', async function () {
     const GAME_ID = 1;
     const randomAchievementIds = [1234, 65441, 12312];
     const tx = await gameAchievements.adminMintGameSummary(playerAccount.address, GAME_ID, 'Omar Game', 'https://game.gg', randomAchievementIds, 2, true);
@@ -81,6 +81,23 @@ describe('GameAchievements', function () {
       const balanceInt = Number(balance);
       expect(balanceInt).to.equal(1);
     }
+  });
+
+  it('As Admin must mint a game summary achievements but not the same achievement twice', async function () {
+    const GAME_ID = 1;
+    const randomAchievementIds = [1234, 65441, 12312];
+    const tx = await gameAchievements.adminMintGameSummary(playerAccount.address, GAME_ID, 'Omar Game', 'https://game.gg', randomAchievementIds, 2, true);
+    await tx.wait();
+    for (let i = 0; i < randomAchievementIds.length; i++) {
+      const balance = await gameAchievements.balanceOf(playerAccount.address, `${GAME_ID}${randomAchievementIds[i]}`);
+      const balanceInt = Number(balance);
+      expect(balanceInt).to.equal(1);
+    }
+
+    await expect(
+      gameAchievements.adminMintGameSummary(playerAccount.address, GAME_ID, 'Omar Game', 'https://game.gg', [65441, 65442], 2, true)
+      // @ts-ignore-next-line
+    ).to.be.revertedWith('GameAchievements: The achievement has already been minted');
   });
 
   it('The pause functionality should works as expected', async function () {
@@ -210,6 +227,7 @@ describe('GameAchievements', function () {
       gameAchievements
         .connect(playerAccount)
         .safeTransferFrom(playerAccount.address, minterAccount.address, `${DEFAULT_GAME_ID}${DEFAULT_ACHIEVEMENT_ID}`, 1, ethers.utils.toUtf8Bytes(''))
+      // @ts-ignore-next-line
     ).to.be.revertedWith("GameAchievements: You can't transfer this token");
 
     // simulating a listing on any marketplace
@@ -224,6 +242,7 @@ describe('GameAchievements', function () {
           1,
           ethers.utils.toUtf8Bytes('')
         )
+      // @ts-ignore-next-line
     ).to.be.revertedWith("GameAchievements: You can't transfer this token");
   });
 
@@ -257,6 +276,7 @@ describe('GameAchievements', function () {
       gameAchievements
         .connect(playerAccount)
         .safeBatchTransferFrom(playerAccount.address, minterAccount.address, [TOKEN_ID_1, TOKEN_ID_2, TOKEN_ID_3], [1, 1], ethers.utils.toUtf8Bytes(''))
+      // @ts-ignore-next-line
     ).to.be.revertedWith("GameAchievements: You can't transfer this token");
 
     const balance = await gameAchievements.balanceOf(minterAccount.address, `${TOKEN_ID_1}`);
@@ -318,6 +338,7 @@ describe('GameAchievements', function () {
     const TOKEN_ID_1 = `${DEFAULT_GAME_ID}${DEFAULT_ACHIEVEMENT_ID}`;
     const sbt1Trx = await gameAchievements.adminMint(playerAccount.address, DEFAULT_GAME_ID, 1, DEFAULT_ACHIEVEMENT_ID, 'uri', '', true);
     await sbt1Trx.wait();
+    // @ts-ignore-next-line
     await expect(gameAchievements.connect(playerAccount).burn(playerAccount.address, TOKEN_ID_1, 1)).to.be.revertedWith(
       "GameAchievements: You can't burn this token"
     );

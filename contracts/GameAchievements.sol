@@ -133,13 +133,10 @@ contract GameAchievements is ERC1155, AccessControl, ReentrancyGuard {
       uint256 achievementId = achievements[i];
       // check in the playerAchievements mapping if the achievement has been minted for this player
       // if not, mint it, otherwise skip it
-      if (playerAchievements[player][tokenId].achievementId != achievementId) {
-        Achievement memory newAchievement = Achievement({ achievementId: achievementId, uri: "", description: "", tokenId: tokenId, soulBounded: soulBounded });
-        playerAchievements[player][tokenId] = newAchievement;
-        _mint(player, tokenId, 1, "");
-      } else {
-        continue;
-      }
+      require(playerAchievements[player][tokenId].tokenId == 0, "GameAchievements: The achievement has already been minted");
+      Achievement memory newAchievement = Achievement({ achievementId: achievementId, uri: "", description: "", tokenId: tokenId, soulBounded: soulBounded });
+      playerAchievements[player][tokenId] = newAchievement;
+      _mint(player, tokenId, 1, "");
     }
     playerGameSummaries[player][gameId].push(
       GameSummary({ gameId: gameId, name: gameName, image: gameURI, achievements: achievements.length, storeId: storeId })
