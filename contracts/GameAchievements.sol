@@ -13,24 +13,23 @@ import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
 
 contract GameAchievements is ERC1155, AccessControl, ReentrancyGuard {
   bytes32 public constant MINTER_ROLE = keccak256("MINTER_ROLE");
-  bytes32 public constant BURNER_ROLE = keccak256("BURNER_ROLE");
 
   event GameSummaryUpdated(address indexed indexer, uint256 indexed gameId);
-  event GameSummaryMinted(address indexed player, uint256 indexed gameId, uint256 achievementCount);
+  event GameSummaryMinted(address indexed player, uint256 indexed gameId, uint256[] achievements);
   event AchievementMinted(address indexed player, uint256 indexed gameAchievementId);
   event SignerAdded(address signer);
   event SignerRemoved(address signer);
   event AchievementMintPaused(bool paused);
-  event TokenBurned(address indexed player, uint256 indexed tokenId, uint256 amount, address indexed recoveryAddress);
 
-  string private baseUri;
+  string public baseUri;
   bool public achievementMintPaused = false;
-  bool public gameSummaryMintPaused = false;
 
   struct Achievement {
     uint256 achievementId;
     string uri;
     string description;
+    uint256 tokenId;
+    bool soulBounded;
   }
 
   struct GameSummary {
@@ -46,9 +45,6 @@ contract GameAchievements is ERC1155, AccessControl, ReentrancyGuard {
 
   // player address => concat (game id + achievement id)  => achievement
   mapping(address => mapping(uint256 => Achievement)) public playerAchievements;
-
-  // player address => whitelisted recovery address
-  mapping(address => bool) public recoveryList;
 
   mapping(address => bool) public whitelistSigners;
 
@@ -90,12 +86,37 @@ contract GameAchievements is ERC1155, AccessControl, ReentrancyGuard {
     return summaries;
   }
 
-  //TODO: this function could be create an off-sync ids between the original achievement length minted and the game summary length, because if this decrease the achievements, the previous achievements minted must be burned
-  function updateGameSummary(address player, uint256 gameId, uint256 newAchievementsLength) public onlyRole(DEFAULT_ADMIN_ROLE) {
-    require(playerGameSummaries[player][gameId].length > 0, "GameAchievements: You don't have any game summary");
+  function updateGameSummary(
+    address player,
+    uint256 gameId,
+    uint256[] calldata newAchievements,
+    bool soulbound
+  ) public onlyRole(DEFAULT_ADMIN_ROLE) notAchievementMintPaused {
+    require(playerGameSummaries[player][gameId].length > 0, "GameAchievements: The player don't have any game summary");
+    require(newAchievements.length > 0, "GameAchievements: The new achievements array is empty");
     GameSummary storage gameSummary = playerGameSummaries[player][gameId][0];
-    gameSummary.achievements = newAchievementsLength;
+    gameSummary.achievements += newAchievements.length;
+    for (uint i = 0; i < newAchievements.length; i++) {
+      uint256 tokenId = concat(gameId, newAchievements[i]);
+      uint256 achievementId = newAchievements[i];
+      // check in the playerAchievements mapping if the achievement has been minted for this player
+      // if not, mint it, otherwise skip it
+      if (playerAchievements[player][tokenId].achievementId != achievementId) {
+        Achievement memory newAchievement = Achievement({ achievementId: achievementId, uri: "", description: "", tokenId: tokenId, soulBounded: soulbound });
+        playerAchievements[player][tokenId] = newAchievement;
+        _mint(player, tokenId, 1, "");
+        emit AchievementMinted(player, tokenId);
+      } else {
+        continue;
+      }
+    }
     emit GameSummaryUpdated(player, gameId);
+  }
+
+  function updateAchievementSoulBound(address player, uint256 tokenId, bool soulBound) public onlyRole(DEFAULT_ADMIN_ROLE) notAchievementMintPaused {
+    require(playerAchievements[player][tokenId].soulBounded != soulBound, "GameAchievements: The achievement already has this soulbound value");
+    require(playerAchievements[player][tokenId].tokenId != 0, "GameAchievements: The achievement doesn't exists");
+    playerAchievements[player][tokenId].soulBounded = soulBound;
   }
 
   function mintGameSummary(
@@ -104,7 +125,8 @@ contract GameAchievements is ERC1155, AccessControl, ReentrancyGuard {
     string memory gameName,
     string memory gameURI,
     uint256[] calldata achievements,
-    uint256 storeId
+    uint256 storeId,
+    bool soulBounded
   ) private {
     for (uint i = 0; i < achievements.length; i++) {
       uint256 tokenId = concat(gameId, achievements[i]);
@@ -112,16 +134,59 @@ contract GameAchievements is ERC1155, AccessControl, ReentrancyGuard {
       // check in the playerAchievements mapping if the achievement has been minted for this player
       // if not, mint it, otherwise skip it
       if (playerAchievements[player][tokenId].achievementId != achievementId) {
-        Achievement memory newAchievement = Achievement({ achievementId: achievementId, uri: "", description: "" });
+        Achievement memory newAchievement = Achievement({ achievementId: achievementId, uri: "", description: "", tokenId: tokenId, soulBounded: soulBounded });
         playerAchievements[player][tokenId] = newAchievement;
         _mint(player, tokenId, 1, "");
-        emit AchievementMinted(player, tokenId);
       } else {
         continue;
       }
     }
-    playerGameSummaries[player][gameId].push(GameSummary({ gameId: gameId, name: gameName, image: gameURI, achievements: achievements.length, storeId: storeId }));
-    emit GameSummaryMinted(player, gameId, achievements.length);
+    playerGameSummaries[player][gameId].push(
+      GameSummary({ gameId: gameId, name: gameName, image: gameURI, achievements: achievements.length, storeId: storeId })
+    );
+    emit GameSummaryMinted(player, gameId, achievements);
+  }
+
+  function adminBatchMintGameSummary(
+    address[] calldata players,
+    uint256[] calldata gameIds,
+    string[] memory gameNames,
+    string[] memory gameURIs,
+    uint256[][] calldata newAchievements,
+    uint256[] calldata storeIds,
+    bool[] calldata soulBounds
+  ) public onlyRole(MINTER_ROLE) notAchievementMintPaused {
+    require(players.length == gameIds.length, "GameAchievements: The players and gameIds arrays must have the same length");
+    require(players.length == storeIds.length, "GameAchievements: The players and storeIds arrays must have the same length");
+    require(players.length == gameURIs.length, "GameAchievements: The players and gameURIs arrays must have the same length");
+    require(players.length == gameNames.length, "GameAchievements: The players and gameNames arrays must have the same length");
+    require(players.length == newAchievements.length, "GameAchievements: The players and newAchievements arrays must have the same length");
+    require(players.length == soulBounds.length, "GameAchievements: The players and soulBounds arrays must have the same length");
+    for (uint i = 0; i < players.length; i++) {
+      mintGameSummary(players[i], gameIds[i], gameNames[i], gameURIs[i], newAchievements[i], storeIds[i], soulBounds[i]);
+    }
+  }
+
+  function adminBatchMintGameSummaryWithSignature(
+    address[] calldata players,
+    uint256[] calldata gameIds,
+    string[] memory gameNames,
+    string[] memory gameURIs,
+    uint256[][] calldata newAchievements,
+    uint256[] calldata storeIds,
+    uint256 nonce,
+    bytes memory signature
+  ) public notAchievementMintPaused nonReentrant {
+    require(verifySignature(nonce, signature), "GameAchievements: Invalid signature");
+    require(players.length == gameIds.length, "GameAchievements: The players and gameIds arrays must have the same length");
+    require(players.length == storeIds.length, "GameAchievements: The players and storeIds arrays must have the same length");
+    require(players.length == gameURIs.length, "GameAchievements: The players and gameURIs arrays must have the same length");
+    require(players.length == gameNames.length, "GameAchievements: The players and gameNames arrays must have the same length");
+    require(players.length == newAchievements.length, "GameAchievements: The players and newAchievements arrays must have the same length");
+
+    for (uint i = 0; i < players.length; i++) {
+      mintGameSummary(players[i], gameIds[i], gameNames[i], gameURIs[i], newAchievements[i], storeIds[i], true);
+    }
   }
 
   function adminMintGameSummary(
@@ -130,9 +195,10 @@ contract GameAchievements is ERC1155, AccessControl, ReentrancyGuard {
     string memory gameName,
     string memory gameURI,
     uint256[] calldata achievements,
-    uint256 storeId
+    uint256 storeId,
+    bool soulBounded
   ) public onlyRole(MINTER_ROLE) notAchievementMintPaused {
-    mintGameSummary(to, gameId, gameName, gameURI, achievements, storeId);
+    mintGameSummary(to, gameId, gameName, gameURI, achievements, storeId, soulBounded);
   }
 
   function mintGameSummaryWithSignature(
@@ -145,7 +211,7 @@ contract GameAchievements is ERC1155, AccessControl, ReentrancyGuard {
     bytes memory signature
   ) public nonReentrant notAchievementMintPaused {
     require(verifySignature(nonce, signature), "GameAchievements: Invalid signature");
-    mintGameSummary(msg.sender, gameId, gameName, gameURI, achievements, storeId);
+    mintGameSummary(msg.sender, gameId, gameName, gameURI, achievements, storeId, true);
   }
 
   function adminMint(
@@ -154,9 +220,10 @@ contract GameAchievements is ERC1155, AccessControl, ReentrancyGuard {
     uint256 amount,
     uint256 achievementId,
     string memory achievementURI,
-    string memory achievementDescription
+    string memory achievementDescription,
+    bool soulBound
   ) public onlyRole(MINTER_ROLE) notAchievementMintPaused {
-    mintAchievement(player, gameId, amount, achievementId, achievementURI, achievementDescription);
+    mintAchievement(player, gameId, amount, achievementId, achievementURI, achievementDescription, soulBound);
   }
 
   function concat(uint256 a, uint256 b) private pure returns (uint256) {
@@ -174,22 +241,28 @@ contract GameAchievements is ERC1155, AccessControl, ReentrancyGuard {
     uint256 amount,
     uint256 achievementId,
     string memory achievementURI,
-    string memory achievementDescription
+    string memory achievementDescription,
+    bool soulBound
   ) private {
     // Create a simple token ID based on hashing game and achievement details
     uint256 tokenId = concat(gameId, achievementId);
-    Achievement memory newAchievement = Achievement({ achievementId: achievementId, uri: achievementURI, description: achievementDescription });
-
     // check in the playerAchievements mapping if the achievement has been minted
-    // if not, mint it, otherwise skip
     require(playerAchievements[player][tokenId].achievementId != achievementId, "GameAchievements: Achievement already minted");
+    Achievement memory newAchievement = Achievement({
+      achievementId: achievementId,
+      uri: achievementURI,
+      description: achievementDescription,
+      tokenId: tokenId,
+      soulBounded: soulBound
+    });
+
+    // if not, mint it, otherwise skip
     playerAchievements[player][tokenId] = newAchievement;
     _mint(player, tokenId, amount, "");
     emit AchievementMinted(player, tokenId);
   }
 
   function mintAchievementWithSignature(
-    address player,
     uint256 gameId,
     uint256 amount,
     uint256 achievementId,
@@ -199,28 +272,26 @@ contract GameAchievements is ERC1155, AccessControl, ReentrancyGuard {
     bytes memory signature
   ) public notAchievementMintPaused nonReentrant {
     require(verifySignature(nonce, signature), "GameAchievements: Invalid signature");
-    mintAchievement(player, gameId, amount, achievementId, achievementURI, achievementDescription);
+    mintAchievement(msg.sender, gameId, amount, achievementId, achievementURI, achievementDescription, true);
   }
 
   function safeTransferFrom(address _from, address _to, uint256 _id, uint256 _amount, bytes memory _data) public virtual override {
-    if (playerAchievements[_from][_id].achievementId != 0) {
-      require(playerAchievements[_from][_id].achievementId != _id, "GameAchievements: You can't transfer this token");
-    }
-
+    require(playerAchievements[_from][_id].tokenId != 0, "GameAchievements: Token doesn't exists");
+    require(!playerAchievements[_from][_id].soulBounded, "GameAchievements: You can't transfer this token");
     super.safeTransferFrom(_from, _to, _id, _amount, _data);
   }
 
   function safeBatchTransferFrom(address _from, address _to, uint256[] memory _ids, uint256[] memory _amounts, bytes memory _data) public virtual override {
     for (uint i = 0; i < _ids.length; i++) {
-      if (playerAchievements[_from][_ids[i]].achievementId != 0) {
-        require(playerAchievements[_from][_ids[i]].achievementId != _ids[i], "GameAchievements: You can't transfer this token");
-      }
+      require(playerAchievements[_from][_ids[i]].tokenId != 0, "GameAchievements: Token doesn't exists");
+
+      require(!playerAchievements[_from][_ids[i]].soulBounded, "GameAchievements: You can't transfer this token");
     }
     super.safeBatchTransferFrom(_from, _to, _ids, _amounts, _data);
   }
 
   function uri(uint256 _tokenId) public view override returns (string memory) {
-    return string(abi.encodePacked(baseUri, "/", Strings.toString(_tokenId), ".json"));
+    return string(abi.encodePacked(baseUri, Strings.toString(_tokenId), ".json"));
   }
 
   function setSigner(address _signer) public onlyRole(DEFAULT_ADMIN_ROLE) {
@@ -231,14 +302,6 @@ contract GameAchievements is ERC1155, AccessControl, ReentrancyGuard {
   function removeSigner(address signer) public onlyRole(DEFAULT_ADMIN_ROLE) {
     whitelistSigners[signer] = false;
     emit SignerRemoved(signer);
-  }
-
-  function addToRecoveryList(address account) public onlyRole(DEFAULT_ADMIN_ROLE) {
-    recoveryList[account] = true;
-  }
-
-  function removeFromRecoveryList(address account) public onlyRole(DEFAULT_ADMIN_ROLE) {
-    recoveryList[account] = false;
   }
 
   function recoverAddress(uint256 nonce, bytes memory signature) private view returns (address) {
@@ -257,22 +320,22 @@ contract GameAchievements is ERC1155, AccessControl, ReentrancyGuard {
     }
   }
 
-  function burn(address account, uint256 id, uint256 amount, uint256 nonce, bytes memory signature) public onlyRole(BURNER_ROLE) {
-    address signer = recoverAddress(nonce, signature);
-    require(signer == account, "GameAchievements: The account can't burn tokens because is in the recovery list");
-    require(recoveryList[signer], "GameAchievements: The signer is not in the recovery list");
-    _safeTransferFrom(account, signer, id, amount, "");
-    emit TokenBurned(account, id, amount, signer);
+  function burn(address account, uint256 id, uint256 amount) public nonReentrant {
+    require(account == msg.sender, "GameAchievements: You can only burn your own tokens");
+    require(playerAchievements[msg.sender][id].tokenId != 0, "GameAchievements: Token doesn't exists");
+    require(!playerAchievements[msg.sender][id].soulBounded, "GameAchievements: You can't burn this token");
+
+    _burn(account, id, amount);
   }
 
-  function burnBatch(address account, uint256[] memory ids, uint256[] memory amounts, uint256 nonce, bytes memory signature) public onlyRole(BURNER_ROLE) {
-    address signer = recoverAddress(nonce, signature);
-    require(signer == account, "GameAchievements: The account can't burn tokens because is in the recovery list");
-    require(recoveryList[signer], "GameAchievements: The signer is not in the recovery list");
+  function burnBatch(address account, uint256[] memory ids, uint256[] memory amounts) public nonReentrant {
     for (uint i = 0; i < ids.length; i++) {
-      _safeTransferFrom(account, signer, ids[i], amounts[i], "");
-      emit TokenBurned(account, ids[i], amounts[i], signer);
+      require(account == msg.sender, "GameAchievements: You can only burn your own tokens");
+      require(playerAchievements[msg.sender][ids[i]].tokenId != 0, "GameAchievements: Token doesn't exists");
+      require(!playerAchievements[msg.sender][ids[i]].soulBounded, "GameAchievements: You can't burn this token");
     }
+
+    _burnBatch(account, ids, amounts);
   }
 
   function supportsInterface(bytes4 interfaceId) public view override(ERC1155, AccessControl) returns (bool) {
