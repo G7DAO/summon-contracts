@@ -59,12 +59,25 @@ const config: HardhatUserConfig = {
     currency: 'USD',
   },
   etherscan: {
-    apiKey: {
-      polygonMumbai: POLYGONSCAN_API_KEY || '',
-      polygon: POLYGONSCAN_API_KEY || '',
-      mantleWadsley: ETHSCAN_API_KEY || '',
-      mantle: ETHSCAN_API_KEY || '',
-    },
+    apiKey: ETHSCAN_API_KEY,
+    customChains: [
+      {
+        network: "mantleWadsley",
+        chainId: 5001,
+        urls: {
+          apiURL: "https://explorer.testnet.mantle.xyz/api",
+          browserURL: "https://explorer.testnet.mantle.xyz"
+        }
+      },
+      {
+        network: "mantle",
+        chainId: 5000,
+        urls: {
+          apiURL: "https://explorer.mantle.xyz/api",
+          browserURL: "https://explorer.mantle.xyz"
+        }
+      }
+    ]
   },
 };
 

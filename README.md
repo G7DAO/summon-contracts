@@ -59,3 +59,8 @@ Check the rest of the scripts in the package.json file
 ```shell
 npm test
 ```
+
+5. Flat smart contracts
+```shell
+npx hardhat flatten contracts/GameSummary.sol > .flat/GameSummary.sol
+```
