@@ -11,6 +11,8 @@ import "@openzeppelin/contracts/access/AccessControl.sol";
 import "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
 import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
 
+// This contract content is for the Phase1 and Phase2 of HP Game Achievements
+
 contract GameAchievements is ERC1155, AccessControl, ReentrancyGuard {
   bytes32 public constant MINTER_ROLE = keccak256("MINTER_ROLE");
 
@@ -164,8 +166,7 @@ contract GameAchievements is ERC1155, AccessControl, ReentrancyGuard {
     }
   }
 
-  function adminBatchMintGameSummaryWithSignature(
-    address[] calldata players,
+  function batchMintGameSummaryWithSignature(
     uint256[] calldata gameIds,
     string[] memory gameNames,
     string[] memory gameURIs,
@@ -175,14 +176,13 @@ contract GameAchievements is ERC1155, AccessControl, ReentrancyGuard {
     bytes memory signature
   ) public notAchievementMintPaused nonReentrant {
     require(verifySignature(nonce, signature), "GameAchievements: Invalid signature");
-    require(players.length == gameIds.length, "GameAchievements: The players and gameIds arrays must have the same length");
-    require(players.length == storeIds.length, "GameAchievements: The players and storeIds arrays must have the same length");
-    require(players.length == gameURIs.length, "GameAchievements: The players and gameURIs arrays must have the same length");
-    require(players.length == gameNames.length, "GameAchievements: The players and gameNames arrays must have the same length");
-    require(players.length == newAchievements.length, "GameAchievements: The players and newAchievements arrays must have the same length");
+    require(gameIds.length == storeIds.length, "GameAchievements: The players and storeIds arrays must have the same length");
+    require(gameIds.length == gameURIs.length, "GameAchievements: The players and gameURIs arrays must have the same length");
+    require(gameIds.length == gameNames.length, "GameAchievements: The players and gameNames arrays must have the same length");
+    require(gameIds.length == newAchievements.length, "GameAchievements: The players and newAchievements arrays must have the same length");
 
-    for (uint i = 0; i < players.length; i++) {
-      mintGameSummary(players[i], gameIds[i], gameNames[i], gameURIs[i], newAchievements[i], storeIds[i], true);
+    for (uint i = 0; i < gameIds.length; i++) {
+      mintGameSummary(msg.sender, gameIds[i], gameNames[i], gameURIs[i], newAchievements[i], storeIds[i], true);
     }
   }
 

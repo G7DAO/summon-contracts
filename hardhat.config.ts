@@ -1,12 +1,15 @@
 import * as dotenv from 'dotenv';
 import { HardhatUserConfig } from 'hardhat/config';
+
 import '@nomicfoundation/hardhat-toolbox';
 // This adds support for typescript paths mappings
 import 'tsconfig-paths/register';
+
 import { ChainId } from './constants';
 dotenv.config();
 
-const { PRIVATE_KEY, POLYGONSCAN_API_KEY, DEPLOYER_PRIVATE_KEY, REPORT_GAS } = process.env;
+const { PRIVATE_KEY, POLYGONSCAN_API_KEY, DEPLOYER_PRIVATE_KEY, REPORT_GAS, ETHSCAN_API_KEY } = process.env;
+
 
 if (!PRIVATE_KEY) {
   throw new Error('The private key is required');
@@ -59,6 +62,8 @@ const config: HardhatUserConfig = {
     apiKey: {
       polygonMumbai: POLYGONSCAN_API_KEY || '',
       polygon: POLYGONSCAN_API_KEY || '',
+      mantleWadsley: ETHSCAN_API_KEY || '',
+      mantle: ETHSCAN_API_KEY || '',
     },
   },
 };
