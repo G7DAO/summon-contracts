@@ -8,11 +8,19 @@ import 'tsconfig-paths/register';
 import { ChainId } from './constants';
 dotenv.config();
 
-const { PRIVATE_KEY, POLYGONSCAN_API_KEY, DEPLOYER_PRIVATE_KEY, REPORT_GAS, ETHSCAN_API_KEY } = process.env;
+const { PRIVATE_KEY, POLYGONSCAN_API_KEY, DEPLOYER_PRIVATE_KEY, REPORT_GAS, ETHSCAN_API_KEY, HARDHAT_NETWORK } = process.env;
 
 
 if (!PRIVATE_KEY) {
   throw new Error('The private key is required');
+}
+
+function getEtherscanConfig(network: string) {
+  if (network === 'polygon' || network === 'polygonMumbai') {
+    return POLYGONSCAN_API_KEY;
+  } else {
+    return ETHSCAN_API_KEY;
+  }
 }
 
 const config: HardhatUserConfig = {
@@ -59,7 +67,7 @@ const config: HardhatUserConfig = {
     currency: 'USD',
   },
   etherscan: {
-    apiKey: ETHSCAN_API_KEY,
+    apiKey: getEtherscanConfig(HARDHAT_NETWORK ?? 'polygonMumbai'),
     customChains: [
       {
         network: "mantleWadsley",
