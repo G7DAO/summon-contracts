@@ -67,7 +67,7 @@ const config: HardhatUserConfig = {
     currency: 'USD',
   },
   etherscan: {
-    apiKey: getEtherscanConfig(HARDHAT_NETWORK ?? 'polygonMumbai'),
+    apiKey: ETHSCAN_API_KEY,
     customChains: [
       {
         network: "mantleWadsley",

@@ -17,9 +17,10 @@ contract GameSummary1155 is ERC1155, AccessControl, ReentrancyGuard {
   bytes32 public constant MINTER_ROLE = keccak256("MINTER_ROLE");
   bytes32 public constant GAME_CREATOR_ROLE = keccak256("GAME_CREATOR_ROLE");
 
-  event GameSummaryCreated(address indexed creator, uint256 indexed tokenId);
   event GameSummaryUpdated(address indexed indexer, uint256 indexed tokenId);
-  event GameSummaryMinted(address indexed player, uint256 indexed gameId, uint256 achievements);
+  event GameSummaryMinted(address indexed player, uint256 indexed gameId, uint256 totalAchievements);
+  event PlayerGameSummaryMinted(address indexed player, uint256 indexed gameId, uint256 achievements);
+  event PlayerGameSummaryUpdated(address indexed player, uint256 indexed gameId, uint256 achievements);
   event SignerAdded(address signer);
   event SignerRemoved(address signer);
   event GameSummaryMintedPaused(bool paused);
@@ -163,6 +164,36 @@ contract GameSummary1155 is ERC1155, AccessControl, ReentrancyGuard {
     emit GameSummaryUpdated(msg.sender, tokenId);
   }
 
+  function addPlayerAchievements (
+    address player,
+    uint256 tokenId,
+    uint256 newAchievements
+  ) private {
+    require(tokenId > 0, "TokenId must be greater than 0");
+    require(playerGameData[player][tokenId].tokenId != 0, "Token doesn't exists");
+    PlayerGameData storage playerData = playerGameData[player][tokenId];
+    playerData.achievementsMinted += newAchievements;
+    emit PlayerGameSummaryUpdated(player, tokenId, playerData.achievementsMinted);
+  }
+
+  function adminUpdatePlayerAchievements(
+    address player,
+    uint256 tokenId,
+    uint256 newAchievements
+  ) public onlyRole(DEFAULT_ADMIN_ROLE) notGameSummaryMintPaused {
+    addPlayerAchievements(player, tokenId, newAchievements);
+  }
+
+  function updatePlayerAchievementsWithSignature(
+    uint256 tokenId,
+    uint256 newAchievements,
+    uint256 nonce,
+    bytes memory signature
+  ) public nonReentrant notGameSummaryMintPaused {
+    require(verifySignature(nonce, signature), "Invalid signature");
+    addPlayerAchievements(msg.sender, tokenId, newAchievements);
+  }
+
   function createCommonGameSummary(
     uint256 storeId,
     uint256 gameId,
@@ -176,7 +207,7 @@ contract GameSummary1155 is ERC1155, AccessControl, ReentrancyGuard {
     uint256 tokenId = concat(storeId, gameId);
     require(commonGameSummaries[tokenId].storeId == 0, "Token already exists");
     commonGameSummaries[tokenId] = GameSummary(storeId, gameId, name, onChainURI, externalURI, totalAchievements);
-    emit GameSummaryCreated(msg.sender, tokenId);
+    emit GameSummaryMinted(msg.sender, tokenId, totalAchievements);
   }
 
   function mintGameSummary(
@@ -191,7 +222,7 @@ contract GameSummary1155 is ERC1155, AccessControl, ReentrancyGuard {
     require(playerGameData[player][tokenId].tokenId == 0, "Token already exists");
     _mint(player, tokenId, 1, "");
     playerGameData[player][tokenId] = PlayerGameData(tokenId, achievementsLength, soulBound);
-    emit GameSummaryMinted(player, tokenId, achievementsLength);
+    emit PlayerGameSummaryMinted(player, tokenId, achievementsLength);
   }
 
   function adminMintGameSummary(
@@ -213,6 +244,31 @@ contract GameSummary1155 is ERC1155, AccessControl, ReentrancyGuard {
   ) public nonReentrant notGameSummaryMintPaused {
     require(verifySignature(nonce, signature), "Invalid signature");
     mintGameSummary(msg.sender, gameId, achievementsLength, storeId, true);
+  }
+
+  function adminBatchPlayerUpdateAchievements(
+    address[] memory players,
+    uint256[] calldata tokenIds,
+    uint256[] calldata newAchievements
+  ) public onlyRole(DEFAULT_ADMIN_ROLE) notGameSummaryMintPaused {
+    require(players.length == tokenIds.length, "The players and tokenIds arrays must have the same length");
+    require(players.length == newAchievements.length, "The players and newAchievements arrays must have the same length");
+    for (uint i = 0; i < players.length; i++) {
+      addPlayerAchievements(players[i], tokenIds[i], newAchievements[i]);
+    }
+  }
+
+  function batchPlayerUpdateAchievementsWithSignature(
+    uint256[] calldata tokenIds,
+    uint256[] calldata newAchievements,
+    uint256 nonce,
+    bytes memory signature
+  ) public nonReentrant notGameSummaryMintPaused {
+    require(verifySignature(nonce, signature), "Invalid signature");
+    require(tokenIds.length == newAchievements.length, "The players and newAchievements arrays must have the same length");
+    for (uint i = 0; i < tokenIds.length; i++) {
+      addPlayerAchievements(msg.sender, tokenIds[i], newAchievements[i]);
+    }
   }
 
   function adminBatchMintGameSummary(
@@ -238,8 +294,8 @@ contract GameSummary1155 is ERC1155, AccessControl, ReentrancyGuard {
     bytes memory signature
   ) public notGameSummaryMintPaused nonReentrant {
     require(verifySignature(nonce, signature), "Invalid signature");
-    require(gameIds.length == storeIds.length, "The players and storeIds arrays must have the same length");
-    require(gameIds.length == newAchievements.length, "The players and newAchievements arrays must have the same length");
+    require(gameIds.length == storeIds.length, "The gameIds and storeIds arrays must have the same length");
+    require(gameIds.length == newAchievements.length, "The gameIds and newAchievements arrays must have the same length");
 
     for (uint i = 0; i < gameIds.length; i++) {
       mintGameSummary(msg.sender, gameIds[i], newAchievements[i], storeIds[i], true);
@@ -271,6 +327,7 @@ contract GameSummary1155 is ERC1155, AccessControl, ReentrancyGuard {
       revert("You can't burn this token");
     }
     _burn(msg.sender, tokenId, amount);
+    playerGameData[msg.sender][tokenId].achievementsMinted -= amount;
   }
 
   function burnBatch(uint256[] memory tokenIds, uint256[] memory amounts) public nonReentrant {
@@ -281,6 +338,9 @@ contract GameSummary1155 is ERC1155, AccessControl, ReentrancyGuard {
       }
     }
     _burnBatch(msg.sender, tokenIds, amounts);
+    for (uint i = 0; i < tokenIds.length; i++) {
+      playerGameData[msg.sender][tokenIds[i]].achievementsMinted -= amounts[i];
+    }
   }
 
   function supportsInterface(bytes4 interfaceId) public view override(ERC1155, AccessControl) returns (bool) {

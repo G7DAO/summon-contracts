@@ -310,4 +310,93 @@ describe('GameSummary1155', function () {
     expect(Number(balance2)).to.equal(0);
   });
 
+  it('should revert if the signature is not valid', async function() {
+      await generateSignature({ walletAddress: playerAccount.address, signer: minterAccount });
+      const whitelistTx = await gameSummary1155.setSigner(minterAccount.address);
+      await whitelistTx.wait();
+
+      // incorrect signer
+      const { signature, nonce } = await generateSignature({ walletAddress: minterAccount.address, signer: playerAccount });
+
+      // @ts-ignore-next-line
+      await expect(gameSummary1155.connect(playerAccount).mintGameSummaryWithSignature(DEFAULT_GAME_ID, 20, DEFAULT_STORE_ID, nonce, signature)).to.be.revertedWith('Invalid signature');
+  });
+
+  it('as admin should update the qty of achievements for a player', async function() {
+    const tx = await gameSummary1155.adminMintGameSummary(playerAccount.address, DEFAULT_GAME_ID, 20, DEFAULT_STORE_ID, true);
+    await tx.wait();
+
+    const updateTx = await gameSummary1155.adminUpdatePlayerAchievements(playerAccount.address, `${DEFAULT_STORE_ID}0${DEFAULT_GAME_ID}`, 23);
+    await updateTx.wait();
+
+    const playerDataUpdated = await gameSummary1155.connect(playerAccount).getPlayerGameData(playerAccount.address, `${DEFAULT_STORE_ID}0${DEFAULT_GAME_ID}`);
+    expect(Number(playerDataUpdated.achievementsMinted)).to.equal(43);
+
+  });
+
+  it('as admin should update the qty of achievements for a player using the batch', async function() {
+    const GAME_IDS = [100, 234, 255];
+
+    const TOKEN_IDS = GAME_IDS.map((gameId) => `${DEFAULT_STORE_ID}0${gameId}`);
+
+    const tx = await gameSummary1155.adminBatchMintGameSummary([playerAccount.address, playerAccount.address, playerAccount.address], GAME_IDS, [20, 44, 55], [DEFAULT_STORE_ID, DEFAULT_STORE_ID, DEFAULT_STORE_ID], [true, true, true])
+    await tx.wait();
+
+    const updateTx = await gameSummary1155.adminBatchPlayerUpdateAchievements([playerAccount.address, playerAccount.address, playerAccount.address], TOKEN_IDS, [1, 2, 3]);
+    await updateTx.wait();
+
+    const playerDataUpdated = await gameSummary1155.connect(playerAccount).getPlayerGameData(playerAccount.address, TOKEN_IDS[0]);
+    expect(Number(playerDataUpdated.achievementsMinted)).to.equal(21);
+
+    const playerDataUpdated2 = await gameSummary1155.connect(playerAccount).getPlayerGameData(playerAccount.address, TOKEN_IDS[1]);
+    expect(Number(playerDataUpdated2.achievementsMinted)).to.equal(46);
+
+    const playerDataUpdated3 = await gameSummary1155.connect(playerAccount).getPlayerGameData(playerAccount.address, TOKEN_IDS[2]);
+    expect(Number(playerDataUpdated3.achievementsMinted)).to.equal(58);
+
+  });
+
+  it('should update the qty of achievements for a player using the signature', async function() {
+    const { signature, nonce } = await generateSignature({ walletAddress: playerAccount.address, signer: minterAccount });
+    const whitelistTx = await gameSummary1155.setSigner(minterAccount.address);
+    await whitelistTx.wait();
+
+    const tx = await gameSummary1155.connect(playerAccount).mintGameSummaryWithSignature(DEFAULT_GAME_ID, 20, DEFAULT_STORE_ID, nonce, signature);
+    await tx.wait();
+
+    const updateTx = await gameSummary1155.connect(playerAccount).updatePlayerAchievementsWithSignature(`${DEFAULT_STORE_ID}0${DEFAULT_GAME_ID}`, 23, nonce, signature);
+    await updateTx.wait();
+
+    const playerDataUpdated = await gameSummary1155.connect(playerAccount).getPlayerGameData(playerAccount.address, `${DEFAULT_STORE_ID}0${DEFAULT_GAME_ID}`);
+    expect(Number(playerDataUpdated.achievementsMinted)).to.equal(43);
+  });
+
+  it('the batchUpdate using the signature should works as expected', async function() {
+
+    const GAME_IDS = [100, 234, 255];
+
+    const TOKEN_IDS = GAME_IDS.map((gameId) => `${DEFAULT_STORE_ID}0${gameId}`);
+
+    const { signature, nonce } = await generateSignature({ walletAddress: playerAccount.address, signer: minterAccount });
+    const whitelistTx = await gameSummary1155.setSigner(minterAccount.address);
+    await whitelistTx.wait();
+
+    const tx = await gameSummary1155.connect(playerAccount).batchMintGameSummaryWithSignature(GAME_IDS, [20, 44, 55], [DEFAULT_STORE_ID, DEFAULT_STORE_ID, DEFAULT_STORE_ID], nonce, signature)
+    await tx.wait();
+
+    const gameData = await gameSummary1155.connect(playerAccount).getPlayerGamesData(playerAccount.address, TOKEN_IDS);
+    expect(gameData.length).to.equal(3);
+
+    const updateTx = await gameSummary1155.connect(playerAccount).batchPlayerUpdateAchievementsWithSignature(TOKEN_IDS, [2, 90, 20], nonce, signature);
+    await updateTx.wait();
+
+    const playerDataUpdated = await gameSummary1155.connect(playerAccount).getPlayerGameData(playerAccount.address, TOKEN_IDS[0]);
+    expect(Number(playerDataUpdated.achievementsMinted)).to.equal(22);
+
+    const playerDataUpdated2 = await gameSummary1155.connect(playerAccount).getPlayerGameData(playerAccount.address, TOKEN_IDS[1]);
+    expect(Number(playerDataUpdated2.achievementsMinted)).to.equal(134);
+
+    const playerDataUpdated3 = await gameSummary1155.connect(playerAccount).getPlayerGameData(playerAccount.address, TOKEN_IDS[2]);
+    expect(Number(playerDataUpdated3.achievementsMinted)).to.equal(75);
+  });
 });
