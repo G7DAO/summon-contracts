@@ -12,6 +12,8 @@ export enum ChainId {
   MantleWadsley = 5001,
   Goerli = 5,
   Ethereum = 1,
+  ZkSync = 324,
+  ZkSyncTestnet = 280,
 }
 
 export enum NetworkName {
@@ -23,6 +25,8 @@ export enum NetworkName {
   Ethereum = 'mainnet',
   Mantle = 'Mantle',
   MantleWadsley = 'MantleWadsley',
+  ZkSync = 'zkSync',
+  ZkSyncTestnet = 'zkSyncTestnet',
 }
 
 export function getTransactionUrl(txHash: string, network: NetworkName): string {
