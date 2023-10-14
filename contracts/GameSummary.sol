@@ -327,7 +327,7 @@ contract GameSummary1155 is ERC1155, AccessControl, ReentrancyGuard {
       revert("You can't burn this token");
     }
     _burn(msg.sender, tokenId, amount);
-    playerGameData[msg.sender][tokenId].achievementsMinted -= amount;
+    playerGameData[msg.sender][tokenId].achievementsMinted = 0;
   }
 
   function burnBatch(uint256[] memory tokenIds, uint256[] memory amounts) public nonReentrant {
@@ -339,7 +339,7 @@ contract GameSummary1155 is ERC1155, AccessControl, ReentrancyGuard {
     }
     _burnBatch(msg.sender, tokenIds, amounts);
     for (uint i = 0; i < tokenIds.length; i++) {
-      playerGameData[msg.sender][tokenIds[i]].achievementsMinted -= amounts[i];
+      playerGameData[msg.sender][tokenIds[i]].achievementsMinted = 0;
     }
   }
 
