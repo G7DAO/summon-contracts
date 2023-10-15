@@ -19,7 +19,20 @@
       "@helpers/*": ["./helpers/*"]
     }
   },
-  "include": ["types", "scripts", "tests", "helpers", "./hardhat.config.ts", "deploy", "scripts", "constants", "helpers"],
+  "include": [
+    "types",
+    "scripts",
+    "tests",
+    "helpers",
+    "./zkSync.config.ts",
+    "./configs/polygon.config.ts",
+    "./configs/hardhat.config.ts",
+    "./configs/mantle.config.ts",
+    "deploy",
+    "scripts",
+    "constants",
+    "helpers"
+  ],
   "exclude": ["**/node_modules"],
   "ts-node": {
     "swc": true,
