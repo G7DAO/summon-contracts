@@ -31,3 +31,6 @@ out
 # zkSync files
 artifacts-zk
 cache-zk
+
+# upgradable stuff
+.upgradable

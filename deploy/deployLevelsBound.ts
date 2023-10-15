@@ -1,12 +1,10 @@
 import { Deployer } from '@matterlabs/hardhat-zksync-deploy';
-import { formatUnits } from 'ethers/lib/utils';
-import { ethers } from 'hardhat';
 import { HardhatRuntimeEnvironment } from 'hardhat/types';
-import { Wallet } from 'zksync-web3';
 
 // TODO: change here if you want to deploy/use to another contract type
 import { LevelsBound } from '../typechain-types';
 import { log } from '@helpers/logger';
+import getWallet from './getWallet';
 
 // load wallet private key from env file
 const PRIVATE_KEY = process.env.PRIVATE_KEY || '';
@@ -18,15 +16,7 @@ if (!PRIVATE_KEY) throw '⛔️ Private key not detected! Add it to the .env fil
 export default async function (hre: HardhatRuntimeEnvironment) {
   log(`Running deploy script for the ${CONTRACT_NAME} featuring ZkSync`);
 
-  // Initialize the wallet.
-  const wallet = new Wallet(PRIVATE_KEY);
-
-  const [account] = await ethers.getSigners();
-  const address = account.address;
-  const balance = await account.getBalance();
-
-  log('Main account address: ', address);
-  log('Main account formatted ETH: ', formatUnits(balance, 'ether'));
+  const wallet = await getWallet(PRIVATE_KEY);
 
   // Create deployer object and load the artifact of the contract you want to deploy.
   const deployer = new Deployer(hre, wallet);
