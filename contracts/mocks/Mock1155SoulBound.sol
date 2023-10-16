@@ -1,0 +1,58 @@
+// SPDX-License-Identifier: UNLICENSED
+///@notice This contract is for mock for WETH token.
+pragma solidity ^0.8.17;
+
+import "@openzeppelin/contracts/token/ERC1155/extensions/ERC1155Burnable.sol";
+import "../ERCSoulBound.sol";
+
+contract Mock1155SoulBound is ERC1155Burnable, ERCSoulBound {
+    constructor() ERC1155("lol://lol/{id}") {}
+
+    // optional soulBound minting
+    function mint(
+        address to,
+        uint256 id,
+        uint256 amount,
+        bool soulBound
+    ) public virtual {
+        _mint(to, id, amount, "");
+        if(soulBound) {
+            _soulBound(to, id, amount);
+        }
+    }
+
+    // optional soulBound batch minting
+    function mintBatch(
+        address to,
+        uint256[] memory ids,
+        uint256[] memory amounts,
+        bool soulBound
+    ) public virtual {
+        _mintBatch(to, ids, amounts, "");
+        if(soulBound) {
+            _soulBoundBatch(to, ids, amounts);
+        }
+    }
+
+    function safeTransferFrom(address _from, address _to, uint256 _id, uint256 _amount, bytes memory _data) soulBoundCheck(_from, _id, _amount) public virtual override {
+        super.safeTransferFrom(_from, _to, _id, _amount, _data);
+    }
+
+    function safeBatchTransferFrom(address _from, address _to, uint256[] memory _ids, uint256[] memory _amounts, bytes memory _data) soulBoundCheckBatch(_from, _ids, _amounts) public virtual override {
+        super.safeBatchTransferFrom(_from, _to, _ids, _amounts, _data);
+    }
+
+    function burn(address to, uint256 tokenId, uint256 amount) public virtual override syncSoulBound(tokenId, amount) {
+        _burn(to, tokenId, amount);
+    }
+
+    function burnBatch(address to, uint256[] memory tokenIds, uint256[] memory amounts) public virtual override syncBatchSoulBound(tokenIds, amounts) {
+        _burnBatch(to, tokenIds, amounts);
+    }
+
+    function supportsInterface(bytes4 interfaceId) public view override(ERC1155) returns (bool) {
+        return super.supportsInterface(interfaceId);
+    }
+
+
+}

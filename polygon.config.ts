@@ -1,6 +1,6 @@
 import defaultConfig from './hardhat.config';
-import { ChainId, NetworkName } from '../constants';
-import { log } from '../helpers/logger';
+import { ChainId, NetworkName } from './constants';
+import { log } from './helpers/logger';
 
 const { PRIVATE_KEY, POLYGONSCAN_API_KEY } = process.env;
 if (!PRIVATE_KEY) {
