@@ -1,6 +1,6 @@
 import defaultConfig from './hardhat.config';
-import { ChainId } from '../constants';
-import { log } from '../helpers/logger';
+import { ChainId } from './constants';
+import { log } from './helpers/logger';
 
 const { PRIVATE_KEY, ETHSCAN_API_KEY } = process.env;
 if (!PRIVATE_KEY) {

@@ -3,7 +3,7 @@ import '@matterlabs/hardhat-zksync-deploy';
 import '@matterlabs/hardhat-zksync-verify';
 import '@matterlabs/hardhat-zksync-upgradable';
 
-import defaultConfig from './configs/hardhat.config';
+import defaultConfig from './hardhat.config';
 import { NetworkName } from './constants';
 import { log } from '@helpers/logger';
 

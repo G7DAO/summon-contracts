@@ -7,8 +7,8 @@ import 'tsconfig-paths/register';
 
 log(`Using Default Hardhat config`);
 
-import { ChainId } from '../constants';
-import { log } from '../helpers/logger';
+import { ChainId } from './constants';
+import { log } from '@helpers/logger';
 dotenv.config();
 
 const { PRIVATE_KEY, DEPLOYER_PRIVATE_KEY, REPORT_GAS, ETHSCAN_API_KEY } = process.env;

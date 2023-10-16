@@ -34,3 +34,6 @@ cache-zk
 
 # upgradable stuff
 .upgradable
+
+# debug-related files
+contracts/contracts-dbg
