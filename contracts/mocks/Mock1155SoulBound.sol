@@ -17,7 +17,7 @@ contract Mock1155SoulBound is ERC1155Burnable, ERCSoulBound {
     ) public virtual {
         _mint(to, id, amount, "");
         if(soulBound) {
-            _soulBound(to, id, amount);
+            _soulbound(to, id, amount);
         }
     }
 
@@ -30,23 +30,23 @@ contract Mock1155SoulBound is ERC1155Burnable, ERCSoulBound {
     ) public virtual {
         _mintBatch(to, ids, amounts, "");
         if(soulBound) {
-            _soulBoundBatch(to, ids, amounts);
+            _soulboundBatch(to, ids, amounts);
         }
     }
 
-    function safeTransferFrom(address _from, address _to, uint256 _id, uint256 _amount, bytes memory _data) soulBoundCheck(_from, _id, _amount) public virtual override {
+    function safeTransferFrom(address _from, address _to, uint256 _id, uint256 _amount, bytes memory _data) soulboundCheck(_from, _id, _amount) public virtual override {
         super.safeTransferFrom(_from, _to, _id, _amount, _data);
     }
 
-    function safeBatchTransferFrom(address _from, address _to, uint256[] memory _ids, uint256[] memory _amounts, bytes memory _data) soulBoundCheckBatch(_from, _ids, _amounts) public virtual override {
+    function safeBatchTransferFrom(address _from, address _to, uint256[] memory _ids, uint256[] memory _amounts, bytes memory _data) soulboundCheckBatch(_from, _ids, _amounts) public virtual override {
         super.safeBatchTransferFrom(_from, _to, _ids, _amounts, _data);
     }
 
-    function burn(address to, uint256 tokenId, uint256 amount) public virtual override syncSoulBound(tokenId, amount) {
+    function burn(address to, uint256 tokenId, uint256 amount) public virtual override syncSoulbound(tokenId, amount) {
         _burn(to, tokenId, amount);
     }
 
-    function burnBatch(address to, uint256[] memory tokenIds, uint256[] memory amounts) public virtual override syncBatchSoulBound(tokenIds, amounts) {
+    function burnBatch(address to, uint256[] memory tokenIds, uint256[] memory amounts) public virtual override syncBatchSoulbound(tokenIds, amounts) {
         _burnBatch(to, tokenIds, amounts);
     }
 

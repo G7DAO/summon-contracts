@@ -29,7 +29,7 @@ describe.only('MockSoulBound', function () {
     await tx.wait();
     expect(await mockSoul721Bound.ownerOf(1)).to.be.eq(playerAccount.address);
     await expect(mockSoul721Bound.connect(playerAccount).transferFrom(playerAccount.address, minterAccount.address, 1)).to.be.revertedWith(
-      'ERCSoulBound: This token is soul bounded'
+      'ERCSoulbound: This token is soul bounded'
     );
   });
 
@@ -40,7 +40,7 @@ describe.only('MockSoulBound', function () {
     await approveTrx.wait();
     await expect(
       mockSoul721Bound.connect(playerAccount)['safeTransferFrom(address,address,uint256)'](playerAccount.address, minterAccount.address, 1)
-    ).to.be.revertedWith('ERCSoulBound: This token is soul bounded');
+    ).to.be.revertedWith('ERCSoulbound: This token is soul bounded');
   });
 
   it('_soulBound - ERC1155 - must bound the token id properly', async function () {
@@ -48,10 +48,10 @@ describe.only('MockSoulBound', function () {
     await tx.wait();
     await expect(
       mockSoul1155Bound.connect(playerAccount).safeTransferFrom(playerAccount.address, minterAccount.address, 1, 1, ethers.utils.toUtf8Bytes(''))
-    ).to.be.revertedWith('ERCSoulBound: The amount of soul bounded tokens  is equal to the amount of tokens to be transferred');
+    ).to.be.revertedWith('ERCSoulbound: The amount of soul bounded tokens  is equal to the amount of tokens to be transferred');
     await expect(
       mockSoul1155Bound.connect(playerAccount).safeTransferFrom(playerAccount.address, minterAccount.address, 1, 0, ethers.utils.toUtf8Bytes(''))
-    ).to.be.revertedWith("ERCSoulBound: can't be zero amount");
+    ).to.be.revertedWith("ERCSoulbound: can't be zero amount");
     const tx2 = await mockSoul1155Bound.mint(playerAccount.address, 1, 5, false);
     await tx2.wait();
     const transferTrx = await mockSoul1155Bound
@@ -78,7 +78,7 @@ describe.only('MockSoulBound', function () {
       mockSoul1155Bound
         .connect(playerAccount)
         .safeBatchTransferFrom(playerAccount.address, minterAccount.address, [1, 2, 3], [1, 2, 3], ethers.utils.toUtf8Bytes(''))
-    ).to.be.revertedWith('ERCSoulBound: The amount of soul bounded tokens  is more than the amount of tokens to be transferred');
+    ).to.be.revertedWith('ERCSoulbound: The amount of soul bounded tokens  is more than the amount of tokens to be transferred');
   });
 
   it('burn - ERC1155 - must burn/sync tokens correctly', async function () {
@@ -95,7 +95,7 @@ describe.only('MockSoulBound', function () {
 
     await expect(
       mockSoul1155Bound.connect(playerAccount).safeTransferFrom(playerAccount.address, minterAccount.address, 1, 4, ethers.utils.toUtf8Bytes(''))
-    ).to.be.revertedWith('ERCSoulBound: The amount of soul bounded tokens  is equal to the amount of tokens to be transferred');
+    ).to.be.revertedWith('ERCSoulbound: The amount of soul bounded tokens  is equal to the amount of tokens to be transferred');
 
     const burnTrx2 = await mockSoul1155Bound.connect(playerAccount).burn(playerAccount.address, 1, 4);
     await burnTrx2.wait();
