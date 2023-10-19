@@ -2,7 +2,7 @@ import { expect } from 'chai';
 // @ts-ignore-next-line
 import { ethers } from 'hardhat';
 import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers';
-import {GameAchievements, GameSummary1155} from '../typechain-types';
+import { GameAchievements, GameSummary1155 } from '../typechain-types';
 import { generateSignature } from '../helpers/signature';
 
 describe('GameSummary1155', function () {
@@ -57,7 +57,7 @@ describe('GameSummary1155', function () {
     await tx.wait();
 
     await expect(
-        gameSummary1155.adminMintGameSummary(playerAccount.address, GAME_ID, randomAchievementIds.length, DEFAULT_STORE_ID, true)
+      gameSummary1155.adminMintGameSummary(playerAccount.address, GAME_ID, randomAchievementIds.length, DEFAULT_STORE_ID, true)
       // @ts-ignore-next-line
     ).to.be.revertedWith('Token already exists');
   });
@@ -70,9 +70,9 @@ describe('GameSummary1155', function () {
     await gameSummary1155.pauseGameSummaryMint();
 
     // @ts-ignore-next-line
-    await expect(gameSummary1155.adminMintGameSummary(playerAccount.address, DEFAULT_GAME_ID + 1, randomAchievementIds.length, DEFAULT_STORE_ID, true)).to.be.revertedWith(
-      'Minting is paused'
-    );
+    await expect(
+      gameSummary1155.adminMintGameSummary(playerAccount.address, DEFAULT_GAME_ID + 1, randomAchievementIds.length, DEFAULT_STORE_ID, true)
+    ).to.be.revertedWith('Minting is paused');
 
     await gameSummary1155.unpauseGameSummaryMint();
 
@@ -93,15 +93,15 @@ describe('GameSummary1155', function () {
       GAME_IDS,
       [randomArrayAchievementsIds1.length, randomArrayAchievementsIds2.length, randomArrayAchievementsIds3.length],
       [DEFAULT_STORE_ID, DEFAULT_STORE_ID, DEFAULT_STORE_ID],
-      [true, false, true],
+      [true, false, true]
     );
     await tx.wait();
 
     for (let i = 0; i < GAME_IDS.length; i++) {
-        const tokenId = `${DEFAULT_STORE_ID}0${GAME_IDS[i]}`;
-        const balance = await gameSummary1155.balanceOf(playerAccount.address, tokenId);
-        const balanceInt = Number(balance);
-        expect(balanceInt).to.equal(1);
+      const tokenId = `${DEFAULT_STORE_ID}0${GAME_IDS[i]}`;
+      const balance = await gameSummary1155.balanceOf(playerAccount.address, tokenId);
+      const balanceInt = Number(balance);
+      expect(balanceInt).to.equal(1);
     }
   });
 
@@ -117,7 +117,14 @@ describe('GameSummary1155', function () {
   });
 
   it('As an User I can get 1 GameSummary that the admin minted per game', async function () {
-    const createCommonGameSummaryTrx = await gameSummary1155.createCommonGameSummary(DEFAULT_STORE_ID, DEFAULT_GAME_ID, 'GameTest1234', 'test://on_chain_uri', 'external_uri', 500);
+    const createCommonGameSummaryTrx = await gameSummary1155.createCommonGameSummary(
+      DEFAULT_STORE_ID,
+      DEFAULT_GAME_ID,
+      'GameTest1234',
+      'test://on_chain_uri',
+      'external_uri',
+      500
+    );
     await createCommonGameSummaryTrx.wait();
     const tx = await gameSummary1155.adminMintGameSummary(playerAccount.address, DEFAULT_GAME_ID, 20, DEFAULT_STORE_ID, true);
     await tx.wait();
@@ -132,7 +139,14 @@ describe('GameSummary1155', function () {
   it('As an User I can get 1 GameSummary that the admin minted per game and check the PlayerData', async function () {
     const PLAYER_ACHIEVEMENTS_LENGTH = 20;
     const TOTAL_ACHIEVEMENTS_IN_GAME = 500;
-    const createCommonGameSummaryTrx = await gameSummary1155.createCommonGameSummary(DEFAULT_STORE_ID, DEFAULT_GAME_ID, 'GameTest1234', 'test://on_chain_uri', 'external_uri', TOTAL_ACHIEVEMENTS_IN_GAME);
+    const createCommonGameSummaryTrx = await gameSummary1155.createCommonGameSummary(
+      DEFAULT_STORE_ID,
+      DEFAULT_GAME_ID,
+      'GameTest1234',
+      'test://on_chain_uri',
+      'external_uri',
+      TOTAL_ACHIEVEMENTS_IN_GAME
+    );
     await createCommonGameSummaryTrx.wait();
     const tx = await gameSummary1155.adminMintGameSummary(playerAccount.address, DEFAULT_GAME_ID, PLAYER_ACHIEVEMENTS_LENGTH, DEFAULT_STORE_ID, true);
     await tx.wait();
@@ -146,7 +160,14 @@ describe('GameSummary1155', function () {
   });
 
   it('If the admin update one GameSummary, everyone will have this update', async function () {
-    const createCommonGameSummaryTrx = await gameSummary1155.createCommonGameSummary(DEFAULT_STORE_ID, DEFAULT_GAME_ID, 'GameTest1234', 'test://on_chain_uri', 'external_uri', 500);
+    const createCommonGameSummaryTrx = await gameSummary1155.createCommonGameSummary(
+      DEFAULT_STORE_ID,
+      DEFAULT_GAME_ID,
+      'GameTest1234',
+      'test://on_chain_uri',
+      'external_uri',
+      500
+    );
     await createCommonGameSummaryTrx.wait();
     const tx = await gameSummary1155.adminMintGameSummary(playerAccount.address, DEFAULT_GAME_ID, 20, DEFAULT_STORE_ID, true);
     await tx.wait();
@@ -175,7 +196,7 @@ describe('GameSummary1155', function () {
     const tx = await gameSummary1155.adminMintGameSummary(playerAccount.address, DEFAULT_GAME_ID, 20, DEFAULT_STORE_ID, true);
     await tx.wait();
     await expect(
-        gameSummary1155
+      gameSummary1155
         .connect(playerAccount)
         .safeTransferFrom(playerAccount.address, minterAccount.address, `${DEFAULT_STORE_ID}0${DEFAULT_GAME_ID}`, 1, ethers.utils.toUtf8Bytes(''))
       // @ts-ignore-next-line
@@ -184,7 +205,7 @@ describe('GameSummary1155', function () {
     // simulating a listing on any marketplace
     await gameSummary1155.setApprovalForAll('0xa5409ec958c83c3f309868babaca7c86dcb077c1', true);
     await expect(
-        gameSummary1155
+      gameSummary1155
         .connect(playerAccount)
         .safeTransferFrom(
           playerAccount.address,
@@ -224,7 +245,7 @@ describe('GameSummary1155', function () {
 
     // must revert because  at least 1 token is an SBT
     await expect(
-        gameSummary1155
+      gameSummary1155
         .connect(playerAccount)
         .safeBatchTransferFrom(playerAccount.address, minterAccount.address, [TOKEN_ID_1, TOKEN_ID_2, TOKEN_ID_3], [1, 1, 1], ethers.utils.toUtf8Bytes(''))
       // @ts-ignore-next-line
@@ -254,7 +275,6 @@ describe('GameSummary1155', function () {
     const burnTx = await gameSummary1155.connect(playerAccount).burn(TOKEN_ID_1, 1);
     await burnTx.wait();
 
-
     const balance = await gameSummary1155.balanceOf(playerAccount.address, TOKEN_ID_1);
     expect(Number(balance)).to.equal(0);
   });
@@ -264,38 +284,39 @@ describe('GameSummary1155', function () {
     const sbt1Trx = await gameSummary1155.adminMintGameSummary(playerAccount.address, DEFAULT_GAME_ID, 1, DEFAULT_STORE_ID, true);
     await sbt1Trx.wait();
     // @ts-ignore-next-line
-    await expect(gameSummary1155.connect(playerAccount).burn(TOKEN_ID_1, 1)).to.be.revertedWith(
-      "You can't burn this token"
-    );
+    await expect(gameSummary1155.connect(playerAccount).burn(TOKEN_ID_1, 1)).to.be.revertedWith("You can't burn this token");
   });
 
-  it('should revert if a non-admin tries to set a signer', async function() {
+  it('should revert if a non-admin tries to set a signer', async function () {
     await expect(gameSummary1155.connect(playerAccount).setSigner(minterAccount.address))
-        // @ts-ignore-next-line
-        .to.be.revertedWith("AccessControl: account 0x70997970c51812dc3a010c7d01b50e0d17dc79c8 is missing role 0x0000000000000000000000000000000000000000000000000000000000000000");
+      // @ts-ignore-next-line
+      .to.be.revertedWith(
+        'AccessControl: account 0x70997970c51812dc3a010c7d01b50e0d17dc79c8 is missing role 0x0000000000000000000000000000000000000000000000000000000000000000'
+      );
   });
 
-  it('should revert if a non-admin tries to remove a signer', async function() {
+  it('should revert if a non-admin tries to remove a signer', async function () {
     await expect(gameSummary1155.connect(playerAccount).removeSigner(minterAccount.address))
-        // @ts-ignore-next-line
-        .to.be.revertedWith("AccessControl: account 0x70997970c51812dc3a010c7d01b50e0d17dc79c8 is missing role 0x0000000000000000000000000000000000000000000000000000000000000000");
+      // @ts-ignore-next-line
+      .to.be.revertedWith(
+        'AccessControl: account 0x70997970c51812dc3a010c7d01b50e0d17dc79c8 is missing role 0x0000000000000000000000000000000000000000000000000000000000000000'
+      );
   });
 
-  it('should return true for supported interfaces', async function() {
-    expect(await gameSummary1155.supportsInterface("0x01ffc9a7")).to.be.true;  // ERC165
-    expect(await gameSummary1155.supportsInterface("0xd9b67a26")).to.be.true;  // ERC1155
+  it('should return true for supported interfaces', async function () {
+    expect(await gameSummary1155.supportsInterface('0x01ffc9a7')).to.be.true; // ERC165
+    expect(await gameSummary1155.supportsInterface('0xd9b67a26')).to.be.true; // ERC1155
   });
 
-  it('should return false for unsupported interfaces', async function() {
-    expect(await gameSummary1155.supportsInterface("0xabcdef12")).to.be.false;
+  it('should return false for unsupported interfaces', async function () {
+    expect(await gameSummary1155.supportsInterface('0xabcdef12')).to.be.false;
   });
 
-  it('should return the correct uri for a given token ID', async function() {
+  it('should return the correct uri for a given token ID', async function () {
     expect(await gameSummary1155.uri(123)).to.equal('https://summon.mypinata.cloud/ipfs/123.json');
   });
 
-
-  it('should allow batch burning of tokens', async function() {
+  it('should allow batch burning of tokens', async function () {
     const TOKEN_ID_1 = `${DEFAULT_STORE_ID}0${DEFAULT_GAME_ID}`;
     const TOKEN_ID_2 = `${DEFAULT_STORE_ID}0${DEFAULT_GAME_ID + 1}`;
     await gameSummary1155.adminMintGameSummary(playerAccount.address, DEFAULT_GAME_ID, 1, DEFAULT_STORE_ID, false);
@@ -310,19 +331,21 @@ describe('GameSummary1155', function () {
     expect(Number(balance2)).to.equal(0);
   });
 
-  it('should revert if the signature is not valid', async function() {
-      await generateSignature({ walletAddress: playerAccount.address, signer: minterAccount });
-      const whitelistTx = await gameSummary1155.setSigner(minterAccount.address);
-      await whitelistTx.wait();
+  it('should revert if the signature is not valid', async function () {
+    await generateSignature({ walletAddress: playerAccount.address, signer: minterAccount });
+    const whitelistTx = await gameSummary1155.setSigner(minterAccount.address);
+    await whitelistTx.wait();
 
-      // incorrect signer
-      const { signature, nonce } = await generateSignature({ walletAddress: minterAccount.address, signer: playerAccount });
+    // incorrect signer
+    const { signature, nonce } = await generateSignature({ walletAddress: minterAccount.address, signer: playerAccount });
 
-      // @ts-ignore-next-line
-      await expect(gameSummary1155.connect(playerAccount).mintGameSummaryWithSignature(DEFAULT_GAME_ID, 20, DEFAULT_STORE_ID, nonce, signature)).to.be.revertedWith('Invalid signature');
+    // @ts-ignore-next-line
+    await expect(
+      gameSummary1155.connect(playerAccount).mintGameSummaryWithSignature(DEFAULT_GAME_ID, 20, DEFAULT_STORE_ID, nonce, signature)
+    ).to.be.revertedWith('Invalid signature');
   });
 
-  it('as admin should update the qty of achievements for a player', async function() {
+  it('as admin should update the qty of achievements for a player', async function () {
     const tx = await gameSummary1155.adminMintGameSummary(playerAccount.address, DEFAULT_GAME_ID, 20, DEFAULT_STORE_ID, true);
     await tx.wait();
 
@@ -331,18 +354,27 @@ describe('GameSummary1155', function () {
 
     const playerDataUpdated = await gameSummary1155.connect(playerAccount).getPlayerGameData(playerAccount.address, `${DEFAULT_STORE_ID}0${DEFAULT_GAME_ID}`);
     expect(Number(playerDataUpdated.achievementsMinted)).to.equal(43);
-
   });
 
-  it('as admin should update the qty of achievements for a player using the batch', async function() {
+  it('as admin should update the qty of achievements for a player using the batch', async function () {
     const GAME_IDS = [100, 234, 255];
 
     const TOKEN_IDS = GAME_IDS.map((gameId) => `${DEFAULT_STORE_ID}0${gameId}`);
 
-    const tx = await gameSummary1155.adminBatchMintGameSummary([playerAccount.address, playerAccount.address, playerAccount.address], GAME_IDS, [20, 44, 55], [DEFAULT_STORE_ID, DEFAULT_STORE_ID, DEFAULT_STORE_ID], [true, true, true])
+    const tx = await gameSummary1155.adminBatchMintGameSummary(
+      [playerAccount.address, playerAccount.address, playerAccount.address],
+      GAME_IDS,
+      [20, 44, 55],
+      [DEFAULT_STORE_ID, DEFAULT_STORE_ID, DEFAULT_STORE_ID],
+      [true, true, true]
+    );
     await tx.wait();
 
-    const updateTx = await gameSummary1155.adminBatchPlayerUpdateAchievements([playerAccount.address, playerAccount.address, playerAccount.address], TOKEN_IDS, [1, 2, 3]);
+    const updateTx = await gameSummary1155.adminBatchPlayerUpdateAchievements(
+      [playerAccount.address, playerAccount.address, playerAccount.address],
+      TOKEN_IDS,
+      [1, 2, 3]
+    );
     await updateTx.wait();
 
     const playerDataUpdated = await gameSummary1155.connect(playerAccount).getPlayerGameData(playerAccount.address, TOKEN_IDS[0]);
@@ -353,10 +385,9 @@ describe('GameSummary1155', function () {
 
     const playerDataUpdated3 = await gameSummary1155.connect(playerAccount).getPlayerGameData(playerAccount.address, TOKEN_IDS[2]);
     expect(Number(playerDataUpdated3.achievementsMinted)).to.equal(58);
-
   });
 
-  it('should update the qty of achievements for a player using the signature', async function() {
+  it('should update the qty of achievements for a player using the signature', async function () {
     const { signature, nonce } = await generateSignature({ walletAddress: playerAccount.address, signer: minterAccount });
     const whitelistTx = await gameSummary1155.setSigner(minterAccount.address);
     await whitelistTx.wait();
@@ -364,15 +395,16 @@ describe('GameSummary1155', function () {
     const tx = await gameSummary1155.connect(playerAccount).mintGameSummaryWithSignature(DEFAULT_GAME_ID, 20, DEFAULT_STORE_ID, nonce, signature);
     await tx.wait();
 
-    const updateTx = await gameSummary1155.connect(playerAccount).updatePlayerAchievementsWithSignature(`${DEFAULT_STORE_ID}0${DEFAULT_GAME_ID}`, 23, nonce, signature);
+    const updateTx = await gameSummary1155
+      .connect(playerAccount)
+      .updatePlayerAchievementsWithSignature(`${DEFAULT_STORE_ID}0${DEFAULT_GAME_ID}`, 23, nonce, signature);
     await updateTx.wait();
 
     const playerDataUpdated = await gameSummary1155.connect(playerAccount).getPlayerGameData(playerAccount.address, `${DEFAULT_STORE_ID}0${DEFAULT_GAME_ID}`);
     expect(Number(playerDataUpdated.achievementsMinted)).to.equal(43);
   });
 
-  it('the batchUpdate using the signature should works as expected', async function() {
-
+  it('the batchUpdate using the signature should works as expected', async function () {
     const GAME_IDS = [100, 234, 255];
 
     const TOKEN_IDS = GAME_IDS.map((gameId) => `${DEFAULT_STORE_ID}0${gameId}`);
@@ -381,7 +413,9 @@ describe('GameSummary1155', function () {
     const whitelistTx = await gameSummary1155.setSigner(minterAccount.address);
     await whitelistTx.wait();
 
-    const tx = await gameSummary1155.connect(playerAccount).batchMintGameSummaryWithSignature(GAME_IDS, [20, 44, 55], [DEFAULT_STORE_ID, DEFAULT_STORE_ID, DEFAULT_STORE_ID], nonce, signature)
+    const tx = await gameSummary1155
+      .connect(playerAccount)
+      .batchMintGameSummaryWithSignature(GAME_IDS, [20, 44, 55], [DEFAULT_STORE_ID, DEFAULT_STORE_ID, DEFAULT_STORE_ID], nonce, signature);
     await tx.wait();
 
     const gameData = await gameSummary1155.connect(playerAccount).getPlayerGamesData(playerAccount.address, TOKEN_IDS);
@@ -398,5 +432,15 @@ describe('GameSummary1155', function () {
 
     const playerDataUpdated3 = await gameSummary1155.connect(playerAccount).getPlayerGameData(playerAccount.address, TOKEN_IDS[2]);
     expect(Number(playerDataUpdated3.achievementsMinted)).to.equal(75);
+  });
+
+  it("As admin or user minting shouldn't have collisions between ids", async function () {
+    const GAME_ID = 110011;
+    const STORE_ID = 10101010;
+    const tokenID = `${STORE_ID}0${GAME_ID}`;
+    const tx = await gameSummary1155.adminMintGameSummary(playerAccount.address, GAME_ID, 20, STORE_ID, true);
+    await tx.wait();
+    const balanceBN = await gameSummary1155.connect(playerAccount).balanceOf(playerAccount.address, tokenID);
+    expect(Number(balanceBN)).to.equal(1);
   });
 });

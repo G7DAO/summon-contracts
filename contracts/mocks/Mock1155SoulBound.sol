@@ -53,6 +53,4 @@ contract Mock1155SoulBound is ERC1155Burnable, ERCSoulBound {
     function supportsInterface(bytes4 interfaceId) public view override(ERC1155) returns (bool) {
         return super.supportsInterface(interfaceId);
     }
-
-
 }

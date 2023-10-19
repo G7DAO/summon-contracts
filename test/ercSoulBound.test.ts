@@ -4,7 +4,7 @@ import { ethers } from 'hardhat';
 import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers';
 import { Mock1155SoulBound, Mock721SoulBound } from '../typechain-types';
 
-describe.only('MockSoulBound', function () {
+describe('MockSoulBound', function () {
   let mockSoul1155Bound: Mock1155SoulBound;
   let mockSoul721Bound: Mock721SoulBound;
   let minterAccount: SignerWithAddress;
