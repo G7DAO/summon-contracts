@@ -10,10 +10,32 @@ contract LevelsBound is ERC1155, Ownable, ReentrancyGuard {
 
   constructor() ERC1155("no/{uri}") {}
 
-  function mintLevel(address account, uint256 level) onlyOwner public {
+  function mintLevel(address account, uint256 level) private onlyOwner {
     // check the balance of the account before minting twice
-    require(balanceOf(account, level) == 0, "User already has this level token");
     _mint(account, level, 1, "");
+  }
+
+  function levelUp(address account, uint256 newLevel) public onlyOwner {
+    require(newLevel > 0, "New level must be greater than 0");
+    // check if the user has the previous lvl token
+    require(balanceOf(account, newLevel) == 0, "Player already has this level token");
+
+    if(newLevel == 1) {
+      mintLevel(account, newLevel);
+      return;
+    }
+
+    uint oldLevel = newLevel - 1;
+
+    // check if the user has the previous lvl token
+    require(balanceOf(account, oldLevel) == 1, "Player does not have the previous level token");
+
+    // check if the "lvl up" actually is a "lvl down"
+    require(balanceOf(account, oldLevel) < newLevel, "Is not possible to do lvl down");
+
+    // Burn the old token
+    burnLevel(account, oldLevel);
+    mintLevel(account, newLevel);
   }
 
   function safeTransferFrom(address _from, address _to, uint256 _id, uint256 _amount, bytes memory _data) public virtual override {
@@ -24,6 +46,10 @@ contract LevelsBound is ERC1155, Ownable, ReentrancyGuard {
   function safeBatchTransferFrom(address _from, address _to, uint256[] memory _ids, uint256[] memory _amounts, bytes memory _data) public virtual override {
     revert("You can't transfer this token");
     super.safeBatchTransferFrom(_from, _to, _ids, _amounts, _data);
+  }
+
+  function burnLevel(address account, uint256 tokenId) public onlyOwner {
+    _burn(account, tokenId, 1);
   }
 
   function burn(uint256 tokenId, uint256 amount) public nonReentrant {
