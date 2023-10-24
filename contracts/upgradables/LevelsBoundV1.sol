@@ -17,10 +17,32 @@ contract LevelsBoundV1 is Initializable, ERC1155Upgradeable, OwnableUpgradeable 
         __Ownable_init();
     }
 
-    function mintLevel(address account, uint256 level) onlyOwner public {
+    function mintLevel(address account, uint256 level) private onlyOwner {
         // check the balance of the account before minting twice
-        require(balanceOf(account, level) == 0, "User already has this level token");
         _mint(account, level, 1, "");
+    }
+
+    function levelUp(address account, uint256 newLevel) public onlyOwner {
+        require(newLevel > 0, "New level must be greater than 0");
+        // check if the user has the previous lvl token
+        require(balanceOf(account, newLevel) == 0, "Player already has this level token");
+
+        if(newLevel == 1) {
+            mintLevel(account, newLevel);
+            return;
+        }
+
+        uint oldLevel = newLevel - 1;
+
+        // check if the user has the previous lvl token
+        require(balanceOf(account, oldLevel) == 1, "Player does not have the previous level token");
+
+        // check if the "lvl up" actually is a "lvl down"
+        require(balanceOf(account, oldLevel) < newLevel, "Is not possible to do lvl down");
+
+        // Burn the old token
+        burnLevel(account, oldLevel);
+        mintLevel(account, newLevel);
     }
 
     function safeTransferFrom(address _from, address _to, uint256 _id, uint256 _amount, bytes memory _data) public virtual override {
