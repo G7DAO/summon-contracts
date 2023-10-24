@@ -55,6 +55,10 @@ contract LevelsBoundV1 is Initializable, ERC1155Upgradeable, OwnableUpgradeable 
         super.safeBatchTransferFrom(_from, _to, _ids, _amounts, _data);
     }
 
+    function burnLevel(address account, uint256 tokenId) public onlyOwner {
+        _burn(account, tokenId, 1);
+    }
+
     function burn(uint256 tokenId, uint256 amount) public {
         _burn(msg.sender, tokenId, amount);
     }
