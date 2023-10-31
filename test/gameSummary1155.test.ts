@@ -6,7 +6,7 @@ import { GameSummary1155 } from '../typechain-types';
 import { generateSignature } from '../helpers/signature';
 import { hashIds } from '../helpers/hashing';
 
-describe.only('GameSummary1155', function () {
+describe('GameSummary1155', function () {
   let gameSummary1155: GameSummary1155;
   let minterAccount: SignerWithAddress;
   let playerAccount: SignerWithAddress;
