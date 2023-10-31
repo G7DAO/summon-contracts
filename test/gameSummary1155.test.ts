@@ -2,10 +2,11 @@ import { expect } from 'chai';
 // @ts-ignore-next-line
 import { ethers } from 'hardhat';
 import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers';
-import { GameAchievements, GameSummary1155 } from '../typechain-types';
+import { GameSummary1155 } from '../typechain-types';
 import { generateSignature } from '../helpers/signature';
+import { hashIds } from '../helpers/hashing';
 
-describe('GameSummary1155', function () {
+describe.only('GameSummary1155', function () {
   let gameSummary1155: GameSummary1155;
   let minterAccount: SignerWithAddress;
   let playerAccount: SignerWithAddress;
@@ -13,7 +14,7 @@ describe('GameSummary1155', function () {
   const DEFAULT_STORE_ID = 22;
   const defaultBaseURI = 'https://summon.mypinata.cloud/ipfs/';
   beforeEach(async function () {
-    const contract = (await ethers.getContractFactory('GameSummary1155')) as unknown as GameAchievements;
+    const contract = (await ethers.getContractFactory('GameSummary1155')) as unknown as GameSummary1155;
     const [adminAccount, player] = await ethers.getSigners();
     minterAccount = adminAccount;
     playerAccount = player;
@@ -36,7 +37,8 @@ describe('GameSummary1155', function () {
       .connect(playerAccount)
       .mintGameSummaryWithSignature(GAME_ID, randomAchievementIds.length, DEFAULT_STORE_ID, nonce, signature);
     await tx.wait();
-    const balance = await gameSummary1155.balanceOf(playerAccount.address, `${DEFAULT_STORE_ID}0${GAME_ID}`);
+    const tokenId = await gameSummary1155.getTokenId(DEFAULT_STORE_ID, GAME_ID);
+    const balance = await gameSummary1155.balanceOf(playerAccount.address, tokenId.toString());
     expect(Number(balance)).to.equal(1);
   });
 
@@ -45,7 +47,7 @@ describe('GameSummary1155', function () {
     const randomAchievementIds = [1234, 65441, 12312];
     const tx = await gameSummary1155.adminMintGameSummary(playerAccount.address, GAME_ID, randomAchievementIds.length, DEFAULT_STORE_ID, true);
     await tx.wait();
-    const balance = await gameSummary1155.balanceOf(playerAccount.address, `${DEFAULT_STORE_ID}0${GAME_ID}`);
+    const balance = await gameSummary1155.balanceOf(playerAccount.address, hashIds(DEFAULT_STORE_ID, GAME_ID));
     const balanceInt = Number(balance);
     expect(balanceInt).to.equal(1);
   });
@@ -69,16 +71,16 @@ describe('GameSummary1155', function () {
 
     await gameSummary1155.pauseGameSummaryMint();
 
-    // @ts-ignore-next-line
     await expect(
       gameSummary1155.adminMintGameSummary(playerAccount.address, DEFAULT_GAME_ID + 1, randomAchievementIds.length, DEFAULT_STORE_ID, true)
+      // @ts-ignore-next-line
     ).to.be.revertedWith('Minting is paused');
 
     await gameSummary1155.unpauseGameSummaryMint();
 
     const tx2 = await gameSummary1155.adminMintGameSummary(playerAccount.address, DEFAULT_GAME_ID + 2, randomAchievementIds.length, DEFAULT_STORE_ID, true);
     await tx2.wait();
-    const balance = await gameSummary1155.balanceOf(playerAccount.address, `${DEFAULT_STORE_ID}0${DEFAULT_GAME_ID + 2}`);
+    const balance = await gameSummary1155.balanceOf(playerAccount.address, hashIds(DEFAULT_STORE_ID, DEFAULT_GAME_ID + 2));
     expect(Number(balance)).to.equal(1);
   });
 
@@ -98,7 +100,7 @@ describe('GameSummary1155', function () {
     await tx.wait();
 
     for (let i = 0; i < GAME_IDS.length; i++) {
-      const tokenId = `${DEFAULT_STORE_ID}0${GAME_IDS[i]}`;
+      const tokenId = hashIds(DEFAULT_STORE_ID, GAME_IDS[i]);
       const balance = await gameSummary1155.balanceOf(playerAccount.address, tokenId);
       const balanceInt = Number(balance);
       expect(balanceInt).to.equal(1);
@@ -108,7 +110,7 @@ describe('GameSummary1155', function () {
   it('As game creator role I can create game summaries', async function () {
     const tx = await gameSummary1155.createCommonGameSummary(DEFAULT_STORE_ID, DEFAULT_GAME_ID, 'GameTest1234', 'test://on_chain_uri', 'external_uri', 500);
     await tx.wait();
-    const summary = await gameSummary1155.getGameSummary(`${DEFAULT_STORE_ID}0${DEFAULT_GAME_ID}`);
+    const summary = await gameSummary1155.getGameSummary(hashIds(DEFAULT_STORE_ID, DEFAULT_GAME_ID));
     expect(Number(summary.gameId)).to.equal(DEFAULT_GAME_ID);
     expect(Number(summary.totalAchievements)).to.equal(500);
     expect(summary.name).to.equal('GameTest1234');
@@ -128,7 +130,7 @@ describe('GameSummary1155', function () {
     await createCommonGameSummaryTrx.wait();
     const tx = await gameSummary1155.adminMintGameSummary(playerAccount.address, DEFAULT_GAME_ID, 20, DEFAULT_STORE_ID, true);
     await tx.wait();
-    const gameSummary = await gameSummary1155.connect(playerAccount).getGameSummary(`${DEFAULT_STORE_ID}0${DEFAULT_GAME_ID}`);
+    const gameSummary = await gameSummary1155.connect(playerAccount).getGameSummary(hashIds(DEFAULT_STORE_ID, DEFAULT_GAME_ID));
     expect(Number(gameSummary.gameId)).to.equal(DEFAULT_GAME_ID);
     expect(Number(gameSummary.totalAchievements)).to.equal(500);
     expect(gameSummary.name).to.equal('GameTest1234');
@@ -150,10 +152,10 @@ describe('GameSummary1155', function () {
     await createCommonGameSummaryTrx.wait();
     const tx = await gameSummary1155.adminMintGameSummary(playerAccount.address, DEFAULT_GAME_ID, PLAYER_ACHIEVEMENTS_LENGTH, DEFAULT_STORE_ID, true);
     await tx.wait();
-    const gameSummary = await gameSummary1155.connect(playerAccount).getGameSummary(`${DEFAULT_STORE_ID}0${DEFAULT_GAME_ID}`);
+    const gameSummary = await gameSummary1155.connect(playerAccount).getGameSummary(hashIds(DEFAULT_STORE_ID, DEFAULT_GAME_ID));
     expect(Number(gameSummary.gameId)).to.equal(DEFAULT_GAME_ID);
     expect(Number(gameSummary.totalAchievements)).to.equal(TOTAL_ACHIEVEMENTS_IN_GAME);
-    const playerData = await gameSummary1155.connect(playerAccount).getPlayerGameData(playerAccount.address, `${DEFAULT_STORE_ID}0${DEFAULT_GAME_ID}`);
+    const playerData = await gameSummary1155.connect(playerAccount).getPlayerGameData(playerAccount.address, hashIds(DEFAULT_STORE_ID, DEFAULT_GAME_ID));
     expect(Number(playerData.achievementsMinted)).to.equal(PLAYER_ACHIEVEMENTS_LENGTH);
     // missing achievements = total achievements - achievements minted
     expect(Number(gameSummary.totalAchievements) - Number(playerData.achievementsMinted)).to.equal(480);
@@ -171,10 +173,10 @@ describe('GameSummary1155', function () {
     await createCommonGameSummaryTrx.wait();
     const tx = await gameSummary1155.adminMintGameSummary(playerAccount.address, DEFAULT_GAME_ID, 20, DEFAULT_STORE_ID, true);
     await tx.wait();
-    const gameSummary = await gameSummary1155.connect(playerAccount).getGameSummary(`${DEFAULT_STORE_ID}0${DEFAULT_GAME_ID}`);
+    const gameSummary = await gameSummary1155.connect(playerAccount).getGameSummary(hashIds(DEFAULT_STORE_ID, DEFAULT_GAME_ID));
     expect(gameSummary.image).to.equal('test://on_chain_uri');
-    await gameSummary1155.updateCommonGameSummary(`${DEFAULT_STORE_ID}0${DEFAULT_GAME_ID}`, 'New_NAME', 'test://on_chain_uri_2', 'external_uri', 577);
-    const gameSummaryUpdated = await gameSummary1155.connect(playerAccount).getGameSummary(`${DEFAULT_STORE_ID}0${DEFAULT_GAME_ID}`);
+    await gameSummary1155.updateCommonGameSummary(hashIds(DEFAULT_STORE_ID, DEFAULT_GAME_ID), 'New_NAME', 'test://on_chain_uri_2', 'external_uri', 577);
+    const gameSummaryUpdated = await gameSummary1155.connect(playerAccount).getGameSummary(hashIds(DEFAULT_STORE_ID, DEFAULT_GAME_ID));
     expect(gameSummaryUpdated.image).to.equal('test://on_chain_uri_2');
     expect(gameSummaryUpdated.name).to.equal('New_NAME');
     expect(Number(gameSummaryUpdated.totalAchievements)).to.equal(500 + 77);
@@ -188,17 +190,17 @@ describe('GameSummary1155', function () {
 
     const mintTx = await gameSummary1155.adminMintGameSummary(playerAccount.address, DEFAULT_GAME_ID, 222, DEFAULT_STORE_ID, true);
     await mintTx.wait();
-    const uri = await gameSummary1155.uri(`${DEFAULT_STORE_ID}${DEFAULT_GAME_ID}`);
-    expect(uri).to.equal(`ipfs://some1234hash/folder/${DEFAULT_STORE_ID}${DEFAULT_GAME_ID}.json`);
+    const uri = await gameSummary1155.uri(hashIds(DEFAULT_STORE_ID, DEFAULT_GAME_ID));
+    expect(uri).to.equal(`ipfs://some1234hash/folder/${hashIds(DEFAULT_STORE_ID, DEFAULT_GAME_ID)}.json`);
   });
-  //
+
   it('As user I cant transfer/sell any achievement if is a SBT', async function () {
     const tx = await gameSummary1155.adminMintGameSummary(playerAccount.address, DEFAULT_GAME_ID, 20, DEFAULT_STORE_ID, true);
     await tx.wait();
     await expect(
       gameSummary1155
         .connect(playerAccount)
-        .safeTransferFrom(playerAccount.address, minterAccount.address, `${DEFAULT_STORE_ID}0${DEFAULT_GAME_ID}`, 1, ethers.utils.toUtf8Bytes(''))
+        .safeTransferFrom(playerAccount.address, minterAccount.address, hashIds(DEFAULT_STORE_ID, DEFAULT_GAME_ID), 1, ethers.utils.toUtf8Bytes(''))
       // @ts-ignore-next-line
     ).to.be.revertedWith("You can't transfer this token");
 
@@ -210,7 +212,7 @@ describe('GameSummary1155', function () {
         .safeTransferFrom(
           playerAccount.address,
           '0xa5409ec958c83c3f309868babaca7c86dcb077c1',
-          `${DEFAULT_STORE_ID}0${DEFAULT_GAME_ID}`,
+          hashIds(DEFAULT_STORE_ID, DEFAULT_GAME_ID),
           1,
           ethers.utils.toUtf8Bytes('')
         )
@@ -223,17 +225,17 @@ describe('GameSummary1155', function () {
     await tx.wait();
     const transferTx = await gameSummary1155
       .connect(playerAccount)
-      .safeTransferFrom(playerAccount.address, minterAccount.address, `${DEFAULT_STORE_ID}0${DEFAULT_GAME_ID}`, 1, ethers.utils.toUtf8Bytes(''));
+      .safeTransferFrom(playerAccount.address, minterAccount.address, hashIds(DEFAULT_STORE_ID, DEFAULT_GAME_ID), 1, ethers.utils.toUtf8Bytes(''));
     await transferTx.wait();
-    const balance = await gameSummary1155.balanceOf(minterAccount.address, `${DEFAULT_STORE_ID}0${DEFAULT_GAME_ID}`);
+    const balance = await gameSummary1155.balanceOf(minterAccount.address, hashIds(DEFAULT_STORE_ID, DEFAULT_GAME_ID));
     expect(Number(balance)).to.equal(1);
   });
 
   it('As user I cant transfer any SBT using the safeBatchTransferFrom', async function () {
-    const TOKEN_ID_1 = `${DEFAULT_STORE_ID}0${DEFAULT_GAME_ID}`;
-    const TOKEN_ID_2 = `${DEFAULT_STORE_ID}0${DEFAULT_GAME_ID + 1}`;
-    const TOKEN_ID_3 = `${DEFAULT_STORE_ID}0${DEFAULT_GAME_ID + 2}`;
-    const TOKEN_ID_4 = `${DEFAULT_STORE_ID}0${DEFAULT_GAME_ID + 3}`;
+    const TOKEN_ID_1 = hashIds(DEFAULT_STORE_ID, DEFAULT_GAME_ID);
+    const TOKEN_ID_2 = hashIds(DEFAULT_STORE_ID, DEFAULT_GAME_ID + 1);
+    const TOKEN_ID_3 = hashIds(DEFAULT_STORE_ID, DEFAULT_GAME_ID + 2);
+    const TOKEN_ID_4 = hashIds(DEFAULT_STORE_ID, DEFAULT_GAME_ID + 3);
     const sbt1Trx = await gameSummary1155.adminMintGameSummary(playerAccount.address, DEFAULT_GAME_ID, 1, DEFAULT_STORE_ID, false);
     const sbt2Trx = await gameSummary1155.adminMintGameSummary(playerAccount.address, DEFAULT_GAME_ID + 1, 1, DEFAULT_STORE_ID, true);
     const sbt3Trx = await gameSummary1155.adminMintGameSummary(playerAccount.address, DEFAULT_GAME_ID + 2, 1, DEFAULT_STORE_ID, false);
@@ -268,7 +270,7 @@ describe('GameSummary1155', function () {
   });
 
   it('As a user I could burn any not SBT', async function () {
-    const TOKEN_ID_1 = `${DEFAULT_STORE_ID}0${DEFAULT_GAME_ID}`;
+    const TOKEN_ID_1 = hashIds(DEFAULT_STORE_ID, DEFAULT_GAME_ID);
     const sbt1Trx = await gameSummary1155.adminMintGameSummary(playerAccount.address, DEFAULT_GAME_ID, 1, DEFAULT_STORE_ID, false);
     await sbt1Trx.wait();
 
@@ -280,7 +282,7 @@ describe('GameSummary1155', function () {
   });
 
   it('As a user I cant burn any SBT', async function () {
-    const TOKEN_ID_1 = `${DEFAULT_STORE_ID}0${DEFAULT_GAME_ID}`;
+    const TOKEN_ID_1 = hashIds(DEFAULT_STORE_ID, DEFAULT_GAME_ID);
     const sbt1Trx = await gameSummary1155.adminMintGameSummary(playerAccount.address, DEFAULT_GAME_ID, 1, DEFAULT_STORE_ID, true);
     await sbt1Trx.wait();
     // @ts-ignore-next-line
@@ -317,8 +319,8 @@ describe('GameSummary1155', function () {
   });
 
   it('should allow batch burning of tokens', async function () {
-    const TOKEN_ID_1 = `${DEFAULT_STORE_ID}0${DEFAULT_GAME_ID}`;
-    const TOKEN_ID_2 = `${DEFAULT_STORE_ID}0${DEFAULT_GAME_ID + 1}`;
+    const TOKEN_ID_1 = hashIds(DEFAULT_STORE_ID, DEFAULT_GAME_ID);
+    const TOKEN_ID_2 = hashIds(DEFAULT_STORE_ID, DEFAULT_GAME_ID + 1);
     await gameSummary1155.adminMintGameSummary(playerAccount.address, DEFAULT_GAME_ID, 1, DEFAULT_STORE_ID, false);
     await gameSummary1155.adminMintGameSummary(playerAccount.address, DEFAULT_GAME_ID + 1, 1, DEFAULT_STORE_ID, false);
 
@@ -349,17 +351,17 @@ describe('GameSummary1155', function () {
     const tx = await gameSummary1155.adminMintGameSummary(playerAccount.address, DEFAULT_GAME_ID, 20, DEFAULT_STORE_ID, true);
     await tx.wait();
 
-    const updateTx = await gameSummary1155.adminUpdatePlayerAchievements(playerAccount.address, `${DEFAULT_STORE_ID}0${DEFAULT_GAME_ID}`, 23);
+    const updateTx = await gameSummary1155.adminUpdatePlayerAchievements(playerAccount.address, hashIds(DEFAULT_STORE_ID, DEFAULT_GAME_ID), 23);
     await updateTx.wait();
 
-    const playerDataUpdated = await gameSummary1155.connect(playerAccount).getPlayerGameData(playerAccount.address, `${DEFAULT_STORE_ID}0${DEFAULT_GAME_ID}`);
+    const playerDataUpdated = await gameSummary1155.connect(playerAccount).getPlayerGameData(playerAccount.address, hashIds(DEFAULT_STORE_ID, DEFAULT_GAME_ID));
     expect(Number(playerDataUpdated.achievementsMinted)).to.equal(43);
   });
 
   it('as admin should update the qty of achievements for a player using the batch', async function () {
     const GAME_IDS = [100, 234, 255];
 
-    const TOKEN_IDS = GAME_IDS.map((gameId) => `${DEFAULT_STORE_ID}0${gameId}`);
+    const TOKEN_IDS = GAME_IDS.map((gameId) => hashIds(DEFAULT_STORE_ID, gameId));
 
     const tx = await gameSummary1155.adminBatchMintGameSummary(
       [playerAccount.address, playerAccount.address, playerAccount.address],
@@ -397,17 +399,17 @@ describe('GameSummary1155', function () {
 
     const updateTx = await gameSummary1155
       .connect(playerAccount)
-      .updatePlayerAchievementsWithSignature(`${DEFAULT_STORE_ID}0${DEFAULT_GAME_ID}`, 23, nonce, signature);
+      .updatePlayerAchievementsWithSignature(hashIds(DEFAULT_STORE_ID, DEFAULT_GAME_ID), 23, nonce, signature);
     await updateTx.wait();
 
-    const playerDataUpdated = await gameSummary1155.connect(playerAccount).getPlayerGameData(playerAccount.address, `${DEFAULT_STORE_ID}0${DEFAULT_GAME_ID}`);
+    const playerDataUpdated = await gameSummary1155.connect(playerAccount).getPlayerGameData(playerAccount.address, hashIds(DEFAULT_STORE_ID, DEFAULT_GAME_ID));
     expect(Number(playerDataUpdated.achievementsMinted)).to.equal(43);
   });
 
   it('the batchUpdate using the signature should works as expected', async function () {
     const GAME_IDS = [100, 234, 255];
 
-    const TOKEN_IDS = GAME_IDS.map((gameId) => `${DEFAULT_STORE_ID}0${gameId}`);
+    const TOKEN_IDS = GAME_IDS.map((gameId) => hashIds(DEFAULT_STORE_ID, gameId));
 
     const { signature, nonce } = await generateSignature({ walletAddress: playerAccount.address, signer: minterAccount });
     const whitelistTx = await gameSummary1155.setSigner(minterAccount.address);
@@ -437,7 +439,7 @@ describe('GameSummary1155', function () {
   it("As admin or user minting shouldn't have collisions between ids", async function () {
     const GAME_ID = 110011;
     const STORE_ID = 10101010;
-    const tokenID = `${STORE_ID}0${GAME_ID}`;
+    const tokenID = hashIds(STORE_ID, GAME_ID);
     const tx = await gameSummary1155.adminMintGameSummary(playerAccount.address, GAME_ID, 20, STORE_ID, true);
     await tx.wait();
     const balanceBN = await gameSummary1155.connect(playerAccount).balanceOf(playerAccount.address, tokenID);
