@@ -42,11 +42,11 @@ contract Mock1155SoulBound is ERC1155Burnable, ERCSoulBound {
         super.safeBatchTransferFrom(_from, _to, _ids, _amounts, _data);
     }
 
-    function burn(address to, uint256 tokenId, uint256 amount) public virtual override syncSoulbound(tokenId, amount) {
+    function burn(address to, uint256 tokenId, uint256 amount) public virtual override syncSoulbound(to, tokenId, amount) {
         _burn(to, tokenId, amount);
     }
 
-    function burnBatch(address to, uint256[] memory tokenIds, uint256[] memory amounts) public virtual override syncBatchSoulbound(tokenIds, amounts) {
+    function burnBatch(address to, uint256[] memory tokenIds, uint256[] memory amounts) public virtual override syncBatchSoulbound(to, tokenIds, amounts) {
         _burnBatch(to, tokenIds, amounts);
     }
 
