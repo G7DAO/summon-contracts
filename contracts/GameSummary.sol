@@ -61,13 +61,9 @@ contract GameSummary1155 is ERC1155, AccessControl, ReentrancyGuard {
     _grantRole(DEFAULT_ADMIN_ROLE, msg.sender);
   }
 
-  function concat(uint256 storeId, uint256 gameId) private pure returns (uint256) {
-    string memory gameIdStr = Strings.toString(gameId);
-    string memory storeIdStr = Strings.toString(storeId);
-    string memory zero = "0";
-    string memory concatenatedString = string(abi.encodePacked(storeIdStr, zero, gameIdStr));
-    uint256 concatenatedUint = stringToUint(concatenatedString);
-    return concatenatedUint;
+  function getTokenId(uint256 storeId, uint256 gameId) public pure returns (uint256) {
+    uint256 tokenId = uint256(keccak256(abi.encode(storeId, gameId)));
+    return tokenId;
   }
 
   function stringToUint(string memory s) private pure returns (uint256) {
@@ -204,7 +200,7 @@ contract GameSummary1155 is ERC1155, AccessControl, ReentrancyGuard {
   ) public onlyRole(GAME_CREATOR_ROLE) {
     require(gameId > 0, "GameId must be greater than 0");
     require(storeId > 0, "StoreId must be greater than 0");
-    uint256 tokenId = concat(storeId, gameId);
+    uint256 tokenId = getTokenId(storeId, gameId);
     require(commonGameSummaries[tokenId].storeId == 0, "Token already exists");
     commonGameSummaries[tokenId] = GameSummary(storeId, gameId, name, onChainURI, externalURI, totalAchievements);
     emit GameSummaryMinted(msg.sender, tokenId, totalAchievements);
@@ -218,7 +214,7 @@ contract GameSummary1155 is ERC1155, AccessControl, ReentrancyGuard {
     bool soulBound
   ) private {
     require(storeId > 0, "StoreId must be greater than 0");
-    uint256 tokenId = concat(storeId, gameId);
+    uint256 tokenId = getTokenId(storeId, gameId);
     require(playerGameData[player][tokenId].tokenId == 0, "Token already exists");
     _mint(player, tokenId, 1, "");
     playerGameData[player][tokenId] = PlayerGameData(tokenId, achievementsLength, soulBound);

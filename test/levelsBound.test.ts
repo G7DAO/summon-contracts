@@ -5,7 +5,7 @@ import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers';
 import { GameAchievements, GameSummary1155, LevelsBound } from '../typechain-types';
 import { generateSignature } from '../helpers/signature';
 
-describe.only('LevelsBound', function () {
+describe('LevelsBound', function () {
   let levelsBound: LevelsBound;
   let minterAccount: SignerWithAddress;
   let playerAccount: SignerWithAddress;
