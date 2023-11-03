@@ -1,7 +1,7 @@
-export const Game7BadgesArgs = {
+export const SoulBoundBadgesArgs = {
   MAINNET: {
-    name: 'Game7Badges',
-    symbol: 'G7SB',
+    name: 'SoulBoundBadges',
+    symbol: 'SBB',
     baseURI: 'https://api.mysoulbound.com/tokens/',
     maxPerMint: 1,
     isPaused: true,

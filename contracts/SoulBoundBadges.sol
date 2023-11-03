@@ -12,7 +12,7 @@ error TokenNotExist();
 error AlreadyMinted();
 error ExceedMaxMint();
 
-contract Game7Badges is ERC1155Burnable, ERCSoulBound, AccessControl, Pausable {
+contract SoulBoundBadges is ERC1155Burnable, ERCSoulBound, AccessControl, Pausable {
     bytes32 public constant MINTER_ROLE = keccak256("MINTER_ROLE");
     bytes32 public constant MANAGER_ROLE = keccak256("MANAGER_ROLE");
 

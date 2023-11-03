@@ -3,18 +3,18 @@ import { Deployer } from '@matterlabs/hardhat-zksync-deploy';
 import { HardhatRuntimeEnvironment } from 'hardhat/types';
 
 // TODO: change here if you want to deploy/use to another contract type
-import { Game7Badges } from '../typechain-types';
+import { SoulBoundBadges } from '../typechain-types';
 import { log } from '@helpers/logger';
 import getWallet from './getWallet';
-import { Game7BadgesArgs } from '@constants/constructor-args';
+import { SoulBoundBadgesArgs } from '@constants/constructor-args';
 
 
-const { name, symbol, baseURI, maxPerMint, isPaused } = Game7BadgesArgs.TESTNET;
+const { name, symbol, baseURI, maxPerMint, isPaused } = SoulBoundBadgesArgs.TESTNET;
 
 // load wallet private key from env file
 const PRIVATE_KEY = process.env.PRIVATE_KEY || '';
 
-const CONTRACT_NAME = 'Game7Badges';
+const CONTRACT_NAME = 'SoulBoundBadges';
 
 if (!PRIVATE_KEY) throw '⛔️ Private key not detected! Add it to the .env file!';
 
@@ -28,7 +28,7 @@ export default async function (hre: HardhatRuntimeEnvironment) {
   const artifact = await deployer.loadArtifact(CONTRACT_NAME);
 
   // TODO: change here the type if you need to
-  const achievoContract = (await deployer.deploy(artifact, [name, symbol, baseURI, maxPerMint, isPaused])) as Game7Badges;
+  const achievoContract = (await deployer.deploy(artifact, [name, symbol, baseURI, maxPerMint, isPaused])) as SoulBoundBadges;
 
   // Show the contract info.
   const contractAddress = achievoContract.address;
