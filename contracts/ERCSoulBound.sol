@@ -44,15 +44,19 @@ contract ERCSoulBound {
         _soulboundTokens[tokenId] = true;
     }
 
-    modifier syncSoulbound(uint256 tokenId, uint256 amount) {
+    modifier syncSoulbound(address from, uint256 tokenId, uint256 amount) {
         _;
-        _soulbounds[msg.sender][tokenId] -= amount;
+        if (_soulbounds[from][tokenId] > 0) {
+            _soulbounds[from][tokenId] -= amount;
+        }
     }
 
-    modifier syncBatchSoulbound(uint256[] memory tokenIds, uint256[] memory amounts) {
+    modifier syncBatchSoulbound(address from, uint256[] memory tokenIds, uint256[] memory amounts) {
         _;
         for (uint256 i = 0; i < tokenIds.length; i++) {
-            _soulbounds[msg.sender][tokenIds[i]] -= amounts[i];
+            if (_soulbounds[from][tokenIds[i]] > 0) {
+                _soulbounds[from][tokenIds[i]] -= amounts[i];
+            }
         }
     }
 
@@ -61,11 +65,11 @@ contract ERCSoulBound {
         require(amount > 0, "ERCSoulbound: can't be zero amount");
 
         if(_soulbounds[from][tokenId] > amount) {
-            revert("ERCSoulbound: The amount of soul bounded tokens  is more than the amount of tokens to be transferred");
+            revert("ERCSoulbound: The amount of soul bounded tokens is more than the amount of tokens to be transferred");
         }
 
         if(_soulbounds[from][tokenId] == amount) {
-            revert("ERCSoulbound: The amount of soul bounded tokens  is equal to the amount of tokens to be transferred");
+            revert("ERCSoulbound: The amount of soul bounded tokens is equal to the amount of tokens to be transferred");
         }
     }
 
