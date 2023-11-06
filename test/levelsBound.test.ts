@@ -2,18 +2,19 @@ import { expect } from 'chai';
 // @ts-ignore-next-line
 import { ethers } from 'hardhat';
 import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers';
-import { GameAchievements, GameSummary1155, LevelsBound } from '../typechain-types';
-import { generateSignature } from '../helpers/signature';
+import { LevelsBound } from '../typechain-types';
 
 describe('LevelsBound', function () {
   let levelsBound: LevelsBound;
   let minterAccount: SignerWithAddress;
   let playerAccount: SignerWithAddress;
+  let playerAccount2: SignerWithAddress;
   beforeEach(async function () {
     const contract = (await ethers.getContractFactory('LevelsBound')) as unknown as LevelsBound;
-    const [adminAccount, player] = await ethers.getSigners();
+    const [adminAccount, player, player2] = await ethers.getSigners();
     minterAccount = adminAccount;
     playerAccount = player;
+    playerAccount2 = player2;
     // @ts-ignore-next-line
     levelsBound = await contract.deploy();
     await levelsBound.deployed();
@@ -76,5 +77,15 @@ describe('LevelsBound', function () {
     await tx.wait();
     const balance = await levelsBound.connect(playerAccount).balanceOf(playerAccount.address, 1);
     expect(balance).to.be.eq(0);
+  });
+
+  describe('LevelUp', function () {
+    it('currentHighestLevel should increase when mintLevel', async function () {
+      expect(await levelsBound.currentHighestLevel()).to.be.eq(0);
+      await levelsBound.levelUp(playerAccount.address, 1);
+      await levelsBound.levelUp(playerAccount.address, 2);
+      await levelsBound.levelUp(playerAccount2.address, 1);
+      expect(await levelsBound.currentHighestLevel()).to.be.eq(2);
+    });
   });
 });
