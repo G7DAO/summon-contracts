@@ -90,20 +90,20 @@ describe('LevelsBound', function () {
     });
 
     it('playerLevel should reset to 0 when burn() or burnBatch()', async function () {
-      expect(await levelsBound.playerLevel(playerAccount.address)).to.be.eq(0);
+      expect(await levelsBound.getCurrentLevel(playerAccount.address)).to.be.eq(0);
       await levelsBound.levelUp(playerAccount.address, 1);
       await levelsBound.levelUp(playerAccount.address, 2);
-      expect(await levelsBound.playerLevel(playerAccount.address)).to.be.eq(2);
+      expect(await levelsBound.getCurrentLevel(playerAccount.address)).to.be.eq(2);
       expect(await levelsBound.balanceOf(playerAccount.address, 1)).to.be.eq(0);
       expect(await levelsBound.balanceOf(playerAccount.address, 2)).to.be.eq(1);
       await levelsBound.connect(playerAccount).burn(2, 1);
-      expect(await levelsBound.playerLevel(playerAccount.address)).to.be.eq(0);
+      expect(await levelsBound.getCurrentLevel(playerAccount.address)).to.be.eq(0);
 
       await levelsBound.levelUp(playerAccount2.address, 1);
-      expect(await levelsBound.playerLevel(playerAccount2.address)).to.be.eq(1);
+      expect(await levelsBound.getCurrentLevel(playerAccount2.address)).to.be.eq(1);
 
       await levelsBound.connect(playerAccount2).burnBatch([1], [1]);
-      expect(await levelsBound.playerLevel(playerAccount2.address)).to.be.eq(0);
+      expect(await levelsBound.getCurrentLevel(playerAccount2.address)).to.be.eq(0);
     });
   });
 });

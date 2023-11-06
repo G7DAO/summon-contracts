@@ -17,6 +17,10 @@ contract LevelsBound is ERC1155, Ownable, ReentrancyGuard {
         playerLevel[account] = level;
     }
 
+    function getCurrentLevel(address account) public view returns (uint256) {
+        return playerLevel[account];
+    }
+
     function levelUp(address account, uint256 newLevel) public onlyOwner {
         require(newLevel > 0, "New level must be greater than 0");
         // check if the user has the previous lvl token
