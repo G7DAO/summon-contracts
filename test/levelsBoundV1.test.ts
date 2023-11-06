@@ -4,7 +4,7 @@ import { ethers, upgrades } from 'hardhat';
 import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers';
 import { LevelsBound } from '../typechain-types';
 
-describe.only('LevelsBoundV1', function () {
+describe('LevelsBoundV1', function () {
   let levelsBound: LevelsBound;
   let minterAccount: SignerWithAddress;
   let playerAccount: SignerWithAddress;
