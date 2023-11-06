@@ -4,6 +4,7 @@ import { HardhatUserConfig } from 'hardhat/config';
 import '@nomicfoundation/hardhat-toolbox';
 // This adds support for typescript paths mappings
 import 'tsconfig-paths/register';
+import '@openzeppelin/hardhat-upgrades';
 
 log(`Using Default Hardhat config`);
 
