@@ -1,22 +1,25 @@
 import { expect } from 'chai';
 // @ts-ignore-next-line
-import { ethers } from 'hardhat';
+import { ethers, upgrades } from 'hardhat';
 import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers';
 import { LevelsBound } from '../typechain-types';
 
-describe('LevelsBound', function () {
+describe('LevelsBoundV1', function () {
   let levelsBound: LevelsBound;
   let minterAccount: SignerWithAddress;
   let playerAccount: SignerWithAddress;
   let playerAccount2: SignerWithAddress;
   beforeEach(async function () {
-    const contract = (await ethers.getContractFactory('LevelsBound')) as unknown as LevelsBound;
+    const contract = (await ethers.getContractFactory('LevelsBoundV1')) as unknown as LevelsBound;
+
     const [adminAccount, player, player2] = await ethers.getSigners();
     minterAccount = adminAccount;
     playerAccount = player;
     playerAccount2 = player2;
-    // @ts-ignore-next-line
-    levelsBound = await contract.deploy();
+
+    levelsBound = await upgrades.deployProxy(contract, {
+      initializer: 'initialize',
+    });
     await levelsBound.deployed();
   });
 
