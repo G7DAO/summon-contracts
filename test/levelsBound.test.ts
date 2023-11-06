@@ -89,7 +89,7 @@ describe('LevelsBound', function () {
       expect(await levelsBound.playerLevel(playerAccount2.address)).to.be.eq(1);
     });
 
-    it.only('playerLevel should reset to 0 when burn() or burnBatch()', async function () {
+    it('playerLevel should reset to 0 when burn() or burnBatch()', async function () {
       expect(await levelsBound.playerLevel(playerAccount.address)).to.be.eq(0);
       await levelsBound.levelUp(playerAccount.address, 1);
       await levelsBound.levelUp(playerAccount.address, 2);
