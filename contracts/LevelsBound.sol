@@ -6,7 +6,7 @@ import { Ownable } from "@openzeppelin/contracts/access/Ownable.sol";
 import { ReentrancyGuard } from "@openzeppelin/contracts/security/ReentrancyGuard.sol";
 
 contract LevelsBound is ERC1155, Ownable, ReentrancyGuard {
-    uint256 public currentHighestLevel;
+    mapping(address => uint256) public playerLevel;
 
     constructor() ERC1155("no/{uri}") {}
 
@@ -14,9 +14,7 @@ contract LevelsBound is ERC1155, Ownable, ReentrancyGuard {
         // check the balance of the account before minting twice
         _mint(account, level, 1, "");
 
-        if (currentHighestLevel < level) {
-            currentHighestLevel = level;
-        }
+        playerLevel[account] = level;
     }
 
     function levelUp(address account, uint256 newLevel) public onlyOwner {
@@ -58,10 +56,12 @@ contract LevelsBound is ERC1155, Ownable, ReentrancyGuard {
 
     function burn(uint256 tokenId, uint256 amount) public nonReentrant {
         _burn(msg.sender, tokenId, amount);
+        playerLevel[msg.sender] = 0;
     }
 
     function burnBatch(uint256[] memory tokenIds, uint256[] memory amounts) public nonReentrant {
         _burnBatch(msg.sender, tokenIds, amounts);
+        playerLevel[msg.sender] = 0;
     }
 
     function supportsInterface(bytes4 interfaceId) public view override(ERC1155) returns (bool) {

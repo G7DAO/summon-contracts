@@ -6,7 +6,7 @@ import "@openzeppelin/contracts-upgradeable/token/ERC1155/ERC1155Upgradeable.sol
 import "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
 
 contract LevelsBoundV1 is Initializable, ERC1155Upgradeable, OwnableUpgradeable {
-    uint256 public currentHighestLevel;
+    mapping(address => uint256) public playerLevel;
 
     /// @custom:oz-upgrades-unsafe-allow constructor
     constructor() {
@@ -22,9 +22,7 @@ contract LevelsBoundV1 is Initializable, ERC1155Upgradeable, OwnableUpgradeable 
         // check the balance of the account before minting twice
         _mint(account, level, 1, "");
 
-        if (currentHighestLevel < level) {
-            currentHighestLevel = level;
-        }
+        playerLevel[account] = level;
     }
 
     function levelUp(address account, uint256 newLevel) public onlyOwner {
@@ -66,10 +64,12 @@ contract LevelsBoundV1 is Initializable, ERC1155Upgradeable, OwnableUpgradeable 
 
     function burn(uint256 tokenId, uint256 amount) public {
         _burn(msg.sender, tokenId, amount);
+        playerLevel[msg.sender] = 0;
     }
 
     function burnBatch(uint256[] memory tokenIds, uint256[] memory amounts) public {
         _burnBatch(msg.sender, tokenIds, amounts);
+        playerLevel[msg.sender] = 0;
     }
 
     function supportsInterface(bytes4 interfaceId) public view override(ERC1155Upgradeable) returns (bool) {
