@@ -282,8 +282,10 @@ contract GameSummary1155 is ERC1155, AccessControl, Pausable, ReentrancyGuard {
     function safeTransferFrom(address _from, address _to, uint256 _id, uint256 _amount, bytes memory _data) public virtual override {
         require(playerGameData[_from][_id].tokenId != 0, "Token doesn't exists");
         require(!playerGameData[_from][_id].soulBounded, "You can't transfer this token");
+        PlayerGameData storage playerData = playerGameData[_from][_id];
+        uint256 transferachievements = playerData.achievementsMinted;
         playerGameData[_from][_id] = PlayerGameData(0, 0, false);
-        playerGameData[_to][_id] = PlayerGameData(_id, _amount, false);
+        playerGameData[_to][_id] = PlayerGameData(_id, transferachievements, false);
         super.safeTransferFrom(_from, _to, _id, _amount, _data);
     }
 
@@ -293,6 +295,13 @@ contract GameSummary1155 is ERC1155, AccessControl, Pausable, ReentrancyGuard {
             require(!playerGameData[_from][_ids[i]].soulBounded, "You can't transfer this token");
         }
         super.safeBatchTransferFrom(_from, _to, _ids, _amounts, _data);
+
+        for (uint i = 0; i < _ids.length; i++) {
+            PlayerGameData storage playerData = playerGameData[_from][_ids[i]];
+            uint256 transferachievements = playerData.achievementsMinted;
+            playerGameData[_from][_ids[i]] = PlayerGameData(0, 0, false);
+            playerGameData[_to][_ids[i]] = PlayerGameData(_ids[i], transferachievements, false);
+        }
     }
 
     function uri(uint256 _tokenId) public view override returns (string memory) {
