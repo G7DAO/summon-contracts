@@ -78,17 +78,6 @@ contract GameSummary1155 is ERC1155, AccessControl, Pausable, ReentrancyGuard {
         return tokenId;
     }
 
-    function stringToUint(string memory s) private pure returns (uint256) {
-        bytes memory b = bytes(s);
-        uint256 result = 0;
-        for (uint i = 0; i < b.length; i++) {
-            uint256 c = uint256(uint8(b[i]));
-            require(c >= 48 && c <= 57, "Not a digit");
-            result = result * 10 + (c - 48);
-        }
-        return result;
-    }
-
     function setBaseUri(string memory _uri) public onlyRole(DEFAULT_ADMIN_ROLE) {
         baseUri = _uri;
     }
