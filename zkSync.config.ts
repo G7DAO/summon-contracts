@@ -9,32 +9,32 @@ import { log } from '@helpers/logger';
 
 const { PRIVATE_KEY } = process.env;
 if (!PRIVATE_KEY) {
-  throw new Error('MantleConfig: The private key is required');
+    throw new Error('MantleConfig: The private key is required');
 }
 
 log(`Using ZkSync config`);
 
 defaultConfig.networks = {
-  ...defaultConfig.networks,
-  [NetworkName.ZkSync]: {
-    url: 'https://mainnet.era.zksync.io',
-    ethNetwork: 'mainnet',
-    zksync: true,
-    accounts: [PRIVATE_KEY],
-    verifyURL: 'https://zksync2-mainnet-explorer.zksync.io/contract_verification',
-  },
-  [NetworkName.ZkSyncTestnet]: {
-    url: 'https://zksync2-testnet.zksync.dev',
-    ethNetwork: 'goerli',
-    zksync: true,
-    accounts: [PRIVATE_KEY],
-    verifyURL: 'https://zksync2-testnet-explorer.zksync.dev/contract_verification',
-  },
+    ...defaultConfig.networks,
+    [NetworkName.ZkSync]: {
+        url: 'https://mainnet.era.zksync.io',
+        ethNetwork: 'mainnet',
+        zksync: true,
+        accounts: [PRIVATE_KEY],
+        verifyURL: 'https://zksync2-mainnet-explorer.zksync.io/contract_verification',
+    },
+    [NetworkName.ZkSyncTestnet]: {
+        url: 'https://zksync2-testnet.zksync.dev',
+        ethNetwork: 'goerli',
+        zksync: true,
+        accounts: [PRIVATE_KEY],
+        verifyURL: 'https://zksync2-testnet-explorer.zksync.dev/contract_verification',
+    },
 };
 
 defaultConfig.zksolc = {
-  version: '1.3.14',
-  settings: {},
+    version: '1.3.14',
+    settings: {},
 };
 
 // empty to use the verifyURL from the network config
