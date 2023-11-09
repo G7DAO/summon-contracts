@@ -5,9 +5,9 @@ import { HardhatRuntimeEnvironment } from 'hardhat/types';
 import { SoulBound1155 } from '../typechain-types';
 import { log } from '@helpers/logger';
 import getWallet from './getWallet';
-import { SoulBoundBadgesArgs } from '@constants/constructor-args';
+import { ItemsBoundArgs } from '@constants/constructor-args';
 
-const { name, symbol, baseURI, maxPerMint, isPaused, devWallet, royalty } = SoulBoundBadgesArgs.TESTNET;
+const { name, symbol, baseURI, maxPerMint, isPaused, devWallet, royalty } = ItemsBoundArgs.TESTNET;
 
 // load wallet private key from env file
 const PRIVATE_KEY = process.env.PRIVATE_KEY || '';

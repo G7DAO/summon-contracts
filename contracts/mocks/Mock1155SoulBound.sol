@@ -9,36 +9,38 @@ contract Mock1155SoulBound is ERC1155Burnable, ERCSoulBound {
     constructor() ERC1155("lol://lol/{id}") {}
 
     // optional soulBound minting
-    function mint(
-        address to,
-        uint256 id,
-        uint256 amount,
-        bool soulBound
-    ) public virtual {
+    function mint(address to, uint256 id, uint256 amount, bool soulBound) public virtual {
         _mint(to, id, amount, "");
-        if(soulBound) {
+        if (soulBound) {
             _soulbound(to, id, amount);
         }
     }
 
     // optional soulBound batch minting
-    function mintBatch(
-        address to,
-        uint256[] memory ids,
-        uint256[] memory amounts,
-        bool soulBound
-    ) public virtual {
+    function mintBatch(address to, uint256[] memory ids, uint256[] memory amounts, bool soulBound) public virtual {
         _mintBatch(to, ids, amounts, "");
-        if(soulBound) {
+        if (soulBound) {
             _soulboundBatch(to, ids, amounts);
         }
     }
 
-    function safeTransferFrom(address _from, address _to, uint256 _id, uint256 _amount, bytes memory _data) soulboundCheck(_from, _id, _amount) public virtual override {
+    function safeTransferFrom(
+        address _from,
+        address _to,
+        uint256 _id,
+        uint256 _amount,
+        bytes memory _data
+    ) public virtual override soulboundCheck(_from, _to, _id, _amount) {
         super.safeTransferFrom(_from, _to, _id, _amount, _data);
     }
 
-    function safeBatchTransferFrom(address _from, address _to, uint256[] memory _ids, uint256[] memory _amounts, bytes memory _data) soulboundCheckBatch(_from, _ids, _amounts) public virtual override {
+    function safeBatchTransferFrom(
+        address _from,
+        address _to,
+        uint256[] memory _ids,
+        uint256[] memory _amounts,
+        bytes memory _data
+    ) public virtual override soulboundCheckBatch(_from, _to, _ids, _amounts) {
         super.safeBatchTransferFrom(_from, _to, _ids, _amounts, _data);
     }
 
