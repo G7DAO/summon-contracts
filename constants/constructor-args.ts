@@ -7,6 +7,7 @@ export const SoulBoundBadgesArgs = {
         isPaused: true,
         devWallet: '0xA10648F8618A526Bd0Acb08a1b9f413BC44Fcb4B',
         royalty: 250,
+        tenants: ['Game7', 'zkSync'],
     },
     TESTNET: {
         name: 'MyBadges',
@@ -16,6 +17,7 @@ export const SoulBoundBadgesArgs = {
         isPaused: true,
         devWallet: '0xA10648F8618A526Bd0Acb08a1b9f413BC44Fcb4B',
         royalty: 250,
+        tenants: ['Game7', 'zkSync'],
     },
 };
 
@@ -28,6 +30,7 @@ export const ItemsBoundArgs = {
         isPaused: true,
         devWallet: '0xA10648F8618A526Bd0Acb08a1b9f413BC44Fcb4B',
         royalty: 250,
+        tenants: ['Game7', 'zkSync'],
     },
     TESTNET: {
         name: 'MyItems',
@@ -37,5 +40,6 @@ export const ItemsBoundArgs = {
         isPaused: true,
         devWallet: '0xA10648F8618A526Bd0Acb08a1b9f413BC44Fcb4B',
         royalty: 250,
+        tenants: ['Game7', 'zkSync'],
     },
 };
