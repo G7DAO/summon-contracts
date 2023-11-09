@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.17;
+pragma solidity ^0.8.20;
 
 /**
  * Authors: Omar Garcia <omar@game7.io>
@@ -9,8 +9,9 @@ pragma solidity ^0.8.17;
 import "@openzeppelin/contracts/token/ERC1155/ERC1155.sol";
 import "@openzeppelin/contracts/access/AccessControl.sol";
 import "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
-import "@openzeppelin/contracts/security/Pausable.sol";
-import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
+import "@openzeppelin/contracts/utils/cryptography/MessageHashUtils.sol";
+import "@openzeppelin/contracts/utils/Pausable.sol";
+import "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
 import "@openzeppelin/contracts/utils/Strings.sol";
 
 // This contract contains only the phase 1 of the GameSummaries contract
@@ -94,7 +95,7 @@ contract GameSummary1155 is ERC1155, AccessControl, Pausable, ReentrancyGuard {
 
     function recoverAddress(uint256 nonce, bytes memory signature) private view returns (address) {
         bytes32 message = keccak256(abi.encodePacked(msg.sender, nonce));
-        bytes32 hash = ECDSA.toEthSignedMessageHash(message);
+        bytes32 hash = MessageHashUtils.toEthSignedMessageHash(message);
         address signer = ECDSA.recover(hash, signature);
         return signer;
     }

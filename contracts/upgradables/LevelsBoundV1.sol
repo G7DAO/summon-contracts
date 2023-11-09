@@ -15,7 +15,7 @@ contract LevelsBoundV1 is Initializable, ERC1155Upgradeable, OwnableUpgradeable 
 
     function initialize() public initializer {
         __ERC1155_init("");
-        __Ownable_init();
+        __Ownable_init(_msgSender());
     }
 
     function mintLevel(address account, uint256 level) private onlyOwner {

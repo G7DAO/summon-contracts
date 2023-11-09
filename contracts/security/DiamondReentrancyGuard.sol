@@ -5,15 +5,15 @@
  * GitHub: https://github.com/ogarciarevett
  */
 
-pragma solidity ^0.8.17;
+pragma solidity ^0.8.20;
 import "../libraries/LibReentrancyGuard.sol";
 
 abstract contract DiamondReentrancyGuard {
-  modifier diamondNonReentrant() {
-    LibReentrancyGuard.ReentrancyGuardStorage storage rgs = LibReentrancyGuard.reentrancyGuardStorage();
-    require(!rgs._entered, "LibReentrancyGuard: reentrant call!");
-    rgs._entered = true;
-    _;
-    rgs._entered = false;
-  }
+    modifier diamondNonReentrant() {
+        LibReentrancyGuard.ReentrancyGuardStorage storage rgs = LibReentrancyGuard.reentrancyGuardStorage();
+        require(!rgs._entered, "LibReentrancyGuard: reentrant call!");
+        rgs._entered = true;
+        _;
+        rgs._entered = false;
+    }
 }

@@ -1,10 +1,8 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.17;
+pragma solidity ^0.8.20;
 
 library LibAchievements {
-
-    bytes32 constant STORAGE_POSITION =
-    keccak256("achievo.eth.storage.Achievements");
+    bytes32 constant STORAGE_POSITION = keccak256("achievo.eth.storage.Achievements");
 
     struct TokenData {
         address owner;
@@ -17,11 +15,7 @@ library LibAchievements {
         mapping(uint256 => TokenData) tokenData;
     }
 
-    function achievementsStorage()
-    internal
-    pure
-    returns (AchievementsStorage storage astore)
-    {
+    function achievementsStorage() internal pure returns (AchievementsStorage storage astore) {
         bytes32 position = STORAGE_POSITION;
         assembly {
             astore.slot := position

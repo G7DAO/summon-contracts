@@ -11,7 +11,7 @@
         {
             "files": "*.sol",
             "options": {
-                "compiler": "0.8.17",
+                "compiler": "0.8.20",
                 "explicitTypes": "always",
                 "printWidth": 160,
                 "tabWidth": 4,

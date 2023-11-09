@@ -78,7 +78,7 @@ describe('GameSummary1155', function () {
         await expect(
             gameSummary1155.adminMintGameSummary(playerAccount.address, DEFAULT_GAME_ID + 1, randomAchievementIds.length, DEFAULT_STORE_ID, true)
             // @ts-ignore-next-line
-        ).to.be.revertedWith('Pausable: paused');
+        ).to.be.rejectedWith(`VM Exception while processing transaction: reverted with custom error 'EnforcedPause()'`);
 
         await gameSummary1155.unpause();
 
@@ -322,16 +322,16 @@ describe('GameSummary1155', function () {
     it('should revert if a non-admin tries to set a signer', async function () {
         await expect(gameSummary1155.connect(playerAccount).setSigner(minterAccount.address))
             // @ts-ignore-next-line
-            .to.be.revertedWith(
-                'AccessControl: account 0x70997970c51812dc3a010c7d01b50e0d17dc79c8 is missing role 0x0000000000000000000000000000000000000000000000000000000000000000'
+            .to.be.rejectedWith(
+                `VM Exception while processing transaction: reverted with custom error 'AccessControlUnauthorizedAccount("0x70997970C51812dc3A010C7d01b50e0d17dc79C8", "0x0000000000000000000000000000000000000000000000000000000000000000")`
             );
     });
 
     it('should revert if a non-admin tries to remove a signer', async function () {
         await expect(gameSummary1155.connect(playerAccount).removeSigner(minterAccount.address))
             // @ts-ignore-next-line
-            .to.be.revertedWith(
-                'AccessControl: account 0x70997970c51812dc3a010c7d01b50e0d17dc79c8 is missing role 0x0000000000000000000000000000000000000000000000000000000000000000'
+            .to.be.rejectedWith(
+                `VM Exception while processing transaction: reverted with custom error 'AccessControlUnauthorizedAccount("0x70997970C51812dc3A010C7d01b50e0d17dc79C8", "0x0000000000000000000000000000000000000000000000000000000000000000")`
             );
     });
 

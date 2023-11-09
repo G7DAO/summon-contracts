@@ -3,12 +3,12 @@ pragma solidity ^0.8.17;
 
 import { ERC1155 } from "@openzeppelin/contracts/token/ERC1155/ERC1155.sol";
 import { Ownable } from "@openzeppelin/contracts/access/Ownable.sol";
-import { ReentrancyGuard } from "@openzeppelin/contracts/security/ReentrancyGuard.sol";
+import { ReentrancyGuard } from "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
 
 contract LevelsBound is ERC1155, Ownable, ReentrancyGuard {
     mapping(address => uint256) public playerLevel;
 
-    constructor() ERC1155("no/{uri}") {}
+    constructor() Ownable(_msgSender()) ERC1155("no/{uri}") {}
 
     function mintLevel(address account, uint256 level) private onlyOwner {
         // check the balance of the account before minting twice

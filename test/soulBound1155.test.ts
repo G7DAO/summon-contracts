@@ -55,7 +55,9 @@ describe('SoulBound1155', function () {
             expect(await soulBound1155.paused()).to.be.true;
 
             await soulBound1155.addNewToken(22);
-            await expect(soulBound1155.mint(playerAccount.address, 22, 1, true)).to.be.revertedWith('Pausable: paused');
+            await expect(soulBound1155.mint(playerAccount.address, 22, 1, true)).to.be.rejectedWith(
+                `VM Exception while processing transaction: reverted with custom error 'EnforcedPause()'`
+            );
 
             await soulBound1155.unpause();
             expect(await soulBound1155.paused()).to.be.false;
@@ -107,8 +109,8 @@ describe('SoulBound1155', function () {
         });
 
         it('fail sender has no minter role', async function () {
-            await expect(soulBound1155.connect(playerAccount).mint(playerAccount.address, tokenId, 1, true)).to.be.revertedWith(
-                `AccessControl: account ${playerAccount.address.toLowerCase()} is missing role 0x9f2df0fed2c77648de5860a4cc508cd0818c85b8b8a1ab4ceeef8d981c8956a6`
+            await expect(soulBound1155.connect(playerAccount).mint(playerAccount.address, tokenId, 1, true)).to.be.rejectedWith(
+                `VM Exception while processing transaction: reverted with custom error 'AccessControlUnauthorizedAccount("${playerAccount.address}", "0x9f2df0fed2c77648de5860a4cc508cd0818c85b8b8a1ab4ceeef8d981c8956a6")'`
             );
         });
     });
@@ -160,8 +162,8 @@ describe('SoulBound1155', function () {
         });
 
         it('fail sender has no minter role', async function () {
-            await expect(soulBound1155.connect(playerAccount).mintBatch(playerAccount.address, [1, 2, 3], [100, 200, 300], false)).to.be.revertedWith(
-                `AccessControl: account ${playerAccount.address.toLowerCase()} is missing role 0x9f2df0fed2c77648de5860a4cc508cd0818c85b8b8a1ab4ceeef8d981c8956a6`
+            await expect(soulBound1155.connect(playerAccount).mintBatch(playerAccount.address, [1, 2, 3], [100, 200, 300], false)).to.be.rejectedWith(
+                `VM Exception while processing transaction: reverted with custom error 'AccessControlUnauthorizedAccount("${playerAccount.address}", "0x9f2df0fed2c77648de5860a4cc508cd0818c85b8b8a1ab4ceeef8d981c8956a6")'`
             );
         });
     });
@@ -212,8 +214,8 @@ describe('SoulBound1155', function () {
         it('updateBaseUri() should fail to update new baseuri if has no manager role', async function () {
             const newBaseURI = 'https://something-new.com/';
 
-            await expect(soulBound1155.connect(playerAccount).updateBaseUri(newBaseURI)).to.be.revertedWith(
-                `AccessControl: account ${playerAccount.address.toLowerCase()} is missing role 0x241ecf16d79d0f8dbfb92cbc07fe17840425976cf0667f022fe9877caa831b08`
+            await expect(soulBound1155.connect(playerAccount).updateBaseUri(newBaseURI)).to.be.rejectedWith(
+                `VM Exception while processing transaction: reverted with custom error 'AccessControlUnauthorizedAccount("${playerAccount.address}", "0x241ecf16d79d0f8dbfb92cbc07fe17840425976cf0667f022fe9877caa831b08")'`
             );
         });
 
