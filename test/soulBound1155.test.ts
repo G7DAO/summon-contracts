@@ -7,7 +7,7 @@ import { SoulBoundBadgesArgs } from '../constants/constructor-args';
 
 const { name, symbol, baseURI, maxPerMint, isPaused, royalty } = SoulBoundBadgesArgs.TESTNET;
 
-describe.only('SoulBound1155', function () {
+describe('SoulBound1155', function () {
     let soulBound1155: SoulBound1155;
     let minterAccount: SignerWithAddress;
     let playerAccount: SignerWithAddress;
@@ -229,7 +229,7 @@ describe.only('SoulBound1155', function () {
         });
     });
 
-    describe.only('Token Transfer', () => {
+    describe('Token Transfer', () => {
         const tokenId = 1;
         it('should able to transfer non-soulbound token', async function () {
             await soulBound1155.addNewToken(tokenId);
