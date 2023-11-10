@@ -37,3 +37,6 @@ cache-zk
 
 # debug-related files
 contracts/contracts-dbg
+
+deployments.json
+deployments-*.json

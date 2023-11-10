@@ -8,15 +8,15 @@ import { HardhatRuntimeEnvironment } from 'hardhat/types';
 import { SoulBound1155 } from '../typechain-types';
 import { log } from '@helpers/logger';
 import getWallet from './getWallet';
-import { SoulBoundBadgesArgs } from '@constants/constructor-args';
+import { ItemsBoundArgs } from '@constants/constructor-args';
 
-const { name, symbol, baseURI, maxPerMint, isPaused, devWallet, royalty, tenants } = SoulBoundBadgesArgs.TESTNET;
+const { name, symbol, baseURI, maxPerMint, isPaused, devWallet, royalty, tenants } = ItemsBoundArgs.TESTNET;
 
 // load wallet private key from env file
 const PRIVATE_KEY = process.env.PRIVATE_KEY || '';
 
 const CONTRACT_NAME = 'SoulBound1155';
-const CONTRACT_TYPE = 'Badges';
+const CONTRACT_TYPE = 'Items';
 const ABI_PATH = 'artifacts/contracts/SoulBound1155.sol/SoulBound1155.json';
 
 interface DeploymentMap {
