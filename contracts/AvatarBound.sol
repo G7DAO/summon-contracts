@@ -13,12 +13,15 @@ import "@openzeppelin/contracts/access/AccessControl.sol";
 contract AvatarBound is ERC721URIStorage, ERC721Enumerable, AccessControl {
     bytes32 public constant MINTER_ROLE = keccak256("MINTER_ROLE");
     uint256 private _tokenIdCounter;
+    //    TODO: FILL ME
     string public baseTokenURI;
     // TODO: change this to the latest image - waiting for product
-    string private _contractURI = "https://summon.mypinata.cloud/ipfs/QmPkeXk49oqBYckGeM5mzwNztVDGcsnCB7RwbCPKo5racj";
+    string private _contractURI = "";
 
     event URIChanged(uint256 indexed tokenId);
     event BaseURIChanged(string indexed uri);
+    mapping(uint256 => bool) private _soulboundTokens;
+
 
 
     constructor(string memory _name, string memory _symbol, string memory _baseTokenURI) ERC721(_name, _symbol) {
@@ -27,7 +30,7 @@ contract AvatarBound is ERC721URIStorage, ERC721Enumerable, AccessControl {
         baseTokenURI = _baseTokenURI;
     }
 
-    function safeMint(address to, string memory uri) public onlyRole(MINTER_ROLE)  {
+    function safeMint(address to, string memory uri) public  {
         uint256 tokenId = _tokenIdCounter++;
         _safeMint(to, tokenId);
         _setTokenURI(tokenId, uri);
@@ -39,12 +42,12 @@ contract AvatarBound is ERC721URIStorage, ERC721Enumerable, AccessControl {
         uint256 tokenId,
         uint256 batch
     ) internal override(ERC721, ERC721Enumerable) {
-        revert("You can't transfer this token");
-    super._beforeTokenTransfer(from, to, tokenId, batch);
+        require(!_soulboundTokens[tokenId], "This token is soulbound and cannot be transferred");
+        super._beforeTokenTransfer(from, to, tokenId, batch);
     }
 
     function _burn(uint256 tokenId) internal override(ERC721, ERC721URIStorage) {
-        revert("You can't burn this token");
+        require(!_soulboundTokens[tokenId], "This token is soulbound and cannot be burned");
         super._burn(tokenId);
     }
 
