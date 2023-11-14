@@ -2,7 +2,7 @@
 pragma solidity ^0.8.20;
 
 import {Test, console2} from "forge-std/Test.sol";
-import "../contracts/AvatarBound.sol";
+import "../src/AvatarBound.sol";
 import "../contracts/mocks/MockERC721Receiver.sol";
 
 contract AvatarBound is Test {

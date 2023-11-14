@@ -2,8 +2,10 @@
 pragma solidity ^0.8.13;
 
 import {Script, console2} from "forge-std/Script.sol";
-import { AvatarBound } from "../contracts/AvatarBound.sol";
+import { AvatarBound } from "../src/AvatarBound.sol";
 
+
+// Small example how deploy erc721 soulbound contract, We'll keep the deploys in HARDHAT
 contract DeployAvatarBoundScript is Script {
     function setUp() public {}
 
