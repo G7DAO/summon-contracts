@@ -30,32 +30,77 @@ pragma solidity ^0.8.17;
 
 import "@openzeppelin/contracts/token/ERC721/extensions/ERC721URIStorage.sol";
 import "@openzeppelin/contracts/token/ERC721/extensions/ERC721Enumerable.sol";
+import "@openzeppelin/contracts/token/ERC721/IERC721.sol";
 import "@openzeppelin/contracts/access/AccessControl.sol";
+import "@openzeppelin/contracts/security/Pausable.sol";
+import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
 import { ERCSoulBound } from "./ERCSoulBound.sol";
+import { ISoulBound1155 } from "./interfaces/ISoulBound1155.sol";
 
-contract AvatarBound is ERC721URIStorage, ERC721Enumerable, AccessControl, ERCSoulBound {
+contract AvatarBound is ERC721URIStorage, ERC721Enumerable, AccessControl, ERCSoulBound, Pausable, ReentrancyGuard {
     bytes32 public constant MINTER_ROLE = keccak256("MINTER_ROLE");
     bytes32 public constant URI_SETTER_ROLE = keccak256("URI_SETTER_ROLE");
+    bytes32 public constant PAUSER_ROLE = keccak256("PAUSER_ROLE");
     uint256 private _tokenIdCounter;
     string public baseTokenURI;
     string public contractURI;
+    address private capsuleNFTAddress;
+    address private itemsNFTAddress;
+    bool private nftGatingEnabled;
+    bool private mintGift;
 
     event URIChanged(uint256 indexed tokenId);
     event BaseURIChanged(string indexed uri);
 
 
-    constructor(string memory _name, string memory _symbol, string memory _baseTokenURI, string memory _contractURI) ERC721(_name, _symbol) {
+    constructor(
+        string memory _name,
+        string memory _symbol,
+        string memory _baseTokenURI,
+        string memory _contractURI,
+        address _capsuleNFTAddress,
+        bool _nftGatingEnabled,
+        address _itemsNFTAddress,
+        bool _mintGift
+    ) ERC721(_name, _symbol) {
         _grantRole(DEFAULT_ADMIN_ROLE, msg.sender);
         _grantRole(MINTER_ROLE, msg.sender);
+        _grantRole(PAUSER_ROLE, msg.sender);
         baseTokenURI = _baseTokenURI;
         contractURI = _contractURI;
+        capsuleNFTAddress = _capsuleNFTAddress;
+        itemsNFTAddress = _itemsNFTAddress;
+        nftGatingEnabled = _nftGatingEnabled;
+        mintGift = _mintGift;
     }
 
-    function mint(address to, string memory uri) public  {
+    function mint(address to, string memory uri) private {
+
+        if (nftGatingEnabled) {
+            require(IERC721(capsuleNFTAddress).balanceOf(msg.sender) > 0, "1 NFT Capsule Required");
+        }
+
+        require(!isSoulboundAddress(to), "Address has already minted an Avatar");
         uint256 tokenId = _tokenIdCounter++;
         _safeMint(to, tokenId);
         _setTokenURI(tokenId, uri);
-        _soulboundToken(tokenId);
+        _soulboundAddress(to);
+        mintItemGift(to);
+    }
+
+    function summonAvatar(address to, string memory uri) public nonReentrant whenNotPaused {
+        mint(to, uri);
+    }
+
+    function batchSummonAvatar(address[] calldata addresses, string[] memory uris) public onlyRole(MINTER_ROLE) whenNotPaused {
+        require(addresses.length == uris.length, "Addresses and URIs length mismatch");
+        for (uint256 i = 0; i < uris.length; i++) {
+            mint(addresses[i], uris[i]);
+        }
+    }
+
+    function mintItemGift(address to) internal onlyRole(MINTER_ROLE) whenNotPaused {
+        ISoulBound1155(itemsNFTAddress).mint(to, 0, 1, true);
     }
 
     function tokenURI(uint256 tokenId)
@@ -65,6 +110,14 @@ contract AvatarBound is ERC721URIStorage, ERC721Enumerable, AccessControl, ERCSo
     returns (string memory)
     {
         return super.tokenURI(tokenId);
+    }
+
+    function pause() public onlyRole(PAUSER_ROLE) {
+        _pause();
+    }
+
+    function unpause() public onlyRole(PAUSER_ROLE) {
+        _unpause();
     }
 
     function batchSetTokenURI(uint256[] memory tokenIds, string[] memory tokenURIs) public onlyRole(URI_SETTER_ROLE) {
@@ -94,12 +147,30 @@ contract AvatarBound is ERC721URIStorage, ERC721Enumerable, AccessControl, ERCSo
         emit BaseURIChanged(baseTokenURI);
     }
 
+    function setNFTGating(bool _nftGatingEnabled) public onlyRole(DEFAULT_ADMIN_ROLE) {
+        require(_nftGatingEnabled != nftGatingEnabled, "NFT gating already set");
+        nftGatingEnabled = _nftGatingEnabled;
+    }
+
+    function setMintGift(bool _mintGiftEnabled) public onlyRole(DEFAULT_ADMIN_ROLE) {
+        require(_mintGiftEnabled != mintGift, "Gift minting already set");
+        mintGift = _mintGiftEnabled;
+    }
+
+    function setItemsNFTAddress(address _newAddress) public onlyRole(DEFAULT_ADMIN_ROLE) {
+        itemsNFTAddress = _newAddress;
+    }
+
+    function setCapsuleNFTAddress(address _newAddress) public onlyRole(DEFAULT_ADMIN_ROLE) {
+        capsuleNFTAddress = _newAddress;
+    }
+
     function _beforeTokenTransfer(
         address from,
         address to,
         uint256 tokenId,
         uint256 batch
-    ) internal override(ERC721, ERC721Enumerable) soulboundTokenCheck(tokenId) {
+    ) internal override(ERC721, ERC721Enumerable) revertOperation {
         super._beforeTokenTransfer(from, to, tokenId, batch);
     }
 

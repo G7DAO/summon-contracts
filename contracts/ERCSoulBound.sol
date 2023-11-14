@@ -186,7 +186,7 @@ contract ERCSoulBound {
      * @dev Returns if a `tokenId` is soulBound
      *
      */
-    function isSoulboundToken(uint256 tokenId) public view virtual returns (bool) {
+    function isSoulboundToken(uint256 tokenId) external view virtual returns (bool) {
         return _soulboundTokens[tokenId];
     }
 
@@ -194,7 +194,7 @@ contract ERCSoulBound {
      * @dev Returns if a `tokenId` is soulBound
      *
      */
-    function soulboundBalance(address to, uint256 tokenId) public view virtual returns (uint256) {
+    function soulboundBalance(address to, uint256 tokenId) external view virtual returns (uint256) {
         return _soulbounds[to][tokenId];
     }
 
