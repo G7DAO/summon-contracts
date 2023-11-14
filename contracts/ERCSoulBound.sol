@@ -40,13 +40,13 @@ contract ERCSoulBound {
 
 
     modifier soulboundTokenCheck(uint256 tokenId) {
-        require(!_soulboundTokens[tokenId], "ERCSoulbound: This token is soul bounded");
+        require(!_soulboundTokens[tokenId], "ERCSoulbound: This token is soulbounded");
         _;
     }
 
     modifier soulboundAddressCheck(address from) {
         require(from != address(0), "ERCSoulbound: can't be zero address");
-        require(!_soulboundAddresses[from], "ERCSoulbound: This address is soul bounded");
+        require(!_soulboundAddresses[from], "ERCSoulbound: This address is soulbounded");
         _;
     }
 
