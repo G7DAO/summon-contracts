@@ -2,10 +2,10 @@
 pragma solidity ^0.8.20;
 
 import {Test, console2} from "forge-std/Test.sol";
-import "../src/AvatarBound.sol";
+import "../contracts/AvatarBound.sol";
 import "../contracts/mocks/MockERC721Receiver.sol";
 
-contract AvatarBound is Test {
+contract AvatarBoundTest is Test {
     AvatarBound avatarBound;
     MockERC721Receiver mockERC721Receiver;
 
@@ -25,14 +25,15 @@ contract AvatarBound is Test {
 
     function testFailUnauthorizedTransfer() public {
         vm.expectRevert("ERCSoulbound: This token is soulbounded");
-        giftNFT.mint(address(mockERC721Receiver), "ipfs://testURI");
-        giftNFT.transferFrom(address(mockERC721Receiver), address(this), 0);
+        avatarBound.mint(address(mockERC721Receiver), "ipfs://testURI");
+        avatarBound.transferFrom(address(mockERC721Receiver), address(this), 0);
     }
 
     function testFailUnauthorizedBurn() public {
+        string memory tokenURI = "ipfs://testURI";
         avatarBound.mint(address(mockERC721Receiver), tokenURI);
         vm.expectRevert("ERCSoulbound: Operation denied, soulbounded");
-        giftNFT.burn(0);
+        avatarBound.burn(0);
     }
 
     function onERC721Received(
