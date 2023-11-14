@@ -38,7 +38,7 @@ contract AvatarBound is ERC721URIStorage, ERC721Enumerable, AccessControl, ERCSo
     bytes32 public constant URI_SETTER_ROLE = keccak256("URI_SETTER_ROLE");
     uint256 private _tokenIdCounter;
     string public baseTokenURI;
-    string private contractURI = "";
+    string public contractURI;
 
     event URIChanged(uint256 indexed tokenId);
     event BaseURIChanged(string indexed uri);
@@ -70,7 +70,7 @@ contract AvatarBound is ERC721URIStorage, ERC721Enumerable, AccessControl, ERCSo
     function batchSetTokenURI(uint256[] memory tokenIds, string[] memory tokenURIs) public onlyRole(URI_SETTER_ROLE) {
         require(tokenIds.length == tokenURIs.length, "TokenIds and URIs length mismatch");
         for (uint256 i = 0; i < tokenIds.length; i++) {
-            require(_ownerOf(tokenIds[i] != address(0)), "URI set of nonexistent token");
+            require(_ownerOf(tokenIds[i]) != address(0), "URI set of nonexistent token");
             _setTokenURI(tokenIds[i], tokenURIs[i]);
         }
     }
@@ -80,7 +80,7 @@ contract AvatarBound is ERC721URIStorage, ERC721Enumerable, AccessControl, ERCSo
     }
 
     function setTokenURI(uint256 tokenId, string memory tokenURL) public onlyRole(URI_SETTER_ROLE) {
-        require(_ownerOf(tokenId != address(0)), "URI set of nonexistent token");
+        require(_ownerOf(tokenId) != address(0), "URI set of nonexistent token");
         _setTokenURI(tokenId, tokenURL);
         emit URIChanged(tokenId);
     }

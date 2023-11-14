@@ -14,6 +14,6 @@ build  :; forge build
 lint   :; pnpm lint
 
 # test
-test   :; forge test
+test   :; forge test -vv
 
 deployAvatarBound  :; forge script script/DeployAvatarBound.s.sol:DeployAvatarBoundScript --rpc-url ${RPC_URL} --broadcast --verify -vvvv
