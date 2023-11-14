@@ -52,3 +52,5 @@ docs/
 
 deployments.json
 deployments-*.json
+
+.DS_Store
