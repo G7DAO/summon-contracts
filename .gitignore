@@ -37,3 +37,6 @@ cache-zk
 
 # debug-related files
 contracts/contracts-dbg
+
+# macos
+.DS_Store
