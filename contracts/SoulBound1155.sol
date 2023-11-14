@@ -6,13 +6,14 @@ import "@openzeppelin/contracts/token/ERC1155/extensions/ERC1155Burnable.sol";
 import "@openzeppelin/contracts/access/AccessControl.sol";
 import "@openzeppelin/contracts/security/Pausable.sol";
 import "@openzeppelin/contracts/utils/Strings.sol";
+import "@openzeppelin/contracts/token/common/ERC2981.sol";
 import "./ERCSoulBound.sol";
 
 error TokenNotExist();
 error AlreadyMinted();
 error ExceedMaxMint();
 
-contract SoulBoundBadges is ERC1155Burnable, ERCSoulBound, AccessControl, Pausable {
+contract SoulBound1155 is ERC1155Burnable, ERCSoulBound, ERC2981, AccessControl, Pausable {
     bytes32 public constant MINTER_ROLE = keccak256("MINTER_ROLE");
     bytes32 public constant MANAGER_ROLE = keccak256("MANAGER_ROLE");
 
@@ -64,7 +65,6 @@ contract SoulBoundBadges is ERC1155Burnable, ERCSoulBound, AccessControl, Pausab
             }
         }
 
-        
         _;
     }
 
@@ -73,18 +73,22 @@ contract SoulBoundBadges is ERC1155Burnable, ERCSoulBound, AccessControl, Pausab
         string memory _symbol,
         string memory _initBaseURI,
         uint256 _maxPerMint,
-        bool isPaused
+        bool _isPaused,
+        address _devWallet,
+        uint96 _royalty
     ) ERC1155(_initBaseURI) {
         _grantRole(DEFAULT_ADMIN_ROLE, msg.sender);
         _grantRole(MINTER_ROLE, msg.sender);
         _grantRole(MANAGER_ROLE, msg.sender);
+
+        _setDefaultRoyalty(_devWallet, _royalty);
 
         name = _name;
         symbol = _symbol;
         baseURI = _initBaseURI;
         MAX_PER_MINT = _maxPerMint;
 
-        if (isPaused) _pause();
+        if (_isPaused) _pause();
     }
 
     function pause() external onlyRole(MANAGER_ROLE) {
@@ -100,15 +104,10 @@ contract SoulBoundBadges is ERC1155Burnable, ERCSoulBound, AccessControl, Pausab
     }
 
     // optional soulBound minting
-    function mint(
-        address to,
-        uint256 id,
-        uint256 amount,
-        bool soulBound
-    ) external onlyRole(MINTER_ROLE) canMint(to, id, amount) whenNotPaused {
+    function mint(address to, uint256 id, uint256 amount, bool soulBound) external onlyRole(MINTER_ROLE) canMint(to, id, amount) whenNotPaused {
         isMinted[id][to] = true;
         _mint(to, id, 1, "");
-        if(soulBound) {
+        if (soulBound) {
             _soulbound(to, id, 1);
         }
     }
@@ -125,16 +124,28 @@ contract SoulBoundBadges is ERC1155Burnable, ERCSoulBound, AccessControl, Pausab
         }
 
         _mintBatch(to, ids, amounts, "");
-        if(soulBound) {
+        if (soulBound) {
             _soulboundBatch(to, ids, amounts);
         }
     }
 
-    function safeTransferFrom(address _from, address _to, uint256 _id, uint256 _amount, bytes memory _data) soulboundCheck(_from, _id, _amount) public virtual override {
+    function safeTransferFrom(
+        address _from,
+        address _to,
+        uint256 _id,
+        uint256 _amount,
+        bytes memory _data
+    ) public virtual override soulboundCheck(_from, _to, _id, _amount) {
         super.safeTransferFrom(_from, _to, _id, _amount, _data);
     }
 
-    function safeBatchTransferFrom(address _from, address _to, uint256[] memory _ids, uint256[] memory _amounts, bytes memory _data) soulboundCheckBatch(_from, _ids, _amounts) public virtual override {
+    function safeBatchTransferFrom(
+        address _from,
+        address _to,
+        uint256[] memory _ids,
+        uint256[] memory _amounts,
+        bytes memory _data
+    ) public virtual override soulboundCheckBatch(_from, _to, _ids, _amounts) {
         super.safeBatchTransferFrom(_from, _to, _ids, _amounts, _data);
     }
 
@@ -146,7 +157,7 @@ contract SoulBoundBadges is ERC1155Burnable, ERCSoulBound, AccessControl, Pausab
         _burnBatch(to, tokenIds, amounts);
     }
 
-    function supportsInterface(bytes4 interfaceId) public view override(ERC1155, AccessControl) returns (bool) {
+    function supportsInterface(bytes4 interfaceId) public view override(ERC1155, ERC2981, AccessControl) returns (bool) {
         return super.supportsInterface(interfaceId);
     }
 
@@ -154,13 +165,18 @@ contract SoulBoundBadges is ERC1155Burnable, ERCSoulBound, AccessControl, Pausab
         if (!tokenExists[tokenId]) {
             revert TokenNotExist();
         }
-        return
-            bytes(baseURI).length > 0
-                ? string(abi.encodePacked(baseURI, tokenId.toString()))
-                : baseURI;
+        return bytes(baseURI).length > 0 ? string(abi.encodePacked(baseURI, tokenId.toString())) : baseURI;
     }
 
     function updateBaseUri(string memory _baseURI) external onlyRole(MANAGER_ROLE) {
         baseURI = _baseURI;
+    }
+
+    function setRoyaltyInfo(address receiver, uint96 feeBasisPoints) external onlyRole(MANAGER_ROLE) {
+        _setDefaultRoyalty(receiver, feeBasisPoints);
+    }
+
+    function updateWhitelistAddress(address _address, bool _isWhitelisted) external onlyRole(MANAGER_ROLE) {
+        _updateWhitelistAddress(_address, _isWhitelisted);
     }
 }

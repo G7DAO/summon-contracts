@@ -31,34 +31,45 @@ contract ERCSoulBound {
     mapping(uint256 => bool) internal _soulboundTokens; // low gas usage
     mapping(address => bool) internal _soulboundAddresses; // mid gas usage
     mapping(address => mapping(uint256 => uint256)) internal _soulbounds; // high gas usage
+    mapping(address => bool) internal whitelistAddresses;
 
     event SoulboundToken(uint256 indexed tokenId);
     event SoulboundAddress(address indexed to);
     event Soulbound(address indexed to, uint256 indexed tokenId, uint256 amount);
-    event SoulboundBatch(address indexed to, uint256[] indexed tokenIds, uint256[] indexed  amounts);
+    event SoulboundBatch(address indexed to, uint256[] indexed tokenIds, uint256[] indexed amounts);
 
 
     modifier soulboundTokenCheck(uint256 tokenId) {
-        require(!_soulboundTokens[tokenId], "ERCSoulbound: This token is soulbounded");
+        require(!_soulboundTokens[tokenId], "ERCSoulbound: This token is soul bounded");
         _;
     }
 
     modifier soulboundAddressCheck(address from) {
         require(from != address(0), "ERCSoulbound: can't be zero address");
-        require(!_soulboundAddresses[from], "ERCSoulbound: This address is soulbounded");
+        require(!_soulboundAddresses[from], "ERCSoulbound: This address is soul bounded");
         _;
     }
 
-    modifier soulboundCheck(address from, uint256 tokenId, uint256 amount) {
-        _checkMultipleAmounts(from, tokenId, amount);
+    modifier soulboundCheck(
+        address from,
+        address to,
+        uint256 tokenId,
+        uint256 amount
+    ) {
+        _checkMultipleAmounts(from, to, tokenId, amount);
         _;
     }
 
-    modifier soulboundCheckBatch(address from, uint256[] memory tokenIds, uint256[] memory amount) {
+    modifier soulboundCheckBatch(
+        address from,
+        address to,
+        uint256[] memory tokenIds,
+        uint256[] memory amount
+    ) {
         require(tokenIds.length == amount.length, "ERCSoulbound: tokenIds and amounts length mismatch");
 
         for (uint256 i = 0; i < tokenIds.length; i++) {
-            _checkMultipleAmounts(from, tokenIds[i], amount[i]);
+            _checkMultipleAmounts(from, to, tokenIds[i], amount[i]);
         }
         _;
     }
@@ -68,14 +79,22 @@ contract ERCSoulBound {
         _soulboundTokens[tokenId] = true;
     }
 
-    modifier syncSoulbound(address from, uint256 tokenId, uint256 amount) {
+    modifier syncSoulbound(
+        address from,
+        uint256 tokenId,
+        uint256 amount
+    ) {
         _;
         if (_soulbounds[from][tokenId] > 0) {
             _soulbounds[from][tokenId] -= amount;
         }
     }
 
-    modifier syncBatchSoulbound(address from, uint256[] memory tokenIds, uint256[] memory amounts) {
+    modifier syncBatchSoulbound(
+        address from,
+        uint256[] memory tokenIds,
+        uint256[] memory amounts
+    ) {
         _;
         for (uint256 i = 0; i < tokenIds.length; i++) {
             if (_soulbounds[from][tokenIds[i]] > 0) {
@@ -89,15 +108,24 @@ contract ERCSoulBound {
         _;
     }
 
-    function _checkMultipleAmounts(address from, uint256 tokenId, uint256 amount) private view {
+    function _updateWhitelistAddress(address _address, bool _isWhitelisted) internal {
+        whitelistAddresses[_address] = _isWhitelisted;
+    }
+
+    function _checkMultipleAmounts(address from, address to, uint256 tokenId, uint256 amount) private view {
         require(from != address(0), "ERCSoulbound: can't be zero address");
         require(amount > 0, "ERCSoulbound: can't be zero amount");
 
-        if(_soulbounds[from][tokenId] > amount) {
+        // check if from or to whitelist addresses let it through
+        if (whitelistAddresses[from] || whitelistAddresses[to]) {
+            return;
+        }
+
+        if (_soulbounds[from][tokenId] > amount) {
             revert("ERCSoulbound: The amount of soulbounded tokens is more than the amount of tokens to be transferred");
         }
 
-        if(_soulbounds[from][tokenId] == amount) {
+        if (_soulbounds[from][tokenId] == amount) {
             revert("ERCSoulbound: The amount of soulbounded tokens is equal to the amount of tokens to be transferred");
         }
     }
@@ -177,5 +205,4 @@ contract ERCSoulBound {
     function isSoulboundAddress(address to) public view virtual returns (bool) {
         return _soulboundAddresses[to];
     }
-
 }
