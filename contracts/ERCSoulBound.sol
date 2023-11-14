@@ -39,13 +39,13 @@ contract ERCSoulBound {
 
 
     modifier soulboundTokenCheck(uint256 tokenId) {
-        require(!_soulboundTokens[tokenId], "ERCSoulbound: This token is soul bounded");
+        require(!_soulboundTokens[tokenId], "ERCSoulbound: This token is soulbounded");
         _;
     }
 
     modifier soulboundAddressCheck(address from) {
         require(from != address(0), "ERCSoulbound: can't be zero address");
-        require(!_soulboundAddresses[from], "ERCSoulbound: This address is soul bounded");
+        require(!_soulboundAddresses[from], "ERCSoulbound: This address is soulbounded");
         _;
     }
 
@@ -84,16 +84,21 @@ contract ERCSoulBound {
         }
     }
 
+    modifier revertOperation() {
+        revert("ERCSoulbound: Operation denied, soulbounded");
+        _;
+    }
+
     function _checkMultipleAmounts(address from, uint256 tokenId, uint256 amount) private view {
         require(from != address(0), "ERCSoulbound: can't be zero address");
         require(amount > 0, "ERCSoulbound: can't be zero amount");
 
         if(_soulbounds[from][tokenId] > amount) {
-            revert("ERCSoulbound: The amount of soul bounded tokens is more than the amount of tokens to be transferred");
+            revert("ERCSoulbound: The amount of soulbounded tokens is more than the amount of tokens to be transferred");
         }
 
         if(_soulbounds[from][tokenId] == amount) {
-            revert("ERCSoulbound: The amount of soul bounded tokens is equal to the amount of tokens to be transferred");
+            revert("ERCSoulbound: The amount of soulbounded tokens is equal to the amount of tokens to be transferred");
         }
     }
 

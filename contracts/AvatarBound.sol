@@ -51,7 +51,7 @@ contract AvatarBound is ERC721URIStorage, ERC721Enumerable, AccessControl, ERCSo
         contractURI = _contractURI;
     }
 
-    function summonAvatar(address to, string memory uri) public  {
+    function mint(address to, string memory uri) public  {
         uint256 tokenId = _tokenIdCounter++;
         _safeMint(to, tokenId);
         _setTokenURI(tokenId, uri);
@@ -103,8 +103,7 @@ contract AvatarBound is ERC721URIStorage, ERC721Enumerable, AccessControl, ERCSo
         super._beforeTokenTransfer(from, to, tokenId, batch);
     }
 
-    function _burn(uint256 tokenId) internal override(ERC721, ERC721URIStorage) {
-        revert("You can't burn this token");
+    function _burn(uint256 tokenId) internal override(ERC721, ERC721URIStorage) revertOperation {
         super._burn(tokenId);
     }
 
