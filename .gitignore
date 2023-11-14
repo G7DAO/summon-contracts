@@ -40,3 +40,7 @@ contracts/contracts-dbg
 
 # macos
 .DS_Store
+
+# misc deployment files
+deployments.json
+deployments-*.json
