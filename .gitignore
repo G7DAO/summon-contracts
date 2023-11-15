@@ -38,9 +38,20 @@ cache-zk
 # debug-related files
 contracts/contracts-dbg
 
-# macos
-.DS_Store
+# Compiler files
+cache/
+out/
 
-# misc deployment files
+# Ignores development broadcast logs
+!/broadcast
+/broadcast/*/31337/
+/broadcast/**/dry-run/
+
+# Docs
+docs/
+
 deployments.json
 deployments-*.json
+
+# macos
+.DS_Store

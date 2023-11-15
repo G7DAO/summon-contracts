@@ -1,6 +1,32 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.17;
 
+/**
+* Author: Omar <omar@game7.io>(https://github.com/ogarciarevett)
+* Co-Authors: Max <max@game7.io>(https://github.com/vasinl124)
+*/
+
+/**                        .;c;.
+*                      'lkXWWWXk:.
+*                    .dXMMMMMMMMWXkc'.
+*               .,..  ,dKNMMMMMMMMMMN0o,.
+*             ,dKNXOo'. .;dKNMMMMMMMMMWN0c.
+*            .kMMMMMWN0o;. .,lkNMMMMMMWKd,
+*            .OMMMMMMMMMN0x:. .'ckXN0o;. ..
+*             :ONMMMMMMMMMMWKxc. .... .:d0d.
+*              .'cxKWMMMMMMMMMWXkl,.  'o0Nk.
+*            .:l,  .:dKWMMMMMMMMMMNOl,. .;,
+*            .OMKl.   .;oOXWMMMMMMMMMN0o;.
+*            .co;.  .;,. .'lOXWMMMMMMMMMWKl.
+*               .:dOXWWKd;.  'ckXWMMMMMMMMk.
+*             .c0WMMMMMMMWKd:.  .:xXWMMMWNo.
+*             ,oONWMMMMMMMMWXOl.  .;okxl'
+*                .,lkXWMMMMMMMMWXO:
+*                    .ckKWMMMMMWKd;
+*                       .:d0X0d:.
+*                          ...
+*/
+
 contract ERCSoulBound {
     mapping(uint256 => bool) internal _soulboundTokens; // low gas usage
     mapping(address => bool) internal _soulboundAddresses; // mid gas usage
@@ -12,14 +38,14 @@ contract ERCSoulBound {
     event Soulbound(address indexed to, uint256 indexed tokenId, uint256 amount);
     event SoulboundBatch(address indexed to, uint256[] indexed tokenIds, uint256[] indexed amounts);
 
+
     modifier soulboundTokenCheck(uint256 tokenId) {
-        require(!_soulboundTokens[tokenId], "ERCSoulbound: This token is soul bounded");
+        require(!_soulboundTokens[tokenId], "ERCSoulbound: This token is soulbounded");
         _;
     }
 
     modifier soulboundAddressCheck(address from) {
-        require(from != address(0), "ERCSoulbound: can't be zero address");
-        require(!_soulboundAddresses[from], "ERCSoulbound: This address is soul bounded");
+        require(!_soulboundAddresses[from], "ERCSoulbound: This address is soulbounded");
         _;
     }
 
@@ -76,6 +102,11 @@ contract ERCSoulBound {
         }
     }
 
+    modifier revertOperation() {
+        revert("ERCSoulbound: Operation denied, soulbounded");
+        _;
+    }
+
     function _updateWhitelistAddress(address _address, bool _isWhitelisted) internal {
         whitelistAddresses[_address] = _isWhitelisted;
     }
@@ -90,13 +121,14 @@ contract ERCSoulBound {
         }
 
         if (_soulbounds[from][tokenId] > amount) {
-            revert("ERCSoulbound: The amount of soul bounded tokens is more than the amount of tokens to be transferred");
+            revert("ERCSoulbound: The amount of soulbounded tokens is more than the amount of tokens to be transferred");
         }
 
         if (_soulbounds[from][tokenId] == amount) {
-            revert("ERCSoulbound: The amount of soul bounded tokens is equal to the amount of tokens to be transferred");
+            revert("ERCSoulbound: The amount of soulbounded tokens is equal to the amount of tokens to be transferred");
         }
     }
+
 
     /**
      * @dev Soulbound `tokenId` - ERC721 use cases
@@ -153,7 +185,7 @@ contract ERCSoulBound {
      * @dev Returns if a `tokenId` is soulBound
      *
      */
-    function isSoulboundToken(uint256 tokenId) public view virtual returns (bool) {
+    function isSoulboundToken(uint256 tokenId) external view virtual returns (bool) {
         return _soulboundTokens[tokenId];
     }
 
@@ -161,7 +193,7 @@ contract ERCSoulBound {
      * @dev Returns if a `tokenId` is soulBound
      *
      */
-    function soulboundBalance(address to, uint256 tokenId) public view virtual returns (uint256) {
+    function soulboundBalance(address to, uint256 tokenId) external view virtual returns (uint256) {
         return _soulbounds[to][tokenId];
     }
 

@@ -43,3 +43,16 @@ export const ItemsBoundArgs = {
         tenants: ['Game7', 'zkSync'],
     },
 };
+
+export const AvatarBoundArgs = {
+    MAINNET: {
+        name: 'AvatarBound1',
+        symbol: 'AVB',
+        baseURI: 'https://api.mysoulbound.com/tokens/',
+    },
+    TESTNET: {
+        name: 'AvatarBound_Testnet',
+        symbol: 'AVB',
+        baseURI: 'https://api.mysoulbound.com/tokens/',
+    },
+};
