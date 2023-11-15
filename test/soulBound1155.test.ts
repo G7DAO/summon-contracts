@@ -73,7 +73,7 @@ describe('SoulBound1155', function () {
             await tx.wait();
             await expect(
                 soulBound1155.connect(playerAccount).safeTransferFrom(playerAccount.address, minterAccount.address, tokenId, 1, ethers.utils.toUtf8Bytes(''))
-            ).to.be.revertedWith('ERCSoulbound: The amount of soul bounded tokens is equal to the amount of tokens to be transferred');
+            ).to.be.revertedWith('ERCSoulbound: The amount of soulbounded tokens is equal to the amount of tokens to be transferred');
             await expect(
                 soulBound1155.connect(playerAccount).safeTransferFrom(playerAccount.address, minterAccount.address, tokenId, 0, ethers.utils.toUtf8Bytes(''))
             ).to.be.revertedWith("ERCSoulbound: can't be zero amount");
@@ -134,7 +134,7 @@ describe('SoulBound1155', function () {
                 soulBound1155
                     .connect(player2Account)
                     .safeBatchTransferFrom(player2Account.address, minterAccount.address, [1, 2, 3], [1, 1, 1], ethers.utils.toUtf8Bytes(''))
-            ).to.be.revertedWith('ERCSoulbound: The amount of soul bounded tokens is equal to the amount of tokens to be transferred');
+            ).to.be.revertedWith('ERCSoulbound: The amount of soulbounded tokens is equal to the amount of tokens to be transferred');
         });
 
         it('fail if try to mint more than the limit', async function () {
@@ -174,7 +174,7 @@ describe('SoulBound1155', function () {
 
         await expect(
             soulBound1155.connect(playerAccount).safeTransferFrom(playerAccount.address, minterAccount.address, 1, 1, ethers.utils.toUtf8Bytes(''))
-        ).to.be.revertedWith('ERCSoulbound: The amount of soul bounded tokens is equal to the amount of tokens to be transferred');
+        ).to.be.revertedWith('ERCSoulbound: The amount of soulbounded tokens is equal to the amount of tokens to be transferred');
 
         const burnTrx = await soulBound1155.connect(playerAccount).burn(playerAccount.address, 1, 1);
         await burnTrx.wait();
@@ -248,7 +248,7 @@ describe('SoulBound1155', function () {
             await tx.wait();
             await expect(
                 soulBound1155.connect(playerAccount).safeTransferFrom(playerAccount.address, minterAccount.address, tokenId, 1, ethers.utils.toUtf8Bytes(''))
-            ).to.be.revertedWith('ERCSoulbound: The amount of soul bounded tokens is equal to the amount of tokens to be transferred');
+            ).to.be.revertedWith('ERCSoulbound: The amount of soulbounded tokens is equal to the amount of tokens to be transferred');
             await expect(
                 soulBound1155.connect(playerAccount).safeTransferFrom(playerAccount.address, minterAccount.address, tokenId, 0, ethers.utils.toUtf8Bytes(''))
             ).to.be.revertedWith("ERCSoulbound: can't be zero amount");
@@ -260,7 +260,7 @@ describe('SoulBound1155', function () {
             await tx.wait();
             await expect(
                 soulBound1155.connect(playerAccount).safeTransferFrom(playerAccount.address, craftingAccount.address, tokenId, 1, ethers.utils.toUtf8Bytes(''))
-            ).to.be.revertedWith('ERCSoulbound: The amount of soul bounded tokens is equal to the amount of tokens to be transferred');
+            ).to.be.revertedWith('ERCSoulbound: The amount of soulbounded tokens is equal to the amount of tokens to be transferred');
 
             await soulBound1155.updateWhitelistAddress(craftingAccount.address, true);
 
@@ -276,7 +276,7 @@ describe('SoulBound1155', function () {
 
             await expect(
                 soulBound1155.connect(playerAccount).safeTransferFrom(playerAccount.address, craftingAccount.address, tokenId, 1, ethers.utils.toUtf8Bytes(''))
-            ).to.be.revertedWith('ERCSoulbound: The amount of soul bounded tokens is equal to the amount of tokens to be transferred');
+            ).to.be.revertedWith('ERCSoulbound: The amount of soulbounded tokens is equal to the amount of tokens to be transferred');
         });
     });
 

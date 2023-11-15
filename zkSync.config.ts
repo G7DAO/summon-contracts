@@ -33,7 +33,7 @@ defaultConfig.networks = {
 };
 
 defaultConfig.zksolc = {
-    version: '1.3.14',
+    version: 'latest',
     settings: {},
 };
 
