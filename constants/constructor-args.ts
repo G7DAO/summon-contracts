@@ -1,4 +1,19 @@
-export const SoulBoundBadgesArgs = {
+type Tenant = 'Game7' | 'zkSync';
+export interface ConstructorArgs {
+    name: string;
+    symbol: string;
+    baseURI: string;
+    maxPerMint: number;
+    isPaused: boolean;
+    devWallet: string;
+    royalty: number;
+    tenants: Tenant[];
+}
+export interface SoulBound1155Args {
+    MAINNET: ConstructorArgs;
+    TESTNET: ConstructorArgs;
+}
+export const SoulBoundBadgesArgs: SoulBound1155Args = {
     MAINNET: {
         name: 'SoulBoundBadges',
         symbol: 'SBB',
@@ -21,7 +36,7 @@ export const SoulBoundBadgesArgs = {
     },
 };
 
-export const ItemsBoundArgs = {
+export const ItemsBoundArgs: SoulBound1155Args = {
     MAINNET: {
         name: 'ItemsBound',
         symbol: 'ISB',
