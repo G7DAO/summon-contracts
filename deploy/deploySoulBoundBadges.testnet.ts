@@ -9,27 +9,32 @@ import { SoulBound1155 } from '../typechain-types';
 import { log } from '@helpers/logger';
 import getWallet from './getWallet';
 import { SoulBoundBadgesArgs } from '@constants/constructor-args';
+import { encryptPrivateKey } from '@helpers/encrypt';
+import { submitContractToDB } from '@helpers/submit-contract-to-db';
+import { ChainId, NetworkName, Currency, NetworkExplorer, rpcUrls } from '@constants/network';
+import { DeploymentMap } from 'types/deployment-type';
 
 const { name, symbol, baseURI, maxPerMint, isPaused, devWallet, royalty, tenants } = SoulBoundBadgesArgs.TESTNET;
 
 // load wallet private key from env file
 const PRIVATE_KEY = process.env.PRIVATE_KEY || '';
+const encryptedPrivateKey = encryptPrivateKey(PRIVATE_KEY);
 
 const CONTRACT_NAME = 'SoulBound1155';
 const CONTRACT_TYPE = 'Badges';
 const ABI_PATH = 'artifacts/contracts/SoulBound1155.sol/SoulBound1155.json';
 
-interface DeploymentMap {
-    [key: string]: {
-        dbPayload: object;
-        explorerUrl: string;
-    };
-}
-
 if (!PRIVATE_KEY) throw '⛔️ Private key not detected! Add it to the .env file!';
 
 export default async function (hre: HardhatRuntimeEnvironment) {
-    log(`Running deploy script for the ${CONTRACT_NAME} featuring ZkSync`);
+    log(`Running deploy script for the ${CONTRACT_NAME} featuring zkSync`);
+
+    const networkName = hre.network.name as NetworkName;
+    const networkNameKey = Object.keys(NetworkName)[Object.values(NetworkName).indexOf(networkName)]; // get NetworkName Key from Value
+    const chainId = ChainId[networkNameKey as keyof typeof ChainId];
+    const rpcUrl = rpcUrls[chainId as keyof typeof rpcUrls];
+    const currency = Currency[networkNameKey as keyof typeof Currency];
+    const blockExplorerBaseUrl = NetworkExplorer[networkNameKey as keyof typeof NetworkExplorer];
 
     const wallet = await getWallet(PRIVATE_KEY);
     const deployments: DeploymentMap = {};
@@ -43,18 +48,6 @@ export default async function (hre: HardhatRuntimeEnvironment) {
     // Read the file content
     const abiContent = fs.readFileSync(abiPath, 'utf8');
     const { abi: contractAbi } = JSON.parse(abiContent);
-
-    const DEFAULT_CONTRACT_PAYLOAD = {
-        type: CONTRACT_TYPE,
-        chainId: 280,
-        blockExplorerBaseUrl: 'https://goerli.explorer.zksync.io',
-        privateKey: PRIVATE_KEY,
-        publicKey: wallet.address,
-        currency: 'ETH',
-        active: true,
-        rpcUrl: 'https://testnet.era.zksync.dev',
-        networkName: 'zkSyncTestnet',
-    };
 
     for (const tenant of tenants) {
         const achievoContract = (await deployer.deploy(artifact, [
@@ -80,15 +73,25 @@ export default async function (hre: HardhatRuntimeEnvironment) {
 
         deployments[tenant] = {
             dbPayload: {
-                ...DEFAULT_CONTRACT_PAYLOAD,
                 contractAbi,
                 contractAddress,
+                type: CONTRACT_TYPE,
+                active: true,
+                networkName,
+                chainId,
+                rpcUrl,
+                currency,
+                blockExplorerBaseUrl,
+                privateKey: encryptedPrivateKey,
+                publicKey: wallet.address,
+                paymasterAddresses: [],
+                fakeContractAddress: '',
             },
-            explorerUrl: `https://explorer.zksync.io/address/${contractAddress}#contract`,
+            explorerUrl: `${blockExplorerBaseUrl}/address/${contractAddress}#contract`,
         };
     }
 
-    console.log('Deployments:', JSON.stringify(deployments, null, 2));
+    await submitContractToDB(deployments);
 
     // Define the path to the file
     const filePath = path.resolve(`deployments-${CONTRACT_TYPE}.json`);
