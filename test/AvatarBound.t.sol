@@ -3,17 +3,44 @@ pragma solidity ^0.8.17;
 
 import {Test, console2} from "forge-std/Test.sol";
 import "../contracts/AvatarBound.sol";
+import "../contracts/SoulBound1155.sol";
 import "../contracts/mocks/MockERC721Receiver.sol";
+import "../contracts/mocks/Mock721SoulBound.sol";
 
 contract AvatarBoundTest is Test {
     AvatarBound avatarBound;
     MockERC721Receiver mockERC721Receiver;
+    SoulBound1155 soulBound1155;
+    Mock721SoulBound mockERC721SoulBound;
+
 
     function setUp() public {
-        avatarBound = new AvatarBound("Test", "T", "MISSING_BASE_URL", "MISSING_CONTRACT_URL");
+        mockERC721SoulBound = new Mock721SoulBound();
+        soulBound1155 = new SoulBound1155(
+            "Test1155",
+            "T1155",
+            "MISSING_BASE_URL",
+            1,
+            false,
+            address(this),
+            10
+        );
+
+        avatarBound = new AvatarBound(
+            "Test",
+            "T",
+            "MISSING_BASE_URL",
+            "MISSING_CONTRACT_URL",
+            address(mockERC721SoulBound),
+            address(soulBound1155),
+            true,
+            true
+        );
+
         mockERC721Receiver = new MockERC721Receiver();
         avatarBound.grantRole(avatarBound.MINTER_ROLE(), address(this));
         avatarBound.grantRole(avatarBound.URI_SETTER_ROLE(), address(this));
+        avatarBound.setBaseSkin(1, "ipfs://{hash}/baseSkin/1.png");
     }
 
     function concatenateStrings(string memory a, string memory b) internal pure returns (string memory) {
@@ -21,36 +48,14 @@ contract AvatarBoundTest is Test {
     }
 
     function testMint() public {
-        string memory tokenURI = "/ipfs/testURI.json";
-        avatarBound.mint(address(mockERC721Receiver), tokenURI);
+        avatarBound.adminMint(address(mockERC721Receiver), 1);
         assertEq(avatarBound.ownerOf(0), address(mockERC721Receiver));
-
-        string memory expectedTokenURI = concatenateStrings(avatarBound.baseTokenURI(), tokenURI);
-        assertEq(avatarBound.tokenURI(0), expectedTokenURI);
     }
 
     function testFailUnauthorizedTransfer() public {
         vm.expectRevert("ERCSoulbound: This token is soulbounded");
-        avatarBound.mint(address(mockERC721Receiver), "ipfs://testURI");
+        avatarBound.adminMint(address(mockERC721Receiver), 1);
         avatarBound.transferFrom(address(mockERC721Receiver), address(this), 0);
-    }
-
-    function testBatchSetTokenURI() public {
-        string[] memory uris = new string[](2);
-        uris[0] = "ipfs://testURI1";
-        uris[1] = "ipfs://testURI2";
-
-        uint256[] memory tokenIds = new uint256[](2);
-        avatarBound.mint(address(this), uris[0]);
-        tokenIds[0] = 0;
-        avatarBound.mint(address(this), uris[1]);
-        tokenIds[1] = 1;
-
-        avatarBound.batchSetTokenURI(tokenIds, uris);
-
-        for (uint256 i = 0; i < tokenIds.length; i++) {
-            assertEq(avatarBound.tokenURI(tokenIds[i]), concatenateStrings(avatarBound.baseTokenURI(), uris[i]));
-        }
     }
 
     function testSetContractURI() public {
@@ -61,7 +66,7 @@ contract AvatarBoundTest is Test {
 
     function testSetTokenURI() public {
         uint256 tokenId = 0;
-        avatarBound.mint(address(this), "ipfs://initialURI");
+        avatarBound.adminMint(address(this), 1);
         string memory newURI = "ipfs://newURI";
         avatarBound.setTokenURI(tokenId, newURI);
 

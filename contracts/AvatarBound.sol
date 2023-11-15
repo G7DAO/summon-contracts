@@ -47,13 +47,15 @@ contract AvatarBound is ERC721URIStorage, ERC721Enumerable, AccessControl, ERCSo
     uint256 private _specialItemId = 0;
     string public baseTokenURI;
     string public contractURI;
-    address private _holderNFTAddress;
-    address private _itemsNFTAddress;
+    address public holderNFTAddress;
+    address public itemsNFTAddress;
     bool public nftGatingMintEnabled;
     bool public mintRandomItemEnabled;
 
     event URIChanged(uint256 indexed tokenId);
     event BaseURIChanged(string indexed uri);
+    event SignerAdded(address signer);
+    event SignerRemoved(address signer);
 
     mapping(uint256 => string) private _baseSkins;
 
@@ -74,8 +76,8 @@ contract AvatarBound is ERC721URIStorage, ERC721Enumerable, AccessControl, ERCSo
         string memory _contractURI,
         address _holderNFTAddress,
         address _itemsNFTAddress,
-        bool _nftGatingEnabled,
-        bool _mintRandomItem
+        bool _nftGatingMintEnabled,
+        bool _mintRandomItemEnabled
     ) ERC721(_name, _symbol) {
         _grantRole(DEFAULT_ADMIN_ROLE, msg.sender);
         _grantRole(MINTER_ROLE, msg.sender);
@@ -85,19 +87,19 @@ contract AvatarBound is ERC721URIStorage, ERC721Enumerable, AccessControl, ERCSo
         contractURI = _contractURI;
         holderNFTAddress = _holderNFTAddress;
         itemsNFTAddress = _itemsNFTAddress;
-        nftGatingEnabled = _nftGatingEnabled;
-        mintRandomItem = _mintRandomItem;
+        nftGatingMintEnabled = _nftGatingMintEnabled;
+        mintRandomItemEnabled = _mintRandomItemEnabled;
     }
 
     function mint(address to, uint256 baseSkinId) private {
         require(!isSoulboundAddress(to), "Address has already minted an Avatar");
-        require(_baseSkins[baseSkinId] != "", "Base Skin not found on-chain");
+        require(bytes(_baseSkins[baseSkinId]).length > 0, "Base Skin not found on-chain");
         uint256 tokenId = _tokenIdCounter++;
         _safeMint(to, tokenId);
         _setTokenURI(tokenId, _baseSkins[baseSkinId]);
         _soulboundAddress(to);
 
-        if(mintRandomItem) {
+        if(mintRandomItemEnabled) {
             mintRandomItem(to);
         }
     }
@@ -105,13 +107,13 @@ contract AvatarBound is ERC721URIStorage, ERC721Enumerable, AccessControl, ERCSo
     function mintAvatarForNftHolder(uint256 baseSkinId, uint256 nonce, bytes memory signature) public nonReentrant whenNotPaused  {
         require(verifySignature(_msgSender(), nonce, signature), "Invalid signature");
         require(IOpenMint(holderNFTAddress).balanceOf(_msgSender()) > 0, "1 NFT Hold Required");
-        mint(_msgSender(), _baseSkins[baseSkinId]);
-        mintSpecialGooglesItem(_msgSender());
+        mint(_msgSender(), baseSkinId);
+        mintSpecialItem(_msgSender());
     }
 
     function mintAvatar(uint256 baseSkinId, uint256 nonce, bytes memory signature) public nonReentrant whenNotPaused  {
         require(verifySignature(_msgSender(), nonce, signature), "Invalid signature");
-        mint(_msgSender(), _baseSkins[baseSkinId]);
+        mint(_msgSender(), baseSkinId);
     }
 
     function adminMint(address to, uint256 baseSkinId) public onlyRole(MINTER_ROLE) whenNotPaused {
@@ -158,7 +160,7 @@ contract AvatarBound is ERC721URIStorage, ERC721Enumerable, AccessControl, ERCSo
         return signer;
     }
 
-    function verifySignature(address to, uint256 nonce, bytes memory signature) private view returns (bool) {
+    function verifySignature(address to, uint256 nonce, bytes memory signature) private returns (bool) {
         address signer = recoverAddress(to, nonce, signature);
         if (whitelistSigners[signer]) {
             usedSignatures[signature] = true;

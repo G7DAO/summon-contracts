@@ -2,7 +2,9 @@
 
 pragma solidity ^0.8.17;
 
-interface IOpenMint {
+import {IERC721} from "@openzeppelin/contracts/token/ERC721/IERC721.sol";
+
+interface IOpenMint is IERC721 {
     event ContractLocked(bool locked);
     event ContractUnlocked(bool locked);
     event FreeMintPaused(bool paused);
