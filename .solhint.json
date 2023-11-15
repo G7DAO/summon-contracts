@@ -1,11 +1,12 @@
 {
-  "extends": "solhint:recommended",
-  "plugins": [],
-  "rules": {
-    "avoid-throw": "off",
-    "avoid-suicide": "error",
-    "avoid-sha3": "warn",
-    "no-global-import": "off",
-    "no-empty-blocks": "off"
-  }
+    "extends": "solhint:recommended",
+    "plugins": [],
+    "rules": {
+        "avoid-throw": "off",
+        "avoid-suicide": "error",
+        "avoid-sha3": "warn",
+        "no-global-import": "off",
+        "no-empty-blocks": "off",
+        "no-console": "warn"
+    }
 }

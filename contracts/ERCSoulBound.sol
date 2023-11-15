@@ -45,7 +45,6 @@ contract ERCSoulBound {
     }
 
     modifier soulboundAddressCheck(address from) {
-        require(from != address(0), "ERCSoulbound: can't be zero address");
         require(!_soulboundAddresses[from], "ERCSoulbound: This address is soulbounded");
         _;
     }
