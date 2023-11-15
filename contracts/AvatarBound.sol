@@ -316,9 +316,7 @@ contract AvatarBound is ERC721URIStorage, ERC721Enumerable, AccessControl, ERCSo
         super._beforeTokenTransfer(from, to, tokenId, batch);
     }
 
-    function _burn(uint256 tokenId) internal override(ERC721, ERC721URIStorage) revertOperation {
-        super._burn(tokenId);
-    }
+    function _burn(uint256 tokenId) internal override(ERC721, ERC721URIStorage) {}
 
     function tokenURI(uint256 tokenId) public view override(ERC721, ERC721URIStorage) returns (string memory) {
         return super.tokenURI(tokenId);

@@ -34,8 +34,5 @@ contract Mock721ERC721 is ERC721 {
         _safeMint(to, tokenId);
     }
 
-    function reveal(uint256 tokenId, string memory newURI) public view {
-        console.log(newURI);
-        console.log(tokenId);
-    }
+    function reveal(uint256 tokenId, string memory newURI) public view {}
 }
