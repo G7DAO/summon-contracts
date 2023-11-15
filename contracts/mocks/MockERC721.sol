@@ -22,7 +22,6 @@ pragma solidity ^0.8.17;
  *                          ...
  */
 
-import { console } from "forge-std/console.sol";
 import "@openzeppelin/contracts/token/ERC721/ERC721.sol";
 
 contract Mock721ERC721 is ERC721 {
