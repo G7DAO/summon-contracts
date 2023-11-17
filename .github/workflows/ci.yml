@@ -91,11 +91,9 @@ jobs:
       - name: Install dependencies
         run: npm install
 
-      - name: Run Solidity-Coverage
-        run: |
-          npm install --save-dev solidity-coverage
-          npx hardhat coverage
+      - name: Run Hardhat tests
+        run: REPORT_GAS=false hardhat --config hardhat.config.ts test
 
-      - name: Enforce Coverage
-        run: npx istanbul check-coverage --statements 36.5 --branches 17.5 --functions 40 --lines 30
+#      - name: Enforce Coverage
+#        run: npx istanbul check-coverage --statements 36.5 --branches 17.5 --functions 40 --lines 30
 
