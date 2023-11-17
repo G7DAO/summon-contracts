@@ -83,11 +83,6 @@ contract AvatarBound is ERC721URIStorage, ERC721Enumerable, AccessControl, ERCSo
     // bytes(signature) => used
     mapping(bytes => bool) public usedSignatures;
 
-    modifier onlyOnceSignature(bytes memory signature) {
-        require(usedSignatures[signature] != true, "Signature and nonce already used");
-        _;
-    }
-
     constructor(
         string memory _name,
         string memory _symbol,
