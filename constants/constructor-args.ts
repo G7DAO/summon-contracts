@@ -61,13 +61,32 @@ export const ItemsBoundArgs: SoulBound1155Args = {
 
 export const AvatarBoundArgs = {
     MAINNET: {
-        name: 'AvatarBound1',
+        name: 'AvatarBoundV1',
         symbol: 'AVB',
-        baseURI: 'https://api.mysoulbound.com/tokens/',
+        // TODO: change this for the final gateway
+        baseURI: 'https://apricot-persistent-duck-562.mypinata.cloud/',
+        // TODO: change this for the final gateway
+        contractURI: 'https://apricot-persistent-duck-562.mypinata.cloud/{contractURIHASH}',
+        gatingNftAddress: '0xcc1eBf6Dbb9fF24A745D1cc7F6DC3eeDa5f9fa71',
+        // TODO: change this for the final address
+        itemsNftAddress: 'FILL_ME',
+        mintNftGatingEnabled: true,
+        mintNFtWithoutGatingEnabled: true,
+        mintRandomItemEnabled: true,
+        blockExplorerBaseUrl: 'https://explorer.zksync.io',
+        tenants: ['zkSync'],
     },
     TESTNET: {
-        name: 'AvatarBound_Testnet',
+        name: 'AvatarBoundV1',
         symbol: 'AVB',
-        baseURI: 'https://api.mysoulbound.com/tokens/',
+        baseURI: 'https://apricot-persistent-duck-562.mypinata.cloud/',
+        contractURI: 'https://apricot-persistent-duck-562.mypinata.cloud/{contractURIHASH}',
+        gatingNftAddress: '0xcc1eBf6Dbb9fF24A745D1cc7F6DC3eeDa5f9fa71',
+        itemsNftAddress: '0x482B4efC7c192567fDF51C5Bc8127279d63013F1',
+        mintNftGatingEnabled: true,
+        mintNFtWithoutGatingEnabled: true,
+        mintRandomItemEnabled: true,
+        blockExplorerBaseUrl: 'https://goerli.explorer.zksync.io',
+        tenants: ['zkSync'],
     },
 };

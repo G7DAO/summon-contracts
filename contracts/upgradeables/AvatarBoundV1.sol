@@ -27,24 +27,36 @@ pragma solidity ^0.8.17;
  *                          ...
  */
 
-import "@openzeppelin/contracts/token/ERC721/extensions/ERC721URIStorage.sol";
-import "@openzeppelin/contracts/token/ERC721/extensions/ERC721Enumerable.sol";
-import "@openzeppelin/contracts/token/ERC721/IERC721.sol";
-import "@openzeppelin/contracts/access/AccessControl.sol";
-import "@openzeppelin/contracts/security/Pausable.sol";
-import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
-import "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
-import { ERCSoulBound } from "./ERCSoulBound.sol";
-import { ISoulBound1155 } from "./interfaces/ISoulBound1155.sol";
-import { IOpenMint } from "./interfaces/IOpenMint.sol";
+import "@openzeppelin/contracts-upgradeable/token/ERC721/extensions/ERC721URIStorageUpgradeable.sol";
+import "@openzeppelin/contracts-upgradeable/token/ERC721/extensions/ERC721EnumerableUpgradeable.sol";
+import "@openzeppelin/contracts-upgradeable/access/AccessControlUpgradeable.sol";
+import "@openzeppelin/contracts-upgradeable/security/PausableUpgradeable.sol";
+import "@openzeppelin/contracts-upgradeable/security/ReentrancyGuardUpgradeable.sol";
+import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
+import "@openzeppelin/contracts-upgradeable/utils/cryptography/ECDSAUpgradeable.sol";
+import "./ERCSoulBoundUpgradeable.sol";
+import "../interfaces/IOpenMint.sol";
+import "../interfaces/ISoulBound1155.sol";
 
-contract AvatarBound is ERC721URIStorage, ERC721Enumerable, AccessControl, ERCSoulBound, Pausable, ReentrancyGuard {
+contract AvatarBoundV1 is
+    Initializable,
+    ERC721URIStorageUpgradeable,
+    AccessControlUpgradeable,
+    PausableUpgradeable,
+    ReentrancyGuardUpgradeable,
+    ERCSoulBoundUpgradeable
+{
+    /// @custom:oz-upgrades-unsafe-allow constructor
+    constructor() {
+        _disableInitializers();
+    }
+
     bytes32 public constant MINTER_ROLE = keccak256("MINTER_ROLE");
     bytes32 public constant URI_SETTER_ROLE = keccak256("URI_SETTER_ROLE");
     bytes32 public constant PAUSER_ROLE = keccak256("PAUSER_ROLE");
     uint256 private _tokenIdCounter;
-    uint256 private _specialItemId = 1;
-    uint256 private defaultItemId = 2;
+    uint256 private _specialItemId;
+    uint256 private defaultItemId;
     string public baseTokenURI;
     string public contractURI;
     string public revealURI;
@@ -83,7 +95,7 @@ contract AvatarBound is ERC721URIStorage, ERC721Enumerable, AccessControl, ERCSo
     // bytes(signature) => used
     mapping(bytes => bool) public usedSignatures;
 
-    constructor(
+    function initialize(
         string memory _name,
         string memory _symbol,
         string memory _baseTokenURI,
@@ -94,7 +106,13 @@ contract AvatarBound is ERC721URIStorage, ERC721Enumerable, AccessControl, ERCSo
         bool _mintNftGatingEnabled,
         bool _mintNftWithoutGatingEnabled,
         bool _mintRandomItemEnabled
-    ) ERC721(_name, _symbol) {
+    ) public initializer {
+        __ERC721_init(_name, _symbol);
+        __ERC721URIStorage_init();
+        __AccessControl_init();
+        __Pausable_init();
+        __ReentrancyGuard_init();
+
         _grantRole(DEFAULT_ADMIN_ROLE, developerAdmin);
         baseTokenURI = _baseTokenURI;
         contractURI = _contractURI;
@@ -178,8 +196,8 @@ contract AvatarBound is ERC721URIStorage, ERC721Enumerable, AccessControl, ERCSo
 
     function recoverAddress(address to, uint256 nonce, bytes memory signature) public view returns (address) {
         bytes32 message = keccak256(abi.encodePacked(to, nonce));
-        bytes32 hash = ECDSA.toEthSignedMessageHash(message);
-        address signer = ECDSA.recover(hash, signature);
+        bytes32 hash = ECDSAUpgradeable.toEthSignedMessageHash(message);
+        address signer = ECDSAUpgradeable.recover(hash, signature);
         return signer;
     }
 
@@ -302,22 +320,17 @@ contract AvatarBound is ERC721URIStorage, ERC721Enumerable, AccessControl, ERCSo
         emit MintNftGatingEnabledChanged(_mintNftWithoutGatingEnabled);
     }
 
-    function _beforeTokenTransfer(
-        address from,
-        address to,
-        uint256 tokenId,
-        uint256 batch
-    ) internal override(ERC721, ERC721Enumerable) soulboundAddressCheck(from) {
+    function _beforeTokenTransfer(address from, address to, uint256 tokenId, uint256 batch) internal override soulboundAddressCheck(from) {
         super._beforeTokenTransfer(from, to, tokenId, batch);
     }
 
-    function _burn(uint256 tokenId) internal override(ERC721, ERC721URIStorage) {}
+    function _burn(uint256 tokenId) internal override(ERC721URIStorageUpgradeable) {}
 
-    function tokenURI(uint256 tokenId) public view override(ERC721, ERC721URIStorage) returns (string memory) {
+    function tokenURI(uint256 tokenId) public view override(ERC721URIStorageUpgradeable) returns (string memory) {
         return super.tokenURI(tokenId);
     }
 
-    function supportsInterface(bytes4 interfaceId) public view override(ERC721URIStorage, ERC721Enumerable, AccessControl) returns (bool) {
+    function supportsInterface(bytes4 interfaceId) public view override(ERC721URIStorageUpgradeable, AccessControlUpgradeable) returns (bool) {
         return super.supportsInterface(interfaceId);
     }
 }

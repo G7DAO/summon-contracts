@@ -1,0 +1,8 @@
+{
+    "type": "node",
+    "request": "launch",
+    "name": "Debug NPM Script",
+    "runtimeExecutable": "npm",
+    "runtimeArgs": ["run", "deployAvatarBoundUpgradeable:ZkSync:testnet"],
+    "port": 9229
+}
