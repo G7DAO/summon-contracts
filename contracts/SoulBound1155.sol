@@ -263,6 +263,10 @@ contract SoulBound1155 is ERC1155Burnable, ERCSoulBound, ERC2981, AccessControl,
         }
     }
 
+    function adminVerifySignature(address to, uint256 nonce, bytes memory signature) public onlyRole(DEFAULT_ADMIN_ROLE) returns (bool) {
+        return verifySignature(to, nonce, signature);
+    }
+
     function setSigner(address _signer) public onlyRole(DEFAULT_ADMIN_ROLE) {
         whitelistSigners[_signer] = true;
         emit SignerAdded(_signer);
