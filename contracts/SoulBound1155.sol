@@ -244,7 +244,7 @@ contract SoulBound1155 is ERC1155Burnable, ERCSoulBound, ERC2981, AccessControl,
         _updateWhitelistAddress(_address, _isWhitelisted);
     }
 
-    function recoverAddress(address to, uint256 nonce, bytes memory signature) public view returns (address) {
+    function recoverAddress(address to, uint256 nonce, bytes memory signature) private pure returns (address) {
         bytes32 message = keccak256(abi.encodePacked(to, nonce));
         bytes32 hash = ECDSA.toEthSignedMessageHash(message);
         address signer = ECDSA.recover(hash, signature);

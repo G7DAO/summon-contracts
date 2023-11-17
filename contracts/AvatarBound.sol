@@ -176,7 +176,7 @@ contract AvatarBound is ERC721URIStorage, ERC721Enumerable, AccessControl, ERCSo
         emit RandomItemMinted(randomItem, to, itemsNFTAddress);
     }
 
-    function recoverAddress(address to, uint256 nonce, bytes memory signature) public view returns (address) {
+    function recoverAddress(address to, uint256 nonce, bytes memory signature) private pure returns (address) {
         bytes32 message = keccak256(abi.encodePacked(to, nonce));
         bytes32 hash = ECDSA.toEthSignedMessageHash(message);
         address signer = ECDSA.recover(hash, signature);
