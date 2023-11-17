@@ -52,10 +52,9 @@ export const AvatarBoundArgs = {
         baseURI: 'https://apricot-persistent-duck-562.mypinata.cloud/',
         // TODO: change this for the final gateway
         contractURI: 'https://apricot-persistent-duck-562.mypinata.cloud/{contractURIHASH}',
-        // TODO: change this for the final address
         gatingNftAddress: '0xcc1eBf6Dbb9fF24A745D1cc7F6DC3eeDa5f9fa71',
         // TODO: change this for the final address
-        itemsNftAddress: '0xcc1eBf6Dbb9fF24A745D1cc7F6DC3eeDa5f9fa71-FILL_ME',
+        itemsNftAddress: 'FILL_ME',
         mintNftGatingEnabled: true,
         mintNFtWithoutGatingEnabled: true,
         mintRandomItemEnabled: true,
@@ -63,12 +62,12 @@ export const AvatarBoundArgs = {
         tenants: ['zkSync'],
     },
     TESTNET: {
-        name: 'AvatarBoundV1_Testnet',
+        name: 'AvatarBoundV1',
         symbol: 'AVB',
         baseURI: 'https://apricot-persistent-duck-562.mypinata.cloud/',
         contractURI: 'https://apricot-persistent-duck-562.mypinata.cloud/{contractURIHASH}',
         gatingNftAddress: '0xcc1eBf6Dbb9fF24A745D1cc7F6DC3eeDa5f9fa71',
-        itemsNftAddress: '0xcc1eBf6Dbb9fF24A745D1cc7F6DC3eeDa5f9fa71-FILL_ME',
+        itemsNftAddress: '0x482B4efC7c192567fDF51C5Bc8127279d63013F1',
         mintNftGatingEnabled: true,
         mintNFtWithoutGatingEnabled: true,
         mintRandomItemEnabled: true,

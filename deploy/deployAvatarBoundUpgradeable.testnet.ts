@@ -63,7 +63,7 @@ export default async function (hre: HardhatRuntimeEnvironment) {
 
     for (const tenant of tenants) {
         const achievoContract = (await hre.zkUpgrades.deployProxy(deployer.zkWallet, artifact, [
-            `${tenant}${name}`,
+            name,
             symbol,
             baseURI,
             contractURI,
@@ -77,13 +77,13 @@ export default async function (hre: HardhatRuntimeEnvironment) {
 
         // Show the contract info.
         const contractAddress = achievoContract.address;
-        log(`${CONTRACT_TYPE}(${artifact.contractName}) for ${tenant} was deployed to https://explorer.zksync.io/address/${contractAddress}#contract`);
+        log(`${CONTRACT_TYPE}(${artifact.contractName}) for ${tenant} was deployed to https://goerli.explorer.zksync.io/address/${contractAddress}#contract`);
 
         const verificationId = await hre.run('verify:verify', {
             address: contractAddress,
             contract: `contracts/${CONTRACT_NAME}.sol:${CONTRACT_NAME}`,
             constructorArguments: [
-                `${tenant}${name}`,
+                name,
                 symbol,
                 baseURI,
                 contractURI,
@@ -104,7 +104,7 @@ export default async function (hre: HardhatRuntimeEnvironment) {
                 contractAbi,
                 contractAddress,
             },
-            explorerUrl: `https://explorer.zksync.io/address/${contractAddress}#contract`,
+            explorerUrl: `https://goerli.explorer.zksync.io/address/${contractAddress}#contract`,
         };
 
         log(`Verification must be done by console command: npx hardhat verify --network zkSync ${contractAddress} --config zkSync.config.ts`);

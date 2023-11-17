@@ -69,7 +69,6 @@ export default async function (hre: HardhatRuntimeEnvironment) {
 
         // Show the contract info.
         const contractAddress = achievoContract.address;
-        log(`${CONTRACT_TYPE}(${artifact.contractName}) for ${tenant} was deployed to https://explorer.zksync.io/address/${contractAddress}#contract`);
 
         const verificationId = await hre.run('verify:verify', {
             address: contractAddress,
@@ -84,11 +83,11 @@ export default async function (hre: HardhatRuntimeEnvironment) {
                 contractAbi,
                 contractAddress,
             },
-            explorerUrl: `https://explorer.zksync.io/address/${contractAddress}#contract`,
+            explorerUrl: `https://goerli.explorer.zksync.io/address/${contractAddress}#contract`,
         };
-    }
 
-    console.log('Deployments:', JSON.stringify(deployments, null, 2));
+        log(`${CONTRACT_TYPE}(${artifact.contractName}) for ${tenant} was deployed to https://goerli.explorer.zksync.io/address/${contractAddress}#contract`);
+    }
 
     // Define the path to the file
     const filePath = path.resolve(`deployments-${CONTRACT_TYPE}.json`);

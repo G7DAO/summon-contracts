@@ -2,8 +2,29 @@
 pragma solidity ^0.8.17;
 
 /**
- * Authors: Omar Garcia <omar@game7.io>
- * GitHub: https://github.com/ogarciarevett
+ * Author: Omar <omar@game7.io>(https://github.com/ogarciarevett)
+ * Co-Authors: Max <max@game7.io>(https://github.com/vasinl124)
+ */
+
+/**                        .;c;.
+ *                      'lkXWWWXk:.
+ *                    .dXMMMMMMMMWXkc'.
+ *               .,..  ,dKNMMMMMMMMMMN0o,.
+ *             ,dKNXOo'. .;dKNMMMMMMMMMWN0c.
+ *            .kMMMMMWN0o;. .,lkNMMMMMMWKd,
+ *            .OMMMMMMMMMN0x:. .'ckXN0o;. ..
+ *             :ONMMMMMMMMMMWKxc. .... .:d0d.
+ *              .'cxKWMMMMMMMMMWXkl,.  'o0Nk.
+ *            .:l,  .:dKWMMMMMMMMMMNOl,. .;,
+ *            .OMKl.   .;oOXWMMMMMMMMMN0o;.
+ *            .co;.  .;,. .'lOXWMMMMMMMMMWKl.
+ *               .:dOXWWKd;.  'ckXWMMMMMMMMk.
+ *             .c0WMMMMMMMWKd:.  .:xXWMMMWNo.
+ *             ,oONWMMMMMMMMWXOl.  .;okxl'
+ *                .,lkXWMMMMMMMMWXO:
+ *                    .ckKWMMMMMWKd;
+ *                       .:d0X0d:.
+ *                          ...
  */
 
 import "@openzeppelin/contracts-upgradeable/token/ERC721/extensions/ERC721URIStorageUpgradeable.sol";
