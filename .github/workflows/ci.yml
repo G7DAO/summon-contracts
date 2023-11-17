@@ -73,7 +73,7 @@ jobs:
 #          forge test -vvv
 #        id: test
 
-  code_coverage:
+  tests:
     runs-on: ubuntu-latest
 
     steps:
