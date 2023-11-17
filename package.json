@@ -13,7 +13,7 @@
         "deployAvatarBoundUpgradeable:ZkSync:testnet": "npm run compile:zkSync && hardhat --config zkSync.config.ts deploy-zksync --network zkSyncTestnet --script deployAvatarBoundUpgradeable.testnet.ts",
         "deployItemsBound:ZkSync:testnet": "npm run compile:zkSync && hardhat --config zkSync.config.ts deploy-zksync --network zkSyncTestnet --script deployItemsBound.testnet.ts",
         "deployLevelsOnChainUpgradable:ZkSync:testnet": "npm run compile:zkSync && hardhat --config zkSync.config.ts deploy-zksync --network zkSyncTestnet --script deployLevelsBoundUpgradeable.ts",
-        "deploySoulBoundBadges:ZkSync:testnet": "npm run compile:zkSync && hardhat --config zkSync.config.ts deploy-zksync --network zkSyncTestnet --script deploySoulBoundBadges.testnet.ts",
+        "deploySoulboundBadges:ZkSync:testnet": "npm run compile:zkSync && hardhat --config zkSync.config.ts deploy-zksync --network zkSyncTestnet --script deploySoulboundBadges.testnet.ts",
         "deployItemsBound:ZkSync:testnet": "npm run compile:zkSync && hardhat --config zkSync.config.ts deploy-zksync --network zkSyncTestnet --script deployItemsBound.testnet.ts",
         "deployGameSummary:mumbai": "hardhat --config polygon.config.ts run scripts/deployGameSummary1155.ts --network mumbai",
         "deployGameSummary:wadsley": "hardhat --config mantle.config.ts run scripts/deployGameSummary1155.ts --network mantleWadsley",

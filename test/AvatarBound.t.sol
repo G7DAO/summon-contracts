@@ -3,7 +3,7 @@ pragma solidity ^0.8.17;
 
 import { Test, console2 } from "forge-std/Test.sol";
 import "../contracts/AvatarBound.sol";
-import "../contracts/SoulBound1155.sol";
+import "../contracts/Soulbound1155.sol";
 import "../contracts/mocks/MockERC721Receiver.sol";
 import "../contracts/mocks/MockERC1155Receiver.sol";
 import "../contracts/mocks/MockERC721.sol";
@@ -12,7 +12,7 @@ contract AvatarBoundTest is Test {
     AvatarBound public avatarBound;
     MockERC721Receiver public mockERC721Receiver;
     MockERC1155Receiver public mockERC1155Receiver;
-    SoulBound1155 public soulBound1155;
+    Soulbound1155 public soulbound1155;
     Mock721ERC721 public mockERC721;
     address public signerAddress;
 
@@ -22,7 +22,7 @@ contract AvatarBoundTest is Test {
 
     function setUp() public {
         mockERC721 = new Mock721ERC721();
-        soulBound1155 = new SoulBound1155("Test1155", "T1155", "MISSING_BASE_URL", 1, false, address(this), 10);
+        soulbound1155 = new Soulbound1155("Test1155", "T1155", "MISSING_BASE_URL", 1, false, address(this), 10);
 
         avatarBound = new AvatarBound(
             "Test",
@@ -31,7 +31,7 @@ contract AvatarBoundTest is Test {
             "MISSING_CONTRACT_URL",
             address(this),
             address(mockERC721),
-            address(soulBound1155),
+            address(soulbound1155),
             true,
             true,
             true
@@ -41,11 +41,11 @@ contract AvatarBoundTest is Test {
         avatarBound.setSigner(signerAddress);
         mockERC721Receiver = new MockERC721Receiver();
         mockERC1155Receiver = new MockERC1155Receiver();
-        // Add necessary token IDs to the SoulBound1155 contract
+        // Add necessary token IDs to the Soulbound1155 contract
         for (uint256 i = 0; i <= 26; i++) {
-            soulBound1155.addNewToken(i);
+            soulbound1155.addNewToken(i);
         }
-        soulBound1155.grantRole(keccak256("MINTER_ROLE"), address(avatarBound));
+        soulbound1155.grantRole(keccak256("MINTER_ROLE"), address(avatarBound));
     }
 
     function testPauseUnpause() public {

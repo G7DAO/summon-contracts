@@ -1,14 +1,14 @@
 import { HardhatRuntimeEnvironment } from 'hardhat/types';
 
 import { ItemsBoundArgs } from '@constants/constructor-args';
-import deploySoulBound1155Generic from './deploy.soulbound1155.generic';
+import deploySoulbound1155Generic from './deploy.soulbound1155.generic';
 
-const CONTRACT_NAME = 'SoulBound1155';
+const CONTRACT_NAME = 'Soulbound1155';
 const CONTRACT_TYPE = 'Items';
-const ABI_PATH = 'artifacts/contracts/SoulBound1155.sol/SoulBound1155.json';
+const ABI_PATH = 'artifacts/contracts/Soulbound1155.sol/Soulbound1155.json';
 
 export default async function (hre: HardhatRuntimeEnvironment) {
-    await deploySoulBound1155Generic(
+    await deploySoulbound1155Generic(
         hre,
         {
             CONTRACT_NAME,

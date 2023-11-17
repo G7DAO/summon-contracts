@@ -316,7 +316,7 @@ describe('GameSummary1155', function () {
         const gameSummaryBurned = await gameSummary1155.connect(playerAccount).getPlayerGameData(playerAccount.address, TOKEN_ID_1);
         await expect(gameSummaryBurned.achievementsMinted).to.equal(0);
         await expect(gameSummaryBurned.tokenId).to.equal(0);
-        await expect(gameSummaryBurned.soulBounded).to.be.false;
+        await expect(gameSummaryBurned.soulbounded).to.be.false;
     });
 
     it('should revert if a non-admin tries to set a signer', async function () {

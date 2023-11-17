@@ -9,13 +9,13 @@ export interface ConstructorArgs {
     royalty: number;
     tenants: Tenant[];
 }
-export interface SoulBound1155Args {
+export interface Soulbound1155Args {
     MAINNET: ConstructorArgs;
     TESTNET: ConstructorArgs;
 }
-export const SoulBoundBadgesArgs: SoulBound1155Args = {
+export const SoulboundBadgesArgs: Soulbound1155Args = {
     MAINNET: {
-        name: 'SoulBoundBadges',
+        name: 'SoulboundBadges',
         symbol: 'SBB',
         baseURI: 'https://api.mysoulbound.com/tokens/',
         maxPerMint: 1,
@@ -36,7 +36,7 @@ export const SoulBoundBadgesArgs: SoulBound1155Args = {
     },
 };
 
-export const ItemsBoundArgs: SoulBound1155Args = {
+export const ItemsBoundArgs: Soulbound1155Args = {
     MAINNET: {
         name: 'ItemsBound',
         symbol: 'ISB',
