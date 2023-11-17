@@ -4,6 +4,7 @@ import { ethers } from 'hardhat';
 import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers';
 import { SoulBound1155 } from '../typechain-types';
 import { SoulBoundBadgesArgs } from '../constants/constructor-args';
+import { generateSignature } from '../helpers/signature';
 
 const { name, symbol, baseURI, maxPerMint, isPaused, royalty } = SoulBoundBadgesArgs.TESTNET;
 
@@ -14,6 +15,10 @@ describe('SoulBound1155', function () {
     let player2Account: SignerWithAddress;
     let player3Account: SignerWithAddress;
     let craftingAccount: SignerWithAddress;
+    let nonce: number;
+    let signature: string;
+    let nonce2: number;
+    let signature2: string;
     beforeEach(async function () {
         const contract1 = (await ethers.getContractFactory('SoulBound1155')) as unknown as SoulBound1155;
         const [adminAccount, player, player2, player3, player4] = await ethers.getSigners();
@@ -27,6 +32,9 @@ describe('SoulBound1155', function () {
         soulBound1155 = await contract1.deploy(name, symbol, baseURI, maxPerMint, isPaused, minterAccount.address, royalty);
         await soulBound1155.deployed();
         await soulBound1155.unpause();
+
+        ({ nonce, signature } = await generateSignature({ walletAddress: playerAccount.address, signer: minterAccount }));
+        ({ nonce: nonce2, signature: signature2 } = await generateSignature({ walletAddress: player2Account.address, signer: minterAccount }));
     });
 
     // pause and unpause
@@ -38,13 +46,13 @@ describe('SoulBound1155', function () {
             await soulBound1155.pause();
             expect(await soulBound1155.paused()).to.be.true;
 
-            await expect(soulBound1155.mint(playerAccount.address, 1, 1, true)).to.be.rejectedWith('TokenNotExist()');
+            await expect(soulBound1155.connect(playerAccount).mint(1, 1, true, nonce, signature)).to.be.rejectedWith('TokenNotExist()');
 
             await soulBound1155.unpause();
             await soulBound1155.addNewToken(1);
             expect(await soulBound1155.paused()).to.be.false;
 
-            const tx = await soulBound1155.mint(playerAccount.address, 1, 1, true);
+            const tx = await soulBound1155.connect(playerAccount).mint(1, 1, true, nonce, signature);
         });
     });
 
@@ -55,12 +63,45 @@ describe('SoulBound1155', function () {
             expect(await soulBound1155.paused()).to.be.true;
 
             await soulBound1155.addNewToken(22);
-            await expect(soulBound1155.mint(playerAccount.address, 22, 1, true)).to.be.revertedWith('Pausable: paused');
+            await expect(soulBound1155.connect(playerAccount).mint(22, 1, true, nonce, signature)).to.be.revertedWith('Pausable: paused');
 
             await soulBound1155.unpause();
             expect(await soulBound1155.paused()).to.be.false;
 
-            const tx = await soulBound1155.mint(playerAccount.address, 22, 1, true);
+            const tx = await soulBound1155.connect(playerAccount).mint(22, 1, true, nonce, signature);
+        });
+    });
+
+    describe('Verify Signature', () => {
+        it('should fail when try to use invalid signature', async function () {
+            const tokenId = 1;
+            await soulBound1155.addNewToken(tokenId);
+            await expect(soulBound1155.connect(playerAccount).mint(tokenId, 1, true, nonce, signature2)).to.be.rejectedWith('InvalidSignature');
+        });
+
+        it('should fail when try to reuse used signature with mint()', async function () {
+            const tokenId = 1;
+            await soulBound1155.addNewToken(tokenId);
+            await soulBound1155.addNewToken(2);
+
+            await soulBound1155.connect(playerAccount).mint(tokenId, 1, true, nonce, signature);
+
+            expect(await soulBound1155.usedSignatures(signature)).to.be.true;
+
+            await expect(soulBound1155.connect(playerAccount).mint(1, 1, true, nonce, signature)).to.be.rejectedWith('AlreadyUsedSignature');
+        });
+
+        it('should fail when try to reuse used signature with mintBatch()', async function () {
+            await soulBound1155.addNewToken(1);
+            await soulBound1155.addNewToken(2);
+            await soulBound1155.addNewToken(3);
+
+            await soulBound1155.connect(playerAccount).mintBatch([1, 2, 3], [1, 1, 1], true, nonce, signature);
+
+            expect(await soulBound1155.usedSignatures(signature)).to.be.true;
+            await expect(soulBound1155.connect(playerAccount).mintBatch([1, 2, 3], [1, 1, 1], true, nonce, signature)).to.be.rejectedWith(
+                'AlreadyUsedSignature'
+            );
         });
     });
 
@@ -69,7 +110,7 @@ describe('SoulBound1155', function () {
 
         it('must bound the token id properly', async function () {
             await soulBound1155.addNewToken(tokenId);
-            const tx = await soulBound1155.mint(playerAccount.address, tokenId, 1, true);
+            const tx = await soulBound1155.connect(playerAccount).mint(tokenId, 1, true, nonce, signature);
             await tx.wait();
             await expect(
                 soulBound1155.connect(playerAccount).safeTransferFrom(playerAccount.address, minterAccount.address, tokenId, 1, ethers.utils.toUtf8Bytes(''))
@@ -77,7 +118,8 @@ describe('SoulBound1155', function () {
             await expect(
                 soulBound1155.connect(playerAccount).safeTransferFrom(playerAccount.address, minterAccount.address, tokenId, 0, ethers.utils.toUtf8Bytes(''))
             ).to.be.revertedWith("ERCSoulbound: can't be zero amount");
-            const tx2 = await soulBound1155.mint(player2Account.address, tokenId, 1, false);
+
+            const tx2 = await soulBound1155.connect(player2Account).mint(tokenId, 1, false, nonce2, signature2);
             await tx2.wait();
             const transferTrx = await soulBound1155
                 .connect(player2Account)
@@ -90,26 +132,32 @@ describe('SoulBound1155', function () {
         it('fail if try to mint more than the limit', async function () {
             await soulBound1155.addNewToken(tokenId);
 
-            await expect(soulBound1155.mint(playerAccount.address, tokenId, 2, true)).to.be.rejectedWith('ExceedMaxMint()');
+            await expect(soulBound1155.connect(playerAccount).mint(tokenId, 2, true, nonce, signature)).to.be.rejectedWith('ExceedMaxMint()');
         });
 
         it('fail if already minted', async function () {
             await soulBound1155.addNewToken(tokenId);
-            await soulBound1155.mint(playerAccount.address, tokenId, 1, true);
+            await soulBound1155.connect(playerAccount).mint(tokenId, 1, true, nonce, signature);
 
-            await expect(soulBound1155.mint(playerAccount.address, tokenId, 1, true)).to.be.rejectedWith('AlreadyMinted()');
+            const { nonce: newNonce, signature: newSignature } = await generateSignature({ walletAddress: playerAccount.address, signer: minterAccount });
+            await expect(soulBound1155.connect(playerAccount).mint(tokenId, 1, true, newNonce, newSignature)).to.be.rejectedWith('AlreadyMinted()');
         });
 
         it('fail if try to mint invalid tokenId', async function () {
             const tokenId = 30;
 
-            await expect(soulBound1155.mint(playerAccount.address, tokenId, 1, true)).to.be.rejectedWith('TokenNotExist()');
+            await expect(soulBound1155.connect(playerAccount).mint(tokenId, 1, true, nonce, signature)).to.be.rejectedWith('TokenNotExist()');
         });
 
         it('fail sender has no minter role', async function () {
-            await expect(soulBound1155.connect(playerAccount).mint(playerAccount.address, tokenId, 1, true)).to.be.revertedWith(
+            await expect(soulBound1155.connect(playerAccount).adminMint(playerAccount.address, tokenId, 1, true)).to.be.revertedWith(
                 `AccessControl: account ${playerAccount.address.toLowerCase()} is missing role 0x9f2df0fed2c77648de5860a4cc508cd0818c85b8b8a1ab4ceeef8d981c8956a6`
             );
+        });
+
+        it('adminMint should pass', async function () {
+            await soulBound1155.addNewToken(tokenId);
+            await soulBound1155.adminMint(playerAccount.address, tokenId, 1, true);
         });
     });
 
@@ -119,7 +167,7 @@ describe('SoulBound1155', function () {
             await soulBound1155.addNewToken(2);
             await soulBound1155.addNewToken(3);
 
-            const tx2 = await soulBound1155.mintBatch(playerAccount.address, [1, 2, 3], [1, 1, 1], false);
+            const tx2 = await soulBound1155.connect(playerAccount).mintBatch([1, 2, 3], [1, 1, 1], false, nonce, signature);
             await tx2.wait();
             const transferTrx = await soulBound1155
                 .connect(playerAccount)
@@ -127,7 +175,7 @@ describe('SoulBound1155', function () {
             await transferTrx.wait();
             expect(await soulBound1155.balanceOf(playerAccount.address, 1)).to.be.eq(0);
 
-            const tx = await soulBound1155.mintBatch(player2Account.address, [1, 2, 3], [1, 1, 1], true);
+            const tx = await soulBound1155.connect(player2Account).mintBatch([1, 2, 3], [1, 1, 1], true, nonce2, signature2);
             await tx.wait();
 
             await expect(
@@ -142,7 +190,9 @@ describe('SoulBound1155', function () {
             await soulBound1155.addNewToken(2);
             await soulBound1155.addNewToken(3);
 
-            await expect(soulBound1155.mintBatch(playerAccount.address, [1, 2, 3], [100, 200, 300], false)).to.be.rejectedWith('ExceedMaxMint()');
+            await expect(soulBound1155.connect(playerAccount).mintBatch([1, 2, 3], [100, 200, 300], false, nonce, signature)).to.be.rejectedWith(
+                'ExceedMaxMint()'
+            );
         });
 
         it('fail if already minted', async function () {
@@ -150,25 +200,36 @@ describe('SoulBound1155', function () {
             await soulBound1155.addNewToken(2);
             await soulBound1155.addNewToken(3);
 
-            await soulBound1155.mintBatch(playerAccount.address, [1, 2], [1, 1], true);
+            await soulBound1155.connect(playerAccount).mintBatch([1, 2], [1, 1], true, nonce, signature);
 
-            await expect(soulBound1155.mintBatch(playerAccount.address, [1, 2, 3], [1, 1, 1], true)).to.be.rejectedWith('AlreadyMinted()');
+            const { nonce: newNonce, signature: newSignature } = await generateSignature({ walletAddress: playerAccount.address, signer: minterAccount });
+
+            await expect(soulBound1155.connect(playerAccount).mintBatch([1, 2, 3], [1, 1, 1], true, newNonce, newSignature)).to.be.rejectedWith(
+                'AlreadyMinted()'
+            );
         });
 
         it('fail if try to mint invalid tokenId', async function () {
-            await expect(soulBound1155.mintBatch(playerAccount.address, [33, 299], [1, 1], true)).to.be.rejectedWith('TokenNotExist()');
+            await expect(soulBound1155.connect(playerAccount).mintBatch([33, 299], [1, 1], true, nonce, signature)).to.be.rejectedWith('TokenNotExist()');
         });
 
         it('fail sender has no minter role', async function () {
-            await expect(soulBound1155.connect(playerAccount).mintBatch(playerAccount.address, [1, 2, 3], [100, 200, 300], false)).to.be.revertedWith(
+            await expect(soulBound1155.connect(playerAccount).adminMintBatch(playerAccount.address, [1, 2, 3], [100, 200, 300], false)).to.be.revertedWith(
                 `AccessControl: account ${playerAccount.address.toLowerCase()} is missing role 0x9f2df0fed2c77648de5860a4cc508cd0818c85b8b8a1ab4ceeef8d981c8956a6`
             );
+        });
+
+        it('adminMintBatch should pass', async function () {
+            await soulBound1155.addNewToken(111);
+            await soulBound1155.addNewToken(222);
+            await soulBound1155.addNewToken(333);
+            await soulBound1155.adminMintBatch(playerAccount.address, [111, 222, 333], [1, 1, 1], false);
         });
     });
 
     it('burn - ERC1155 - must burn tokens correctly', async function () {
         await soulBound1155.addNewToken(1);
-        const tx = await soulBound1155.mint(playerAccount.address, 1, 1, true);
+        const tx = await soulBound1155.connect(playerAccount).mint(1, 1, true, nonce, signature);
         await tx.wait();
         expect(await soulBound1155.balanceOf(playerAccount.address, 1)).to.be.eq(1);
 
@@ -180,7 +241,7 @@ describe('SoulBound1155', function () {
         await burnTrx.wait();
         expect(await soulBound1155.balanceOf(playerAccount.address, 1)).to.be.eq(0);
 
-        const tx2 = await soulBound1155.mint(player2Account.address, 1, 1, false);
+        const tx2 = await soulBound1155.connect(player2Account).mint(1, 1, false, nonce2, signature2);
         await tx2.wait();
 
         const trx3 = await soulBound1155
@@ -233,7 +294,7 @@ describe('SoulBound1155', function () {
         const tokenId = 1;
         it('should able to transfer non-soulbound token', async function () {
             await soulBound1155.addNewToken(tokenId);
-            await soulBound1155.mint(player2Account.address, tokenId, 1, false);
+            await soulBound1155.connect(player2Account).mint(tokenId, 1, false, nonce2, signature2);
             const transferTrx = await soulBound1155
                 .connect(player2Account)
                 .safeTransferFrom(player2Account.address, minterAccount.address, tokenId, 1, ethers.utils.toUtf8Bytes(''));
@@ -244,7 +305,7 @@ describe('SoulBound1155', function () {
 
         it('should not able to transfer soulbound token', async function () {
             await soulBound1155.addNewToken(tokenId);
-            const tx = await soulBound1155.mint(playerAccount.address, tokenId, 1, true);
+            const tx = await soulBound1155.connect(playerAccount).mint(tokenId, 1, true, nonce, signature);
             await tx.wait();
             await expect(
                 soulBound1155.connect(playerAccount).safeTransferFrom(playerAccount.address, minterAccount.address, tokenId, 1, ethers.utils.toUtf8Bytes(''))
@@ -256,7 +317,7 @@ describe('SoulBound1155', function () {
 
         it('should only transfer to/from whitelist address only', async function () {
             await soulBound1155.addNewToken(tokenId);
-            const tx = await soulBound1155.mint(playerAccount.address, tokenId, 1, true);
+            const tx = await soulBound1155.connect(playerAccount).mint(tokenId, 1, true, nonce, signature);
             await tx.wait();
             await expect(
                 soulBound1155.connect(playerAccount).safeTransferFrom(playerAccount.address, craftingAccount.address, tokenId, 1, ethers.utils.toUtf8Bytes(''))
