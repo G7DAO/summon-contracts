@@ -63,14 +63,12 @@ export default async function (
 
         // Show the contract info.
         const contractAddress = achievoContract.address;
-        log(`${CONTRACT_TYPE}(${artifact.contractName}) for ${tenant} was deployed to https://explorer.zksync.io/address/${contractAddress}#contract`);
 
         const verificationId = await hre.run('verify:verify', {
             address: contractAddress,
             contract: `contracts/${CONTRACT_NAME}.sol:${CONTRACT_NAME}`,
             constructorArguments: [`${tenant}${name}`, symbol, baseURI, maxPerMint, isPaused, devWallet, royalty],
         });
-        log(`Verification ID: ${verificationId}`);
 
         deployments[tenant] = {
             dbPayload: {
@@ -90,6 +88,7 @@ export default async function (
             },
             explorerUrl: `${blockExplorerBaseUrl}/address/${contractAddress}#contract`,
         };
+        log(`Deployed ${CONTRACT_TYPE}(${artifact.contractName}) for ${tenant} to :\n https://goerli.explorer.zksync.io/address/${contractAddress}#contract`);
     }
 
     // await submitContractToDB(deployments);
@@ -102,4 +101,5 @@ export default async function (
 
     // Write to the file
     fs.writeFileSync(filePath, deploymentsJson);
+    log('Deployments saved to deployments.json');
 }
