@@ -13,7 +13,7 @@ import "@openzeppelin/contracts-upgradeable/security/PausableUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/security/ReentrancyGuardUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
 import "@openzeppelin/contracts-upgradeable/utils/cryptography/ECDSAUpgradeable.sol";
-import "./ERCSoulBoundUpgradable.sol";
+import "./ERCSoulBoundUpgradeable.sol";
 import "../interfaces/IOpenMint.sol";
 import "../interfaces/ISoulBound1155.sol";
 
@@ -23,7 +23,7 @@ contract AvatarBoundV1 is
     AccessControlUpgradeable,
     PausableUpgradeable,
     ReentrancyGuardUpgradeable,
-    ERCSoulBoundUpgradable
+    ERCSoulBoundUpgradeable
 {
     /// @custom:oz-upgrades-unsafe-allow constructor
     constructor() {
@@ -34,8 +34,8 @@ contract AvatarBoundV1 is
     bytes32 public constant URI_SETTER_ROLE = keccak256("URI_SETTER_ROLE");
     bytes32 public constant PAUSER_ROLE = keccak256("PAUSER_ROLE");
     uint256 private _tokenIdCounter;
-    uint256 private _specialItemId = 1;
-    uint256 private defaultItemId = 2;
+    uint256 private _specialItemId;
+    uint256 private defaultItemId;
     string public baseTokenURI;
     string public contractURI;
     string public revealURI;

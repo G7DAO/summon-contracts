@@ -1,6 +1,6 @@
 {
     "name": "achievo-contracts",
-    "version": "0.7.0",
+    "version": "0.8.1",
     "description": "Smart contracts for achievo",
     "scripts": {
         "localChain": "hardhat --config hardhat.config.ts node",
@@ -10,7 +10,7 @@
         "generate": "hardhat --config hardhat.config.ts generate",
         "compile:zkSync": "hardhat --config zkSync.config.ts compile --network zkSyncTestnet",
         "deployLevelsOnChain:ZkSync": "npm run compile:zkSync && hardhat --config zkSync.config.ts deploy-zksync --network zkSyncTestnet --script deployLevelsBound.ts",
-        "deployAvatarBound:ZkSync": "npm run compile:zkSync && hardhat --config zkSync.config.ts deploy-zksync --network zkSync --script deployAvatarBound.ts",
+        "deployAvatarBoundUpgradeable:ZkSync:testnet": "npm run compile:zkSync && hardhat --config zkSync.config.ts deploy-zksync --network zkSyncTestnet --script deployAvatarBoundUpgradeable.testnet.ts",
         "deployLevelsOnChainUpgradable:ZkSync:testnet": "npm run compile:zkSync && hardhat --config zkSync.config.ts deploy-zksync --network zkSyncTestnet --script deployLevelsBoundUpgradeable.ts",
         "deploySoulBoundBadges:ZkSync:testnet": "npm run compile:zkSync && hardhat --config zkSync.config.ts deploy-zksync --network zkSyncTestnet --script deploySoulBoundBadges.testnet.ts",
         "deployGameSummary:mumbai": "hardhat --config polygon.config.ts run scripts/deployGameSummary1155.ts --network mumbai",

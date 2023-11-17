@@ -1,37 +1,46 @@
 import fs from 'fs';
 import path from 'path';
 
+import { log } from '@helpers/logger';
 import { Deployer } from '@matterlabs/hardhat-zksync-deploy';
 import { HardhatRuntimeEnvironment } from 'hardhat/types';
-
-// TODO: change here if you want to deploy/use to another contract type
-import { SoulBound1155 } from '../typechain-types';
-import { log } from '@helpers/logger';
 import getWallet from './getWallet';
-import { SoulBoundBadgesArgs } from '@constants/constructor-args';
+import { AvatarBoundV1 } from 'typechain-types';
+import { AvatarBoundArgs } from '@constants/constructor-args';
 import { DeploymentMap } from '@helpers/types';
 
-const { name, symbol, baseURI, maxPerMint, isPaused, devWallet, royalty, tenants } = SoulBoundBadgesArgs.TESTNET;
+const {
+    name,
+    symbol,
+    baseURI,
+    tenants,
+    contractURI,
+    gatingNftAddress,
+    itemsNftAddress,
+    mintNFtWithoutGatingEnabled,
+    mintRandomItemEnabled,
+    mintNftGatingEnabled,
+    blockExplorerBaseUrl,
+} = AvatarBoundArgs.TESTNET;
 
-// load wallet private key from env file
 const PRIVATE_KEY = process.env.PRIVATE_KEY || '';
+const CONTRACT_NAME = 'AvatarBoundV1';
+const CONTRACT_TYPE = 'Avatar';
 
-const CONTRACT_NAME = 'SoulBound1155';
-const CONTRACT_TYPE = 'Badges';
-const ABI_PATH = 'artifacts/contracts/SoulBound1155.sol/SoulBound1155.json';
+const ABI_PATH = 'artifacts/contracts/upgradeables/AvatarBoundV1.sol/AvatarBoundV1.json';
 
 if (!PRIVATE_KEY) throw '⛔️ Private key not detected! Add it to the .env file!';
 
 export default async function (hre: HardhatRuntimeEnvironment) {
-    log(`Running deploy script for the ${CONTRACT_NAME} featuring ZkSync`);
+    log(`Running deploy script for the ${CONTRACT_NAME} Proxy featuring ZkSync`);
 
     const wallet = await getWallet(PRIVATE_KEY);
-    const deployments: DeploymentMap = {};
 
     // Create deployer object and load the artifact of the contract you want to deploy.
     const deployer = new Deployer(hre, wallet);
     const artifact = await deployer.loadArtifact(CONTRACT_NAME);
 
+    // Read the ABI
     const abiPath = path.resolve(ABI_PATH);
 
     // Read the file content
@@ -41,7 +50,7 @@ export default async function (hre: HardhatRuntimeEnvironment) {
     const DEFAULT_CONTRACT_PAYLOAD = {
         type: CONTRACT_TYPE,
         chainId: 280,
-        blockExplorerBaseUrl: 'https://goerli.explorer.zksync.io',
+        blockExplorerBaseUrl,
         privateKey: PRIVATE_KEY,
         publicKey: wallet.address,
         currency: 'ETH',
@@ -50,16 +59,21 @@ export default async function (hre: HardhatRuntimeEnvironment) {
         networkName: 'zkSyncTestnet',
     };
 
+    const deployments: DeploymentMap = {};
+
     for (const tenant of tenants) {
-        const achievoContract = (await deployer.deploy(artifact, [
+        const achievoContract = (await hre.zkUpgrades.deployProxy(deployer.zkWallet, artifact, [
             `${tenant}${name}`,
             symbol,
             baseURI,
-            maxPerMint,
-            isPaused,
-            devWallet,
-            royalty,
-        ])) as SoulBound1155;
+            contractURI,
+            wallet.address,
+            gatingNftAddress,
+            itemsNftAddress,
+            mintNFtWithoutGatingEnabled,
+            mintRandomItemEnabled,
+            mintNftGatingEnabled,
+        ])) as AvatarBoundV1;
 
         // Show the contract info.
         const contractAddress = achievoContract.address;
@@ -68,8 +82,20 @@ export default async function (hre: HardhatRuntimeEnvironment) {
         const verificationId = await hre.run('verify:verify', {
             address: contractAddress,
             contract: `contracts/${CONTRACT_NAME}.sol:${CONTRACT_NAME}`,
-            constructorArguments: [`${tenant}${name}`, symbol, baseURI, maxPerMint, isPaused, devWallet, royalty],
+            constructorArguments: [
+                `${tenant}${name}`,
+                symbol,
+                baseURI,
+                contractURI,
+                wallet.address,
+                gatingNftAddress,
+                itemsNftAddress,
+                mintNFtWithoutGatingEnabled,
+                mintRandomItemEnabled,
+                mintNftGatingEnabled,
+            ],
         });
+
         log(`Verification ID: ${verificationId}`);
 
         deployments[tenant] = {
@@ -80,9 +106,9 @@ export default async function (hre: HardhatRuntimeEnvironment) {
             },
             explorerUrl: `https://explorer.zksync.io/address/${contractAddress}#contract`,
         };
-    }
 
-    console.log('Deployments:', JSON.stringify(deployments, null, 2));
+        log(`Verification must be done by console command: npx hardhat verify --network zkSync ${contractAddress} --config zkSync.config.ts`);
+    }
 
     // Define the path to the file
     const filePath = path.resolve(`deployments-${CONTRACT_TYPE}.json`);
