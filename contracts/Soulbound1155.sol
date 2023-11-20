@@ -3,38 +3,44 @@
 pragma solidity ^0.8.17;
 
 /**                        .;c;.
-*                      'lkXWWWXk:.
-*                    .dXMMMMMMMMWXkc'.
-*               .,..  ,dKNMMMMMMMMMMN0o,.
-*             ,dKNXOo'. .;dKNMMMMMMMMMWN0c.
-*            .kMMMMMWN0o;. .,lkNMMMMMMWKd,
-*            .OMMMMMMMMMN0x:. .'ckXN0o;. ..
-*             :ONMMMMMMMMMMWKxc. .... .:d0d.
-*              .'cxKWMMMMMMMMMWXkl,.  'o0Nk.
-*            .:l,  .:dKWMMMMMMMMMMNOl,. .;,
-*            .OMKl.   .;oOXWMMMMMMMMMN0o;.
-*            .co;.  .;,. .'lOXWMMMMMMMMMWKl.
-*               .:dOXWWKd;.  'ckXWMMMMMMMMk.
-*             .c0WMMMMMMMWKd:.  .:xXWMMMWNo.
-*             ,oONWMMMMMMMMWXOl.  .;okxl'
-*                .,lkXWMMMMMMMMWXO:
-*                    .ckKWMMMMMWKd;
-*                       .:d0X0d:.
-*                          ...
-*/
+ *                      'lkXWWWXk:.
+ *                    .dXMMMMMMMMWXkc'.
+ *               .,..  ,dKNMMMMMMMMMMN0o,.
+ *             ,dKNXOo'. .;dKNMMMMMMMMMWN0c.
+ *            .kMMMMMWN0o;. .,lkNMMMMMMWKd,
+ *            .OMMMMMMMMMN0x:. .'ckXN0o;. ..
+ *             :ONMMMMMMMMMMWKxc. .... .:d0d.
+ *              .'cxKWMMMMMMMMMWXkl,.  'o0Nk.
+ *            .:l,  .:dKWMMMMMMMMMMNOl,. .;,
+ *            .OMKl.   .;oOXWMMMMMMMMMN0o;.
+ *            .co;.  .;,. .'lOXWMMMMMMMMMWKl.
+ *               .:dOXWWKd;.  'ckXWMMMMMMMMk.
+ *             .c0WMMMMMMMWKd:.  .:xXWMMMWNo.
+ *             ,oONWMMMMMMMMWXOl.  .;okxl'
+ *                .,lkXWMMMMMMMMWXO:
+ *                    .ckKWMMMMMWKd;
+ *                       .:d0X0d:.
+ *                          ...
+ */
 
 import "@openzeppelin/contracts/token/ERC1155/extensions/ERC1155Burnable.sol";
 import "@openzeppelin/contracts/access/AccessControl.sol";
 import "@openzeppelin/contracts/security/Pausable.sol";
 import "@openzeppelin/contracts/utils/Strings.sol";
 import "@openzeppelin/contracts/token/common/ERC2981.sol";
-import "./ERCSoulBound.sol";
+import "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
+import "./ERCSoulbound.sol";
 
 error TokenNotExist();
 error AlreadyMinted();
 error ExceedMaxMint();
+error InvalidSignature();
+error AlreadyUsedSignature();
 
-contract SoulBound1155 is ERC1155Burnable, ERCSoulBound, ERC2981, AccessControl, Pausable {
+contract Soulbound1155 is ERC1155Burnable, ERCSoulbound, ERC2981, AccessControl, Pausable {
+    event SignerAdded(address signer);
+    event SignerRemoved(address signer);
+
     bytes32 public constant MINTER_ROLE = keccak256("MINTER_ROLE");
     bytes32 public constant MANAGER_ROLE = keccak256("MANAGER_ROLE");
 
@@ -48,6 +54,15 @@ contract SoulBound1155 is ERC1155Burnable, ERCSoulBound, ERC2981, AccessControl,
     mapping(uint256 => bool) public tokenExists;
     mapping(uint256 => mapping(address => bool)) public isMinted; // tokenId => address => bool
 
+    mapping(address => bool) public whitelistSigners;
+    mapping(bytes => bool) public usedSignatures;
+
+    modifier signatureCheck(uint256 nonce, bytes memory signature) {
+        if (!verifySignature(_msgSender(), nonce, signature)) {
+            revert InvalidSignature();
+        }
+        _;
+    }
     modifier canMint(
         address to,
         uint256 tokenId,
@@ -101,9 +116,9 @@ contract SoulBound1155 is ERC1155Burnable, ERCSoulBound, ERC2981, AccessControl,
         _grantRole(DEFAULT_ADMIN_ROLE, msg.sender);
         _grantRole(MINTER_ROLE, msg.sender);
         _grantRole(MANAGER_ROLE, msg.sender);
+        setSigner(msg.sender);
 
         _setDefaultRoyalty(_devWallet, _royalty);
-
         name = _name;
         symbol = _symbol;
         baseURI = _initBaseURI;
@@ -124,30 +139,58 @@ contract SoulBound1155 is ERC1155Burnable, ERCSoulBound, ERC2981, AccessControl,
         tokenExists[tokenId] = true;
     }
 
-    // optional soulBound minting
-    function mint(address to, uint256 id, uint256 amount, bool soulBound) external onlyRole(MINTER_ROLE) canMint(to, id, amount) whenNotPaused {
+    function __mint(address to, uint256 id, uint256 amount, bool soulbound) private {
         isMinted[id][to] = true;
-        _mint(to, id, 1, "");
-        if (soulBound) {
-            _soulbound(to, id, 1);
+        _mint(to, id, amount, "");
+        if (soulbound) {
+            _soulbound(to, id, amount);
         }
     }
 
-    // optional soulBound batch minting
-    function mintBatch(
-        address to,
-        uint256[] memory ids,
-        uint256[] memory amounts,
-        bool soulBound
-    ) external onlyRole(MINTER_ROLE) canMintBatch(to, ids, amounts) whenNotPaused {
+    function __mintBatch(address to, uint256[] memory ids, uint256[] memory amounts, bool soulbound) private {
         for (uint256 i = 0; i < ids.length; i++) {
             isMinted[ids[i]][to] = true;
         }
 
         _mintBatch(to, ids, amounts, "");
-        if (soulBound) {
+        if (soulbound) {
             _soulboundBatch(to, ids, amounts);
         }
+    }
+
+    // optional soulbound minting
+    function mint(
+        uint256 id,
+        uint256 amount,
+        bool soulbound,
+        uint256 nonce,
+        bytes memory signature
+    ) external signatureCheck(nonce, signature) canMint(_msgSender(), id, amount) whenNotPaused {
+        __mint(_msgSender(), id, amount, soulbound);
+    }
+
+    // optional soulbound batch minting
+    function mintBatch(
+        uint256[] memory ids,
+        uint256[] memory amounts,
+        bool soulbound,
+        uint256 nonce,
+        bytes memory signature
+    ) external signatureCheck(nonce, signature) canMintBatch(_msgSender(), ids, amounts) whenNotPaused {
+        __mintBatch(_msgSender(), ids, amounts, soulbound);
+    }
+
+    function adminMint(address to, uint256 id, uint256 amount, bool soulbound) external onlyRole(MINTER_ROLE) canMint(to, id, amount) whenNotPaused {
+        __mint(to, id, amount, soulbound);
+    }
+
+    function adminMintBatch(
+        address to,
+        uint256[] memory ids,
+        uint256[] memory amounts,
+        bool soulbound
+    ) public onlyRole(MINTER_ROLE) canMintBatch(to, ids, amounts) whenNotPaused {
+        __mintBatch(to, ids, amounts, soulbound);
     }
 
     function safeTransferFrom(
@@ -199,5 +242,38 @@ contract SoulBound1155 is ERC1155Burnable, ERCSoulBound, ERC2981, AccessControl,
 
     function updateWhitelistAddress(address _address, bool _isWhitelisted) external onlyRole(MANAGER_ROLE) {
         _updateWhitelistAddress(_address, _isWhitelisted);
+    }
+
+    function recoverAddress(address to, uint256 nonce, bytes memory signature) private pure returns (address) {
+        bytes32 message = keccak256(abi.encodePacked(to, nonce));
+        bytes32 hash = ECDSA.toEthSignedMessageHash(message);
+        address signer = ECDSA.recover(hash, signature);
+        return signer;
+    }
+
+    function verifySignature(address to, uint256 nonce, bytes memory signature) private returns (bool) {
+        if (usedSignatures[signature]) revert AlreadyUsedSignature();
+
+        address signer = recoverAddress(to, nonce, signature);
+        if (whitelistSigners[signer]) {
+            usedSignatures[signature] = true;
+            return true;
+        } else {
+            return false;
+        }
+    }
+
+    function adminVerifySignature(address to, uint256 nonce, bytes memory signature) public onlyRole(DEFAULT_ADMIN_ROLE) returns (bool) {
+        return verifySignature(to, nonce, signature);
+    }
+
+    function setSigner(address _signer) public onlyRole(DEFAULT_ADMIN_ROLE) {
+        whitelistSigners[_signer] = true;
+        emit SignerAdded(_signer);
+    }
+
+    function removeSigner(address signer) public onlyRole(DEFAULT_ADMIN_ROLE) {
+        whitelistSigners[signer] = false;
+        emit SignerRemoved(signer);
     }
 }

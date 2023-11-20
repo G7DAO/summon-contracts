@@ -13,7 +13,7 @@
         "deployAvatarBoundUpgradeable:ZkSync:testnet": "npm run compile:zkSync && hardhat --config zkSync.config.ts deploy-zksync --network zkSyncTestnet --script deployAvatarBoundUpgradeable.testnet.ts",
         "deployItemsBound:ZkSync:testnet": "npm run compile:zkSync && hardhat --config zkSync.config.ts deploy-zksync --network zkSyncTestnet --script deployItemsBound.testnet.ts",
         "deployLevelsOnChainUpgradable:ZkSync:testnet": "npm run compile:zkSync && hardhat --config zkSync.config.ts deploy-zksync --network zkSyncTestnet --script deployLevelsBoundUpgradeable.ts",
-        "deploySoulBoundBadges:ZkSync:testnet": "npm run compile:zkSync && hardhat --config zkSync.config.ts deploy-zksync --network zkSyncTestnet --script deploySoulBoundBadges.testnet.ts",
+        "deploySoulboundBadges:ZkSync:testnet": "npm run compile:zkSync && hardhat --config zkSync.config.ts deploy-zksync --network zkSyncTestnet --script deploySoulboundBadges.testnet.ts",
         "deployItemsBound:ZkSync:testnet": "npm run compile:zkSync && hardhat --config zkSync.config.ts deploy-zksync --network zkSyncTestnet --script deployItemsBound.testnet.ts",
         "deployGameSummary:mumbai": "hardhat --config polygon.config.ts run scripts/deployGameSummary1155.ts --network mumbai",
         "deployGameSummary:wadsley": "hardhat --config mantle.config.ts run scripts/deployGameSummary1155.ts --network mantleWadsley",
@@ -21,7 +21,8 @@
         "lint": "eslint --config ./.eslintrc.js --ignore-path ./.eslintignore ./deploy/**/*.ts ./tasks/**/*.ts ./test/**/*.ts ./helpers/**/*.ts",
         "solhint": "solhint ./contracts/**/*.sol",
         "format": "yarn prettier -w ./deploy/**/*.ts ./tasks/**/*.ts ./tests/**/*.ts ./helpers/**/*.ts contracts/**/*.sol ",
-        "format:check": "yarn prettier -c ./deploy/**/*.ts ./tasks/**/*.ts ./tests/**/*.ts ./helpers/**/*.ts ./contracts/**/*.sol "
+        "format:check": "yarn prettier -c ./deploy/**/*.ts ./tasks/**/*.ts ./tests/**/*.ts ./helpers/**/*.ts ./contracts/**/*.sol ",
+        "coverage": "npx hardhat coverage"
     },
     "repository": {
         "type": "git",
@@ -60,6 +61,7 @@
         "prettier-plugin-solidity": "^1.1.2",
         "solhint": "^3.4.0",
         "solhint-plugin-prettier": "^0.0.5",
+        "solidity-coverage": "^0.8.5",
         "ts-node": "^10.9.1",
         "typechain": "^8.1.1",
         "typescript": "^4.9.5"

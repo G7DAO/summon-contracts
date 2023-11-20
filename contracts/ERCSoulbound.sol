@@ -27,7 +27,7 @@ pragma solidity ^0.8.17;
  *                          ...
  */
 
-contract ERCSoulBound {
+contract ERCSoulbound {
     mapping(uint256 => bool) internal _soulboundTokens; // low gas usage
     mapping(address => bool) internal _soulboundAddresses; // mid gas usage
     mapping(address => mapping(uint256 => uint256)) internal _soulbounds; // high gas usage
@@ -180,7 +180,7 @@ contract ERCSoulBound {
     }
 
     /**
-     * @dev Returns if a `tokenId` is soulBound
+     * @dev Returns if a `tokenId` is soulbound
      *
      */
     function isSoulboundToken(uint256 tokenId) external view virtual returns (bool) {
@@ -188,7 +188,7 @@ contract ERCSoulBound {
     }
 
     /**
-     * @dev Returns if a `tokenId` is soulBound
+     * @dev Returns if a `tokenId` is soulbound
      *
      */
     function soulboundBalance(address to, uint256 tokenId) external view virtual returns (uint256) {
@@ -196,7 +196,7 @@ contract ERCSoulBound {
     }
 
     /**
-     * @dev Returns if a `address` is soulBound
+     * @dev Returns if a `address` is soulbound
      *
      */
     function isSoulboundAddress(address to) public view virtual returns (bool) {
