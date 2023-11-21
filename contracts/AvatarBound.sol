@@ -34,11 +34,11 @@ import "@openzeppelin/contracts/access/AccessControl.sol";
 import "@openzeppelin/contracts/security/Pausable.sol";
 import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
 import "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
-import { ERCSoulBound } from "./ERCSoulBound.sol";
-import { ISoulBound1155 } from "./interfaces/ISoulBound1155.sol";
+import { ERCSoulbound } from "./ERCSoulbound.sol";
+import { ISoulbound1155 } from "./interfaces/ISoulbound1155.sol";
 import { IOpenMint } from "./interfaces/IOpenMint.sol";
 
-contract AvatarBound is ERC721URIStorage, ERC721Enumerable, AccessControl, ERCSoulBound, Pausable, ReentrancyGuard {
+contract AvatarBound is ERC721URIStorage, ERC721Enumerable, AccessControl, ERCSoulbound, Pausable, ReentrancyGuard {
     bytes32 public constant MINTER_ROLE = keccak256("MINTER_ROLE");
     bytes32 public constant URI_SETTER_ROLE = keccak256("URI_SETTER_ROLE");
     bytes32 public constant PAUSER_ROLE = keccak256("PAUSER_ROLE");
@@ -160,7 +160,7 @@ contract AvatarBound is ERC721URIStorage, ERC721Enumerable, AccessControl, ERCSo
     }
 
     function mintItem(address to, uint256 itemId) public onlyRole(MINTER_ROLE) whenNotPaused {
-        ISoulBound1155(itemsNFTAddress).mint(to, itemId, 1, true);
+        ISoulbound1155(itemsNFTAddress).mint(to, itemId, 1, true);
         if (itemId == _specialItemId) {
             emit SpecialItemMinted(itemId, to, itemsNFTAddress);
         } else {
@@ -172,11 +172,11 @@ contract AvatarBound is ERC721URIStorage, ERC721Enumerable, AccessControl, ERCSo
         // Do randomness here to mint a random item between the id 1 and 26
         uint256 random = uint256(keccak256(abi.encodePacked(block.timestamp, block.difficulty, to)));
         uint256 randomItem = random % 26;
-        ISoulBound1155(itemsNFTAddress).mint(to, randomItem, 1, false);
+        ISoulbound1155(itemsNFTAddress).mint(to, randomItem, 1, false);
         emit RandomItemMinted(randomItem, to, itemsNFTAddress);
     }
 
-    function recoverAddress(address to, uint256 nonce, bytes memory signature) public view returns (address) {
+    function recoverAddress(address to, uint256 nonce, bytes memory signature) private pure returns (address) {
         bytes32 message = keccak256(abi.encodePacked(to, nonce));
         bytes32 hash = ECDSA.toEthSignedMessageHash(message);
         address signer = ECDSA.recover(hash, signature);

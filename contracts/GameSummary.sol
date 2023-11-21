@@ -2,25 +2,25 @@
 pragma solidity ^0.8.17;
 
 /**                        .;c;.
-*                      'lkXWWWXk:.
-*                    .dXMMMMMMMMWXkc'.
-*               .,..  ,dKNMMMMMMMMMMN0o,.
-*             ,dKNXOo'. .;dKNMMMMMMMMMWN0c.
-*            .kMMMMMWN0o;. .,lkNMMMMMMWKd,
-*            .OMMMMMMMMMN0x:. .'ckXN0o;. ..
-*             :ONMMMMMMMMMMWKxc. .... .:d0d.
-*              .'cxKWMMMMMMMMMWXkl,.  'o0Nk.
-*            .:l,  .:dKWMMMMMMMMMMNOl,. .;,
-*            .OMKl.   .;oOXWMMMMMMMMMN0o;.
-*            .co;.  .;,. .'lOXWMMMMMMMMMWKl.
-*               .:dOXWWKd;.  'ckXWMMMMMMMMk.
-*             .c0WMMMMMMMWKd:.  .:xXWMMMWNo.
-*             ,oONWMMMMMMMMWXOl.  .;okxl'
-*                .,lkXWMMMMMMMMWXO:
-*                    .ckKWMMMMMWKd;
-*                       .:d0X0d:.
-*                          ...
-*/
+ *                      'lkXWWWXk:.
+ *                    .dXMMMMMMMMWXkc'.
+ *               .,..  ,dKNMMMMMMMMMMN0o,.
+ *             ,dKNXOo'. .;dKNMMMMMMMMMWN0c.
+ *            .kMMMMMWN0o;. .,lkNMMMMMMWKd,
+ *            .OMMMMMMMMMN0x:. .'ckXN0o;. ..
+ *             :ONMMMMMMMMMMWKxc. .... .:d0d.
+ *              .'cxKWMMMMMMMMMWXkl,.  'o0Nk.
+ *            .:l,  .:dKWMMMMMMMMMMNOl,. .;,
+ *            .OMKl.   .;oOXWMMMMMMMMMN0o;.
+ *            .co;.  .;,. .'lOXWMMMMMMMMMWKl.
+ *               .:dOXWWKd;.  'ckXWMMMMMMMMk.
+ *             .c0WMMMMMMMWKd:.  .:xXWMMMWNo.
+ *             ,oONWMMMMMMMMWXOl.  .;okxl'
+ *                .,lkXWMMMMMMMMWXO:
+ *                    .ckKWMMMMMWKd;
+ *                       .:d0X0d:.
+ *                          ...
+ */
 
 /**
  * Authors: Omar Garcia <omar@game7.io>
@@ -33,7 +33,6 @@ import "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
 import "@openzeppelin/contracts/security/Pausable.sol";
 import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
 import "@openzeppelin/contracts/utils/Strings.sol";
-
 
 // This contract contains only the phase 1 of the GameSummaries contract
 contract GameSummary1155 is ERC1155, AccessControl, Pausable, ReentrancyGuard {
@@ -63,7 +62,7 @@ contract GameSummary1155 is ERC1155, AccessControl, Pausable, ReentrancyGuard {
     struct PlayerGameData {
         uint256 tokenId;
         uint256 achievementsMinted;
-        bool soulBounded;
+        bool soulbounded;
     }
 
     // tokenId(storeId+0+gameId) => common game data
@@ -213,14 +212,14 @@ contract GameSummary1155 is ERC1155, AccessControl, Pausable, ReentrancyGuard {
         emit GameSummaryMinted(msg.sender, tokenId, totalAchievements);
     }
 
-    function mintGameSummary(address player, uint256 gameId, uint256 achievementsLength, uint256 storeId, bool soulBound) private {
+    function mintGameSummary(address player, uint256 gameId, uint256 achievementsLength, uint256 storeId, bool soulbound) private {
         require(storeId > 0, "StoreId must be greater than 0");
         require(gameId > 0, "GameId must be greater than 0");
         uint256 tokenId = getTokenId(storeId, gameId);
         require(commonGameSummaries[tokenId].tokenId == tokenId, "This game is not allowed yet");
         require(playerGameData[player][tokenId].tokenId == 0, "Token already exists");
         _mint(player, tokenId, 1, "");
-        playerGameData[player][tokenId] = PlayerGameData(tokenId, achievementsLength, soulBound);
+        playerGameData[player][tokenId] = PlayerGameData(tokenId, achievementsLength, soulbound);
         emit PlayerGameSummaryMinted(player, tokenId, achievementsLength);
     }
 
@@ -229,9 +228,9 @@ contract GameSummary1155 is ERC1155, AccessControl, Pausable, ReentrancyGuard {
         uint256 gameId,
         uint256 achievementsLength,
         uint256 storeId,
-        bool soulBound
+        bool soulbound
     ) public onlyRole(MINTER_ROLE) whenNotPaused {
-        mintGameSummary(to, gameId, achievementsLength, storeId, soulBound);
+        mintGameSummary(to, gameId, achievementsLength, storeId, soulbound);
     }
 
     function mintGameSummaryWithSignature(
@@ -275,13 +274,13 @@ contract GameSummary1155 is ERC1155, AccessControl, Pausable, ReentrancyGuard {
         uint256[] calldata gameIds,
         uint256[] calldata achievementsLength,
         uint256[] calldata storeIds,
-        bool[] calldata soulBounds
+        bool[] calldata soulbounds
     ) public onlyRole(MINTER_ROLE) whenNotPaused {
         require(players.length == gameIds.length, "The players and gameIds arrays must have the same length");
         require(players.length == storeIds.length, "The players and storeIds arrays must have the same length");
         require(players.length == achievementsLength.length, "The players and newAchievements arrays must have the same length");
         for (uint i = 0; i < players.length; i++) {
-            mintGameSummary(players[i], gameIds[i], achievementsLength[i], storeIds[i], soulBounds[i]);
+            mintGameSummary(players[i], gameIds[i], achievementsLength[i], storeIds[i], soulbounds[i]);
         }
     }
 
@@ -303,7 +302,7 @@ contract GameSummary1155 is ERC1155, AccessControl, Pausable, ReentrancyGuard {
 
     function safeTransferFrom(address _from, address _to, uint256 _id, uint256 _amount, bytes memory _data) public virtual override {
         require(playerGameData[_from][_id].tokenId != 0, "Token doesn't exists");
-        require(!playerGameData[_from][_id].soulBounded, "You can't transfer this token");
+        require(!playerGameData[_from][_id].soulbounded, "You can't transfer this token");
         PlayerGameData storage playerData = playerGameData[_from][_id];
         uint256 transferachievements = playerData.achievementsMinted;
         playerGameData[_from][_id] = PlayerGameData(0, 0, false);
@@ -314,7 +313,7 @@ contract GameSummary1155 is ERC1155, AccessControl, Pausable, ReentrancyGuard {
     function safeBatchTransferFrom(address _from, address _to, uint256[] memory _ids, uint256[] memory _amounts, bytes memory _data) public virtual override {
         for (uint i = 0; i < _ids.length; i++) {
             require(playerGameData[_from][_ids[i]].tokenId != 0, "Token doesn't exists");
-            require(!playerGameData[_from][_ids[i]].soulBounded, "You can't transfer this token");
+            require(!playerGameData[_from][_ids[i]].soulbounded, "You can't transfer this token");
         }
         super.safeBatchTransferFrom(_from, _to, _ids, _amounts, _data);
 

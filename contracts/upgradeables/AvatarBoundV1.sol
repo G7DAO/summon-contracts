@@ -36,7 +36,7 @@ import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
 import "@openzeppelin/contracts-upgradeable/utils/cryptography/ECDSAUpgradeable.sol";
 import "./ERCSoulBoundUpgradeable.sol";
 import "../interfaces/IOpenMint.sol";
-import "../interfaces/ISoulBound1155.sol";
+import "../interfaces/ISoulbound1155.sol";
 
 contract AvatarBoundV1 is
     Initializable,
@@ -178,7 +178,7 @@ contract AvatarBoundV1 is
     }
 
     function mintItem(address to, uint256 itemId) public onlyRole(MINTER_ROLE) whenNotPaused {
-        ISoulBound1155(itemsNFTAddress).mint(to, itemId, 1, true);
+        ISoulbound1155(itemsNFTAddress).mint(to, itemId, 1, true);
         if (itemId == _specialItemId) {
             emit SpecialItemMinted(itemId, to, itemsNFTAddress);
         } else {
@@ -190,11 +190,11 @@ contract AvatarBoundV1 is
         // Do randomness here to mint a random item between the id 1 and 26
         uint256 random = uint256(keccak256(abi.encodePacked(block.timestamp, block.difficulty, to)));
         uint256 randomItem = random % 26;
-        ISoulBound1155(itemsNFTAddress).mint(to, randomItem, 1, false);
+        ISoulbound1155(itemsNFTAddress).mint(to, randomItem, 1, false);
         emit RandomItemMinted(randomItem, to, itemsNFTAddress);
     }
 
-    function recoverAddress(address to, uint256 nonce, bytes memory signature) public view returns (address) {
+    function recoverAddress(address to, uint256 nonce, bytes memory signature) private pure returns (address) {
         bytes32 message = keccak256(abi.encodePacked(to, nonce));
         bytes32 hash = ECDSAUpgradeable.toEthSignedMessageHash(message);
         address signer = ECDSAUpgradeable.recover(hash, signature);

@@ -3,23 +3,23 @@
 pragma solidity ^0.8.17;
 
 import "@openzeppelin/contracts/token/ERC1155/extensions/ERC1155Burnable.sol";
-import "../ERCSoulBound.sol";
+import "../ERCSoulbound.sol";
 
-contract Mock1155SoulBound is ERC1155Burnable, ERCSoulBound {
+contract Mock1155Soulbound is ERC1155Burnable, ERCSoulbound {
     constructor() ERC1155("lol://lol/{id}") {}
 
-    // optional soulBound minting
-    function mint(address to, uint256 id, uint256 amount, bool soulBound) public virtual {
+    // optional soulbound minting
+    function mint(address to, uint256 id, uint256 amount, bool soulbound) public virtual {
         _mint(to, id, amount, "");
-        if (soulBound) {
+        if (soulbound) {
             _soulbound(to, id, amount);
         }
     }
 
-    // optional soulBound batch minting
-    function mintBatch(address to, uint256[] memory ids, uint256[] memory amounts, bool soulBound) public virtual {
+    // optional soulbound batch minting
+    function mintBatch(address to, uint256[] memory ids, uint256[] memory amounts, bool soulbound) public virtual {
         _mintBatch(to, ids, amounts, "");
-        if (soulBound) {
+        if (soulbound) {
             _soulboundBatch(to, ids, amounts);
         }
     }

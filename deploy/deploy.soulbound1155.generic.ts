@@ -5,7 +5,7 @@ import { Deployer } from '@matterlabs/hardhat-zksync-deploy';
 import { HardhatRuntimeEnvironment } from 'hardhat/types';
 
 // TODO: change here if you want to deploy/use to another contract type
-import { SoulBound1155 } from '../typechain-types';
+import { Soulbound1155 } from '../typechain-types';
 import { log } from '@helpers/logger';
 import getWallet from './getWallet';
 import { encryptPrivateKey } from '@helpers/encrypt';
@@ -59,7 +59,7 @@ export default async function (
             isPaused,
             devWallet,
             royalty,
-        ])) as SoulBound1155;
+        ])) as Soulbound1155;
 
         // Show the contract info.
         const contractAddress = achievoContract.address;
