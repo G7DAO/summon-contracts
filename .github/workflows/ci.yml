@@ -88,11 +88,24 @@ jobs:
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
 
-      - name: Install dependencies
-        run: npm install
+      - name: Install pnpm
+        uses: pnpm/action-setup@v2
+        with:
+          version: 6.14.7  # Specify the pnpm version you want to use
+
+      - name: Cache dependencies
+        uses: actions/cache@v2
+        with:
+          path: ~/.pnpm-store
+          key: ${{ runner.os }}-pnpm-${{ hashFiles('**/pnpm-lock.yaml') }}
+          restore-keys: |
+            ${{ runner.os }}-pnpm-
+
+      - name: Install Dependencies
+        run: pnpm install
 
       - name: Run Hardhat tests
-        run: npx hardhat --config hardhat.config.ts test
+        run: pnpm test
 
 #      - name: Enforce Coverage
 #        run: npx istanbul check-coverage --statements 36.5 --branches 17.5 --functions 40 --lines 30
