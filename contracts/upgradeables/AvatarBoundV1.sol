@@ -151,10 +151,14 @@ contract AvatarBoundV1 is
         revealNFTGatingToken(nftGatingId);
 
         if (mintRandomItemEnabled) {
-            mintRandomItem(_msgSender());
+            for (uint256 i = 0; i < randomItemMints; i++) {
+                mintRandomItem(_msgSender());
+            }
         }
 
-        mintItem(_msgSender(), _specialItemId);
+        if(mintSpecialItemEnabled) {
+            mintItem(_msgSender(), _specialItemId);
+        }
     }
 
     function mintAvatar(uint256 baseSkinId, uint256 nonce, bytes memory signature) public nonReentrant whenNotPaused {
@@ -163,7 +167,9 @@ contract AvatarBoundV1 is
         mint(_msgSender(), baseSkinId);
 
         if (mintRandomItemEnabled) {
-            mintRandomItem(_msgSender());
+            for (uint256 i = 0; i < randomItemMints; i++) {
+                mintRandomItem(_msgSender());
+            }
         }
 
         if (mintDefaultItemEnabled) {
