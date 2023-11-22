@@ -117,6 +117,7 @@ contract AvatarBoundV1 is
         __AccessControl_init();
         __Pausable_init();
         __ReentrancyGuard_init();
+        __ERCSoulboundUpgradable_init();
 
         _grantRole(DEFAULT_ADMIN_ROLE, developerAdmin);
         baseTokenURI = _baseTokenURI;

@@ -40,7 +40,7 @@ contract ERCSoulboundUpgradeable is Initializable {
     event Soulbound(address indexed to, uint256 indexed tokenId, uint256 amount);
     event SoulboundBatch(address indexed to, uint256[] indexed tokenIds, uint256[] indexed amounts);
 
-    function initialize() public initializer {}
+    function __ERCSoulboundUpgradable_init() internal onlyInitializing {}
 
     modifier soulboundTokenCheck(uint256 tokenId) {
         require(!_soulboundTokens[tokenId], "ERCSoulbound: This token is soulbounded");

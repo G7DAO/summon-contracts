@@ -4,10 +4,11 @@ import path from 'path';
 import { log } from '@helpers/logger';
 import { Deployer } from '@matterlabs/hardhat-zksync-deploy';
 import { HardhatRuntimeEnvironment } from 'hardhat/types';
-import getWallet from './getWallet';
 import { AvatarBoundV1 } from 'typechain-types';
 import { AvatarBoundArgs } from '@constants/constructor-args';
 import { DeploymentMap } from '@helpers/types';
+import getWallet from './getWallet';
+import { Wallet } from 'zksync2-js';
 
 const {
     name,
@@ -20,6 +21,7 @@ const {
     mintNFtWithoutGatingEnabled,
     mintRandomItemEnabled,
     mintNftGatingEnabled,
+    mintSpecialItemEnabled,
     blockExplorerBaseUrl,
 } = AvatarBoundArgs.TESTNET;
 
@@ -62,7 +64,7 @@ export default async function (hre: HardhatRuntimeEnvironment) {
     const deployments: DeploymentMap = {};
 
     for (const tenant of tenants) {
-        const achievoContract = (await hre.zkUpgrades.deployProxy(deployer.zkWallet, artifact, [
+        const achievoContract = await hre.zkUpgrades.deployProxy(deployer.zkWallet as any, artifact, [
             name,
             symbol,
             baseURI,
@@ -73,30 +75,31 @@ export default async function (hre: HardhatRuntimeEnvironment) {
             mintNFtWithoutGatingEnabled,
             mintRandomItemEnabled,
             mintNftGatingEnabled,
-        ])) as AvatarBoundV1;
+            mintSpecialItemEnabled,
+        ]);
 
         // Show the contract info.
-        const contractAddress = achievoContract.address;
+        const contractAddress = achievoContract.target;
         log(`${CONTRACT_TYPE}(${artifact.contractName}) for ${tenant} was deployed to https://goerli.explorer.zksync.io/address/${contractAddress}#contract`);
 
-        const verificationId = await hre.run('verify:verify', {
-            address: contractAddress,
-            contract: `contracts/${CONTRACT_NAME}.sol:${CONTRACT_NAME}`,
-            constructorArguments: [
-                name,
-                symbol,
-                baseURI,
-                contractURI,
-                wallet.address,
-                gatingNftAddress,
-                itemsNftAddress,
-                mintNFtWithoutGatingEnabled,
-                mintRandomItemEnabled,
-                mintNftGatingEnabled,
-            ],
-        });
+        // const verificationId = await hre.run('verify:verify', {
+        //     address: contractAddress,
+        //     contract: `contracts/${CONTRACT_NAME}.sol:${CONTRACT_NAME}`,
+        //     constructorArguments: [
+        //         name,
+        //         symbol,
+        //         baseURI,
+        //         contractURI,
+        //         wallet.address,
+        //         gatingNftAddress,
+        //         itemsNftAddress,
+        //         mintNFtWithoutGatingEnabled,
+        //         mintRandomItemEnabled,
+        //         mintNftGatingEnabled,
+        //     ],
+        // });
 
-        log(`Verification ID: ${verificationId}`);
+        // log(`Verification ID: ${verificationId}`);
 
         deployments[tenant] = {
             dbPayload: {
@@ -107,7 +110,7 @@ export default async function (hre: HardhatRuntimeEnvironment) {
             explorerUrl: `https://goerli.explorer.zksync.io/address/${contractAddress}#contract`,
         };
 
-        log(`Verification must be done by console command: npx hardhat verify --network zkSync ${contractAddress} --config zkSync.config.ts`);
+        log(`Verification must be done by console command: npx hardhat verify --network zkSyncTestnet ${contractAddress} --config zkSync.config.ts`);
     }
 
     // Define the path to the file
