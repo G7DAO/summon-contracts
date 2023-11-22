@@ -16,7 +16,7 @@ async function main() {
     const gameAchievementsContract = await ethers.getContractFactory('GameSummary1155', signer);
 
     const gameAchievements = (await gameAchievementsContract.deploy('https://achievo.mypinata.cloud/ipfs')) as unknown as GameSummary1155;
-    await gameAchievements.deployed();
+    await gameAchievements.waitForDeployment();
     log('GameSummary1155 deployed:', gameAchievements.address);
 
     const minterRole = await gameAchievements.MINTER_ROLE();

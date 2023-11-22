@@ -6,7 +6,7 @@ export interface ConstructorArgs {
     maxPerMint: number;
     isPaused: boolean;
     devWallet: string;
-    royalty: number;
+    royalty: bigint;
     tenants: Tenant[];
 }
 export interface Soulbound1155Args {
@@ -21,7 +21,7 @@ export const SoulboundBadgesArgs: Soulbound1155Args = {
         maxPerMint: 1,
         isPaused: true,
         devWallet: '0xA10648F8618A526Bd0Acb08a1b9f413BC44Fcb4B',
-        royalty: 250,
+        royalty: 250n,
         tenants: ['Game7', 'zkSync'],
     },
     TESTNET: {
@@ -31,7 +31,7 @@ export const SoulboundBadgesArgs: Soulbound1155Args = {
         maxPerMint: 1,
         isPaused: true,
         devWallet: '0xA10648F8618A526Bd0Acb08a1b9f413BC44Fcb4B',
-        royalty: 250,
+        royalty: 250n,
         tenants: ['Game7', 'zkSync'],
     },
 };
@@ -44,7 +44,7 @@ export const ItemsBoundArgs: Soulbound1155Args = {
         maxPerMint: 1,
         isPaused: true,
         devWallet: '0xA10648F8618A526Bd0Acb08a1b9f413BC44Fcb4B',
-        royalty: 250,
+        royalty: 250n,
         tenants: ['Game7', 'zkSync'],
     },
     TESTNET: {
@@ -54,7 +54,7 @@ export const ItemsBoundArgs: Soulbound1155Args = {
         maxPerMint: 1,
         isPaused: true,
         devWallet: '0xA10648F8618A526Bd0Acb08a1b9f413BC44Fcb4B',
-        royalty: 250,
+        royalty: 250n,
         tenants: ['Game7', 'zkSync'],
     },
 };

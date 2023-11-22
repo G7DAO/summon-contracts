@@ -1,47 +1,48 @@
 {
-  "compilerOptions": {
-    "baseUrl": ".",
-    "target": "es2020",
-    "types": ["node", "ethers", "chai", "mocha"],
-    "moduleResolution": "Node",
-    "resolveJsonModule": true,
-    "module": "commonjs",
-    "esModuleInterop": true,
-    "forceConsistentCasingInFileNames": true,
-    "strict": true,
-    "skipLibCheck": true,
-    "paths": {
-      "@contracts/*": ["./contracts/*"],
-      "@tests/*": ["./tests/*"],
-      "@generated/*": ["./generated/*"],
-      "@scripts/*": ["./scripts/*"],
-      "@constants/*": ["./constants/*"],
-      "@helpers/*": ["./helpers/*"]
-    }
-  },
-  "include": [
-    "types",
-    "scripts",
-    "tests",
-    "helpers",
-    "./zkSync.config.ts",
-    "./polygon.config.ts",
-    "./hardhat.config.ts",
-    "./mantle.config.ts",
-    "deploy",
-    "scripts",
-    "constants",
-    "helpers"
-  ],
-  "exclude": ["**/node_modules"],
-  "ts-node": {
-    "swc": true,
-    "require": ["tsconfig-paths/register"],
     "compilerOptions": {
-      "module": "CommonJS"
+        "baseUrl": ".",
+        "target": "es2020",
+        "types": ["node", "ethers", "chai", "mocha"],
+        "moduleResolution": "Node",
+        "resolveJsonModule": true,
+        "module": "commonjs",
+        "esModuleInterop": true,
+        "forceConsistentCasingInFileNames": true,
+        "strict": true,
+        "skipLibCheck": true,
+        "paths": {
+            "@contracts/*": ["./contracts/*"],
+            "@tests/*": ["./tests/*"],
+            "@generated/*": ["./generated/*"],
+            "@scripts/*": ["./scripts/*"],
+            "@constants/*": ["./constants/*"],
+            "@helpers/*": ["./helpers/*"]
+        }
     },
-    "moduleTypes": {
-      "**/*": "cjs"
+    "include": [
+        "types",
+        "scripts",
+        "tests",
+        "helpers",
+        "./zkSync.config.ts",
+        "./polygon.config.ts",
+        "./hardhat.config.ts",
+        "./mantle.config.ts",
+        "deploy",
+        "scripts",
+        "constants",
+        "helpers",
+        "./typechain-types"
+    ],
+    "exclude": ["**/node_modules"],
+    "ts-node": {
+        "swc": true,
+        "require": ["tsconfig-paths/register"],
+        "compilerOptions": {
+            "module": "CommonJS"
+        },
+        "moduleTypes": {
+            "**/*": "cjs"
+        }
     }
-  }
 }

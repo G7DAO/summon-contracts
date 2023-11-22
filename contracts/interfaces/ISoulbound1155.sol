@@ -12,7 +12,7 @@ interface ISoulbound1155 {
 
     function burnBatch(address to, uint256[] calldata ids, uint256[] calldata amounts) external;
 
-    // From Soulbound1155
+    // From Soulbound1155.sol
     function pause() external;
 
     function unpause() external;

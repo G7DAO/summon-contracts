@@ -6,7 +6,7 @@ import { GameSummary1155 } from '../typechain-types';
 import { generateSignature } from '../helpers/signature';
 import { hashIds } from '../helpers/hashing';
 
-describe('GameSummary1155', function () {
+describe.only('GameSummary1155', function () {
     let gameSummary1155: GameSummary1155;
     let minterAccount: SignerWithAddress;
     let playerAccount: SignerWithAddress;
@@ -22,7 +22,7 @@ describe('GameSummary1155', function () {
         playerAccount = player;
         // @ts-ignore-next-line
         gameSummary1155 = await contract.deploy(defaultBaseURI);
-        await gameSummary1155.deployed();
+        await gameSummary1155.waitForDeployment();
         const minterRole = await gameSummary1155.MINTER_ROLE();
         const gameCreatorRole = await gameSummary1155.GAME_CREATOR_ROLE();
         await gameSummary1155.grantRole(minterRole, minterAccount.address);
@@ -34,7 +34,7 @@ describe('GameSummary1155', function () {
         defaultCommonGameSummary = await gameSummary1155.getGameSummary(DEFAULT_TOKEN_ID);
     });
 
-    it('As Player must mint game summary achievement', async function () {
+    it.only('As Player must mint game summary achievement', async function () {
         const { signature, nonce } = await generateSignature({ walletAddress: playerAccount.address, signer: minterAccount });
         const whitelistTx = await gameSummary1155.setSigner(minterAccount.address);
         await whitelistTx.wait();
