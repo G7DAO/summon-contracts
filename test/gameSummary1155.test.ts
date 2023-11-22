@@ -5,8 +5,9 @@ import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers';
 import { GameSummary1155 } from '../typechain-types';
 import { generateSignature } from '../helpers/signature';
 import { hashIds } from '../helpers/hashing';
+import { log } from 'debug';
 
-describe.only('GameSummary1155', function () {
+describe('GameSummary1155', function () {
     let gameSummary1155: GameSummary1155;
     let minterAccount: SignerWithAddress;
     let playerAccount: SignerWithAddress;
@@ -28,13 +29,13 @@ describe.only('GameSummary1155', function () {
         await gameSummary1155.grantRole(minterRole, minterAccount.address);
         await gameSummary1155.grantRole(gameCreatorRole, minterAccount.address);
         await (
-            await await gameSummary1155.createCommonGameSummary(DEFAULT_STORE_ID, DEFAULT_GAME_ID, 'GameTest1234', 'test://on_chain_uri', 'external_uri', 500)
+            await gameSummary1155.createCommonGameSummary(DEFAULT_STORE_ID, DEFAULT_GAME_ID, 'GameTest1234', 'test://on_chain_uri', 'external_uri', 500)
         ).wait();
 
         defaultCommonGameSummary = await gameSummary1155.getGameSummary(DEFAULT_TOKEN_ID);
     });
 
-    it.only('As Player must mint game summary achievement', async function () {
+    it('As Player must mint game summary achievement', async function () {
         const { signature, nonce } = await generateSignature({ walletAddress: playerAccount.address, signer: minterAccount });
         const whitelistTx = await gameSummary1155.setSigner(minterAccount.address);
         await whitelistTx.wait();
@@ -212,7 +213,7 @@ describe.only('GameSummary1155', function () {
         await expect(
             gameSummary1155
                 .connect(playerAccount)
-                .safeTransferFrom(playerAccount.address, minterAccount.address, hashIds(DEFAULT_STORE_ID, DEFAULT_GAME_ID), 1, ethers.utils.toUtf8Bytes(''))
+                .safeTransferFrom(playerAccount.address, minterAccount.address, hashIds(DEFAULT_STORE_ID, DEFAULT_GAME_ID), 1, ethers.toUtf8Bytes(''))
             // @ts-ignore-next-line
         ).to.be.revertedWith("You can't transfer this token");
 
@@ -226,7 +227,7 @@ describe.only('GameSummary1155', function () {
                     '0xa5409ec958c83c3f309868babaca7c86dcb077c1',
                     hashIds(DEFAULT_STORE_ID, DEFAULT_GAME_ID),
                     1,
-                    ethers.utils.toUtf8Bytes('')
+                    ethers.toUtf8Bytes('')
                 )
             // @ts-ignore-next-line
         ).to.be.revertedWith("You can't transfer this token");
@@ -237,7 +238,7 @@ describe.only('GameSummary1155', function () {
         await tx.wait();
         const transferTx = await gameSummary1155
             .connect(playerAccount)
-            .safeTransferFrom(playerAccount.address, minterAccount.address, hashIds(DEFAULT_STORE_ID, DEFAULT_GAME_ID), 1, ethers.utils.toUtf8Bytes(''));
+            .safeTransferFrom(playerAccount.address, minterAccount.address, hashIds(DEFAULT_STORE_ID, DEFAULT_GAME_ID), 1, ethers.toUtf8Bytes(''));
         await transferTx.wait();
         const balance = await gameSummary1155.balanceOf(minterAccount.address, hashIds(DEFAULT_STORE_ID, DEFAULT_GAME_ID));
         expect(Number(balance)).to.equal(1);
@@ -269,13 +270,7 @@ describe.only('GameSummary1155', function () {
         await expect(
             gameSummary1155
                 .connect(playerAccount)
-                .safeBatchTransferFrom(
-                    playerAccount.address,
-                    minterAccount.address,
-                    [TOKEN_ID_1, TOKEN_ID_2, TOKEN_ID_3],
-                    [1, 1, 1],
-                    ethers.utils.toUtf8Bytes('')
-                )
+                .safeBatchTransferFrom(playerAccount.address, minterAccount.address, [TOKEN_ID_1, TOKEN_ID_2, TOKEN_ID_3], [1, 1, 1], ethers.toUtf8Bytes(''))
             // @ts-ignore-next-line
         ).to.be.revertedWith("You can't transfer this token");
 
@@ -287,7 +282,7 @@ describe.only('GameSummary1155', function () {
         // But if the token is not an SBT, it should work
         const transferTx = await gameSummary1155
             .connect(playerAccount)
-            .safeBatchTransferFrom(playerAccount.address, minterAccount.address, [TOKEN_ID_3, TOKEN_ID_4], [1, 1], ethers.utils.toUtf8Bytes(''));
+            .safeBatchTransferFrom(playerAccount.address, minterAccount.address, [TOKEN_ID_3, TOKEN_ID_4], [1, 1], ethers.toUtf8Bytes(''));
         await transferTx.wait();
         const balance3 = await gameSummary1155.balanceOf(minterAccount.address, `${TOKEN_ID_3}`);
         const balance4 = await gameSummary1155.balanceOf(minterAccount.address, `${TOKEN_ID_4}`);

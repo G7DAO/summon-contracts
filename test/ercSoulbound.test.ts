@@ -3,6 +3,7 @@ import { expect } from 'chai';
 import { ethers } from 'hardhat';
 import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers';
 import { Mock1155Soulbound, Mock721Soulbound } from '../typechain-types';
+import { log } from 'debug';
 
 describe('MockSoulbound', function () {
     let mockSoul1155Bound: Mock1155Soulbound;
@@ -15,6 +16,8 @@ describe('MockSoulbound', function () {
         const [adminAccount, player] = await ethers.getSigners();
         minterAccount = adminAccount;
         playerAccount = player;
+        log('player Account', await playerAccount.getAddress());
+        log('minter Account', await minterAccount.getAddress());
         // @ts-ignore-next-line
         mockSoul1155Bound = await contract1.deploy();
         await mockSoul1155Bound.waitForDeployment();

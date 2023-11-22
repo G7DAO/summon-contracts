@@ -64,13 +64,13 @@ describe('LevelsBoundV1', function () {
 
     it("As user I can't transfer the level tokens", async function () {
         await expect(
-            levelsBound.connect(playerAccount).safeTransferFrom(playerAccount.address, minterAccount.address, 1, 1, ethers.utils.toUtf8Bytes(''))
+            levelsBound.connect(playerAccount).safeTransferFrom(playerAccount.address, minterAccount.address, 1, 1, ethers.toUtf8Bytes(''))
         ).to.be.revertedWith("You can't transfer this token");
     });
 
     it("As user I can't transfer the level tokens using the batch as well", async function () {
         await expect(
-            levelsBound.connect(playerAccount).safeBatchTransferFrom(playerAccount.address, minterAccount.address, [1], [1], ethers.utils.toUtf8Bytes(''))
+            levelsBound.connect(playerAccount).safeBatchTransferFrom(playerAccount.address, minterAccount.address, [1], [1], ethers.toUtf8Bytes(''))
         ).to.be.revertedWith("You can't transfer this token");
     });
 
