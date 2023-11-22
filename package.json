@@ -1,7 +1,7 @@
 {
     "name": "achievo-contracts",
-    "version": "0.8.1-alpha",
-    "description": "Smart contracts for achievo",
+    "version": "0.9.0-alpha",
+    "description": "Smart contracts for achievo.xyz",
     "scripts": {
         "localChain": "hardhat --config hardhat.config.ts node",
         "clean": "hardhat --config hardhat.config.ts clean",
