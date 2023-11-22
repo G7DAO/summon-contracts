@@ -29,7 +29,7 @@ pragma solidity ^0.8.17;
 
 import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
 
-contract ERCSoulBoundUpgradeable is Initializable {
+contract ERCSoulboundUpgradeable is Initializable {
     mapping(uint256 => bool) internal _soulboundTokens; // low gas usage
     mapping(address => bool) internal _soulboundAddresses; // mid gas usage
     mapping(address => mapping(uint256 => uint256)) internal _soulbounds; // high gas usage
@@ -40,7 +40,7 @@ contract ERCSoulBoundUpgradeable is Initializable {
     event Soulbound(address indexed to, uint256 indexed tokenId, uint256 amount);
     event SoulboundBatch(address indexed to, uint256[] indexed tokenIds, uint256[] indexed amounts);
 
-    function initialize() public initializer {}
+    function __ERCSoulboundUpgradable_init() internal onlyInitializing {}
 
     modifier soulboundTokenCheck(uint256 tokenId) {
         require(!_soulboundTokens[tokenId], "ERCSoulbound: This token is soulbounded");

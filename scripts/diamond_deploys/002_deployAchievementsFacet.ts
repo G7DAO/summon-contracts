@@ -13,7 +13,7 @@ export async function deployFacet() {
         // Deploy the AchievementFacet
         const AchievementFacetFactory = await ethers.getContractFactory('AchievementFacet');
         const achievementFacet = await AchievementFacetFactory.deploy('url://lol/lol');
-        await achievementFacet.deployed();
+        await achievementFacet.waitForDeployment();
         log('AchievementFacet deployed to:', achievementFacet.address);
 
         // Get the DiamondCut facet instance

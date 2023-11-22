@@ -13,19 +13,19 @@ export async function deployDiamond() {
     const DiamondCutFacetFactory: ContractFactory = await ethers.getContractFactory('DiamondCutFacet');
     log('DiamondCutFacet deploying...');
     const diamondCutFacet: Contract = await DiamondCutFacetFactory.deploy();
-    await diamondCutFacet.deployed();
+    await diamondCutFacet.waitForDeployment();
     log('DiamondCutFacet deployed:', diamondCutFacet.address);
     // // deploy Diamond
     log('Diamond deploying...');
 
     const Diamond: ContractFactory = await ethers.getContractFactory('Diamond');
     const diamond: Contract = await Diamond.deploy(contractOwner.address, diamondCutFacet.address);
-    await diamond.deployed();
+    await diamond.waitForDeployment();
     log('Diamond deployed:', diamond.address);
     log('DiamondInit deploying...');
     const DiamondInit: ContractFactory = await ethers.getContractFactory('DiamondInit');
     const diamondInit: Contract = await DiamondInit.deploy();
-    await diamondInit.deployed();
+    await diamondInit.waitForDeployment();
     log('DiamondInit deployed:', diamondInit.address);
 
     // deploy facets
@@ -35,7 +35,7 @@ export async function deployDiamond() {
     for (const FacetName of FacetNames) {
         const Facet: ContractFactory = await ethers.getContractFactory(FacetName);
         const facet: Contract = await Facet.deploy();
-        await facet.deployed();
+        await facet.waitForDeployment();
         log(`${FacetName} deployed: ${facet.address}`);
         cut.push({
             facetAddress: facet.address,

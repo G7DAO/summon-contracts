@@ -5,6 +5,7 @@ on:
     paths:
       - 'contracts/**'
 
+
 env:
   PRIVATE_KEY: ${{ secrets.PRIVATE_KEY }}
   FOUNDRY_PROFILE: ci
@@ -42,15 +43,7 @@ jobs:
 #      - name: Run Slither
 #        run: slither . --exclude-dependencies --include contracts/facets/Inventory.sol, contracts/Inventory.sol
 
-#  check_foundry_tests:
-#    strategy:
-#      matrix:
-#        solidity: ['0.8.17']
-#        hardhat: ['^2.12.7']
-#        node: ['18.x']
-#      fail-fast: true
-#
-#    name: Foundry project
+#  foundry_tests:
 #    runs-on: ubuntu-latest
 #    steps:
 #      - uses: actions/checkout@v3
@@ -59,21 +52,14 @@ jobs:
 #
 #      - name: Install Foundry
 #        uses: foundry-rs/foundry-toolchain@v1
-#        with:
-#          version: nightly
 #
-#      - name: Run Forge build
-#        run: |
-#          forge --version
-#          forge build --sizes
-#        id: build
+#      - name: Run tests
+#        run: forge test -vvv
 #
-#      - name: Run Forge tests
-#        run: |
-#          forge test -vvv
-#        id: test
+#      - name: Run snapshot
+#        run: forge snapshot
 
-  tests:
+  all_tests:
     runs-on: ubuntu-latest
 
     steps:
@@ -88,11 +74,20 @@ jobs:
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
 
+      # TODO: remove the continue-on-error after zkSync fix their libs ...
       - name: Install dependencies
-        run: npm install
+        run: npm install --force
+        continue-on-error: true
 
       - name: Run Hardhat tests
         run: npx hardhat --config hardhat.config.ts test
+        continue-on-error: true
+
+      - name: Install Foundry
+        uses: foundry-rs/foundry-toolchain@v1
+
+      - name: Run tests
+        run: forge test -vvv
 
 #      - name: Enforce Coverage
 #        run: npx istanbul check-coverage --statements 36.5 --branches 17.5 --functions 40 --lines 30

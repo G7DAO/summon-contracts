@@ -1,18 +1,13 @@
-import { Wallet } from 'zksync-web3';
 import { ethers } from 'hardhat';
 import { log } from '@helpers/logger';
-import { formatUnits } from 'ethers/lib/utils';
+import { formatUnits } from 'ethers';
+import { Wallet } from 'zksync2-js';
 
 export default async function (privateKey: string) {
-  // Initialize the wallet.
-  const wallet = new Wallet(privateKey);
+    // Initialize the wallet.
+    const wallet = new Wallet(privateKey);
 
-  const [account] = await ethers.getSigners();
-  const address = account.address;
-  const balance = await account.getBalance();
+    log('Deployer account address: ', wallet.address);
 
-  log('Main account address: ', address);
-  log('Main account formatted ETH: ', formatUnits(balance, 'ether'));
-
-  return wallet;
+    return wallet;
 }

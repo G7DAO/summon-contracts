@@ -41,7 +41,7 @@ contract AvatarBoundTest is Test {
         avatarBound.setSigner(signerAddress);
         mockERC721Receiver = new MockERC721Receiver();
         mockERC1155Receiver = new MockERC1155Receiver();
-        // Add necessary token IDs to the Soulbound1155 contract
+        // Add necessary token IDs to the Soulbound1155.sol.sol contract
         for (uint256 i = 0; i <= 26; i++) {
             soulbound1155.addNewToken(i);
         }
