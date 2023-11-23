@@ -8,12 +8,11 @@ on:
 env:
   PRIVATE_KEY: ${{ secrets.PRIVATE_KEY }}
   FOUNDRY_PROFILE: ci
+  NODE_AUTH_TOKEN: ${{secrets.GITHUB_TOKEN}}
 
 jobs:
   cache-and-install:
     runs-on: ubuntu-latest
-    env:
-      NODE_AUTH_TOKEN: ${{secrets.GITHUB_TOKEN}}
     steps:
       - name: Checkout
         uses: actions/checkout@v3
@@ -46,6 +45,7 @@ jobs:
         run: pnpm install
 
   tests_foundry:
+    needs: cache-and-install
     runs-on: ubuntu-latest
     steps:
       - name: Install Foundry
@@ -55,6 +55,7 @@ jobs:
         run: forge test -vvv
 
   tests_hardhat:
+    needs: cache-and-install
     runs-on: ubuntu-latest
     steps:
       - name: Install Hardhat
