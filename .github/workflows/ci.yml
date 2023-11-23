@@ -11,7 +11,7 @@ env:
   NODE_AUTH_TOKEN: ${{secrets.GITHUB_TOKEN}}
 
 jobs:
-  cache-and-install:
+  tests:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
@@ -44,27 +44,12 @@ jobs:
       - name: Install dependencies
         run: pnpm install
 
-  tests_foundry:
-
-    needs: cache-and-install
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v3
-#        This is only needed if we use submodules => /libs folder
-#        with:
-#          submodules: recursive
-
       - name: Install Foundry
         uses: foundry-rs/foundry-toolchain@v1
 
       - name: Run tests
         run: forge test -vvv
 
-  tests_hardhat:
-    needs: cache-and-install
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v3
       - name: Install Hardhat
         uses: ethereum-actions/setup-hardhat@v2
 
