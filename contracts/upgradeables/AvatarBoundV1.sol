@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.17;
+pragma solidity 0.8.17;
 
 /**
  * Author: Omar <omar@game7.io>(https://github.com/ogarciarevett)
@@ -50,6 +50,9 @@ contract AvatarBoundV1 is
     constructor() {
         _disableInitializers();
     }
+
+    // Reserved storage space to allow for layout changes in the future.
+    uint256[50] private __gap;
 
     bytes32 public constant MINTER_ROLE = keccak256("MINTER_ROLE");
     bytes32 public constant URI_SETTER_ROLE = keccak256("URI_SETTER_ROLE");

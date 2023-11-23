@@ -1,26 +1,26 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.17;
+pragma solidity 0.8.17;
 
 /**                        .;c;.
-*                      'lkXWWWXk:.
-*                    .dXMMMMMMMMWXkc'.
-*               .,..  ,dKNMMMMMMMMMMN0o,.
-*             ,dKNXOo'. .;dKNMMMMMMMMMWN0c.
-*            .kMMMMMWN0o;. .,lkNMMMMMMWKd,
-*            .OMMMMMMMMMN0x:. .'ckXN0o;. ..
-*             :ONMMMMMMMMMMWKxc. .... .:d0d.
-*              .'cxKWMMMMMMMMMWXkl,.  'o0Nk.
-*            .:l,  .:dKWMMMMMMMMMMNOl,. .;,
-*            .OMKl.   .;oOXWMMMMMMMMMN0o;.
-*            .co;.  .;,. .'lOXWMMMMMMMMMWKl.
-*               .:dOXWWKd;.  'ckXWMMMMMMMMk.
-*             .c0WMMMMMMMWKd:.  .:xXWMMMWNo.
-*             ,oONWMMMMMMMMWXOl.  .;okxl'
-*                .,lkXWMMMMMMMMWXO:
-*                    .ckKWMMMMMWKd;
-*                       .:d0X0d:.
-*                          ...
-*/
+ *                      'lkXWWWXk:.
+ *                    .dXMMMMMMMMWXkc'.
+ *               .,..  ,dKNMMMMMMMMMMN0o,.
+ *             ,dKNXOo'. .;dKNMMMMMMMMMWN0c.
+ *            .kMMMMMWN0o;. .,lkNMMMMMMWKd,
+ *            .OMMMMMMMMMN0x:. .'ckXN0o;. ..
+ *             :ONMMMMMMMMMMWKxc. .... .:d0d.
+ *              .'cxKWMMMMMMMMMWXkl,.  'o0Nk.
+ *            .:l,  .:dKWMMMMMMMMMMNOl,. .;,
+ *            .OMKl.   .;oOXWMMMMMMMMMN0o;.
+ *            .co;.  .;,. .'lOXWMMMMMMMMMWKl.
+ *               .:dOXWWKd;.  'ckXWMMMMMMMMk.
+ *             .c0WMMMMMMMWKd:.  .:xXWMMMWNo.
+ *             ,oONWMMMMMMMMWXOl.  .;okxl'
+ *                .,lkXWMMMMMMMMWXO:
+ *                    .ckKWMMMMMWKd;
+ *                       .:d0X0d:.
+ *                          ...
+ */
 
 /**
  * Authors: Omar Garcia <omar@game7.io>
