@@ -72,7 +72,7 @@ contract Soulbound1155Test is Test {
         soulbound1155.pause();
         assertEq(soulbound1155.paused(), true);
 
-        vm.expectRevert(TokenNotExist.selector);
+        vm.expectRevert("Token not exist");
         vm.prank(playerWallet.addr);
         soulbound1155.mint(1, 1, true, nonce, signature);
 
@@ -98,7 +98,7 @@ contract Soulbound1155Test is Test {
     // testVerifySignature
     function testInvalidSignature() public {
         vm.prank(playerWallet.addr);
-        vm.expectRevert(InvalidSignature.selector);
+        vm.expectRevert("Invalid signature");
         soulbound1155.mint(1, 1, true, nonce, signature2);
     }
 
@@ -108,7 +108,7 @@ contract Soulbound1155Test is Test {
         soulbound1155.mint(1, 1, true, nonce, signature);
         assertEq(soulbound1155.usedSignatures(signature), true);
         vm.prank(playerWallet.addr);
-        vm.expectRevert(AlreadyUsedSignature.selector);
+        vm.expectRevert("Signature already used");
         soulbound1155.mint(1, 1, true, nonce, signature);
     }
 
@@ -132,7 +132,7 @@ contract Soulbound1155Test is Test {
         assertEq(soulbound1155.usedSignatures(signature), true);
 
         vm.prank(playerWallet.addr);
-        vm.expectRevert(AlreadyUsedSignature.selector);
+        vm.expectRevert("Signature already used");
         soulbound1155.mintBatch(tokenIds, amounts, true, nonce, signature);
     }
 
@@ -163,7 +163,7 @@ contract Soulbound1155Test is Test {
 
     function testMintMoreThanLimit() public {
         soulbound1155.addNewToken(1);
-        vm.expectRevert(ExceedMaxMint.selector);
+        vm.expectRevert("Exceed max mint");
         vm.prank(playerWallet.addr);
         soulbound1155.mint(1, 2, true, nonce, signature);
     }
@@ -176,13 +176,13 @@ contract Soulbound1155Test is Test {
         skip(3600); // so nonce is different
         (uint256 newNonce, bytes memory newSignature) = generateSignature(playerWallet.addr, minterLabel);
 
-        vm.expectRevert(AlreadyMinted.selector);
+        vm.expectRevert("Already minted");
         vm.prank(playerWallet.addr);
         soulbound1155.mint(1, 1, true, newNonce, newSignature);
     }
 
     function testMintInvalidTokenId() public {
-        vm.expectRevert(TokenNotExist.selector);
+        vm.expectRevert("Token not exist");
         vm.prank(playerWallet.addr);
         soulbound1155.mint(30, 1, true, nonce, signature);
     }
@@ -248,7 +248,7 @@ contract Soulbound1155Test is Test {
         amounts[1] = 2;
         amounts[2] = 2;
 
-        vm.expectRevert(ExceedMaxMint.selector);
+        vm.expectRevert("Exceed max mint");
         vm.prank(playerWallet.addr);
         soulbound1155.mintBatch(tokenIds, amounts, true, nonce, signature);
     }
@@ -282,7 +282,7 @@ contract Soulbound1155Test is Test {
         amounts2[1] = 1;
         amounts2[2] = 1;
 
-        vm.expectRevert(AlreadyMinted.selector);
+        vm.expectRevert("Already minted");
         vm.prank(playerWallet.addr);
         soulbound1155.mintBatch(tokenIds2, amounts2, true, newNonce, newSignature);
     }
@@ -296,7 +296,7 @@ contract Soulbound1155Test is Test {
         amounts[0] = 1;
         amounts[1] = 1;
 
-        vm.expectRevert(TokenNotExist.selector);
+        vm.expectRevert("Token not exist");
         vm.prank(playerWallet.addr);
         soulbound1155.mintBatch(tokenIds, amounts, true, nonce, signature);
     }
@@ -363,7 +363,7 @@ contract Soulbound1155Test is Test {
     }
 
     function testTokenURIIfTokenIdNotExist() public {
-        vm.expectRevert(TokenNotExist.selector);
+        vm.expectRevert("Token not exist");
         soulbound1155.uri(1);
     }
 
