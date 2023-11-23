@@ -11,6 +11,7 @@
         "var-name-mixedcase": "off",
         "reason-string": "off",
         "compiler-version": "off",
-        "no-inline-assembly": "off"
+        "no-inline-assembly": "off",
+        "no-complex-fallback": "off"
     }
 }
