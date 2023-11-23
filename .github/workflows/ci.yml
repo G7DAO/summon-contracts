@@ -50,8 +50,5 @@ jobs:
       - name: Run tests
         run: forge test -vvv
 
-      - name: Install Hardhat
-        uses: ethereum-actions/setup-hardhat@v2
-
       - name: Run tests
-        run: npx hardhat test
+        run: pnpm test
