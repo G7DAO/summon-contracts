@@ -22,23 +22,15 @@ pragma solidity ^0.8.17;
  */
 
 import "@openzeppelin/contracts/access/AccessControl.sol";
+import "./libraries/LibItems.sol";
 
 error RandomItem_AddressIsZero();
 error RandomItem_InvalidLevel();
 
-enum TierEnum {
-    COMMON,
-    UNCOMMON,
-    RARE,
-    LEGENDARY,
-    MYTHICAL,
-    NONE
-}
-
 abstract contract ItemBoundFactory {
     function getCurrentMaxLevel() public virtual returns (uint256);
 
-    function getItemsPerTierPerLevel(TierEnum _tier, uint256 _level) public virtual returns (uint256[] memory);
+    function getItemsPerTierPerLevel(LibItems.Tier _tier, uint256 _level) public virtual returns (uint256[] memory);
 }
 
 contract RandomItem is AccessControl {
@@ -46,14 +38,14 @@ contract RandomItem is AccessControl {
 
     struct Tier {
         uint8 percent;
-        TierEnum name;
+        LibItems.Tier name;
     }
 
     uint256 private _nonce;
 
     Tier[] public tiers;
 
-    function addTier(uint8 _percent, TierEnum _name) public {
+    function addTier(uint8 _percent, LibItems.Tier _name) public {
         require(_percent > 0);
         tiers.push(Tier(_percent, _name));
         updateTierPercents();
@@ -78,7 +70,9 @@ contract RandomItem is AccessControl {
         updateTierPercents();
     }
 
-    constructor() {}
+    constructor() {
+        _grantRole(DEFAULT_ADMIN_ROLE, msg.sender);
+    }
 
     function getRandomNumber(uint256 userProvidedSeed, uint256 maxNumber) public returns (uint256) {
         _nonce++;
@@ -86,7 +80,7 @@ contract RandomItem is AccessControl {
         return (randomNumber % maxNumber) + 1;
     }
 
-    function getTier(uint256 randomNumber) public returns (TierEnum) {
+    function getTier(uint256 randomNumber) public returns (LibItems.Tier) {
         uint runningPercent = 0;
         for (uint i = 0; i < tiers.length; i++) {
             runningPercent += tiers[i].percent;
@@ -96,7 +90,7 @@ contract RandomItem is AccessControl {
         }
     }
 
-    function getItem(uint256 seed, TierEnum tier, uint256 level) public returns (uint256) {
+    function getItem(uint256 seed, LibItems.Tier tier, uint256 level) public returns (uint256) {
         ItemBoundFactory factory = ItemBoundFactory(itemBoundContract);
         uint256[] memory _items = factory.getItemsPerTierPerLevel(tier, level);
         uint256 _randomNumber = getRandomNumber(seed, _items.length);
@@ -118,7 +112,7 @@ contract RandomItem is AccessControl {
     }
 
     function _randomItem(uint256 seed, uint256 level) private returns (uint256) {
-        TierEnum tier = getTier(getRandomNumber(seed, 100));
+        LibItems.Tier tier = getTier(getRandomNumber(seed, 100));
         uint256 item = getItem(seed, tier, level);
 
         // populate everythign into tokenId -> tierId + itemNumber -> hash = tokenId
@@ -126,7 +120,7 @@ contract RandomItem is AccessControl {
     }
 
     function setItemBoundContract(address contractAddress) external onlyRole(DEFAULT_ADMIN_ROLE) {
-        if (contractAddress != address(0)) {
+        if (contractAddress == address(0)) {
             revert RandomItem_AddressIsZero();
         }
 

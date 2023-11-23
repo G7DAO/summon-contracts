@@ -30,6 +30,9 @@ import "@openzeppelin/contracts/utils/Strings.sol";
 import "@openzeppelin/contracts/token/common/ERC2981.sol";
 import "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
 import "./ERCSoulbound.sol";
+import "./libraries/LibItems.sol";
+
+import "forge-std/Test.sol";
 
 error ItemBound_InvalidTokenId();
 error ItemBound_TokenAlreadyExist();
@@ -43,15 +46,6 @@ error ItemBound_AddressIsZero();
 
 abstract contract RandomItemFactory {
     function randomItem(uint256 seed, uint256 level) public virtual returns (uint256);
-}
-
-enum Tier {
-    COMMON,
-    UNCOMMON,
-    RARE,
-    LEGENDARY,
-    MYTHICAL,
-    NONE
 }
 
 contract ItemBound is ERC1155Burnable, ERCSoulbound, ERC2981, AccessControl, Pausable {
@@ -72,17 +66,8 @@ contract ItemBound is ERC1155Burnable, ERCSoulbound, ERC2981, AccessControl, Pau
 
     uint256 public MAX_PER_MINT = 1;
 
-    struct Token {
-        bool exists;
-        bool availableToMint;
-        string tokenUri;
-        uint256 itemId;
-        uint256 level;
-        Tier tier;
-    }
-
-    mapping(uint256 => Token) public tokenInfo;
-    mapping(Tier => mapping(uint256 => uint256[])) public itemPerTierPerLevel; // tier => level => itemId[]
+    mapping(uint256 => LibItems.TokenInfo) public tokenInfo;
+    mapping(LibItems.Tier => mapping(uint256 => uint256[])) public itemPerTierPerLevel; // tier => level => itemId[]
 
     mapping(address => bool) public whitelistSigners;
     mapping(bytes => bool) public usedSignatures;
@@ -147,7 +132,7 @@ contract ItemBound is ERC1155Burnable, ERCSoulbound, ERC2981, AccessControl, Pau
         _unpause();
     }
 
-    function addNewToken(uint256 _tokenId, Token calldata _token) public onlyRole(MANAGER_ROLE) {
+    function addNewToken(uint256 _tokenId, LibItems.TokenInfo calldata _token) public onlyRole(MANAGER_ROLE) {
         if (tokenInfo[_tokenId].exists) {
             revert ItemBound_TokenAlreadyExist();
         }
@@ -158,7 +143,7 @@ contract ItemBound is ERC1155Burnable, ERCSoulbound, ERC2981, AccessControl, Pau
         itemPerTierPerLevel[_token.tier][_token.level].push(_token.itemId);
     }
 
-    function addNewTokens(uint256[] calldata _tokenIds, Token[] calldata _tokens) external onlyRole(MANAGER_ROLE) {
+    function addNewTokens(uint256[] calldata _tokenIds, LibItems.TokenInfo[] calldata _tokens) external onlyRole(MANAGER_ROLE) {
         if (_tokenIds.length != _tokens.length) {
             revert ItemBound_TokenInvalidLength();
         }
@@ -168,7 +153,7 @@ contract ItemBound is ERC1155Burnable, ERCSoulbound, ERC2981, AccessControl, Pau
         }
     }
 
-    function updateTokenInfo(uint256 _tokenId, Token calldata _token) public onlyRole(MANAGER_ROLE) {
+    function updateTokenInfo(uint256 _tokenId, LibItems.TokenInfo calldata _token) public onlyRole(MANAGER_ROLE) {
         // if token not exists
         if (!tokenInfo[_tokenId].exists) {
             revert ItemBound_TokenNotExist();
@@ -177,7 +162,7 @@ contract ItemBound is ERC1155Burnable, ERCSoulbound, ERC2981, AccessControl, Pau
         _updateTokenInfo(_tokenId, _token);
     }
 
-    function _updateTokenInfo(uint256 _tokenId, Token calldata _token) private {
+    function _updateTokenInfo(uint256 _tokenId, LibItems.TokenInfo calldata _token) private {
         // check tokenId with tier and level to see if legit or not
         checkTokenId(_tokenId, _token.itemId, _token.level, _token.tier);
 
@@ -193,7 +178,8 @@ contract ItemBound is ERC1155Burnable, ERCSoulbound, ERC2981, AccessControl, Pau
         }
     }
 
-    function checkTokenId(uint256 _tokenId, uint256 _itemId, uint256 _level, Tier _tier) public pure {
+    // function checkTokenId(uint256 _tokenId, uint256 _itemId, uint256 _level, LibItems.Tier _tier) public pure {
+    function checkTokenId(uint256 _tokenId, uint256 _itemId, uint256 _level, LibItems.Tier _tier) public view {
         uint256 hash = uint256(keccak256(abi.encodePacked(_itemId, _level, _tier)));
         if (hash != _tokenId) {
             revert ItemBound_InvalidTokenId();
@@ -204,7 +190,7 @@ contract ItemBound is ERC1155Burnable, ERCSoulbound, ERC2981, AccessControl, Pau
         return currentMaxLevel;
     }
 
-    function getItemsPerTierPerLevel(Tier _tier, uint256 _level) public view returns (uint256[] memory) {
+    function getItemsPerTierPerLevel(LibItems.Tier _tier, uint256 _level) public view returns (uint256[] memory) {
         return itemPerTierPerLevel[_tier][_level];
     }
 
@@ -372,7 +358,7 @@ contract ItemBound is ERC1155Burnable, ERCSoulbound, ERC2981, AccessControl, Pau
     }
 
     function setRandomItemContract(address contractAddress) external onlyRole(DEFAULT_ADMIN_ROLE) {
-        if (contractAddress != address(0)) {
+        if (contractAddress == address(0)) {
             revert ItemBound_AddressIsZero();
         }
 
