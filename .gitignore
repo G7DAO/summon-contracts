@@ -57,3 +57,4 @@ deployments-*.json
 .DS_Store
 
 .gas-snapshot
+cache_forge

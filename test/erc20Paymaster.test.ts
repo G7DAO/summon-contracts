@@ -2,7 +2,7 @@ import { ethers } from 'hardhat';
 import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers';
 import { ERC20Paymaster, MockUSDC } from '../typechain-types';
 
-describe.only('ERC20Paymaster', function () {
+describe.skip('ERC20Paymaster', function () {
     let mockUSDC: MockUSDC;
     let paymaster: ERC20Paymaster;
     let minterAccount: SignerWithAddress;

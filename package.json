@@ -17,13 +17,13 @@
         "deployGameSummary:mumbai": "hardhat --config polygon.config.ts run scripts/deployGameSummary1155.ts --network mumbai",
         "deployGameSummary:wadsley": "hardhat --config mantle.config.ts run scripts/deployGameSummary1155.ts --network mantleWadsley",
         "test": "REPORT_GAS=true hardhat --config hardhat.config.ts test --network hardhat",
+        "test:ci": "hardhat --config hardhat.config.ts test --network hardhat",
         "lint": "eslint --config ./.eslintrc.js --ignore-path ./.eslintignore ./test/**/*.ts",
         "solhint": "solhint ./contracts/**/*.sol",
         "format": "yarn prettier -w ./deploy/**/*.ts ./tasks/**/*.ts ./tests/**/*.ts ./helpers/**/*.ts contracts/**/*.sol ",
         "format:check": "yarn prettier -c ./deploy/**/*.ts ./tasks/**/*.ts ./tests/**/*.ts ./helpers/**/*.ts ./contracts/**/*.sol ",
         "coverage": "pnpm dlx hardhat coverage",
-        "generate:types": "pnpm dlx hardhat typechain",
-        "postinstall": "typechain"
+        "generate:types": "pnpm dlx hardhat typechain"
     },
     "repository": {
         "type": "git",
@@ -75,6 +75,7 @@
         "@matterlabs/hardhat-zksync-solc": "^1.0.2",
         "@matterlabs/hardhat-zksync-upgradable": "^1.0.0",
         "@matterlabs/hardhat-zksync-verify": "^1.1.0",
+        "@nomicfoundation/hardhat-foundry": "^1.1.1",
         "@matterlabs/zksync-contracts": "^0.6.1",
         "@openzeppelin/contracts": "^4.9.3",
         "@openzeppelin/contracts-upgradeable": "^4.9.3",
