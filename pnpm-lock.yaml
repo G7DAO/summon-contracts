@@ -9,14 +9,17 @@ dependencies:
     specifier: ^1.0.0
     version: 1.0.0(ethers@6.8.1)(hardhat@2.19.1)(zksync2-js@0.3.0)
   '@matterlabs/hardhat-zksync-solc':
-    specifier: ^1.0.0
-    version: 1.0.0(hardhat@2.19.1)
+    specifier: ^1.0.2
+    version: 1.0.2(hardhat@2.19.1)
   '@matterlabs/hardhat-zksync-upgradable':
     specifier: ^1.0.0
     version: 1.0.0(@openzeppelin/contracts-upgradeable@4.9.3)(ethers@6.8.1)(hardhat@2.19.1)(zksync2-js@0.3.0)
   '@matterlabs/hardhat-zksync-verify':
-    specifier: ^1.0.0
-    version: 1.0.0(@nomicfoundation/hardhat-verify@1.1.1)(debug@4.3.4)(hardhat@2.19.1)
+    specifier: ^1.1.0
+    version: 1.1.0(@nomicfoundation/hardhat-verify@2.0.1)(debug@4.3.4)(hardhat@2.19.1)
+  '@matterlabs/zksync-contracts':
+    specifier: ^0.6.1
+    version: 0.6.1(@openzeppelin/contracts-upgradeable@4.9.3)(@openzeppelin/contracts@4.9.3)
   '@openzeppelin/contracts':
     specifier: ^4.9.3
     version: 4.9.3
@@ -25,7 +28,10 @@ dependencies:
     version: 4.9.3
   '@openzeppelin/hardhat-upgrades':
     specifier: ^2.4.1
-    version: 2.4.1(@nomicfoundation/hardhat-ethers@3.0.5)(@nomicfoundation/hardhat-verify@1.1.1)(ethers@6.8.1)(hardhat@2.19.1)
+    version: 2.4.1(@nomicfoundation/hardhat-ethers@3.0.5)(@nomicfoundation/hardhat-verify@2.0.1)(ethers@6.8.1)(hardhat@2.19.1)
+  '@pythnetwork/pyth-sdk-solidity':
+    specifier: ^2.3.0
+    version: 2.3.0
   axios:
     specifier: ^1.6.2
     version: 1.6.2(debug@4.3.4)
@@ -42,10 +48,10 @@ dependencies:
 devDependencies:
   '@nomicfoundation/hardhat-toolbox':
     specifier: ^4.0.0
-    version: 4.0.0(@nomicfoundation/hardhat-chai-matchers@2.0.2)(@nomicfoundation/hardhat-ethers@3.0.5)(@nomicfoundation/hardhat-network-helpers@1.0.9)(@nomicfoundation/hardhat-verify@1.1.1)(@typechain/ethers-v6@0.5.1)(@typechain/hardhat@9.1.0)(@types/chai@4.3.10)(@types/mocha@10.0.4)(@types/node@18.18.9)(chai@4.3.10)(ethers@6.8.1)(hardhat-gas-reporter@1.0.9)(hardhat@2.19.1)(solidity-coverage@0.8.5)(ts-node@10.9.1)(typechain@8.3.2)(typescript@4.9.5)
+    version: 4.0.0(@nomicfoundation/hardhat-chai-matchers@2.0.2)(@nomicfoundation/hardhat-ethers@3.0.5)(@nomicfoundation/hardhat-network-helpers@1.0.9)(@nomicfoundation/hardhat-verify@2.0.1)(@typechain/ethers-v6@0.5.1)(@typechain/hardhat@9.1.0)(@types/chai@4.3.10)(@types/mocha@10.0.4)(@types/node@18.18.9)(chai@4.3.10)(ethers@6.8.1)(hardhat-gas-reporter@1.0.9)(hardhat@2.19.1)(solidity-coverage@0.8.5)(ts-node@10.9.1)(typechain@8.3.2)(typescript@4.9.5)
   '@nomicfoundation/hardhat-verify':
-    specifier: ^1.1.1
-    version: 1.1.1(hardhat@2.19.1)
+    specifier: ^2.0.1
+    version: 2.0.1(hardhat@2.19.1)
   '@swc/core':
     specifier: ^1.3.36
     version: 1.3.96
@@ -634,22 +640,6 @@ packages:
       - supports-color
     dev: false
 
-  /@matterlabs/hardhat-zksync-solc@0.4.1(hardhat@2.19.1):
-    resolution: {integrity: sha512-fdlGf/2yZR5ihVNc2ubea1R/nNFXRONL29Fgz5FwB3azB13rPb76fkQgcFIg9zSufHsEy6zUUT029NkxLNA9Sw==}
-    peerDependencies:
-      hardhat: ^2.14.0
-    dependencies:
-      '@nomiclabs/hardhat-docker': 2.0.2
-      chalk: 4.1.2
-      dockerode: 3.3.5
-      fs-extra: 11.1.1
-      hardhat: 2.19.1(ts-node@10.9.1)(typescript@4.9.5)
-      semver: 7.5.4
-    transitivePeerDependencies:
-      - encoding
-      - supports-color
-    dev: false
-
   /@matterlabs/hardhat-zksync-solc@1.0.0(hardhat@2.19.1):
     resolution: {integrity: sha512-N6uUcmbAwZtu60WooUGJ1ssUdFFCd8MU1PdOSXcCJQ3vzjej2p3Ra8t3DrbJSWf3LRJoM18mZkZD2AktlF/ONw==}
     peerDependencies:
@@ -667,13 +657,30 @@ packages:
       - supports-color
     dev: false
 
+  /@matterlabs/hardhat-zksync-solc@1.0.2(hardhat@2.19.1):
+    resolution: {integrity: sha512-y21JuRfcJcdTdC+1IovfanysaOxyJBROc8QT7tqLWgtu2OLOCXgpd67ZKVVJkO0L9Vu2B0xDUv83KOgZvn6ZWg==}
+    peerDependencies:
+      hardhat: ^2.18.1
+    dependencies:
+      '@nomiclabs/hardhat-docker': 2.0.2
+      chalk: 4.1.2
+      dockerode: 4.0.0
+      fs-extra: 11.1.1
+      hardhat: 2.19.1(ts-node@10.9.1)(typescript@4.9.5)
+      proper-lockfile: 4.1.2
+      semver: 7.5.4
+    transitivePeerDependencies:
+      - encoding
+      - supports-color
+    dev: false
+
   /@matterlabs/hardhat-zksync-upgradable@1.0.0(@openzeppelin/contracts-upgradeable@4.9.3)(ethers@6.8.1)(hardhat@2.19.1)(zksync2-js@0.3.0):
     resolution: {integrity: sha512-/hSTc1CQfr1PawRVFsHaZp95sCqsKI88IV2sCDKF5ee7v+tnFCrXufeWppWZVg1yOn+YfaIuQ9DCVd8FhJ7R4g==}
     peerDependencies:
       '@openzeppelin/contracts-upgradeable': ^4.9.2
     dependencies:
       '@matterlabs/hardhat-zksync-deploy': 1.0.0(ethers@6.8.1)(hardhat@2.19.1)(zksync2-js@0.3.0)
-      '@matterlabs/hardhat-zksync-solc': 1.0.0(hardhat@2.19.1)
+      '@matterlabs/hardhat-zksync-solc': 1.0.2(hardhat@2.19.1)
       '@openzeppelin/contracts-upgradeable': 4.9.3
       '@openzeppelin/upgrades-core': 1.31.1
       dockerode: 3.3.5
@@ -685,21 +692,30 @@ packages:
       - zksync2-js
     dev: false
 
-  /@matterlabs/hardhat-zksync-verify@1.0.0(@nomicfoundation/hardhat-verify@1.1.1)(debug@4.3.4)(hardhat@2.19.1):
-    resolution: {integrity: sha512-wHCuJ6Z5SJsq4rZUH35nxh9ma6QKvyUTssAgR1FSPfJk6dEa1TL3LZwLR5V7MihwYxI0gu30PrH8CWZZuFSKKA==}
+  /@matterlabs/hardhat-zksync-verify@1.1.0(@nomicfoundation/hardhat-verify@2.0.1)(debug@4.3.4)(hardhat@2.19.1):
+    resolution: {integrity: sha512-2nw6qoip31i/MpOSF71WPR5C/xqhuERz4sm08rmvfk8c47wO17h5w0tsdYJ9wwUv6tMzXGbVquIJwQIrkyttPg==}
     peerDependencies:
-      '@nomicfoundation/hardhat-verify': ^1.1.1
+      '@nomicfoundation/hardhat-verify': ^2.0.0
     dependencies:
-      '@matterlabs/hardhat-zksync-solc': 0.4.1(hardhat@2.19.1)
-      '@nomicfoundation/hardhat-verify': 1.1.1(hardhat@2.19.1)
+      '@matterlabs/hardhat-zksync-solc': 1.0.2(hardhat@2.19.1)
+      '@nomicfoundation/hardhat-verify': 2.0.1(hardhat@2.19.1)
       axios: 1.6.2(debug@4.3.4)
       chalk: 4.1.2
-      dockerode: 3.3.5
     transitivePeerDependencies:
       - debug
       - encoding
       - hardhat
       - supports-color
+    dev: false
+
+  /@matterlabs/zksync-contracts@0.6.1(@openzeppelin/contracts-upgradeable@4.9.3)(@openzeppelin/contracts@4.9.3):
+    resolution: {integrity: sha512-+hucLw4DhGmTmQlXOTEtpboYCaOm/X2VJcWmnW4abNcOgQXEHX+mTxQrxEfPjIZT0ZE6z5FTUrOK9+RgUZwBMQ==}
+    peerDependencies:
+      '@openzeppelin/contracts': 4.6.0
+      '@openzeppelin/contracts-upgradeable': 4.6.0
+    dependencies:
+      '@openzeppelin/contracts': 4.9.3
+      '@openzeppelin/contracts-upgradeable': 4.9.3
     dev: false
 
   /@metamask/eth-sig-util@4.0.1:
@@ -943,7 +959,7 @@ packages:
       hardhat: 2.19.1(ts-node@10.9.1)(typescript@4.9.5)
     dev: true
 
-  /@nomicfoundation/hardhat-toolbox@4.0.0(@nomicfoundation/hardhat-chai-matchers@2.0.2)(@nomicfoundation/hardhat-ethers@3.0.5)(@nomicfoundation/hardhat-network-helpers@1.0.9)(@nomicfoundation/hardhat-verify@1.1.1)(@typechain/ethers-v6@0.5.1)(@typechain/hardhat@9.1.0)(@types/chai@4.3.10)(@types/mocha@10.0.4)(@types/node@18.18.9)(chai@4.3.10)(ethers@6.8.1)(hardhat-gas-reporter@1.0.9)(hardhat@2.19.1)(solidity-coverage@0.8.5)(ts-node@10.9.1)(typechain@8.3.2)(typescript@4.9.5):
+  /@nomicfoundation/hardhat-toolbox@4.0.0(@nomicfoundation/hardhat-chai-matchers@2.0.2)(@nomicfoundation/hardhat-ethers@3.0.5)(@nomicfoundation/hardhat-network-helpers@1.0.9)(@nomicfoundation/hardhat-verify@2.0.1)(@typechain/ethers-v6@0.5.1)(@typechain/hardhat@9.1.0)(@types/chai@4.3.10)(@types/mocha@10.0.4)(@types/node@18.18.9)(chai@4.3.10)(ethers@6.8.1)(hardhat-gas-reporter@1.0.9)(hardhat@2.19.1)(solidity-coverage@0.8.5)(ts-node@10.9.1)(typechain@8.3.2)(typescript@4.9.5):
     resolution: {integrity: sha512-jhcWHp0aHaL0aDYj8IJl80v4SZXWMS1A2XxXa1CA6pBiFfJKuZinCkO6wb+POAt0LIfXB3gA3AgdcOccrcwBwA==}
     peerDependencies:
       '@nomicfoundation/hardhat-chai-matchers': ^2.0.0
@@ -967,7 +983,7 @@ packages:
       '@nomicfoundation/hardhat-chai-matchers': 2.0.2(@nomicfoundation/hardhat-ethers@3.0.5)(chai@4.3.10)(ethers@6.8.1)(hardhat@2.19.1)
       '@nomicfoundation/hardhat-ethers': 3.0.5(ethers@6.8.1)(hardhat@2.19.1)
       '@nomicfoundation/hardhat-network-helpers': 1.0.9(hardhat@2.19.1)
-      '@nomicfoundation/hardhat-verify': 1.1.1(hardhat@2.19.1)
+      '@nomicfoundation/hardhat-verify': 2.0.1(hardhat@2.19.1)
       '@typechain/ethers-v6': 0.5.1(ethers@6.8.1)(typechain@8.3.2)(typescript@4.9.5)
       '@typechain/hardhat': 9.1.0(@typechain/ethers-v6@0.5.1)(ethers@6.8.1)(hardhat@2.19.1)(typechain@8.3.2)
       '@types/chai': 4.3.10
@@ -983,8 +999,8 @@ packages:
       typescript: 4.9.5
     dev: true
 
-  /@nomicfoundation/hardhat-verify@1.1.1(hardhat@2.19.1):
-    resolution: {integrity: sha512-9QsTYD7pcZaQFEA3tBb/D/oCStYDiEVDN7Dxeo/4SCyHRSm86APypxxdOMEPlGmXsAvd+p1j/dTODcpxb8aztA==}
+  /@nomicfoundation/hardhat-verify@2.0.1(hardhat@2.19.1):
+    resolution: {integrity: sha512-TuJrhW5p9x92wDRiRhNkGQ/wzRmOkfCLkoRg8+IRxyeLigOALbayQEmkNiGWR03vGlxZS4znXhKI7y97JwZ6Og==}
     peerDependencies:
       hardhat: ^2.0.4
     dependencies:
@@ -1164,7 +1180,7 @@ packages:
       - encoding
     dev: false
 
-  /@openzeppelin/hardhat-upgrades@2.4.1(@nomicfoundation/hardhat-ethers@3.0.5)(@nomicfoundation/hardhat-verify@1.1.1)(ethers@6.8.1)(hardhat@2.19.1):
+  /@openzeppelin/hardhat-upgrades@2.4.1(@nomicfoundation/hardhat-ethers@3.0.5)(@nomicfoundation/hardhat-verify@2.0.1)(ethers@6.8.1)(hardhat@2.19.1):
     resolution: {integrity: sha512-IF1nQ0Jbi9bUqGWAAaX6zP5CY5tgTM3jF+ipXXatPYLooFzyGbkk7wHHWzi/+9Rx64Ar7XQVtGlwVdAohMuRcw==}
     hasBin: true
     peerDependencies:
@@ -1177,7 +1193,7 @@ packages:
         optional: true
     dependencies:
       '@nomicfoundation/hardhat-ethers': 3.0.5(ethers@6.8.1)(hardhat@2.19.1)
-      '@nomicfoundation/hardhat-verify': 1.1.1(hardhat@2.19.1)
+      '@nomicfoundation/hardhat-verify': 2.0.1(hardhat@2.19.1)
       '@openzeppelin/defender-admin-client': 1.52.0(debug@4.3.4)
       '@openzeppelin/defender-base-client': 1.52.0(debug@4.3.4)
       '@openzeppelin/defender-sdk-base-client': 1.5.0
@@ -1211,6 +1227,10 @@ packages:
       solidity-ast: 0.4.53
     transitivePeerDependencies:
       - supports-color
+    dev: false
+
+  /@pythnetwork/pyth-sdk-solidity@2.3.0:
+    resolution: {integrity: sha512-P4B03Bclwlyey30kmamgcpGnO9DrN0/bhQmnuTzltB+1YSPAnQxIlUWnyXpCN5rKkLd7Ay2bXW4T0QP0uszORA==}
     dev: false
 
   /@scure/base@1.1.3:
@@ -2685,6 +2705,18 @@ packages:
       - supports-color
     dev: false
 
+  /docker-modem@5.0.1:
+    resolution: {integrity: sha512-vqrE/nrweCyzmCpVpdFRC41qS+tfTF+IoUKlTZr52O82urbUqdfyJBGWMvT01pYUprWepLr8IkyVTEWJKRTQSg==}
+    engines: {node: '>= 8.0'}
+    dependencies:
+      debug: 4.3.4(supports-color@8.1.1)
+      readable-stream: 3.6.2
+      split-ca: 1.0.1
+      ssh2: 1.14.0
+    transitivePeerDependencies:
+      - supports-color
+    dev: false
+
   /dockerode@2.5.8:
     resolution: {integrity: sha512-+7iOUYBeDTScmOmQqpUYQaE7F4vvIt6+gIZNHWhqAQEI887tiPFB9OvXI/HzQYqfUNvukMK+9myLW63oTJPZpw==}
     engines: {node: '>= 0.8'}
@@ -2702,6 +2734,17 @@ packages:
     dependencies:
       '@balena/dockerignore': 1.0.2
       docker-modem: 3.0.8
+      tar-fs: 2.0.1
+    transitivePeerDependencies:
+      - supports-color
+    dev: false
+
+  /dockerode@4.0.0:
+    resolution: {integrity: sha512-3LF7/3MPz5+9RsUo91rD0MCcx0yxjC9bnbtgtVjOLKyKxlZSJ7/Kk3OPAgARlwlWHqXwAGYhmkAHYx7IwD0tJQ==}
+    engines: {node: '>= 8.0'}
+    dependencies:
+      '@balena/dockerignore': 1.0.2
+      docker-modem: 5.0.1
       tar-fs: 2.0.1
     transitivePeerDependencies:
       - supports-color

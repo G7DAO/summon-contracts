@@ -7,6 +7,10 @@
         "avoid-sha3": "warn",
         "no-global-import": "off",
         "no-empty-blocks": "off",
-        "no-console": "warn"
+        "no-console": "warn",
+        "var-name-mixedcase": "off",
+        "reason-string": "off",
+        "compiler-version": "off",
+        "no-inline-assembly": "off"
     }
 }
