@@ -46,8 +46,8 @@ jobs:
       - name: Install Foundry
         uses: foundry-rs/foundry-toolchain@v1
 
-      - name: Run tests
+      - name: Run Foundry tests
         run: forge test -vvv
 
-      - name: Run tests
-        run: pnpm test
+      - name: Run Hardhat tests
+        run: pnpm test:ci

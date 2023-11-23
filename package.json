@@ -17,6 +17,7 @@
         "deployGameSummary:mumbai": "hardhat --config polygon.config.ts run scripts/deployGameSummary1155.ts --network mumbai",
         "deployGameSummary:wadsley": "hardhat --config mantle.config.ts run scripts/deployGameSummary1155.ts --network mantleWadsley",
         "test": "REPORT_GAS=true hardhat --config hardhat.config.ts test --network hardhat",
+        "test:ci": "hardhat --config hardhat.config.ts test --network hardhat",
         "lint": "eslint --config ./.eslintrc.js --ignore-path ./.eslintignore ./test/**/*.ts",
         "solhint": "solhint ./contracts/**/*.sol",
         "format": "yarn prettier -w ./deploy/**/*.ts ./tasks/**/*.ts ./tests/**/*.ts ./helpers/**/*.ts contracts/**/*.sol ",
