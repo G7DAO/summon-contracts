@@ -45,9 +45,15 @@ jobs:
         run: pnpm install
 
   tests_foundry:
+
     needs: cache-and-install
     runs-on: ubuntu-latest
     steps:
+      - uses: actions/checkout@v3
+#        This is only needed if we use submodules => /libs folder
+#        with:
+#          submodules: recursive
+
       - name: Install Foundry
         uses: foundry-rs/foundry-toolchain@v1
 
@@ -58,6 +64,7 @@ jobs:
     needs: cache-and-install
     runs-on: ubuntu-latest
     steps:
+      - uses: actions/checkout@v3
       - name: Install Hardhat
         uses: ethereum-actions/setup-hardhat@v2
 
