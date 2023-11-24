@@ -6,30 +6,38 @@ logger.enabled = true;
 
 export const log = logger;
 
-export const logDeployAddress = (chainId: number, address: string) => {
-  switch (chainId) {
-    case ChainId.Ganache: {
-      log('✅ Success! Local Contract address: ', address);
-      break;
+export const logExplorerAddress = (chainId: number, address: string) => {
+    switch (chainId) {
+        case ChainId.Ganache: {
+            log('Local Contract address: ', address);
+            break;
+        }
+        case ChainId.PolygonMumbai: {
+            log(`https://mumbai.polygonscan.com/address/${address}`);
+            break;
+        }
+        case ChainId.Polygon: {
+            log(`https://polygonscan.com/address/${address}`);
+            break;
+        }
+        case ChainId.Mantle: {
+            log('https://explorer.testnet.mantle.xyz/address/' + address);
+            break;
+        }
+        case ChainId.MantleWadsley: {
+            log('https://explorer.testnet.mantle.xyz/address/' + address);
+            break;
+        }
+        case ChainId.ZkSync: {
+            log('https://explorer.zksync.io/address/' + address);
+            break;
+        }
+        case ChainId.ZkSyncTestnet: {
+            log('https://goerli.explorer.zksync.io/address/' + address);
+            break;
+        }
+        default: {
+            return new Error('Chain Id provided do not supported.');
+        }
     }
-    case ChainId.PolygonMumbai: {
-      log(`✅ Success! https://mumbai.polygonscan.com/address/${address}`);
-      break;
-    }
-    case ChainId.Polygon: {
-      log(`✅ Success! https://polygonscan.com/address/${address}`);
-      break;
-    }
-    case ChainId.Mantle: {
-      log('✅ Success! https://explorer.testnet.mantle.xyz/address/' + address);
-      break;
-    }
-    case ChainId.MantleWadsley: {
-      log('✅ Success! https://explorer.testnet.mantle.xyz/address/' + address);
-      break;
-    }
-    default: {
-      return new Error('Chain Id provided do not supported.');
-    }
-  }
 };

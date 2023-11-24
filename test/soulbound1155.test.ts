@@ -46,7 +46,7 @@ describe('Soulbound1155', function () {
             await soulbound1155.pause();
             expect(await soulbound1155.paused()).to.be.true;
 
-            await expect(soulbound1155.connect(playerAccount).mint(1, 1, true, nonce, signature)).to.be.rejectedWith('TokenNotExist()');
+            await expect(soulbound1155.connect(playerAccount).mint(1, 1, true, nonce, signature)).to.be.rejectedWith('Token not exist');
 
             await soulbound1155.unpause();
             await soulbound1155.addNewToken(1);
@@ -76,7 +76,7 @@ describe('Soulbound1155', function () {
         it('should fail when try to use invalid signature', async function () {
             const tokenId = 1;
             await soulbound1155.addNewToken(tokenId);
-            await expect(soulbound1155.connect(playerAccount).mint(tokenId, 1, true, nonce, signature2)).to.be.rejectedWith('InvalidSignature');
+            await expect(soulbound1155.connect(playerAccount).mint(tokenId, 1, true, nonce, signature2)).to.be.rejectedWith('Invalid signature');
         });
 
         it('should fail when try to reuse used signature with mint()', async function () {
@@ -88,7 +88,7 @@ describe('Soulbound1155', function () {
 
             expect(await soulbound1155.usedSignatures(signature)).to.be.true;
 
-            await expect(soulbound1155.connect(playerAccount).mint(1, 1, true, nonce, signature)).to.be.rejectedWith('AlreadyUsedSignature');
+            await expect(soulbound1155.connect(playerAccount).mint(1, 1, true, nonce, signature)).to.be.rejectedWith('Signature already used');
         });
 
         it('should fail when try to reuse used signature with mintBatch()', async function () {
@@ -100,7 +100,7 @@ describe('Soulbound1155', function () {
 
             expect(await soulbound1155.usedSignatures(signature)).to.be.true;
             await expect(soulbound1155.connect(playerAccount).mintBatch([1, 2, 3], [1, 1, 1], true, nonce, signature)).to.be.rejectedWith(
-                'AlreadyUsedSignature'
+                'Signature already used'
             );
         });
     });
@@ -132,7 +132,7 @@ describe('Soulbound1155', function () {
         it('fail if try to mint more than the limit', async function () {
             await soulbound1155.addNewToken(tokenId);
 
-            await expect(soulbound1155.connect(playerAccount).mint(tokenId, 2, true, nonce, signature)).to.be.rejectedWith('ExceedMaxMint()');
+            await expect(soulbound1155.connect(playerAccount).mint(tokenId, 2, true, nonce, signature)).to.be.rejectedWith('Exceed max mint');
         });
 
         it('fail if already minted', async function () {
@@ -140,13 +140,13 @@ describe('Soulbound1155', function () {
             await soulbound1155.connect(playerAccount).mint(tokenId, 1, true, nonce, signature);
 
             const { nonce: newNonce, signature: newSignature } = await generateSignature({ walletAddress: playerAccount.address, signer: minterAccount });
-            await expect(soulbound1155.connect(playerAccount).mint(tokenId, 1, true, newNonce, newSignature)).to.be.rejectedWith('AlreadyMinted()');
+            await expect(soulbound1155.connect(playerAccount).mint(tokenId, 1, true, newNonce, newSignature)).to.be.rejectedWith('Already minted');
         });
 
         it('fail if try to mint invalid tokenId', async function () {
             const tokenId = 30;
 
-            await expect(soulbound1155.connect(playerAccount).mint(tokenId, 1, true, nonce, signature)).to.be.rejectedWith('TokenNotExist()');
+            await expect(soulbound1155.connect(playerAccount).mint(tokenId, 1, true, nonce, signature)).to.be.rejectedWith('Token not exist');
         });
 
         it('fail sender has no minter role', async function () {
@@ -191,7 +191,7 @@ describe('Soulbound1155', function () {
             await soulbound1155.addNewToken(3);
 
             await expect(soulbound1155.connect(playerAccount).mintBatch([1, 2, 3], [100, 200, 300], false, nonce, signature)).to.be.rejectedWith(
-                'ExceedMaxMint()'
+                'Exceed max mint'
             );
         });
 
@@ -205,12 +205,12 @@ describe('Soulbound1155', function () {
             const { nonce: newNonce, signature: newSignature } = await generateSignature({ walletAddress: playerAccount.address, signer: minterAccount });
 
             await expect(soulbound1155.connect(playerAccount).mintBatch([1, 2, 3], [1, 1, 1], true, newNonce, newSignature)).to.be.rejectedWith(
-                'AlreadyMinted()'
+                'Already minted'
             );
         });
 
         it('fail if try to mint invalid tokenId', async function () {
-            await expect(soulbound1155.connect(playerAccount).mintBatch([33, 299], [1, 1], true, nonce, signature)).to.be.rejectedWith('TokenNotExist()');
+            await expect(soulbound1155.connect(playerAccount).mintBatch([33, 299], [1, 1], true, nonce, signature)).to.be.rejectedWith('Token not exist');
         });
 
         it('fail sender has no minter role', async function () {
@@ -258,7 +258,7 @@ describe('Soulbound1155', function () {
     describe('Token URI', () => {
         it('Get Uri() should fail if tokenId not exists', async function () {
             const tokenId = 1;
-            await expect(soulbound1155.uri(tokenId)).to.be.rejectedWith('TokenNotExist()');
+            await expect(soulbound1155.uri(tokenId)).to.be.rejectedWith('Token not exist');
         });
 
         it('Get Uri() should return tokenUri if tokenId exists', async function () {

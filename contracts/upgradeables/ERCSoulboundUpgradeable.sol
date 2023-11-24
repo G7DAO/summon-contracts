@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.17;
+pragma solidity 0.8.17;
 
 /**
  * Author: Omar <omar@game7.io>(https://github.com/ogarciarevett)
@@ -30,6 +30,9 @@ pragma solidity ^0.8.17;
 import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
 
 contract ERCSoulboundUpgradeable is Initializable {
+    // Reserved storage space to allow for layout changes in the future.
+    uint256[50] private __gap;
+
     mapping(uint256 => bool) internal _soulboundTokens; // low gas usage
     mapping(address => bool) internal _soulboundAddresses; // mid gas usage
     mapping(address => mapping(uint256 => uint256)) internal _soulbounds; // high gas usage

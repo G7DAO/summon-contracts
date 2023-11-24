@@ -1,11 +1,14 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.0;
+pragma solidity 0.8.17;
 
 import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
 import "@openzeppelin/contracts-upgradeable/token/ERC1155/ERC1155Upgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
 
 contract LevelsBoundV1 is Initializable, ERC1155Upgradeable, OwnableUpgradeable {
+    // Reserved storage space to allow for layout changes in the future.
+    uint256[50] private __gap;
+
     mapping(address => uint256) public playerLevel;
 
     /// @custom:oz-upgrades-unsafe-allow constructor

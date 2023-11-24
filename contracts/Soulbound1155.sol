@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: UNLICENSED
 ///@notice This contract is for mock for WETH token.
-pragma solidity ^0.8.17;
+pragma solidity 0.8.17;
 
 /**                        .;c;.
  *                      'lkXWWWXk:.
@@ -31,12 +31,6 @@ import "@openzeppelin/contracts/token/common/ERC2981.sol";
 import "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
 import "./ERCSoulbound.sol";
 
-error TokenNotExist();
-error AlreadyMinted();
-error ExceedMaxMint();
-error InvalidSignature();
-error AlreadyUsedSignature();
-
 contract Soulbound1155 is ERC1155Burnable, ERCSoulbound, ERC2981, AccessControl, Pausable {
     event SignerAdded(address signer);
     event SignerRemoved(address signer);
@@ -59,7 +53,7 @@ contract Soulbound1155 is ERC1155Burnable, ERCSoulbound, ERC2981, AccessControl,
 
     modifier signatureCheck(uint256 nonce, bytes memory signature) {
         if (!verifySignature(_msgSender(), nonce, signature)) {
-            revert InvalidSignature();
+            revert("Invalid signature");
         }
         _;
     }
@@ -69,15 +63,15 @@ contract Soulbound1155 is ERC1155Burnable, ERCSoulbound, ERC2981, AccessControl,
         uint256 amount
     ) {
         if (!tokenExists[tokenId]) {
-            revert TokenNotExist();
+            revert("Token not exist");
         }
 
         if (isMinted[tokenId][to]) {
-            revert AlreadyMinted();
+            revert("Already minted");
         }
 
         if (amount > MAX_PER_MINT) {
-            revert ExceedMaxMint();
+            revert("Exceed max mint");
         }
         _;
     }
@@ -89,15 +83,15 @@ contract Soulbound1155 is ERC1155Burnable, ERCSoulbound, ERC2981, AccessControl,
     ) {
         for (uint256 i = 0; i < tokenIds.length; i++) {
             if (!tokenExists[tokenIds[i]]) {
-                revert TokenNotExist();
+                revert("Token not exist");
             }
 
             if (isMinted[tokenIds[i]][to]) {
-                revert AlreadyMinted();
+                revert("Already minted");
             }
 
             if (amounts[i] > MAX_PER_MINT) {
-                revert ExceedMaxMint();
+                revert("Exceed max mint");
             }
         }
 
@@ -227,7 +221,7 @@ contract Soulbound1155 is ERC1155Burnable, ERCSoulbound, ERC2981, AccessControl,
 
     function uri(uint256 tokenId) public view override returns (string memory) {
         if (!tokenExists[tokenId]) {
-            revert TokenNotExist();
+            revert("Token not exist");
         }
         return bytes(baseURI).length > 0 ? string(abi.encodePacked(baseURI, tokenId.toString())) : baseURI;
     }
@@ -252,7 +246,7 @@ contract Soulbound1155 is ERC1155Burnable, ERCSoulbound, ERC2981, AccessControl,
     }
 
     function verifySignature(address to, uint256 nonce, bytes memory signature) private returns (bool) {
-        if (usedSignatures[signature]) revert AlreadyUsedSignature();
+        if (usedSignatures[signature]) revert("Signature already used");
 
         address signer = recoverAddress(to, nonce, signature);
         if (whitelistSigners[signer]) {

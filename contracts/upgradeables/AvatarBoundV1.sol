@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.17;
+pragma solidity 0.8.17;
 
 /**
  * Author: Omar <omar@game7.io>(https://github.com/ogarciarevett)
@@ -51,10 +51,14 @@ contract AvatarBoundV1 is
         _disableInitializers();
     }
 
+    // Reserved storage space to allow for layout changes in the future.
+    uint256[50] private __gap;
+
     bytes32 public constant MINTER_ROLE = keccak256("MINTER_ROLE");
     bytes32 public constant URI_SETTER_ROLE = keccak256("URI_SETTER_ROLE");
     bytes32 public constant PAUSER_ROLE = keccak256("PAUSER_ROLE");
     uint256 private _tokenIdCounter;
+    uint256 private _baseSkinCounter;
     uint256 private _specialItemId;
     uint256 private defaultItemId;
     uint256 private randomItemMints;
@@ -156,7 +160,7 @@ contract AvatarBoundV1 is
             }
         }
 
-        if(mintSpecialItemEnabled) {
+        if (mintSpecialItemEnabled) {
             mintItem(_msgSender(), _specialItemId);
         }
     }
@@ -252,6 +256,14 @@ contract AvatarBoundV1 is
         return baseTokenURI;
     }
 
+    function getAllBaseSkins() public view returns (string[] memory) {
+        string[] memory skins = new string[](_baseSkinCounter);
+        for (uint256 i = 0; i < _baseSkinCounter; i++) {
+            skins[i] = baseSkins[i];
+        }
+        return skins;
+    }
+
     function setContractURI(string memory _contractURI) public onlyRole(DEFAULT_ADMIN_ROLE) {
         contractURI = _contractURI;
         emit ContractURIChanged(_contractURI, _msgSender());
@@ -284,8 +296,13 @@ contract AvatarBoundV1 is
     }
 
     function setBaseSkin(uint256 baseSkinId, string memory uri) public onlyRole(DEFAULT_ADMIN_ROLE) {
-        baseSkins[baseSkinId] = uri;
-        emit SkinBaseChanged(baseSkinId, uri, _msgSender());
+        if (keccak256(bytes(baseSkins[baseSkinId])) != keccak256(bytes(uri))) {
+            if (bytes(baseSkins[baseSkinId]).length == 0) {
+                _baseSkinCounter++;
+            }
+            baseSkins[baseSkinId] = uri;
+            emit SkinBaseChanged(baseSkinId, uri, _msgSender());
+        }
     }
 
     function setMintRandomItemEnabled(bool _mintRandomItemEnabled) public onlyRole(DEFAULT_ADMIN_ROLE) {
