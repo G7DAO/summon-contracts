@@ -4,7 +4,7 @@ import '@matterlabs/hardhat-zksync-verify';
 import '@matterlabs/hardhat-zksync-upgradable';
 
 import defaultConfig from './hardhat.config';
-import { NetworkName } from './constants';
+import { ChainId, NetworkName } from './constants';
 import { log } from '@helpers/logger';
 
 const { PRIVATE_KEY } = process.env;
@@ -16,6 +16,12 @@ log(`Using ZkSync config`);
 
 defaultConfig.networks = {
     ...defaultConfig.networks,
+    zkSyncLocal: {
+        url: 'http://localhost:3050',
+        ethNetwork: 'http://localhost:8545',
+        zksync: true,
+        timeout: 6000000,
+    },
     [NetworkName.ZkSync]: {
         url: 'https://mainnet.era.zksync.io',
         ethNetwork: 'mainnet',
