@@ -38,6 +38,10 @@ contract ItemBoundTest is Test {
 
     uint256 tokenId;
 
+    uint256 private _seed;
+    uint256[] _tokenIds;
+    LibItems.TokenInfo[] _tokens;
+
     function getWallet(string memory walletLabel) public returns (Wallet memory) {
         (address addr, uint256 privateKey) = makeAddrAndKey(walletLabel);
         Wallet memory wallet = Wallet(addr, privateKey);
@@ -62,6 +66,35 @@ contract ItemBoundTest is Test {
 
     function generateTokenId(uint256 item, uint256 level, LibItems.Tier tier) internal pure returns (uint256) {
         return uint256(keccak256(abi.encodePacked(item, level, tier)));
+    }
+
+    function generateRandomItemId() internal returns (uint256) {
+        _seed = uint256(keccak256(abi.encodePacked(blockhash(block.number - 1), _seed)));
+        return _seed;
+    }
+
+    function generateRandomLevel() internal returns (uint256) {
+        uint256 _seed = uint256(keccak256(abi.encodePacked(blockhash(block.number - 1), _seed)));
+        return (_seed % 10) + 1; // 1 - 10
+    }
+
+    function generateRandomTier() internal returns (LibItems.Tier) {
+        uint256 _seed = uint256(keccak256(abi.encodePacked(blockhash(block.number - 1), _seed)));
+        uint256 random = _seed % 5; // 0 - 4
+
+        if (random == 0) {
+            return LibItems.Tier.COMMON;
+        } else if (random == 1) {
+            return LibItems.Tier.UNCOMMON;
+        } else if (random == 2) {
+            return LibItems.Tier.RARE;
+        } else if (random == 3) {
+            return LibItems.Tier.LEGENDARY;
+        } else if (random == 4) {
+            return LibItems.Tier.MYTHICAL;
+        } else {
+            return LibItems.Tier.COMMON;
+        }
     }
 
     function setUp() public {
@@ -95,6 +128,30 @@ contract ItemBoundTest is Test {
         (nonce2, signature2) = generateSignature(playerWallet2.addr, tokenId, minterLabel);
 
         mockERC1155Receiver = new MockERC1155Receiver();
+
+        for (uint256 i = 0; i < 300; i++) {
+            uint256 _itemId = generateRandomItemId(); // totally random
+
+            uint256 _level = generateRandomLevel(); // level 1-10
+
+            LibItems.Tier _tier = generateRandomTier(); // tier 0-4
+
+            uint256 _tokenId = generateTokenId(_itemId, _level, _tier);
+
+            LibItems.TokenInfo memory _token = LibItems.TokenInfo({
+                exists: true,
+                availableToMint: true,
+                tokenUri: "",
+                itemId: _itemId,
+                level: _level,
+                tier: _tier
+            });
+
+            _tokenIds.push(_tokenId);
+            _tokens.push(_token);
+        }
+
+        itemBound.addNewTokens(_tokenIds, _tokens);
     }
 
     function testTokenExists() public {
@@ -105,7 +162,10 @@ contract ItemBoundTest is Test {
         uint256 _tokenId = generateTokenId(1000, 2, LibItems.Tier.RARE);
         (uint256 _nonce, bytes memory _signature) = generateSignature(playerWallet.addr, _tokenId, minterLabel);
 
-        vm.expectRevert(ItemBound_TokenNotExist.selector);
+        vm.expectRevert("TokenNotExist");
+        itemBound.isTokenExist(_tokenId);
+
+        vm.expectRevert("TokenNotExist");
         vm.prank(playerWallet.addr);
         itemBound.mint(_tokenId, 1, true, _nonce, _signature);
 
@@ -120,10 +180,197 @@ contract ItemBoundTest is Test {
 
         itemBound.unpause();
         itemBound.addNewToken(_tokenId, _token);
+
+        itemBound.isTokenExist(_tokenId);
+
         assertEq(itemBound.paused(), false);
 
         vm.prank(playerWallet.addr);
         itemBound.mint(_tokenId, 1, true, _nonce, _signature);
+    }
+
+    function testAddAlreadyExistingToken() public {
+        uint256 _tokenId = generateTokenId(1000, 2, LibItems.Tier.RARE);
+        LibItems.TokenInfo memory _token = LibItems.TokenInfo({
+            exists: true,
+            availableToMint: true,
+            tokenUri: "MISSING_BASE_URL1",
+            itemId: 1000,
+            level: 2,
+            tier: LibItems.Tier.RARE
+        });
+
+        itemBound.addNewToken(_tokenId, _token);
+
+        vm.expectRevert("TokenAlreadyExist");
+        itemBound.addNewToken(_tokenId, _token);
+    }
+
+    function testAddNewTokensFailInvalidLength() public {
+        for (uint256 i = 0; i < 300; i++) {
+            uint256 _itemId = generateRandomItemId(); // totally random
+
+            uint256 _level = generateRandomLevel(); // level 1-10
+
+            LibItems.Tier _tier = generateRandomTier(); // tier 0-4
+
+            uint256 _tokenId = generateTokenId(_itemId, _level, _tier);
+
+            LibItems.TokenInfo memory _token = LibItems.TokenInfo({
+                exists: true,
+                availableToMint: true,
+                tokenUri: "",
+                itemId: _itemId,
+                level: _level,
+                tier: _tier
+            });
+
+            _tokenIds.push(_tokenId);
+            _tokens.push(_token);
+        }
+
+        _tokenIds.pop();
+
+        vm.expectRevert("TokenInvalidLength");
+        itemBound.addNewTokens(_tokenIds, _tokens);
+    }
+
+    function testAddNewTokens() public {
+        uint256[] memory _tokenIds = new uint256[](3);
+        LibItems.TokenInfo[] memory _tokens = new LibItems.TokenInfo[](3);
+
+        skip(36000);
+        for (uint256 i = 0; i < 3; i++) {
+            uint256 _level = generateRandomLevel(); // level 1-10
+
+            LibItems.Tier _tier = generateRandomTier(); // tier 0-4
+
+            uint256 _tokenId = generateTokenId(i, _level, _tier);
+
+            LibItems.TokenInfo memory _token = LibItems.TokenInfo({ exists: true, availableToMint: true, tokenUri: "", itemId: i, level: _level, tier: _tier });
+
+            _tokenIds[i] = _tokenId;
+            _tokens[i] = _token;
+        }
+
+        itemBound.addNewTokens(_tokenIds, _tokens);
+    }
+
+    // updateTokenInfo
+    function testUpdateTokenInfoTokenNotExist() public {
+        uint256 _tokenId = generateTokenId(9999, 1, LibItems.Tier.UNCOMMON);
+
+        LibItems.TokenInfo memory _token = LibItems.TokenInfo({
+            exists: true,
+            availableToMint: true,
+            tokenUri: "",
+            itemId: 9999,
+            level: 1,
+            tier: LibItems.Tier.UNCOMMON
+        });
+
+        vm.expectRevert("TokenNotExist");
+        itemBound.updateTokenInfo(_tokenId, _token);
+    }
+
+    function testUpdateTokenInfoTokenNotMANAGER() public {
+        uint256 _tokenId = generateTokenId(9999, 1, LibItems.Tier.UNCOMMON);
+
+        LibItems.TokenInfo memory _token = LibItems.TokenInfo({
+            exists: true,
+            availableToMint: true,
+            tokenUri: "",
+            itemId: 9999,
+            level: 1,
+            tier: LibItems.Tier.UNCOMMON
+        });
+
+        vm.expectRevert(
+            "AccessControl: account 0x44e97af4418b7a17aabd8090bea0a471a366305c is missing role 0x241ecf16d79d0f8dbfb92cbc07fe17840425976cf0667f022fe9877caa831b08"
+        );
+        vm.prank(playerWallet.addr);
+        itemBound.updateTokenInfo(_tokenId, _token);
+    }
+
+    function testUpdateTokenInfo() public {
+        uint256 _tokenId = generateTokenId(9999, 1, LibItems.Tier.UNCOMMON);
+
+        LibItems.TokenInfo memory _token = LibItems.TokenInfo({
+            exists: true,
+            availableToMint: true,
+            tokenUri: "",
+            itemId: 9999,
+            level: 1,
+            tier: LibItems.Tier.UNCOMMON
+        });
+
+        LibItems.TokenInfo memory _updatedToken = LibItems.TokenInfo({
+            exists: true,
+            availableToMint: true,
+            tokenUri: "https://something.com",
+            itemId: 9999,
+            level: 1,
+            tier: LibItems.Tier.UNCOMMON
+        });
+
+        itemBound.addNewToken(_tokenId, _token);
+        itemBound.updateTokenInfo(_tokenId, _updatedToken);
+
+        assertEq(itemBound.getTokenInfo(_tokenId).tokenUri, "https://something.com");
+    }
+
+    function testUpdateTokenInfoCurrentMaxLevelShouldChange() public {
+        uint256 _tokenId1 = generateTokenId(9999, 11, LibItems.Tier.UNCOMMON);
+        uint256 _tokenId2 = generateTokenId(10000, 12, LibItems.Tier.UNCOMMON);
+
+        LibItems.TokenInfo memory _token1 = LibItems.TokenInfo({
+            exists: true,
+            availableToMint: true,
+            tokenUri: "",
+            itemId: 9999,
+            level: 11,
+            tier: LibItems.Tier.UNCOMMON
+        });
+
+        LibItems.TokenInfo memory _token2 = LibItems.TokenInfo({
+            exists: true,
+            availableToMint: true,
+            tokenUri: "",
+            itemId: 10000,
+            level: 12,
+            tier: LibItems.Tier.UNCOMMON
+        });
+
+        assertEq(itemBound.currentMaxLevel(), 10);
+        itemBound.addNewToken(_tokenId1, _token1);
+        assertEq(itemBound.currentMaxLevel(), 11);
+        itemBound.addNewToken(_tokenId2, _token2);
+        assertEq(itemBound.currentMaxLevel(), 12);
+    }
+
+    // updateTokenInfo - fail because passing level more than max level
+
+    // getTokenInfo if token not exist
+    function testGetTokenInfoTokenNotExist() public {
+        vm.expectRevert("TokenNotExist");
+        vm.prank(playerWallet.addr);
+        itemBound.getTokenInfo(123123123);
+    }
+
+    // checkTokenId
+    function testCheckTokenIdTokenNotExist() public {
+        uint256 _tokenId = generateTokenId(1000, 2, LibItems.Tier.RARE);
+
+        vm.expectRevert("InvalidTokenId");
+        vm.prank(playerWallet.addr);
+        itemBound.checkTokenId(_tokenId, 1000, 3, LibItems.Tier.RARE);
+    }
+
+    function testCheckTokenId() public {
+        uint256 _tokenId = generateTokenId(1000, 2, LibItems.Tier.RARE);
+
+        vm.prank(playerWallet.addr);
+        itemBound.checkTokenId(_tokenId, 1000, 2, LibItems.Tier.RARE);
     }
 
     function testPauseUnpause() public {
@@ -139,7 +386,7 @@ contract ItemBoundTest is Test {
     // testVerifySignature
     function testInvalidSignature() public {
         vm.prank(playerWallet.addr);
-        vm.expectRevert(ItemBound_InvalidSignature.selector);
+        vm.expectRevert("InvalidSignature");
         itemBound.mint(tokenId, 1, true, nonce, signature2);
     }
 
@@ -148,7 +395,7 @@ contract ItemBoundTest is Test {
         itemBound.mint(tokenId, 1, true, nonce, signature);
         assertEq(itemBound.usedSignatures(signature), true);
         vm.prank(playerWallet.addr);
-        vm.expectRevert(ItemBound_AlreadyUsedSignature.selector);
+        vm.expectRevert("AlreadyUsedSignature");
         itemBound.mint(tokenId, 1, true, nonce, signature);
     }
 
@@ -176,7 +423,7 @@ contract ItemBoundTest is Test {
     }
 
     function testMintMoreThanLimit() public {
-        vm.expectRevert(ItemBound_ExceedMaxMint.selector);
+        vm.expectRevert("ExceedMaxMint");
         vm.prank(playerWallet.addr);
         itemBound.mint(tokenId, 2, true, nonce, signature);
     }
@@ -184,7 +431,7 @@ contract ItemBoundTest is Test {
     function testMintInvalidTokenId() public {
         (uint256 _nonce, bytes memory _signature) = generateSignature(playerWallet.addr, 30, minterLabel);
 
-        vm.expectRevert(ItemBound_TokenNotExist.selector);
+        vm.expectRevert("TokenNotExist");
         vm.prank(playerWallet.addr);
         itemBound.mint(30, 1, true, _nonce, _signature);
     }
@@ -230,13 +477,92 @@ contract ItemBoundTest is Test {
         assertEq(itemBound.balanceOf(playerWallet3.addr, tokenId), 0);
     }
 
-    // TODO * user mintRandom()
-    // TODO * user mintRandomAtLevel()
-    // TODO * admin adminMintRandom()
-    // TODO * admin adminMintRandomAtLevel()
+    // user mintRandom()
+    // fail -> invalid signature
+    function testMintRandomFailInvalidSignature() public {
+        vm.expectRevert("InvalidSignature");
+        vm.prank(playerWallet.addr);
+        itemBound.mintRandom(1, 1, false, nonce, signature2);
+    }
+
+    // pass
+    function testMintRandomShouldPass() public {
+        vm.prank(playerWallet.addr);
+        (uint256 _nonce, bytes memory _signature) = generateSignature(playerWallet.addr, _seed, minterLabel);
+        (uint256 _tokenId, uint256 _amount, bool _soulbound) = itemBound.mintRandom(_seed, 1, false, _nonce, _signature);
+
+        assertEq(itemBound.balanceOf(playerWallet.addr, _tokenId), _amount);
+    }
+
+    // user mintRandomAtLevel()
+    // fail -> invalid signature
+    function testMintRandomAtLevelFailInvalidSignature() public {
+        vm.expectRevert("InvalidSignature");
+        vm.prank(playerWallet.addr);
+        itemBound.mintRandomAtLevel(1, 1, 1, true, nonce, signature2);
+    }
+
+    // pass
+    function testMintRandomAtLevelShouldPass() public {
+        vm.prank(playerWallet.addr);
+        (uint256 _nonce, bytes memory _signature) = generateSignature(playerWallet.addr, _seed, minterLabel);
+        (uint256 _tokenId, uint256 _amount, bool _soulbound) = itemBound.mintRandomAtLevel(_seed, 2, 1, false, _nonce, _signature);
+
+        assertEq(itemBound.balanceOf(playerWallet.addr, _tokenId), _amount);
+        assertEq(itemBound.getTokenInfo(_tokenId).level, 2);
+        assertEq(uint256(itemBound.getTokenInfo(_tokenId).tier), 1);
+    }
+
+    // admin adminMintRandom()
+    // fail -> not minter role
+    function testAdminMintRandomNotMinterRole() public {
+        vm.expectRevert(
+            "AccessControl: account 0x44e97af4418b7a17aabd8090bea0a471a366305c is missing role 0x9f2df0fed2c77648de5860a4cc508cd0818c85b8b8a1ab4ceeef8d981c8956a6"
+        );
+        vm.prank(playerWallet.addr);
+        (address _to, uint256 _tokenId, uint256 _amount, bool _soulbound) = itemBound.adminMintRandom(address(mockERC1155Receiver), _seed, 1, true);
+    }
+
+    // pass
+    function testAdminMintRandomShouldPass() public {
+        (address _to, uint256 _tokenId, uint256 _amount, bool _soulbound) = itemBound.adminMintRandom(address(mockERC1155Receiver), _seed, 1, true);
+        assertEq(itemBound.balanceOf(address(mockERC1155Receiver), _tokenId), 1);
+        assertEq(itemBound.getTokenInfo(_tokenId).level, 7);
+        assertEq(uint256(itemBound.getTokenInfo(_tokenId).tier), 1);
+    }
+
+    // admin adminMintRandomAtLevel()
+    // fail
+    function testAdminMintRandomAtLevelNotMinterRole() public {
+        vm.expectRevert(
+            "AccessControl: account 0x44e97af4418b7a17aabd8090bea0a471a366305c is missing role 0x9f2df0fed2c77648de5860a4cc508cd0818c85b8b8a1ab4ceeef8d981c8956a6"
+        );
+        vm.prank(playerWallet.addr);
+        (address _to, uint256 _tokenId, uint256 _amount, bool _soulbound) = itemBound.adminMintRandomAtLevel(address(mockERC1155Receiver), _seed, 3, 1, true);
+    }
+
+    // pass
+    function testAdminMintRandomAtLevelShouldPass() public {
+        (address _to, uint256 _tokenId, uint256 _amount, bool _soulbound) = itemBound.adminMintRandomAtLevel(address(mockERC1155Receiver), _seed, 3, 1, false);
+        assertEq(itemBound.balanceOf(address(mockERC1155Receiver), _tokenId), 1);
+        assertEq(itemBound.getTokenInfo(_tokenId).level, 3);
+        assertEq(uint256(itemBound.getTokenInfo(_tokenId).tier), 2);
+    }
+
+    // TODO * mintRandom and then calculate the rarity propability total run 100k times
+    function testAdminMint100kTimes() public {
+        // for (uint256 i = 0; i < 10; i++) {
+        //     (address _to, uint256 _tokenId, uint256 _amount, bool _soulbound) = itemBound.adminMintRandom(address(mockERC1155Receiver), _seed, 1, true);
+        //     skip(3600);
+        // }
+        // for (uint256 i = 0; i < 10; i++) {
+        //     (address _to, uint256 _tokenId, uint256 _amount, bool _soulbound) = itemBound.adminMintRandom(address(mockERC1155Receiver), _seed, 1, true);
+        //     skip(3600);
+        // }
+    }
 
     function testTokenURIIfTokenIdNotExist() public {
-        vm.expectRevert(ItemBound_TokenNotExist.selector);
+        vm.expectRevert("TokenNotExist");
         itemBound.uri(1);
     }
 
@@ -350,5 +676,23 @@ contract ItemBoundTest is Test {
 
         assertEq(receiverAfter, playerWallet.addr);
         assertEq(royaltyAmountAfter, expectedRoyaltyAfter);
+    }
+
+    function testSetRandomItemContractNotManager() public {
+        vm.expectRevert(
+            "AccessControl: account 0x44e97af4418b7a17aabd8090bea0a471a366305c is missing role 0x241ecf16d79d0f8dbfb92cbc07fe17840425976cf0667f022fe9877caa831b08"
+        );
+        vm.prank(playerWallet.addr);
+        itemBound.setRandomItemContract(playerWallet2.addr);
+    }
+
+    // setItemBoundContract fail when address is zero
+    function testSetRandomItemContractAddressZero() public {
+        vm.expectRevert("AddressIsZero");
+        itemBound.setRandomItemContract(address(0));
+    }
+
+    function testSetRandomItemContract() public {
+        itemBound.setRandomItemContract(playerWallet2.addr);
     }
 }

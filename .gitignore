@@ -58,3 +58,6 @@ deployments-*.json
 
 .gas-snapshot
 cache_forge
+
+
+lcov.info
