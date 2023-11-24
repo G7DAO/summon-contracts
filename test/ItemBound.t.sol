@@ -2,11 +2,14 @@
 pragma solidity ^0.8.17;
 
 import "forge-std/Test.sol";
+import "@openzeppelin/contracts/utils/Strings.sol";
 import "../contracts/ItemBound.sol";
 import "../contracts/RandomItem.sol";
 import "../contracts/mocks/MockERC1155Receiver.sol";
 
 contract ItemBoundTest is Test {
+    using Strings for uint256;
+
     ItemBound public itemBound;
     RandomItem public randomItem;
     MockERC1155Receiver public mockERC1155Receiver;
@@ -32,6 +35,8 @@ contract ItemBoundTest is Test {
     bytes signature;
     uint256 nonce2;
     bytes signature2;
+
+    uint256 tokenId;
 
     function getWallet(string memory walletLabel) public returns (Wallet memory) {
         (address addr, uint256 privateKey) = makeAddrAndKey(walletLabel);
@@ -73,8 +78,21 @@ contract ItemBoundTest is Test {
         itemBound.setRandomItemContract(address(randomItem));
         randomItem.setItemBoundContract(address(itemBound));
 
-        (nonce, signature) = generateSignature(playerWallet.addr, seed1, minterLabel);
-        (nonce2, signature2) = generateSignature(playerWallet2.addr, seed1, minterLabel);
+        tokenId = generateTokenId(1000, 1, LibItems.Tier.RARE);
+
+        LibItems.TokenInfo memory _token = LibItems.TokenInfo({
+            exists: true,
+            availableToMint: true,
+            tokenUri: "",
+            itemId: 1000,
+            level: 1,
+            tier: LibItems.Tier.RARE
+        });
+
+        itemBound.addNewToken(tokenId, _token);
+
+        (nonce, signature) = generateSignature(playerWallet.addr, tokenId, minterLabel);
+        (nonce2, signature2) = generateSignature(playerWallet2.addr, tokenId, minterLabel);
 
         mockERC1155Receiver = new MockERC1155Receiver();
     }
@@ -84,420 +102,253 @@ contract ItemBoundTest is Test {
         itemBound.pause();
         assertEq(itemBound.paused(), true);
 
-        uint256 tokenId = generateTokenId(1000, 1, LibItems.Tier.RARE);
-
-        console.log("tokenId", tokenId);
-
-        (uint256 _nonce, bytes memory _signature) = generateSignature(playerWallet.addr, tokenId, minterLabel);
+        uint256 _tokenId = generateTokenId(1000, 2, LibItems.Tier.RARE);
+        (uint256 _nonce, bytes memory _signature) = generateSignature(playerWallet.addr, _tokenId, minterLabel);
 
         vm.expectRevert(ItemBound_TokenNotExist.selector);
         vm.prank(playerWallet.addr);
-        itemBound.mint(tokenId, 1, true, _nonce, _signature);
+        itemBound.mint(_tokenId, 1, true, _nonce, _signature);
 
         LibItems.TokenInfo memory _token = LibItems.TokenInfo({
             exists: true,
             availableToMint: true,
             tokenUri: "MISSING_BASE_URL1",
             itemId: 1000,
-            level: 1,
+            level: 2,
             tier: LibItems.Tier.RARE
         });
 
         itemBound.unpause();
-        itemBound.addNewToken(tokenId, _token);
+        itemBound.addNewToken(_tokenId, _token);
         assertEq(itemBound.paused(), false);
 
         vm.prank(playerWallet.addr);
-        itemBound.mint(tokenId, 1, true, _nonce, _signature);
+        itemBound.mint(_tokenId, 1, true, _nonce, _signature);
     }
 
-    // function testPauseUnpause() public {
-    //     itemBound.addNewToken(1);
-    //     itemBound.pause();
-    //     vm.expectRevert("Pausable: paused");
-    //     itemBound.adminMint(address(this), 1, 1, true);
-    //     itemBound.unpause();
-
-    //     itemBound.adminMint(address(mockERC1155Receiver), 1, 1, true);
-    //     assertEq(itemBound.balanceOf(address(mockERC1155Receiver), 1), 1);
-    // }
-
-    // // testVerifySignature
-    // function testInvalidSignature() public {
-    //     vm.prank(playerWallet.addr);
-    //     vm.expectRevert(ItemBound_InvalidSignature.selector);
-    //     itemBound.mint(1, 1, true, nonce, signature2);
-    // }
-
-    // function testReuseSignatureMint() public {
-    //     itemBound.addNewToken(1);
-    //     vm.prank(playerWallet.addr);
-    //     itemBound.mint(1, 1, true, nonce, signature);
-    //     assertEq(itemBound.usedSignatures(signature), true);
-    //     vm.prank(playerWallet.addr);
-    //     vm.expectRevert(ItemBound_AlreadyUsedSignature.selector);
-    //     itemBound.mint(1, 1, true, nonce, signature);
-    // }
-
-    // function testReuseSignatureMintBatch() public {
-    //     itemBound.addNewToken(1);
-    //     itemBound.addNewToken(2);
-    //     itemBound.addNewToken(3);
-
-    //     uint256[] memory tokenIds = new uint256[](3);
-    //     tokenIds[0] = 1;
-    //     tokenIds[1] = 2;
-    //     tokenIds[2] = 3;
-
-    //     uint256[] memory amounts = new uint256[](3);
-    //     amounts[0] = 1;
-    //     amounts[1] = 1;
-    //     amounts[2] = 1;
-
-    //     vm.prank(playerWallet.addr);
-    //     itemBound.mintBatch(tokenIds, amounts, true, nonce, signature);
-    //     assertEq(itemBound.usedSignatures(signature), true);
-
-    //     vm.prank(playerWallet.addr);
-    //     vm.expectRevert(ItemBound_AlreadyUsedSignature.selector);
-    //     itemBound.mintBatch(tokenIds, amounts, true, nonce, signature);
-    // }
-
-    // function testMintShouldPass() public {
-    //     itemBound.addNewToken(1);
-
-    //     vm.prank(playerWallet.addr);
-    //     itemBound.mint(1, 1, true, nonce, signature);
-
-    //     vm.expectRevert(ItemBound_"ERCSoulbound: The amount of soulbounded tokens is equal to the amount of tokens to be transferred");
-    //     vm.prank(playerWallet.addr);
-    //     itemBound.safeTransferFrom(playerWallet.addr, minterWallet.addr, 1, 1, "");
-
-    //     vm.expectRevert(ItemBound_"ERCSoulbound: can't be zero amount");
-    //     vm.prank(playerWallet.addr);
-    //     itemBound.safeTransferFrom(playerWallet.addr, minterWallet.addr, 1, 0, "");
-
-    //     vm.prank(playerWallet2.addr);
-    //     itemBound.mint(1, 1, false, nonce2, signature2);
-
-    //     vm.prank(playerWallet2.addr);
-    //     itemBound.safeTransferFrom(playerWallet2.addr, minterWallet.addr, 1, 1, "");
-
-    //     assertEq(itemBound.balanceOf(playerWallet.addr, 1), 1);
-    //     assertEq(itemBound.balanceOf(playerWallet2.addr, 1), 0);
-    //     assertEq(itemBound.balanceOf(minterWallet.addr, 1), 1);
-    // }
-
-    // function testMintMoreThanLimit() public {
-    //     itemBound.addNewToken(1);
-    //     vm.expectRevert(ItemBound_ExceedMaxMint.selector);
-    //     vm.prank(playerWallet.addr);
-    //     itemBound.mint(1, 2, true, nonce, signature);
-    // }
-
-    // function testMintAlreadyMinted() public {
-    //     itemBound.addNewToken(1);
-    //     vm.prank(playerWallet.addr);
-    //     itemBound.mint(1, 1, true, nonce, signature);
-
-    //     skip(3600); // so nonce is different
-    //     (uint256 newNonce, bytes memory newSignature) = generateSignature(playerWallet.addr, minterLabel);
-
-    //     vm.expectRevert(ItemBound_AlreadyMinted.selector);
-    //     vm.prank(playerWallet.addr);
-    //     itemBound.mint(1, 1, true, newNonce, newSignature);
-    // }
-
-    // function testMintInvalidTokenId() public {
-    //     vm.expectRevert(ItemBound_TokenNotExist.selector);
-    //     vm.prank(playerWallet.addr);
-    //     itemBound.mint(30, 1, true, nonce, signature);
-    // }
-
-    // function testAdminMintNotMinterRole() public {
-    //     vm.expectRevert(ItemBound_
-    //         "AccessControl: account 0x44e97af4418b7a17aabd8090bea0a471a366305c is missing role 0x9f2df0fed2c77648de5860a4cc508cd0818c85b8b8a1ab4ceeef8d981c8956a6"
-    //     );
-    //     vm.prank(playerWallet.addr);
-    //     itemBound.adminMint(playerWallet.addr, 1, 1, true);
-    // }
-
-    // function testAdminMint() public {
-    //     itemBound.addNewToken(1);
-    //     itemBound.adminMint(playerWallet.addr, 1, 1, true);
-    // }
-
-    // function testMintBatchShouldPass() public {
-    //     itemBound.addNewToken(1);
-    //     itemBound.addNewToken(2);
-    //     itemBound.addNewToken(3);
-
-    //     uint256[] memory tokenIds = new uint256[](3);
-    //     tokenIds[0] = 1;
-    //     tokenIds[1] = 2;
-    //     tokenIds[2] = 3;
-
-    //     uint256[] memory amounts = new uint256[](3);
-    //     amounts[0] = 1;
-    //     amounts[1] = 1;
-    //     amounts[2] = 1;
-
-    //     vm.prank(playerWallet.addr);
-    //     itemBound.mintBatch(tokenIds, amounts, false, nonce, signature);
-
-    //     assertEq(itemBound.balanceOf(playerWallet.addr, 1), 1);
-    //     assertEq(itemBound.balanceOf(playerWallet.addr, 2), 1);
-    //     assertEq(itemBound.balanceOf(playerWallet.addr, 3), 1);
-
-    //     vm.prank(playerWallet.addr);
-    //     itemBound.safeBatchTransferFrom(playerWallet.addr, minterWallet.addr, tokenIds, amounts, "");
-
-    //     vm.prank(playerWallet2.addr);
-    //     itemBound.mintBatch(tokenIds, amounts, true, nonce2, signature2);
-
-    //     vm.expectRevert(ItemBound_"ERCSoulbound: The amount of soulbounded tokens is equal to the amount of tokens to be transferred");
-    //     vm.prank(playerWallet2.addr);
-    //     itemBound.safeBatchTransferFrom(playerWallet2.addr, minterWallet.addr, tokenIds, amounts, "");
-    // }
-
-    // function testMintBatchMoreThanLimit() public {
-    //     itemBound.addNewToken(1);
-    //     itemBound.addNewToken(2);
-    //     itemBound.addNewToken(3);
-
-    //     uint256[] memory tokenIds = new uint256[](3);
-    //     tokenIds[0] = 1;
-    //     tokenIds[1] = 2;
-    //     tokenIds[2] = 3;
-
-    //     uint256[] memory amounts = new uint256[](3);
-    //     amounts[0] = 2;
-    //     amounts[1] = 2;
-    //     amounts[2] = 2;
-
-    //     vm.expectRevert(ItemBound_ExceedMaxMint.selector);
-    //     vm.prank(playerWallet.addr);
-    //     itemBound.mintBatch(tokenIds, amounts, true, nonce, signature);
-    // }
-
-    // function testMintBatchAlreadyMinted() public {
-    //     itemBound.addNewToken(1);
-    //     itemBound.addNewToken(2);
-    //     itemBound.addNewToken(3);
-
-    //     uint256[] memory tokenIds = new uint256[](2);
-    //     tokenIds[0] = 1;
-    //     tokenIds[1] = 2;
-
-    //     uint256[] memory amounts = new uint256[](2);
-    //     amounts[0] = 1;
-    //     amounts[1] = 1;
-
-    //     vm.prank(playerWallet.addr);
-    //     itemBound.mintBatch(tokenIds, amounts, true, nonce, signature);
-
-    //     skip(3600); // so nonce is different
-    //     (uint256 newNonce, bytes memory newSignature) = generateSignature(playerWallet.addr, minterLabel);
-
-    //     uint256[] memory tokenIds2 = new uint256[](3);
-    //     tokenIds2[0] = 1;
-    //     tokenIds2[1] = 2;
-    //     tokenIds2[2] = 3;
-
-    //     uint256[] memory amounts2 = new uint256[](3);
-    //     amounts2[0] = 1;
-    //     amounts2[1] = 1;
-    //     amounts2[2] = 1;
-
-    //     vm.expectRevert(ItemBound_AlreadyMinted.selector);
-    //     vm.prank(playerWallet.addr);
-    //     itemBound.mintBatch(tokenIds2, amounts2, true, newNonce, newSignature);
-    // }
-
-    // function testMintBatchInvalidTokenId() public {
-    //     uint256[] memory tokenIds = new uint256[](2);
-    //     tokenIds[0] = 111;
-    //     tokenIds[1] = 222;
-
-    //     uint256[] memory amounts = new uint256[](2);
-    //     amounts[0] = 1;
-    //     amounts[1] = 1;
-
-    //     vm.expectRevert(ItemBound_TokenNotExist.selector);
-    //     vm.prank(playerWallet.addr);
-    //     itemBound.mintBatch(tokenIds, amounts, true, nonce, signature);
-    // }
-
-    // function testAdminMintBatchNotMinterRole() public {
-    //     uint256[] memory tokenIds = new uint256[](2);
-    //     tokenIds[0] = 111;
-    //     tokenIds[1] = 222;
-
-    //     uint256[] memory amounts = new uint256[](2);
-    //     amounts[0] = 1;
-    //     amounts[1] = 1;
-
-    //     vm.expectRevert(ItemBound_
-    //         "AccessControl: account 0x44e97af4418b7a17aabd8090bea0a471a366305c is missing role 0x9f2df0fed2c77648de5860a4cc508cd0818c85b8b8a1ab4ceeef8d981c8956a6"
-    //     );
-    //     vm.prank(playerWallet.addr);
-    //     itemBound.adminMintBatch(playerWallet.addr, tokenIds, amounts, true);
-    // }
-
-    // function testAdminMintBatch() public {
-    //     itemBound.addNewToken(111);
-    //     itemBound.addNewToken(222);
-    //     uint256[] memory tokenIds = new uint256[](2);
-    //     tokenIds[0] = 111;
-    //     tokenIds[1] = 222;
-
-    //     uint256[] memory amounts = new uint256[](2);
-    //     amounts[0] = 1;
-    //     amounts[1] = 1;
-
-    //     itemBound.adminMintBatch(playerWallet.addr, tokenIds, amounts, true);
-    // }
-
-    // function testBurn() public {
-    //     itemBound.addNewToken(1);
-
-    //     vm.prank(playerWallet.addr);
-    //     itemBound.mint(1, 1, true, nonce, signature);
-    //     assertEq(itemBound.balanceOf(playerWallet.addr, 1), 1);
-
-    //     vm.expectRevert(ItemBound_"ERCSoulbound: The amount of soulbounded tokens is equal to the amount of tokens to be transferred");
-    //     vm.prank(playerWallet.addr);
-    //     itemBound.safeTransferFrom(playerWallet.addr, minterWallet.addr, 1, 1, "");
+    function testPauseUnpause() public {
+        itemBound.pause();
+        vm.expectRevert("Pausable: paused");
+        itemBound.adminMint(address(this), tokenId, 1, true);
+        itemBound.unpause();
+
+        itemBound.adminMint(address(mockERC1155Receiver), tokenId, 1, true);
+        assertEq(itemBound.balanceOf(address(mockERC1155Receiver), tokenId), 1);
+    }
+
+    // testVerifySignature
+    function testInvalidSignature() public {
+        vm.prank(playerWallet.addr);
+        vm.expectRevert(ItemBound_InvalidSignature.selector);
+        itemBound.mint(tokenId, 1, true, nonce, signature2);
+    }
+
+    function testReuseSignatureMint() public {
+        vm.prank(playerWallet.addr);
+        itemBound.mint(tokenId, 1, true, nonce, signature);
+        assertEq(itemBound.usedSignatures(signature), true);
+        vm.prank(playerWallet.addr);
+        vm.expectRevert(ItemBound_AlreadyUsedSignature.selector);
+        itemBound.mint(tokenId, 1, true, nonce, signature);
+    }
+
+    function testMintShouldPass() public {
+        vm.prank(playerWallet.addr);
+        itemBound.mint(tokenId, 1, true, nonce, signature);
+
+        vm.expectRevert("ERCSoulbound: The amount of soulbounded tokens is equal to the amount of tokens to be transferred");
+        vm.prank(playerWallet.addr);
+        itemBound.safeTransferFrom(playerWallet.addr, minterWallet.addr, tokenId, 1, "");
+
+        vm.expectRevert("ERCSoulbound: can't be zero amount");
+        vm.prank(playerWallet.addr);
+        itemBound.safeTransferFrom(playerWallet.addr, minterWallet.addr, tokenId, 0, "");
+
+        vm.prank(playerWallet2.addr);
+        itemBound.mint(tokenId, 1, false, nonce2, signature2);
+
+        vm.prank(playerWallet2.addr);
+        itemBound.safeTransferFrom(playerWallet2.addr, minterWallet.addr, tokenId, 1, "");
+
+        assertEq(itemBound.balanceOf(playerWallet.addr, tokenId), 1);
+        assertEq(itemBound.balanceOf(playerWallet2.addr, tokenId), 0);
+        assertEq(itemBound.balanceOf(minterWallet.addr, tokenId), 1);
+    }
+
+    function testMintMoreThanLimit() public {
+        vm.expectRevert(ItemBound_ExceedMaxMint.selector);
+        vm.prank(playerWallet.addr);
+        itemBound.mint(tokenId, 2, true, nonce, signature);
+    }
+
+    function testMintInvalidTokenId() public {
+        (uint256 _nonce, bytes memory _signature) = generateSignature(playerWallet.addr, 30, minterLabel);
+
+        vm.expectRevert(ItemBound_TokenNotExist.selector);
+        vm.prank(playerWallet.addr);
+        itemBound.mint(30, 1, true, _nonce, _signature);
+    }
+
+    function testAdminMintNotMinterRole() public {
+        vm.expectRevert(
+            "AccessControl: account 0x44e97af4418b7a17aabd8090bea0a471a366305c is missing role 0x9f2df0fed2c77648de5860a4cc508cd0818c85b8b8a1ab4ceeef8d981c8956a6"
+        );
+        vm.prank(playerWallet.addr);
+        itemBound.adminMint(playerWallet.addr, 1, 1, true);
+    }
+
+    function testAdminMint() public {
+        itemBound.adminMint(playerWallet.addr, tokenId, 1, true);
+    }
+
+    function testBurn() public {
+        vm.prank(playerWallet.addr);
+        itemBound.mint(tokenId, 1, true, nonce, signature);
+        assertEq(itemBound.balanceOf(playerWallet.addr, tokenId), 1);
+
+        vm.expectRevert("ERCSoulbound: The amount of soulbounded tokens is equal to the amount of tokens to be transferred");
+        vm.prank(playerWallet.addr);
+        itemBound.safeTransferFrom(playerWallet.addr, minterWallet.addr, tokenId, 1, "");
+
+        vm.prank(playerWallet.addr);
+        itemBound.burn(playerWallet.addr, tokenId, 1);
+
+        assertEq(itemBound.balanceOf(playerWallet.addr, tokenId), 0);
+
+        vm.prank(playerWallet2.addr);
+        itemBound.mint(tokenId, 1, false, nonce2, signature2);
+
+        vm.prank(playerWallet2.addr);
+        itemBound.safeTransferFrom(playerWallet2.addr, playerWallet3.addr, tokenId, 1, "");
+
+        assertEq(itemBound.balanceOf(playerWallet2.addr, tokenId), 0);
+        assertEq(itemBound.balanceOf(playerWallet3.addr, tokenId), 1);
+
+        vm.prank(playerWallet3.addr);
+        itemBound.burn(playerWallet3.addr, tokenId, 1);
+
+        assertEq(itemBound.balanceOf(playerWallet3.addr, tokenId), 0);
+    }
+
+    // TODO * user mintRandom()
+    // TODO * user mintRandomAtLevel()
+    // TODO * admin adminMintRandom()
+    // TODO * admin adminMintRandomAtLevel()
 
-    //     vm.prank(playerWallet.addr);
-    //     itemBound.burn(playerWallet.addr, 1, 1);
+    function testTokenURIIfTokenIdNotExist() public {
+        vm.expectRevert(ItemBound_TokenNotExist.selector);
+        itemBound.uri(1);
+    }
+
+    function testTokenURIIfTokenIdExistNOSpeficTokenURIFallbackToBaseURI() public {
+        assertEq(itemBound.uri(tokenId), string(abi.encodePacked("MISSING_BASE_URL", "/", tokenId.toString())));
+    }
 
-    //     assertEq(itemBound.balanceOf(playerWallet.addr, 1), 0);
+    function testTokenURIIfTokenIdExistWithSpeficTokenURI() public {
+        uint256 _tokenId = generateTokenId(1001, 1, LibItems.Tier.RARE);
+        LibItems.TokenInfo memory _token = LibItems.TokenInfo({
+            exists: true,
+            availableToMint: true,
+            tokenUri: "ipfs://specific-token-uri.com",
+            itemId: 1001,
+            level: 1,
+            tier: LibItems.Tier.RARE
+        });
 
-    //     vm.prank(playerWallet2.addr);
-    //     itemBound.mint(1, 1, false, nonce2, signature2);
-
-    //     vm.prank(playerWallet2.addr);
-    //     itemBound.safeTransferFrom(playerWallet2.addr, playerWallet3.addr, 1, 1, "");
+        itemBound.addNewToken(_tokenId, _token);
+        assertEq(itemBound.uri(_tokenId), "ipfs://specific-token-uri.com");
+    }
 
-    //     assertEq(itemBound.balanceOf(playerWallet2.addr, 1), 0);
-    //     assertEq(itemBound.balanceOf(playerWallet3.addr, 1), 1);
+    function testUpdateTokenURIFailNotManagerRole() public {
+        string memory newBaseURI = "https://something-new.com";
 
-    //     vm.prank(playerWallet3.addr);
-    //     itemBound.burn(playerWallet3.addr, 1, 1);
+        vm.expectRevert(
+            "AccessControl: account 0x44e97af4418b7a17aabd8090bea0a471a366305c is missing role 0x241ecf16d79d0f8dbfb92cbc07fe17840425976cf0667f022fe9877caa831b08"
+        );
+        vm.prank(playerWallet.addr);
+        itemBound.updateBaseUri(newBaseURI);
+    }
 
-    //     assertEq(itemBound.balanceOf(playerWallet3.addr, 1), 0);
-    // }
+    function testUpdateTokenURIPass() public {
+        string memory newBaseURI = "https://something-new.com";
 
-    // function testTokenURIIfTokenIdNotExist() public {
-    //     vm.expectRevert(ItemBound_TokenNotExist.selector);
-    //     itemBound.uri(1);
-    // }
+        assertEq(itemBound.uri(tokenId), string(abi.encodePacked("MISSING_BASE_URL", "/", tokenId.toString())));
+        itemBound.updateBaseUri(newBaseURI);
+        assertEq(itemBound.uri(tokenId), string(abi.encodePacked("https://something-new.com", "/", tokenId.toString())));
+    }
 
-    // function testTokenURIIfTokenIdExist() public {
-    //     itemBound.addNewToken(1);
+    function testNonSoulboundTokenTransfer() public {
+        vm.prank(playerWallet.addr);
+        itemBound.mint(tokenId, 1, false, nonce, signature);
 
-    //     assertEq(itemBound.uri(1), "MISSING_BASE_URL1");
-    // }
+        vm.prank(playerWallet.addr);
+        itemBound.safeTransferFrom(playerWallet.addr, minterWallet.addr, tokenId, 1, "");
 
-    // function testUpdateTokenURIFailNotManagerRole() public {
-    //     string memory newBaseURI = "https://something-new.com/";
+        assertEq(itemBound.balanceOf(playerWallet.addr, tokenId), 0);
+        assertEq(itemBound.balanceOf(minterWallet.addr, tokenId), 1);
+    }
 
-    //     vm.expectRevert(ItemBound_
-    //         "AccessControl: account 0x44e97af4418b7a17aabd8090bea0a471a366305c is missing role 0x241ecf16d79d0f8dbfb92cbc07fe17840425976cf0667f022fe9877caa831b08"
-    //     );
-    //     vm.prank(playerWallet.addr);
-    //     itemBound.updateBaseUri(newBaseURI);
-    // }
+    function testSoulboundTokenNotTransfer() public {
+        vm.prank(playerWallet.addr);
+        itemBound.mint(tokenId, 1, true, nonce, signature);
 
-    // function testUpdateTokenURIPass() public {
-    //     string memory newBaseURI = "https://something-new.com/";
+        vm.expectRevert("ERCSoulbound: The amount of soulbounded tokens is equal to the amount of tokens to be transferred");
+        vm.prank(playerWallet.addr);
+        itemBound.safeTransferFrom(playerWallet.addr, minterWallet.addr, tokenId, 1, "");
 
-    //     itemBound.addNewToken(1);
+        vm.expectRevert("ERCSoulbound: can't be zero amount");
+        vm.prank(playerWallet.addr);
+        itemBound.safeTransferFrom(playerWallet.addr, minterWallet.addr, tokenId, 0, "");
+    }
 
-    //     assertEq(itemBound.uri(1), "MISSING_BASE_URL1");
-    //     itemBound.updateBaseUri(newBaseURI);
-    //     assertEq(itemBound.uri(1), "https://something-new.com/1");
-    // }
+    function testSoulboundTokenTransferOnlyWhitelistAddresses() public {
+        vm.prank(playerWallet.addr);
+        itemBound.mint(tokenId, 1, true, nonce, signature);
 
-    // function testNonSoulboundTokenTransfer() public {
-    //     itemBound.addNewToken(1);
+        vm.expectRevert("ERCSoulbound: The amount of soulbounded tokens is equal to the amount of tokens to be transferred");
+        vm.prank(playerWallet.addr);
+        itemBound.safeTransferFrom(playerWallet.addr, minterWallet.addr, tokenId, 1, "");
 
-    //     vm.prank(playerWallet.addr);
-    //     itemBound.mint(1, 1, false, nonce, signature);
+        itemBound.updateWhitelistAddress(playerWallet3.addr, true);
 
-    //     vm.prank(playerWallet.addr);
-    //     itemBound.safeTransferFrom(playerWallet.addr, minterWallet.addr, 1, 1, "");
+        vm.prank(playerWallet.addr);
+        itemBound.safeTransferFrom(playerWallet.addr, playerWallet3.addr, tokenId, 1, "");
 
-    //     assertEq(itemBound.balanceOf(playerWallet.addr, 1), 0);
-    //     assertEq(itemBound.balanceOf(minterWallet.addr, 1), 1);
-    // }
+        vm.prank(playerWallet3.addr);
+        itemBound.safeTransferFrom(playerWallet3.addr, playerWallet.addr, tokenId, 1, "");
 
-    // function testSoulboundTokenNotTransfer() public {
-    //     itemBound.addNewToken(1);
+        itemBound.updateWhitelistAddress(playerWallet3.addr, false);
 
-    //     vm.prank(playerWallet.addr);
-    //     itemBound.mint(1, 1, true, nonce, signature);
+        vm.expectRevert("ERCSoulbound: The amount of soulbounded tokens is equal to the amount of tokens to be transferred");
+        vm.prank(playerWallet.addr);
+        itemBound.safeTransferFrom(playerWallet.addr, playerWallet3.addr, tokenId, 1, "");
+    }
 
-    //     vm.expectRevert(ItemBound_"ERCSoulbound: The amount of soulbounded tokens is equal to the amount of tokens to be transferred");
-    //     vm.prank(playerWallet.addr);
-    //     itemBound.safeTransferFrom(playerWallet.addr, minterWallet.addr, 1, 1, "");
+    function testTokenRoyaltyDefault() public {
+        uint256 mintPrice = 1 ether;
+        uint256 expectedRoyalty = (mintPrice * 250) / 10000;
 
-    //     vm.expectRevert(ItemBound_"ERCSoulbound: can't be zero amount");
-    //     vm.prank(playerWallet.addr);
-    //     itemBound.safeTransferFrom(playerWallet.addr, minterWallet.addr, 1, 0, "");
-    // }
+        (address receiver, uint256 royaltyAmount) = itemBound.royaltyInfo(1, mintPrice);
 
-    // function testSoulboundTokenTransferOnlyWhitelistAddresses() public {
-    //     itemBound.addNewToken(1);
+        assertEq(receiver, minterWallet.addr);
+        assertEq(royaltyAmount, expectedRoyalty);
+    }
 
-    //     vm.prank(playerWallet.addr);
-    //     itemBound.mint(1, 1, true, nonce, signature);
+    function testUpdateTokenRoyalty() public {
+        uint256 mintPrice = 1 ether;
+        uint256 expectedRoyalty = (mintPrice * 250) / 10000;
 
-    //     vm.expectRevert(ItemBound_"ERCSoulbound: The amount of soulbounded tokens is equal to the amount of tokens to be transferred");
-    //     vm.prank(playerWallet.addr);
-    //     itemBound.safeTransferFrom(playerWallet.addr, minterWallet.addr, 1, 1, "");
+        (address receiver, uint256 royaltyAmount) = itemBound.royaltyInfo(1, mintPrice);
 
-    //     itemBound.updateWhitelistAddress(playerWallet3.addr, true);
+        assertEq(receiver, minterWallet.addr);
+        assertEq(royaltyAmount, expectedRoyalty);
 
-    //     vm.prank(playerWallet.addr);
-    //     itemBound.safeTransferFrom(playerWallet.addr, playerWallet3.addr, 1, 1, "");
+        uint256 expectedRoyaltyAfter = (mintPrice * 300) / 10000;
+        itemBound.setRoyaltyInfo(playerWallet.addr, 300);
 
-    //     vm.prank(playerWallet3.addr);
-    //     itemBound.safeTransferFrom(playerWallet3.addr, playerWallet.addr, 1, 1, "");
+        (address receiverAfter, uint256 royaltyAmountAfter) = itemBound.royaltyInfo(1, mintPrice);
 
-    //     itemBound.updateWhitelistAddress(playerWallet3.addr, false);
-
-    //     vm.expectRevert(ItemBound_"ERCSoulbound: The amount of soulbounded tokens is equal to the amount of tokens to be transferred");
-    //     vm.prank(playerWallet.addr);
-    //     itemBound.safeTransferFrom(playerWallet.addr, playerWallet3.addr, 1, 1, "");
-    // }
-
-    // function testTokenRoyaltyDefault() public {
-    //     uint256 mintPrice = 1 ether;
-    //     uint256 expectedRoyalty = (mintPrice * 250) / 10000;
-
-    //     (address receiver, uint256 royaltyAmount) = itemBound.royaltyInfo(1, mintPrice);
-
-    //     assertEq(receiver, minterWallet.addr);
-    //     assertEq(royaltyAmount, expectedRoyalty);
-    // }
-
-    // function testUpdateTokenRoyalty() public {
-    //     uint256 mintPrice = 1 ether;
-    //     uint256 expectedRoyalty = (mintPrice * 250) / 10000;
-
-    //     (address receiver, uint256 royaltyAmount) = itemBound.royaltyInfo(1, mintPrice);
-
-    //     assertEq(receiver, minterWallet.addr);
-    //     assertEq(royaltyAmount, expectedRoyalty);
-
-    //     uint256 expectedRoyaltyAfter = (mintPrice * 300) / 10000;
-    //     itemBound.setRoyaltyInfo(playerWallet.addr, 300);
-
-    //     (address receiverAfter, uint256 royaltyAmountAfter) = itemBound.royaltyInfo(1, mintPrice);
-
-    //     assertEq(receiverAfter, playerWallet.addr);
-    //     assertEq(royaltyAmountAfter, expectedRoyaltyAfter);
-    // }
+        assertEq(receiverAfter, playerWallet.addr);
+        assertEq(royaltyAmountAfter, expectedRoyaltyAfter);
+    }
 }

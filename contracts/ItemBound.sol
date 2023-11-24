@@ -38,7 +38,6 @@ error ItemBound_InvalidTokenId();
 error ItemBound_TokenAlreadyExist();
 error ItemBound_TokenNotExist();
 error ItemBound_TokenInvalidLength();
-error ItemBound_AlreadyMinted();
 error ItemBound_ExceedMaxMint();
 error ItemBound_InvalidSignature();
 error ItemBound_AlreadyUsedSignature();
