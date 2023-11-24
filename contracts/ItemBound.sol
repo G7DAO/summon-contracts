@@ -33,8 +33,6 @@ import "./ERCSoulbound.sol";
 import "./libraries/LibItems.sol";
 import "./interfaces/IRandomItem.sol";
 
-import "forge-std/Test.sol";
-
 contract ItemBound is ERC1155Burnable, ERCSoulbound, ERC2981, AccessControl, Pausable {
     event SignerAdded(address signer);
     event SignerRemoved(address signer);
@@ -160,11 +158,6 @@ contract ItemBound is ERC1155Burnable, ERCSoulbound, ERC2981, AccessControl, Pau
         tokenInfo[_tokenId].level = _token.level;
         tokenInfo[_tokenId].tier = _token.tier;
 
-        console.log("====");
-        console.log("====");
-        console.log(_token.level, currentMaxLevel);
-        console.log("====");
-        console.log("====");
         if (_token.level > currentMaxLevel) {
             currentMaxLevel = _token.level;
         }

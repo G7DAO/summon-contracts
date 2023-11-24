@@ -25,8 +25,6 @@ import "@openzeppelin/contracts/access/AccessControl.sol";
 import "./libraries/LibItems.sol";
 import "./interfaces/IItemBound.sol";
 
-import "forge-std/Test.sol";
-
 contract RandomItem is AccessControl {
     bytes32 public constant WHITELISTED_ROLE = keccak256("WHITELISTED_ROLE");
     bytes32 public constant MANAGER_ROLE = keccak256("MANAGER_ROLE");
