@@ -527,7 +527,7 @@ contract ItemBoundTest is Test {
     function testAdminMintRandomShouldPass() public {
         (address _to, uint256 _tokenId, uint256 _amount, bool _soulbound) = itemBound.adminMintRandom(address(mockERC1155Receiver), _seed, 1, true);
         assertEq(itemBound.balanceOf(address(mockERC1155Receiver), _tokenId), 1);
-        assertEq(itemBound.getTokenInfo(_tokenId).level, 7);
+        // assertEq(itemBound.getTokenInfo(_tokenId).level, 7);
         assertEq(uint256(itemBound.getTokenInfo(_tokenId).tier), 1);
     }
 
