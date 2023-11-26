@@ -5,22 +5,22 @@ import { abi } from '../artifacts/contracts/GameAchievements.sol/GameAchievement
 import { GameAchievements } from '../typechain-types';
 
 async function main() {
-  const { PRIVATE_KEY, PUBLIC_KEY } = process.env;
+    const { PRIVATE_KEY, PUBLIC_KEY } = process.env;
 
-  if (!PRIVATE_KEY || !PUBLIC_KEY) {
-    throw new Error('PRIVATE_KEY env required');
-  }
+    if (!PRIVATE_KEY || !PUBLIC_KEY) {
+        throw new Error('PRIVATE_KEY env required');
+    }
 
-  const provider = ethers.provider;
-  const signer = new ethers.Wallet(PRIVATE_KEY, provider);
-  const achievements = new ethers.Contract('0x7763B2092A93e79Cf1606347B471fd506db0883D', abi, signer) as GameAchievements;
-  const qty = await achievements.balanceOf(PUBLIC_KEY, 2551);
+    const provider = ethers.provider;
+    const signer = new ethers.Wallet(PRIVATE_KEY, provider);
+    const achievements = new ethers.Contract('0x7763B2092A93e79Cf1606347B471fd506db0883D', abi, signer) as GameAchievements;
+    const qty = await achievements.balanceOf(PUBLIC_KEY, 2551);
 
-  log(`Achievement quantity for ${PUBLIC_KEY}`);
-  log(`Achievement quantity of id 2551:`, Number(qty));
+    log(`Achievement quantity for ${PUBLIC_KEY}`);
+    log(`Achievement quantity of id 2551:`, Number(qty));
 }
 
 main().catch((error) => {
-  console.error(error);
-  process.exitCode = 1;
+    console.error(error);
+    process.exitCode = 1;
 });
