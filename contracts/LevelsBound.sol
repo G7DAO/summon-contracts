@@ -62,8 +62,7 @@ contract LevelsBound is ERC1155, Ownable, ReentrancyGuard {
         // check if the user has the previous lvl token
         require(balanceOf(account, oldLevel) == 1, "Player does not have the previous level token");
 
-        // check if the "lvl up" actually is a "lvl down"
-        require(balanceOf(account, oldLevel) < newLevel, "Is not possible to do lvl down");
+        require(playerLevel[account] < newLevel, "Is not possible to do lvl down");
 
         // Burn the old token
         burnLevel(account, oldLevel);
@@ -82,6 +81,7 @@ contract LevelsBound is ERC1155, Ownable, ReentrancyGuard {
 
     function burnLevel(address account, uint256 tokenId) public onlyOwner {
         _burn(account, tokenId, 1);
+        playerLevel[account] = 0;
     }
 
     function burn(uint256 tokenId, uint256 amount) public nonReentrant {
