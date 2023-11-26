@@ -39,12 +39,13 @@ import "../interfaces/IOpenMint.sol";
 import "../interfaces/ISoulbound1155.sol";
 
 contract AvatarBoundV1 is
-    Initializable,
-    ERC721URIStorageUpgradeable,
-    AccessControlUpgradeable,
-    PausableUpgradeable,
-    ReentrancyGuardUpgradeable,
-    ERCSoulboundUpgradeable
+Initializable,
+ERC721EnumerableUpgradeable,
+ERC721URIStorageUpgradeable,
+AccessControlUpgradeable,
+PausableUpgradeable,
+ReentrancyGuardUpgradeable,
+ERCSoulboundUpgradeable
 {
     /// @custom:oz-upgrades-unsafe-allow constructor
     constructor() {
@@ -117,6 +118,7 @@ contract AvatarBoundV1 is
         bool _mintSpecialItemEnabled
     ) public initializer {
         __ERC721_init(_name, _symbol);
+        __ERC721Enumerable_init();
         __ERC721URIStorage_init();
         __AccessControl_init();
         __Pausable_init();
@@ -365,17 +367,24 @@ contract AvatarBoundV1 is
         emit MintNftGatingEnabledChanged(_mintNftWithoutGatingEnabled, _msgSender());
     }
 
-    function _beforeTokenTransfer(address from, address to, uint256 tokenId, uint256 batch) internal override soulboundAddressCheck(from) {
+    function _beforeTokenTransfer(
+        address from,
+        address to,
+        uint256 tokenId,
+        uint256 batch
+    ) internal override(ERC721Upgradeable, ERC721EnumerableUpgradeable) soulboundAddressCheck(from) {
         super._beforeTokenTransfer(from, to, tokenId, batch);
     }
 
-    function _burn(uint256 tokenId) internal override(ERC721URIStorageUpgradeable) {}
+    function _burn(uint256 tokenId) internal override(ERC721Upgradeable, ERC721URIStorageUpgradeable) {}
 
-    function tokenURI(uint256 tokenId) public view override(ERC721URIStorageUpgradeable) returns (string memory) {
+    function tokenURI(uint256 tokenId) public view override(ERC721Upgradeable, ERC721URIStorageUpgradeable) returns (string memory) {
         return super.tokenURI(tokenId);
     }
 
-    function supportsInterface(bytes4 interfaceId) public view override(ERC721URIStorageUpgradeable, AccessControlUpgradeable) returns (bool) {
+    function supportsInterface(
+        bytes4 interfaceId
+    ) public view override(ERC721EnumerableUpgradeable, ERC721URIStorageUpgradeable, AccessControlUpgradeable) returns (bool) {
         return super.supportsInterface(interfaceId);
     }
 }
