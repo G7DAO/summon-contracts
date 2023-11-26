@@ -31,7 +31,6 @@ import "@openzeppelin/contracts/token/common/ERC2981.sol";
 import "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
 import "./ERCSoulbound.sol";
 import "./libraries/LibItems.sol";
-import "./interfaces/IRandomItem.sol";
 
 contract ItemBound is ERC1155Burnable, ERCSoulbound, ERC2981, AccessControl, Pausable {
     event SignerAdded(address signer);
@@ -174,9 +173,8 @@ contract ItemBound is ERC1155Burnable, ERCSoulbound, ERC2981, AccessControl, Pau
         bool soulbound,
         uint256 nonce,
         bytes memory signature
-    ) external signatureCheck(nonce, id, signature) tokenExistsCheck(id) maxPerMintCheck(amount) whenNotPaused returns (uint256, uint256, bool) {
+    ) external signatureCheck(nonce, id, signature) tokenExistsCheck(id) maxPerMintCheck(amount) whenNotPaused {
         __mint(_msgSender(), id, amount, soulbound);
-        return (id, amount, soulbound);
     }
 
     function mintRandom(
@@ -185,12 +183,11 @@ contract ItemBound is ERC1155Burnable, ERCSoulbound, ERC2981, AccessControl, Pau
         bool soulbound,
         uint256 nonce,
         bytes memory signature
-    ) external signatureCheck(nonce, seed, signature) maxPerMintCheck(amount) whenNotPaused returns (uint256, uint256, bool) {
+    ) external signatureCheck(nonce, seed, signature) maxPerMintCheck(amount) whenNotPaused {
         uint256 id = _randomItem(seed, 0); // get random id from seed
         isTokenExist(id);
 
         __mint(_msgSender(), id, amount, soulbound);
-        return (id, amount, soulbound);
     }
 
     function mintRandomAtLevel(
@@ -200,12 +197,11 @@ contract ItemBound is ERC1155Burnable, ERCSoulbound, ERC2981, AccessControl, Pau
         bool soulbound,
         uint256 nonce,
         bytes memory signature
-    ) external signatureCheck(nonce, seed, signature) maxPerMintCheck(amount) whenNotPaused returns (uint256, uint256, bool) {
+    ) external signatureCheck(nonce, seed, signature) maxPerMintCheck(amount) whenNotPaused {
         uint256 id = _randomItem(seed, level); // get random id from seed
         isTokenExist(id);
 
         __mint(_msgSender(), id, amount, soulbound);
-        return (id, amount, soulbound);
     }
 
     function adminMint(
@@ -213,9 +209,8 @@ contract ItemBound is ERC1155Burnable, ERCSoulbound, ERC2981, AccessControl, Pau
         uint256 id,
         uint256 amount,
         bool soulbound
-    ) external onlyRole(MINTER_ROLE) tokenExistsCheck(id) maxPerMintCheck(amount) whenNotPaused returns (address, uint256, uint256, bool) {
+    ) external onlyRole(MINTER_ROLE) tokenExistsCheck(id) maxPerMintCheck(amount) whenNotPaused {
         __mint(to, id, amount, soulbound);
-        return (to, id, amount, soulbound);
     }
 
     // admin - minter role with signature --> signature must have seed to random
@@ -229,7 +224,6 @@ contract ItemBound is ERC1155Burnable, ERCSoulbound, ERC2981, AccessControl, Pau
         isTokenExist(id);
 
         __mint(to, id, amount, soulbound);
-        return (to, id, amount, soulbound);
     }
 
     function adminMintRandomAtLevel(
@@ -238,12 +232,11 @@ contract ItemBound is ERC1155Burnable, ERCSoulbound, ERC2981, AccessControl, Pau
         uint256 level,
         uint256 amount,
         bool soulbound
-    ) external onlyRole(MINTER_ROLE) maxPerMintCheck(amount) whenNotPaused returns (address, uint256, uint256, bool) {
+    ) external onlyRole(MINTER_ROLE) maxPerMintCheck(amount) whenNotPaused {
         uint256 id = _randomItem(seed, level); // get random id from seed
         isTokenExist(id);
 
         __mint(to, id, amount, soulbound);
-        return (to, id, amount, soulbound);
     }
 
     function safeTransferFrom(
