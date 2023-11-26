@@ -17,7 +17,7 @@ defaultConfig.networks = {
         chainId: ChainId.Polygon,
     },
     [NetworkName.PolygonMumbai]: {
-        url: 'https://rpc-mumbai.maticvigil.com',
+        url: 'https://endpoints.omniatech.io/v1/matic/mumbai/public',
         accounts: [PRIVATE_KEY],
         chainId: ChainId.PolygonMumbai,
     },
@@ -25,6 +25,10 @@ defaultConfig.networks = {
 
 defaultConfig.etherscan = {
     apiKey: POLYGONSCAN_API_KEY,
+};
+
+defaultConfig.sourcify = {
+    enabled: false,
 };
 
 export default defaultConfig;
