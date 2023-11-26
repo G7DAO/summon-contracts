@@ -175,7 +175,7 @@ contract GameSummary1155 is ERC1155, AccessControl, Pausable, ReentrancyGuard {
         require(tokenId > 0, "TokenId must be greater than 0");
         require(playerGameData[player][tokenId].tokenId != 0, "Token doesn't exists");
         PlayerGameData storage playerData = playerGameData[player][tokenId];
-        if (playerData.achievementsMinted + newAchievements >= commonGameSummaries[tokenId].totalAchievements) {
+        if (playerData.achievementsMinted + newAchievements > commonGameSummaries[tokenId].totalAchievements) {
             revert("total achievements exceeded");
         }
         playerData.achievementsMinted += newAchievements;
@@ -306,6 +306,9 @@ contract GameSummary1155 is ERC1155, AccessControl, Pausable, ReentrancyGuard {
         PlayerGameData storage playerData = playerGameData[_from][_id];
         uint256 transferachievements = playerData.achievementsMinted;
         playerGameData[_from][_id] = PlayerGameData(0, 0, false);
+        if(playerGameData[_to][_id] != PlayerGameData(0, 0, false)) {
+            revert("Token already exists, not possible to send it")
+        }
         playerGameData[_to][_id] = PlayerGameData(_id, transferachievements, false);
         super.safeTransferFrom(_from, _to, _id, _amount, _data);
     }

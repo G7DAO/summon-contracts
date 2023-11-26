@@ -159,7 +159,7 @@ contract ERCSoulbound {
     function _soulboundBatch(address to, uint256[] memory tokenIds, uint256[] memory amounts) internal virtual {
         require(tokenIds.length == amounts.length, "ERCSoulbound: tokenIds and amounts length mismatch");
         for (uint256 i = 0; i < tokenIds.length; i++) {
-            _soulbounds[to][tokenIds[i]] = amounts[i];
+            _soulbounds[to][tokenIds[i]] += amounts[i];
         }
         emit SoulboundBatch(to, tokenIds, amounts);
     }

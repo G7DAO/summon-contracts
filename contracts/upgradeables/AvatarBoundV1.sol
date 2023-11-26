@@ -39,13 +39,13 @@ import "../interfaces/IOpenMint.sol";
 import "../interfaces/ISoulbound1155.sol";
 
 contract AvatarBoundV1 is
-Initializable,
-ERC721EnumerableUpgradeable,
-ERC721URIStorageUpgradeable,
-AccessControlUpgradeable,
-PausableUpgradeable,
-ReentrancyGuardUpgradeable,
-ERCSoulboundUpgradeable
+    Initializable,
+    ERC721EnumerableUpgradeable,
+    ERC721URIStorageUpgradeable,
+    AccessControlUpgradeable,
+    PausableUpgradeable,
+    ReentrancyGuardUpgradeable,
+    ERCSoulboundUpgradeable
 {
     /// @custom:oz-upgrades-unsafe-allow constructor
     constructor() {
@@ -364,7 +364,7 @@ ERCSoulboundUpgradeable
     function setMintNftWithoutGatingEnabled(bool _mintNftWithoutGatingEnabled) public onlyRole(DEFAULT_ADMIN_ROLE) {
         require(_mintNftWithoutGatingEnabled != mintNftWithoutGatingEnabled, "NFT without gating already set");
         mintNftWithoutGatingEnabled = _mintNftWithoutGatingEnabled;
-        emit MintNftGatingEnabledChanged(_mintNftWithoutGatingEnabled, _msgSender());
+        emit MintNftWithoutGatingEnabledChanged(_mintNftWithoutGatingEnabled, _msgSender());
     }
 
     function _beforeTokenTransfer(
