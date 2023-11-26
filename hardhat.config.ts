@@ -15,6 +15,8 @@ log(`Using Default Hardhat config`);
 
 const { PRIVATE_KEY, DEPLOYER_PRIVATE_KEY, REPORT_GAS, ETHSCAN_API_KEY } = process.env;
 
+const USE_PAYMASTER = process.env.USE_PAYMASTER === 'true';
+
 if (!PRIVATE_KEY) {
     throw new Error('The private key is required');
 }
@@ -27,7 +29,6 @@ const config: HardhatUserConfig = {
                 enabled: true,
                 runs: 200,
             },
-            viaIR: true,
         },
     },
     defaultNetwork: 'hardhat',
@@ -57,5 +58,10 @@ const config: HardhatUserConfig = {
         apiKey: ETHSCAN_API_KEY,
     },
 };
+
+if (USE_PAYMASTER) {
+    // @ts-ignore
+    config.solidity.viaIR = true;
+}
 
 export default config;

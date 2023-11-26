@@ -39,13 +39,13 @@ import "../interfaces/IOpenMint.sol";
 import "../interfaces/ISoulbound1155.sol";
 
 contract AvatarBoundV1 is
-    Initializable,
-    ERC721EnumerableUpgradeable,
-    ERC721URIStorageUpgradeable,
-    AccessControlUpgradeable,
-    PausableUpgradeable,
-    ReentrancyGuardUpgradeable,
-    ERCSoulboundUpgradeable
+Initializable,
+ERC721EnumerableUpgradeable,
+ERC721URIStorageUpgradeable,
+AccessControlUpgradeable,
+PausableUpgradeable,
+ReentrancyGuardUpgradeable,
+ERCSoulboundUpgradeable
 {
     /// @custom:oz-upgrades-unsafe-allow constructor
     constructor() {

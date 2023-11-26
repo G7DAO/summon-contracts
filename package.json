@@ -1,6 +1,6 @@
 {
     "name": "achievo-contracts",
-    "version": "0.9.0-rc",
+    "version": "0.9.2",
     "description": "Smart contracts for achievo.xyz",
     "scripts": {
         "localChain": "hardhat --config hardhat.config.ts node",
@@ -9,6 +9,7 @@
         "accounts": "hardhat --config hardhat.config.ts accounts",
         "generate": "hardhat --config hardhat.config.ts generate",
         "compile:zkSync": "hardhat --config zkSync.config.ts compile --network zkSyncTestnet",
+        "upgradeAvatarBound:ZkSync:testnet": "pnpm compile:zkSync && hardhat run deploy/upgrades/upgradeAvatarBound.testnet.ts --config zkSync.config.ts --network zkSyncTestnet",
         "deployLevelsOnChain:ZkSync": "pnpm compile:zkSync && hardhat --config zkSync.config.ts deploy-zksync --network zkSyncTestnet --script deployLevelsBound.ts",
         "deployAvatarBoundUpgradeable:ZkSync:testnet": "pnpm compile:zkSync && hardhat --config zkSync.config.ts deploy-zksync --network zkSyncTestnet --script deployAvatarBoundUpgradeable.testnet.ts",
         "deployItemsBound:ZkSync:testnet": "pnpm compile:zkSync && hardhat --config zkSync.config.ts deploy-zksync --network zkSyncTestnet --script deployItemsBound.testnet.ts",

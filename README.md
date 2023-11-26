@@ -1,6 +1,12 @@
 # Achievo Contracts
 
+![Version](https://img.shields.io/badge/version-0.9.2-brightgreen)
+
+![Achievo](https://achievo.xyz/hero.png)
+
 This is a EIP-2535 diamond implementation for the Achievo project - Achievement system.
+
+The latest contracts use Transparent Proxies and not the diamond pattern.
 
 Also for a specific contracts there's no proxy like : GameSummary1155.sol
 
@@ -65,6 +71,7 @@ npm test
 ```
 
 5. Flat smart contracts
+
 ```shell
 npx hardhat flatten contracts/GameSummary.sol > .flat/GameSummary.sol
 ```

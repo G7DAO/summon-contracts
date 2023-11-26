@@ -4,7 +4,7 @@ import '@matterlabs/hardhat-zksync-verify';
 import '@matterlabs/hardhat-zksync-upgradable';
 
 import defaultConfig from './hardhat.config';
-import { ChainId, NetworkName } from './constants';
+import { NetworkName } from './constants';
 import { log } from '@helpers/logger';
 
 const { PRIVATE_KEY } = process.env;
