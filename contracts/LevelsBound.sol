@@ -32,6 +32,7 @@ import { Ownable } from "@openzeppelin/contracts/access/Ownable.sol";
 import { ReentrancyGuard } from "@openzeppelin/contracts/security/ReentrancyGuard.sol";
 import { AccessControl } from "@openzeppelin/contracts/access/AccessControl.sol";
 import { ERCWhitelistSignature } from "./ERCWhitelistSignature.sol";
+import { ISoulbound1155 } from "./interfaces/ISoulbound1155.sol";
 
 contract LevelsBound is ERC1155, Ownable, ReentrancyGuard, ERCWhitelistSignature, AccessControl {
     mapping(address => uint256) public playerLevel;
@@ -42,18 +43,23 @@ contract LevelsBound is ERC1155, Ownable, ReentrancyGuard, ERCWhitelistSignature
 
     event MintRandomItemEnabledChanged(bool enabled, address admin);
     event RandomItemMinted(address to, bytes data, address itemsNFTAddress);
+    event MintRandomItemEnabledChanged(bool enabled, address admin);
     event LevelUp(uint256 newLevel, address account);
     event LevelReseted(uint256 newLevel, address account);
 
-    constructor(address developerAdmin) ERC1155("no/{uri}") {
+    constructor(address developerAdmin, bool _mintRandomItemEnabled) ERC1155("") {
         _grantRole(DEFAULT_ADMIN_ROLE, developerAdmin);
         _setupRole(MINTER_ROLE, developerAdmin);
         _addWhitelistSigner(msg.sender);
+        mintRandomItemEnabled = _mintRandomItemEnabled;
     }
 
-    function mintLevel(address account, uint256 level) private {
+    function mintLevel(address account, uint256 level, bytes calldata data) private {
         _mint(account, level, 1, "");
         playerLevel[account] = level;
+        if (MintRandomItemEnabledChanged) {
+            emit RandomItemMinted(account, data, itemsNFTAddress);
+        }
         emit LevelUp(level, account);
     }
 
@@ -61,7 +67,9 @@ contract LevelsBound is ERC1155, Ownable, ReentrancyGuard, ERCWhitelistSignature
         require(newLevel > 0, "Level must be greater than 0");
         require(playerLevel[account] < newLevel, "Is not possible to do lvl down");
         require(playerLevel[account] != 0, "Player already has this level token");
-        mintLevel(account, newLevel);
+        _mint(account, level, 1, "");
+        playerLevel[account] = level;
+        emit LevelUp(level, account);
     }
 
     function levelUp(address account, uint256 newLevel, uint256 nonce, bytes calldata data, bytes calldata signature) public nonReentrant {
@@ -92,6 +100,12 @@ contract LevelsBound is ERC1155, Ownable, ReentrancyGuard, ERCWhitelistSignature
 
     function getMyLevel() public view returns (uint256) {
         return playerLevel[msg.sender];
+    }
+
+    function setMintRandomItemEnabled(bool _mintRandomItemEnabled) public onlyRole(DEFAULT_ADMIN_ROLE) {
+        require(_mintRandomItemEnabled != mintRandomItemEnabled, "Minting random item already set");
+        mintRandomItemEnabled = _mintRandomItemEnabled;
+        emit MintRandomItemEnabledChanged(_mintRandomItemEnabled, _msgSender());
     }
 
     function burn(uint256 tokenId, uint256 amount) public nonReentrant {

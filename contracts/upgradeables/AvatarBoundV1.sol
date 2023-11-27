@@ -196,7 +196,7 @@ contract AvatarBoundV1 is
         emit NFTRevealed(tokenId, _msgSender(), gatingNFTAddress);
     }
 
-    function mintItem(address to, uint256 itemId) public onlyRole(MINTER_ROLE) whenNotPaused {
+    function mintItem(address to, uint256 itemId) private whenNotPaused {
         ISoulbound1155(itemsNFTAddress).adminMintId(to, itemId, 1, true);
         if (itemId == _specialItemId) {
             emit SpecialItemMinted(itemId, to, itemsNFTAddress);
