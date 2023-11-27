@@ -1,35 +1,33 @@
 import fs from 'fs';
 import path from 'path';
 
+import { log } from '@helpers/logger';
 import { Deployer } from '@matterlabs/hardhat-zksync-deploy';
 import { HardhatRuntimeEnvironment } from 'hardhat/types';
-
-import { log } from '@helpers/logger';
+import { NFTGatingArgs } from '@constants/constructor-args';
+import { DeploymentMap } from '@helpers/types';
 import getWallet from './getWallet';
+import { ChainId, Currency, NetworkExplorer, NetworkName, rpcUrls } from '@constants/network';
 import { encryptPrivateKey } from '@helpers/encrypt';
-// import { submitContractToDB } from '@helpers/submit-contract-to-db';
-import { ChainId, NetworkName, Currency, NetworkExplorer, rpcUrls } from '@constants/network';
-import { DeploymentMap } from 'types/deployment-type';
-import { ConstructorArgs } from '@constants/constructor-args';
 
-// load wallet private key from env file
+const { name, symbol, baseURI, superAdminTokenURI, adminTokenURI, tenants } = NFTGatingArgs.TESTNET;
+
 const PRIVATE_KEY = process.env.PRIVATE_KEY || '';
 const encryptedPrivateKey = encryptPrivateKey(PRIVATE_KEY);
+const CONTRACT_NAME = 'NFTGating';
+const CONTRACT_TYPE = 'NFTGating';
+
+const ABI_PATH = 'artifacts-zk/contracts/NFTGating.sol/NFTGating.json';
 
 if (!PRIVATE_KEY) throw '⛔️ Private key not detected! Add it to the .env file!';
 
-export default async function (
-    hre: HardhatRuntimeEnvironment,
-    deploymentArgs: { CONTRACT_NAME: string; CONTRACT_TYPE: string; ABI_PATH: string },
-    constructorArgs: ConstructorArgs
-) {
-    const { CONTRACT_NAME, CONTRACT_TYPE, ABI_PATH } = deploymentArgs;
-    const { name, symbol, baseURI, maxPerMint, isPaused, royalty, tenants } = constructorArgs;
+export default async function (hre: HardhatRuntimeEnvironment) {
+    log(`Running deploy script for the ${CONTRACT_NAME} Proxy featuring ZkSync`);
 
-    log(`Running deploy script for the ${CONTRACT_NAME} featuring zkSync`);
+    // Read the ABI
 
     const networkName = hre.network.name as NetworkName;
-    const networkNameKey = Object.keys(NetworkName)[Object.values(NetworkName).indexOf(networkName)]; // get NetworkName Key from Value
+    const networkNameKey = Object.keys(NetworkName)[Object.values(NetworkName).indexOf(networkName)];
     const chainId = ChainId[networkNameKey as keyof typeof ChainId];
     const rpcUrl = rpcUrls[chainId as keyof typeof rpcUrls];
     const currency = Currency[networkNameKey as keyof typeof Currency];
@@ -38,29 +36,27 @@ export default async function (
     const wallet = getWallet(PRIVATE_KEY);
     const deployments: DeploymentMap = {};
 
-    // Create deployer object and load the artifact of the contract you want to deploy.
     const deployer = new Deployer(hre, wallet);
     const artifact = await deployer.loadArtifact(CONTRACT_NAME);
 
     const abiPath = path.resolve(ABI_PATH);
-
-    // Read the file content
     const abiContent = fs.readFileSync(abiPath, 'utf8');
     const { abi: contractAbi } = JSON.parse(abiContent);
 
     for (const tenant of tenants) {
-        const achievoContract = await deployer.deploy(artifact, [`${tenant}${name}`, symbol, baseURI, maxPerMint, isPaused, wallet.address, royalty]);
+        const achievoContract = await deployer.deploy(artifact, [name, symbol, wallet.address, baseURI, adminTokenURI, superAdminTokenURI]);
 
         await achievoContract.waitForDeployment();
 
-        // Show the contract info.
         const contractAddress = await achievoContract.getAddress();
 
-        await hre.run('verify:verify', {
+        const verificationId = await hre.run('verify:verify', {
             address: contractAddress,
             contract: `contracts/${CONTRACT_NAME}.sol:${CONTRACT_NAME}`,
-            constructorArguments: [`${tenant}${name}`, symbol, baseURI, maxPerMint, isPaused, wallet.address, royalty],
+            constructorArguments: [name, symbol, wallet.address, baseURI, adminTokenURI, superAdminTokenURI],
         });
+
+        log(`Verification ID: ${verificationId}`);
 
         deployments[tenant] = {
             dbPayload: {
@@ -83,8 +79,6 @@ export default async function (
         log(`Deployed ${CONTRACT_TYPE}(${artifact.contractName}) for ${tenant} to :\n ${blockExplorerBaseUrl}/address/${contractAddress}#contract`);
     }
 
-    // await submitContractToDB(deployments);
-
     // Define the path to the file
     const filePath = path.resolve(`deployments-${CONTRACT_TYPE}.json`);
 
@@ -93,5 +87,4 @@ export default async function (
 
     // Write to the file
     fs.writeFileSync(filePath, deploymentsJson);
-    log('Deployments saved to deployments.json');
 }

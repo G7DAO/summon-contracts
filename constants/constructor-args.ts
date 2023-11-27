@@ -59,6 +59,25 @@ export const ItemsBoundArgs: Soulbound1155Args = {
     },
 };
 
+export const NFTGatingArgs = {
+    MAINNET: {
+        name: 'Achievo NFT Gating Admin Access',
+        symbol: 'AchievoAdmin',
+        baseURI: 'https://summon.mypinata.cloud/ipfs/',
+        adminTokenURI: 'QmYXxrc4vQgfoRtUhdBCbSbxpeJJs2eEtcgiuXvzxdWfJD',
+        superAdminTokenURI: 'Qmay3Db9KFTwoQJ2nB6vTxuHfDX5CQgxmy97NKvcN45B6F',
+        tenants: ['zkSync'],
+    },
+    TESTNET: {
+        name: 'Achievo NFT Gating Admin Access',
+        symbol: 'AchievoAdmin',
+        baseURI: 'https://summon.mypinata.cloud/ipfs/',
+        adminTokenURI: 'QmYXxrc4vQgfoRtUhdBCbSbxpeJJs2eEtcgiuXvzxdWfJD',
+        superAdminTokenURI: 'Qmay3Db9KFTwoQJ2nB6vTxuHfDX5CQgxmy97NKvcN45B6F',
+        tenants: ['zkSync'],
+    },
+};
+
 export const AvatarBoundArgs = {
     MAINNET: {
         name: 'AvatarBoundV1',

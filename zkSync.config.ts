@@ -30,7 +30,7 @@ defaultConfig.networks = {
         verifyURL: 'https://zksync2-mainnet-explorer.zksync.io/contract_verification',
     },
     [NetworkName.ZkSyncTestnet]: {
-        url: 'https://zksync2-testnet.zksync.dev',
+        url: 'https://testnet.era.zksync.dev',
         ethNetwork: 'goerli',
         zksync: true,
         accounts: [PRIVATE_KEY],

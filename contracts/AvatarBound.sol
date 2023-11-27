@@ -38,6 +38,7 @@ import { ERCSoulbound } from "./ERCSoulbound.sol";
 import { ISoulbound1155 } from "./interfaces/ISoulbound1155.sol";
 import { IOpenMint } from "./interfaces/IOpenMint.sol";
 
+// DEPRECATED CONTRACT, the current contract is in  upgradeables/AvatarBoundV1.sol
 contract AvatarBound is ERC721URIStorage, ERC721Enumerable, AccessControl, ERCSoulbound, Pausable, ReentrancyGuard {
     bytes32 public constant MINTER_ROLE = keccak256("MINTER_ROLE");
     bytes32 public constant URI_SETTER_ROLE = keccak256("URI_SETTER_ROLE");
