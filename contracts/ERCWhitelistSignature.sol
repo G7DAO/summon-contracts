@@ -49,15 +49,15 @@ contract ERCWhitelistSignature {
         emit WhitelistSignerRemoved(_signer);
     }
 
-    function recoverAddress(address to, uint256 nonce, bytes calldata data, bytes calldata signature) internal pure virtual returns (address) {
+    function _recoverAddress(address to, uint256 nonce, bytes calldata data, bytes calldata signature) internal pure virtual returns (address) {
         bytes32 message = keccak256(abi.encodePacked(to, data, nonce));
         bytes32 hash = ECDSA.toEthSignedMessageHash(message);
         address signer = ECDSA.recover(hash, signature);
         return signer;
     }
 
-    function verifySignature(address to, uint256 nonce, bytes calldata data, bytes calldata signature) internal virtual returns (bool) {
-        address signer = recoverAddress(to, nonce, data, signature);
+    function _verifySignature(address to, uint256 nonce, bytes calldata data, bytes calldata signature) internal virtual returns (bool) {
+        address signer = _recoverAddress(to, nonce, data, signature);
         if (whitelistSigners[signer]) {
             usedSignatures[signature] = true;
             return true;

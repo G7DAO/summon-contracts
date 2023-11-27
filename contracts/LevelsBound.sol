@@ -30,27 +30,53 @@ pragma solidity 0.8.17;
 import { ERC1155 } from "@openzeppelin/contracts/token/ERC1155/ERC1155.sol";
 import { Ownable } from "@openzeppelin/contracts/access/Ownable.sol";
 import { ReentrancyGuard } from "@openzeppelin/contracts/security/ReentrancyGuard.sol";
+import { AccessControl } from "@openzeppelin/contracts/access/AccessControl.sol";
+import { ERCWhitelistSignature } from "./ERCWhitelistSignature.sol";
 
-contract LevelsBound is ERC1155, Ownable, ReentrancyGuard {
+contract LevelsBound is ERC1155, Ownable, ReentrancyGuard, ERCWhitelistSignature, AccessControl {
     mapping(address => uint256) public playerLevel;
+    bytes32 public constant MINTER_ROLE = keccak256("MINTER_ROLE");
 
-    constructor() ERC1155("no/{uri}") {}
+    address public itemsNFTAddress;
+    bool private mintRandomItemEnabled;
 
-    function mintLevel(address account, uint256 level) private onlyOwner {
-        // check the balance of the account before minting twice
-        _mint(account, level, 1, "");
+    event MintRandomItemEnabledChanged(bool enabled, address admin);
+    event RandomItemMinted(address to, bytes data, address itemsNFTAddress);
+    event LevelUp(uint256 newLevel, address account);
+    event LevelReseted(uint256 newLevel, address account);
 
-        playerLevel[account] = level;
+    constructor(address developerAdmin) ERC1155("no/{uri}") {
+        _grantRole(DEFAULT_ADMIN_ROLE, developerAdmin);
+        _setupRole(MINTER_ROLE, developerAdmin);
+        _addWhitelistSigner(msg.sender);
     }
 
-    function getCurrentLevel(address account) public view returns (uint256) {
+    function mintLevel(address account, uint256 level) private {
+        // check the balance of the account before minting twice
+        _mint(account, level, 1, "");
+        playerLevel[account] = level;
+        emit LevelUp(level, account);
+    }
+
+    function adminMintLevel(address account, uint256 level) public onlyRole(MINTER_ROLE) {
+        require(level > 0, "Level must be greater than 0");
+        require(playerLevel[account] < level, "Is not possible to do lvl down");
+        require(playerLevel[account] != 0, "Player already has this level token");
+        mintLevel(account, level);
+    }
+
+    function getAccountLevel(address account) public view onlyRole(DEFAULT_ADMIN_ROLE) returns (uint256) {
         return playerLevel[account];
     }
 
-    function levelUp(address account, uint256 newLevel) public onlyOwner {
+    function getMyLevel() public view returns (uint256) {
+        return playerLevel[msg.sender];
+    }
+
+    function levelUp(address account, uint256 newLevel, uint256 nonce, bytes calldata data, bytes calldata signature) public nonReentrant {
         require(newLevel > 0, "New level must be greater than 0");
-        // check if the user has the previous lvl token
-        require(balanceOf(account, newLevel) == 0, "Player already has this level token");
+        require(_verifySignature(_msgSender(), nonce, data, signature), "Invalid signature");
+        require(playerLevel[account] != 0, "Player already has this level token");
 
         if (newLevel == 1) {
             mintLevel(account, newLevel);
@@ -58,13 +84,9 @@ contract LevelsBound is ERC1155, Ownable, ReentrancyGuard {
         }
 
         uint oldLevel = newLevel - 1;
-
-        // check if the user has the previous lvl token
         require(balanceOf(account, oldLevel) == 1, "Player does not have the previous level token");
-
         require(playerLevel[account] < newLevel, "Is not possible to do lvl down");
 
-        // Burn the old token
         burnLevel(account, oldLevel);
         mintLevel(account, newLevel);
     }
@@ -79,9 +101,10 @@ contract LevelsBound is ERC1155, Ownable, ReentrancyGuard {
         super.safeBatchTransferFrom(_from, _to, _ids, _amounts, _data);
     }
 
-    function burnLevel(address account, uint256 tokenId) public onlyOwner {
+    function burnLevel(address account, uint256 tokenId) public nonReentrant {
         _burn(account, tokenId, 1);
         playerLevel[account] = 0;
+        emit LevelReseted(tokenId, account);
     }
 
     function burn(uint256 tokenId, uint256 amount) public nonReentrant {
@@ -94,7 +117,7 @@ contract LevelsBound is ERC1155, Ownable, ReentrancyGuard {
         playerLevel[msg.sender] = 0;
     }
 
-    function supportsInterface(bytes4 interfaceId) public view override(ERC1155) returns (bool) {
+    function supportsInterface(bytes4 interfaceId) public view override(AccessControl, ERC1155) returns (bool) {
         return super.supportsInterface(interfaceId);
     }
 }

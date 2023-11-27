@@ -63,7 +63,6 @@ contract AvatarBoundV1 is
     uint256 private _baseSkinCounter;
     uint256 private _specialItemId;
     uint256 private defaultItemId;
-    uint256 private randomItemMints;
     string public baseTokenURI;
     string public contractURI;
     string public revealURI;
@@ -159,9 +158,7 @@ contract AvatarBoundV1 is
         revealNFTGatingToken(nftGatingId);
 
         if (mintRandomItemEnabled) {
-            for (uint256 i = 0; i < randomItemMints; i++) {
-                mintRandomItem(_msgSender(), data);
-            }
+            mintRandomItem(_msgSender(), data);
         }
 
         if (mintSpecialItemEnabled) {
@@ -175,9 +172,7 @@ contract AvatarBoundV1 is
         mint(_msgSender(), baseSkinId);
 
         if (mintRandomItemEnabled) {
-            for (uint256 i = 0; i < randomItemMints; i++) {
-                mintRandomItem(_msgSender(), data);
-            }
+            mintRandomItem(_msgSender(), data);
         }
 
         if (mintDefaultItemEnabled) {
@@ -313,12 +308,6 @@ contract AvatarBoundV1 is
         require(_specialItemId != _newId, "Default Item Id must be different that Special Item Id");
         defaultItemId = _newId;
         emit DefaultItemIdChanged(_newId, _msgSender());
-    }
-
-    function setRandomItemMints(uint256 _randomItemMints) public onlyRole(DEFAULT_ADMIN_ROLE) {
-        require(_randomItemMints != randomItemMints, "Same value");
-        randomItemMints = _randomItemMints;
-        emit RandomItemsMintsChanged(_randomItemMints, _msgSender());
     }
 
     function setMintNftGatingEnabled(bool _mintNftGatingEnabled) public onlyRole(DEFAULT_ADMIN_ROLE) {
