@@ -202,6 +202,20 @@ contract ItemBound is ERC1155Burnable, ERC1155Supply, ERCSoulbound, ERC2981, Acc
         _mintBatch(_msgSender(), _tokenIds, amount, soulbound);
     }
 
+    function adminMintId(address to, uint256 id, uint256 amount, bool soulbound) external onlyRole(MINTER_ROLE) maxPerMintCheck(amount) whenNotPaused {
+        if (!tokenExists[id]) {
+            revert("TokenNotExist");
+        }
+        if (isTokenMintPaused[id]) {
+            revert("TokenMintPaused");
+        }
+
+        _mint(to, id, amount, "");
+        if (soulbound) {
+            _soulbound(to, id, amount);
+        }   
+    }
+
     function _beforeTokenTransfer(
         address operator,
         address from,
