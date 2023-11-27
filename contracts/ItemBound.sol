@@ -195,11 +195,10 @@ contract ItemBound is ERC1155Burnable, ERC1155Supply, ERCSoulbound, ERC2981, Acc
     function adminMint(
         address to,
         bytes calldata data,
-        uint256 amount,
         bool soulbound
     ) external onlyRole(MINTER_ROLE) whenNotPaused {
         uint256[] memory _tokenIds = decodeData(data);
-        _mintBatch(_msgSender(), _tokenIds, amount, soulbound);
+        _mintBatch(_msgSender(), _tokenIds, 1, soulbound);
     }
 
     function adminMintId(address to, uint256 id, uint256 amount, bool soulbound) external onlyRole(MINTER_ROLE) whenNotPaused {
