@@ -41,24 +41,24 @@ contract LevelsBound is ERC1155, Ownable, ReentrancyGuard, ERCWhitelistSignature
     address public itemsNFTAddress;
     bool private mintRandomItemEnabled;
 
-    event MintRandomItemEnabledChanged(bool enabled, address admin);
     event RandomItemMinted(address to, bytes data, address itemsNFTAddress);
     event MintRandomItemEnabledChanged(bool enabled, address admin);
     event LevelUp(uint256 newLevel, address account);
     event LevelReseted(uint256 newLevel, address account);
 
-    constructor(address developerAdmin, bool _mintRandomItemEnabled) ERC1155("") {
+    constructor(address developerAdmin, bool _mintRandomItemEnabled, address _itemsNFTAddress) ERC1155("") {
         _grantRole(DEFAULT_ADMIN_ROLE, developerAdmin);
         _setupRole(MINTER_ROLE, developerAdmin);
         _addWhitelistSigner(msg.sender);
         mintRandomItemEnabled = _mintRandomItemEnabled;
+        itemsNFTAddress = _itemsNFTAddress;
     }
 
     function mintLevel(address account, uint256 level, bytes calldata data) private {
         _mint(account, level, 1, "");
         playerLevel[account] = level;
-        if (MintRandomItemEnabledChanged) {
-            emit RandomItemMinted(account, data, itemsNFTAddress);
+        if (mintRandomItemEnabled) {
+            mintRandomItem(account, data);
         }
         emit LevelUp(level, account);
     }
@@ -67,9 +67,14 @@ contract LevelsBound is ERC1155, Ownable, ReentrancyGuard, ERCWhitelistSignature
         require(newLevel > 0, "Level must be greater than 0");
         require(playerLevel[account] < newLevel, "Is not possible to do lvl down");
         require(playerLevel[account] != 0, "Player already has this level token");
-        _mint(account, level, 1, "");
-        playerLevel[account] = level;
-        emit LevelUp(level, account);
+        _mint(account, newLevel, 1, "");
+        playerLevel[account] = newLevel;
+        emit LevelUp(newLevel, account);
+    }
+
+    function mintRandomItem(address to, bytes calldata data) private {
+        ISoulbound1155(itemsNFTAddress).adminMint(to, data, false);
+        emit RandomItemMinted(to, data, itemsNFTAddress);
     }
 
     function levelUp(address account, uint256 newLevel, uint256 nonce, bytes calldata data, bytes calldata signature) public nonReentrant {
@@ -78,7 +83,7 @@ contract LevelsBound is ERC1155, Ownable, ReentrancyGuard, ERCWhitelistSignature
         require(playerLevel[account] != 0, "Player already has this level token");
 
         if (newLevel == 1) {
-            mintLevel(account, newLevel);
+            mintLevel(account, newLevel, data);
             return;
         }
 
@@ -87,7 +92,7 @@ contract LevelsBound is ERC1155, Ownable, ReentrancyGuard, ERCWhitelistSignature
         require(playerLevel[account] < newLevel, "Is not possible to do lvl down");
 
         burnLevel(account, oldLevel);
-        mintLevel(account, newLevel);
+        mintLevel(account, newLevel, data);
     }
 
     function burnLevel(address account, uint256 tokenId) private {

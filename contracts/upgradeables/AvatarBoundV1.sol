@@ -205,7 +205,7 @@ contract AvatarBoundV1 is
         }
     }
 
-    function mintRandomItem(address to, bytes calldata data) internal onlyRole(MINTER_ROLE) whenNotPaused {
+    function mintRandomItem(address to, bytes calldata data) private whenNotPaused {
         ISoulbound1155(itemsNFTAddress).adminMint(to, data, false);
         emit RandomItemMinted(to, data, itemsNFTAddress);
     }
