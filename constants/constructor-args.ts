@@ -64,8 +64,8 @@ export const NFTGatingArgs = {
         name: 'Achievo NFT Gating Admin Access',
         symbol: 'AchievoAdmin',
         baseURI: 'https://summon.mypinata.cloud/ipfs/',
-        adminTokenURI: 'https://summon.mypinata.cloud/ipfs/QmYXxrc4vQgfoRtUhdBCbSbxpeJJs2eEtcgiuXvzxdWfJD',
-        superAdminTokenURI: 'https://summon.mypinata.cloud/ipfs/Qmay3Db9KFTwoQJ2nB6vTxuHfDX5CQgxmy97NKvcN45B6F',
+        adminTokenURI: 'QmYXxrc4vQgfoRtUhdBCbSbxpeJJs2eEtcgiuXvzxdWfJD',
+        superAdminTokenURI: 'Qmay3Db9KFTwoQJ2nB6vTxuHfDX5CQgxmy97NKvcN45B6F',
         tenants: ['zkSync'],
     },
     TESTNET: {

@@ -43,7 +43,7 @@ import "./ERCSoulbound.sol";
 contract NFTGating is ERC721URIStorage, ERC721Enumerable, AccessControl, ERCSoulbound, Pausable, ReentrancyGuard {
     uint256 private _tokenIdCounter;
     bytes32 public constant MINTER_ROLE = keccak256("MINTER_ROLE");
-    string private baseURI;
+    string public baseTokenURI;
     string private adminTokenURI;
     string private superAdminTokenURI;
 
@@ -58,7 +58,9 @@ contract NFTGating is ERC721URIStorage, ERC721Enumerable, AccessControl, ERCSoul
     ) ERC721(_name, _symbol) {
         _setupRole(DEFAULT_ADMIN_ROLE, devAdmin);
         _setupRole(MINTER_ROLE, devAdmin);
-        baseURI = _baseUri;
+        baseTokenURI = _baseUri;
+        superAdminTokenURI = _superAdminTokenURI;
+        adminTokenURI = _adminTokenURI;
     }
 
     function mint(address to, bool superAdmin) public onlyRole(MINTER_ROLE) {
@@ -82,6 +84,14 @@ contract NFTGating is ERC721URIStorage, ERC721Enumerable, AccessControl, ERCSoul
     }
 
     function _burn(uint256 tokenId) internal override(ERC721, ERC721URIStorage) {}
+
+    function _baseURI() internal view override returns (string memory) {
+        return baseTokenURI;
+    }
+
+    function setBaseURI(string memory _baseTokenURI) public onlyRole(DEFAULT_ADMIN_ROLE) {
+        baseTokenURI = _baseTokenURI;
+    }
 
     function tokenURI(uint256 tokenId) public view override(ERC721, ERC721URIStorage) returns (string memory) {
         return super.tokenURI(tokenId);
