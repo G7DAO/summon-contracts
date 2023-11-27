@@ -61,10 +61,10 @@ contract ItemBound is ERC1155Burnable, ERC1155Supply, ERCSoulbound, ERC2981, Acc
 
     modifier signatureCheck(
         uint256 nonce,
-        bytes calldata seed,
+        bytes calldata data,
         bytes calldata signature
     ) {
-        if (!verifySignature(_msgSender(), nonce, seed, signature)) {
+        if (!verifySignature(_msgSender(), nonce, data, signature)) {
             revert("InvalidSignature");
         }
         _;
@@ -87,9 +87,9 @@ contract ItemBound is ERC1155Burnable, ERC1155Supply, ERCSoulbound, ERC2981, Acc
         }
     }
 
-    function decodeSeed(bytes calldata seed) internal pure returns (uint256[] memory) {
-        // TODO * split seed by comma to get tokenIds 
-        return abi.decode(seed, (uint256[]));
+    function decodeData(bytes calldata data) internal pure returns (uint256[] memory) {
+        // TODO * split data by comma to get tokenIds 
+        return abi.decode(data, (uint256[]));
     }
 
     constructor(
@@ -182,27 +182,27 @@ contract ItemBound is ERC1155Burnable, ERC1155Supply, ERCSoulbound, ERC2981, Acc
     }
 
     function mint(
-        bytes calldata seed,
+        bytes calldata data,
         uint256 amount,
         bool soulbound,
         uint256 nonce,
         bytes calldata signature
-    ) external signatureCheck(nonce, seed, signature) maxPerMintCheck(amount) whenNotPaused {
-        uint256[] memory _tokenIds = decodeSeed(seed);
+    ) external signatureCheck(nonce, data, signature) maxPerMintCheck(amount) whenNotPaused {
+        uint256[] memory _tokenIds = decodeData(data);
         _mintBatch(_msgSender(), _tokenIds, amount, soulbound);
     }
 
     function adminMint(
         address to,
-        bytes calldata seed,
+        bytes calldata data,
         uint256 amount,
         bool soulbound
-    ) external onlyRole(MINTER_ROLE) maxPerMintCheck(amount) whenNotPaused {
-        uint256[] memory _tokenIds = decodeSeed(seed);
+    ) external onlyRole(MINTER_ROLE) whenNotPaused {
+        uint256[] memory _tokenIds = decodeData(data);
         _mintBatch(_msgSender(), _tokenIds, amount, soulbound);
     }
 
-    function adminMintId(address to, uint256 id, uint256 amount, bool soulbound) external onlyRole(MINTER_ROLE) maxPerMintCheck(amount) whenNotPaused {
+    function adminMintId(address to, uint256 id, uint256 amount, bool soulbound) external onlyRole(MINTER_ROLE) whenNotPaused {
         if (!tokenExists[id]) {
             revert("TokenNotExist");
         }
@@ -279,17 +279,17 @@ contract ItemBound is ERC1155Burnable, ERC1155Supply, ERCSoulbound, ERC2981, Acc
         _updateWhitelistAddress(_address, _isWhitelisted);
     }
 
-    function recoverAddress(address to, uint256 nonce, bytes calldata seed, bytes memory signature) private pure returns (address) {
-        bytes32 message = keccak256(abi.encodePacked(to, nonce, seed));
+    function recoverAddress(address to, uint256 nonce, bytes calldata data, bytes memory signature) private pure returns (address) {
+        bytes32 message = keccak256(abi.encodePacked(to, nonce, data));
         bytes32 hash = ECDSA.toEthSignedMessageHash(message);
         address signer = ECDSA.recover(hash, signature);
         return signer;
     }
 
-    function verifySignature(address to, uint256 nonce, bytes calldata seed, bytes calldata signature) private returns (bool) {
+    function verifySignature(address to, uint256 nonce, bytes calldata data, bytes calldata signature) private returns (bool) {
         if (usedSignatures[signature]) revert("AlreadyUsedSignature");
 
-        address signer = recoverAddress(to, nonce, seed, signature);
+        address signer = recoverAddress(to, nonce, data, signature);
         if (whitelistSigners[signer]) {
             usedSignatures[signature] = true;
             return true;
@@ -298,8 +298,8 @@ contract ItemBound is ERC1155Burnable, ERC1155Supply, ERCSoulbound, ERC2981, Acc
         }
     }
 
-    function adminVerifySignature(address to, uint256 nonce, bytes calldata seed, bytes calldata signature) public onlyRole(DEFAULT_ADMIN_ROLE) returns (bool) {
-        return verifySignature(to, nonce, seed, signature);
+    function adminVerifySignature(address to, uint256 nonce, bytes calldata data, bytes calldata signature) public onlyRole(DEFAULT_ADMIN_ROLE) returns (bool) {
+        return verifySignature(to, nonce, data, signature);
     }
 
     function setSigner(address _signer) public onlyRole(DEFAULT_ADMIN_ROLE) {
