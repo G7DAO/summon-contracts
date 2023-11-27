@@ -24,6 +24,7 @@ pragma solidity ^0.8.17;
  */
 
 import "@openzeppelin/contracts/token/ERC1155/extensions/ERC1155Burnable.sol";
+import "@openzeppelin/contracts/token/ERC1155/extensions/ERC1155Supply.sol";
 import "@openzeppelin/contracts/access/AccessControl.sol";
 import "@openzeppelin/contracts/security/Pausable.sol";
 import "@openzeppelin/contracts/utils/Strings.sol";
@@ -32,7 +33,7 @@ import "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
 import "./ERCSoulbound.sol";
 import "./libraries/LibItems.sol";
 
-contract ItemBound is ERC1155Burnable, ERCSoulbound, ERC2981, AccessControl, Pausable {
+contract ItemBound is ERC1155Burnable, ERC1155Supply, ERCSoulbound, ERC2981, AccessControl, Pausable {
     event SignerAdded(address signer);
     event SignerRemoved(address signer);
 
@@ -53,22 +54,19 @@ contract ItemBound is ERC1155Burnable, ERCSoulbound, ERC2981, AccessControl, Pau
     mapping(uint256 => bool) public isTokenMintPaused; // tokenId => bool - default is false
     mapping(LibItems.Tier => mapping(uint256 => uint256[])) public itemPerTierPerLevel; // tier => level => itemId[]
 
+    uint256[] public itemIds;
+
     mapping(address => bool) public whitelistSigners;
     mapping(bytes => bool) public usedSignatures;
 
     modifier signatureCheck(
         uint256 nonce,
-        uint256 seedOrTokenId,
-        bytes memory signature
+        bytes calldata seed,
+        bytes calldata signature
     ) {
-        if (!verifySignature(_msgSender(), nonce, seedOrTokenId, signature)) {
+        if (!verifySignature(_msgSender(), nonce, seed, signature)) {
             revert("InvalidSignature");
         }
-        _;
-    }
-
-    modifier tokenExistsCheck(uint256 tokenId) {
-        isTokenExist(tokenId);
         _;
     }
 
@@ -78,11 +76,20 @@ contract ItemBound is ERC1155Burnable, ERCSoulbound, ERC2981, AccessControl, Pau
         }
         _;
     }
+    
+    function totalTokensOwnedBy(address _owner) public view returns (uint256) {
+        // TODO * view function to return total tokenIDs balance per wallet
+    }
 
-    function isTokenExist(uint256 tokenId) public view returns (bool) {
-        if (!tokenInfo[tokenId].exists) {
+    function isTokenExist(uint256 _tokenId) public view returns (bool) {
+        if (!tokenExists[_tokenId]) {
             revert("TokenNotExist");
         }
+    }
+
+    function decodeSeed(bytes calldata seed) internal pure returns (uint256[] memory) {
+        // TODO * split seed by comma to get tokenIds 
+        return abi.decode(seed, (uint256[]));
     }
 
     constructor(
@@ -116,31 +123,28 @@ contract ItemBound is ERC1155Burnable, ERCSoulbound, ERC2981, AccessControl, Pau
         _unpause();
     }
 
-    function addNewToken(uint256 _tokenId, string calldata _tokenUri, LibItems.Tier _tier, uint256 _level) public onlyRole(MANAGER_ROLE) {
-        if (tokenExists[_tokenId]) {
+    function addNewToken(LibItems.TokenCreate calldata _token) public onlyRole(MANAGER_ROLE) {
+        if (tokenExists[_token.tokenId]) {
             revert("TokenAlreadyExist");
         }
-         if (bytes(_tokenUri).length > 0) {
-            tokenUris[_tokenId] = _tokenUri;
+        if (bytes(_token.tokenUri).length > 0) {
+            tokenUris[_token.tokenId] = _token.tokenUri;
         }
 
-        tokenExists[_tokenId] = true;
+        tokenExists[_token.tokenId] = true;
 
         // keep track of itemId
-        itemPerTierPerLevel[_tier][_level].push(_tokenId);
+        itemPerTierPerLevel[_token.tier][_token.level].push(_token.tokenId);
+        itemIds.push(_token.tokenId);
 
-        if (_level > currentMaxLevel) {
-            currentMaxLevel = _level;
+        if (_token.level > currentMaxLevel) {
+            currentMaxLevel = _token.level;
         }
     }
 
-    function addNewTokens(uint256[] calldata _tokenIds, LibItems.TokenInfo[] calldata _tokens) external onlyRole(MANAGER_ROLE) {
-        if (_tokenIds.length != _tokens.length) {
-            revert("TokenInvalidLength");
-        }
-
+    function addNewTokens(LibItems.TokenCreate[] calldata _tokens) external onlyRole(MANAGER_ROLE) {
         for (uint256 i = 0; i < _tokens.length; i++) {
-            addNewToken(_tokenIds[i], _tokens[i]);
+            addNewToken(_tokens[i]);
         }
     }
 
@@ -160,83 +164,53 @@ contract ItemBound is ERC1155Burnable, ERCSoulbound, ERC2981, AccessControl, Pau
         return itemPerTierPerLevel[_tier][_level];
     }
 
-    function __mint(address to, uint256 id, uint256 amount, bool soulbound) private {
-        _mint(to, id, amount, "");
-        if (soulbound) {
-            _soulbound(to, id, amount);
+    function _mintBatch(address to, uint256[] memory _tokenIds, uint256 amount, bool soulbound) private {
+        for (uint256 i = 0; i < _tokenIds.length; i++) {
+            uint256 _id = _tokenIds[i];
+            if (!tokenExists[_id]) {
+                revert("TokenNotExist");
+            }
+            if (isTokenMintPaused[_id]) {
+                revert("TokenMintPaused");
+            }
+
+            _mint(to, _id, amount, "");
+            if (soulbound) {
+                _soulbound(to, _id, amount);
+            }
         }
     }
 
     function mint(
-        uint256 id,
+        bytes calldata seed,
         uint256 amount,
         bool soulbound,
         uint256 nonce,
-        bytes memory signature
-    ) external signatureCheck(nonce, id, signature) tokenExistsCheck(id) maxPerMintCheck(amount) whenNotPaused {
-        __mint(_msgSender(), id, amount, soulbound);
-    }
-
-    function mintRandom(
-        uint256 seed,
-        uint256 amount,
-        bool soulbound,
-        uint256 nonce,
-        bytes memory signature
+        bytes calldata signature
     ) external signatureCheck(nonce, seed, signature) maxPerMintCheck(amount) whenNotPaused {
-        uint256 id = _randomItem(seed, 0); // get random id from seed
-        isTokenExist(id);
-
-        __mint(_msgSender(), id, amount, soulbound);
-    }
-
-    function mintRandomAtLevel(
-        uint256 seed,
-        uint256 level,
-        uint256 amount,
-        bool soulbound,
-        uint256 nonce,
-        bytes memory signature
-    ) external signatureCheck(nonce, seed, signature) maxPerMintCheck(amount) whenNotPaused {
-        uint256 id = _randomItem(seed, level); // get random id from seed
-        isTokenExist(id);
-
-        __mint(_msgSender(), id, amount, soulbound);
+        uint256[] memory _tokenIds = decodeSeed(seed);
+        _mintBatch(_msgSender(), _tokenIds, amount, soulbound);
     }
 
     function adminMint(
         address to,
-        uint256 id,
-        uint256 amount,
-        bool soulbound
-    ) external onlyRole(MINTER_ROLE) tokenExistsCheck(id) maxPerMintCheck(amount) whenNotPaused {
-        __mint(to, id, amount, soulbound);
-    }
-
-    // admin - minter role with signature --> signature must have seed to random
-    function adminMintRandom(
-        address to,
-        uint256 seed,
+        bytes calldata seed,
         uint256 amount,
         bool soulbound
     ) external onlyRole(MINTER_ROLE) maxPerMintCheck(amount) whenNotPaused {
-        uint256 id = _randomItem(seed, 0); // get random id from seed
-        isTokenExist(id);
-
-        __mint(to, id, amount, soulbound);
+        uint256[] memory _tokenIds = decodeSeed(seed);
+        _mintBatch(_msgSender(), _tokenIds, amount, soulbound);
     }
 
-    function adminMintRandomAtLevel(
+    function _beforeTokenTransfer(
+        address operator,
+        address from,
         address to,
-        uint256 seed,
-        uint256 level,
-        uint256 amount,
-        bool soulbound
-    ) external onlyRole(MINTER_ROLE) maxPerMintCheck(amount) whenNotPaused {
-        uint256 id = _randomItem(seed, level); // get random id from seed
-        isTokenExist(id);
-
-        __mint(to, id, amount, soulbound);
+        uint256[] memory ids,
+        uint256[] memory amounts,
+        bytes memory data
+    ) internal virtual override(ERC1155, ERC1155Supply) {
+        super._beforeTokenTransfer(operator, from, to, ids, amounts, data);
     }
 
     function safeTransferFrom(
@@ -291,17 +265,17 @@ contract ItemBound is ERC1155Burnable, ERCSoulbound, ERC2981, AccessControl, Pau
         _updateWhitelistAddress(_address, _isWhitelisted);
     }
 
-    function recoverAddress(address to, uint256 nonce, uint256 seedOrTokenId, bytes memory signature) private pure returns (address) {
-        bytes32 message = keccak256(abi.encodePacked(to, nonce, seedOrTokenId));
+    function recoverAddress(address to, uint256 nonce, bytes calldata seed, bytes memory signature) private pure returns (address) {
+        bytes32 message = keccak256(abi.encodePacked(to, nonce, seed));
         bytes32 hash = ECDSA.toEthSignedMessageHash(message);
         address signer = ECDSA.recover(hash, signature);
         return signer;
     }
 
-    function verifySignature(address to, uint256 nonce, uint256 seedOrTokenId, bytes memory signature) private returns (bool) {
+    function verifySignature(address to, uint256 nonce, bytes calldata seed, bytes calldata signature) private returns (bool) {
         if (usedSignatures[signature]) revert("AlreadyUsedSignature");
 
-        address signer = recoverAddress(to, nonce, seedOrTokenId, signature);
+        address signer = recoverAddress(to, nonce, seed, signature);
         if (whitelistSigners[signer]) {
             usedSignatures[signature] = true;
             return true;
@@ -310,8 +284,8 @@ contract ItemBound is ERC1155Burnable, ERCSoulbound, ERC2981, AccessControl, Pau
         }
     }
 
-    function adminVerifySignature(address to, uint256 nonce, uint256 seedOrTokenId, bytes memory signature) public onlyRole(DEFAULT_ADMIN_ROLE) returns (bool) {
-        return verifySignature(to, nonce, seedOrTokenId, signature);
+    function adminVerifySignature(address to, uint256 nonce, bytes calldata seed, bytes calldata signature) public onlyRole(DEFAULT_ADMIN_ROLE) returns (bool) {
+        return verifySignature(to, nonce, seed, signature);
     }
 
     function setSigner(address _signer) public onlyRole(DEFAULT_ADMIN_ROLE) {
@@ -322,10 +296,5 @@ contract ItemBound is ERC1155Burnable, ERCSoulbound, ERC2981, AccessControl, Pau
     function removeSigner(address signer) public onlyRole(DEFAULT_ADMIN_ROLE) {
         whitelistSigners[signer] = false;
         emit SignerRemoved(signer);
-    }
-
-
-    function _randomItem(uint256 seed, uint256 level) private returns (uint256) {
-        //  TODO: implement random item
     }
 }

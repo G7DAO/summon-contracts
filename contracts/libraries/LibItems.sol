@@ -10,4 +10,11 @@ library LibItems {
         LEGENDARY,
         MYTHICAL
     }
+
+    struct TokenCreate {
+        uint256 tokenId;
+        string tokenUri;
+        LibItems.Tier tier;
+        uint256 level;
+    }
 }
