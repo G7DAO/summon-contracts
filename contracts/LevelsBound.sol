@@ -52,25 +52,16 @@ contract LevelsBound is ERC1155, Ownable, ReentrancyGuard, ERCWhitelistSignature
     }
 
     function mintLevel(address account, uint256 level) private {
-        // check the balance of the account before minting twice
         _mint(account, level, 1, "");
         playerLevel[account] = level;
         emit LevelUp(level, account);
     }
 
-    function adminMintLevel(address account, uint256 level) public onlyRole(MINTER_ROLE) {
-        require(level > 0, "Level must be greater than 0");
-        require(playerLevel[account] < level, "Is not possible to do lvl down");
+    function adminMintLevel(address account, uint256 newLevel) public onlyRole(MINTER_ROLE) {
+        require(newLevel > 0, "Level must be greater than 0");
+        require(playerLevel[account] < newLevel, "Is not possible to do lvl down");
         require(playerLevel[account] != 0, "Player already has this level token");
-        mintLevel(account, level);
-    }
-
-    function getAccountLevel(address account) public view onlyRole(DEFAULT_ADMIN_ROLE) returns (uint256) {
-        return playerLevel[account];
-    }
-
-    function getMyLevel() public view returns (uint256) {
-        return playerLevel[msg.sender];
+        mintLevel(account, newLevel);
     }
 
     function levelUp(address account, uint256 newLevel, uint256 nonce, bytes calldata data, bytes calldata signature) public nonReentrant {
@@ -91,6 +82,29 @@ contract LevelsBound is ERC1155, Ownable, ReentrancyGuard, ERCWhitelistSignature
         mintLevel(account, newLevel);
     }
 
+    function burnLevel(address account, uint256 tokenId) private {
+        _burn(account, tokenId, 1);
+    }
+
+    function getAccountLevel(address account) public view onlyRole(DEFAULT_ADMIN_ROLE) returns (uint256) {
+        return playerLevel[account];
+    }
+
+    function getMyLevel() public view returns (uint256) {
+        return playerLevel[msg.sender];
+    }
+
+    function burn(uint256 tokenId, uint256 amount) public nonReentrant {
+        _burn(msg.sender, tokenId, amount);
+        playerLevel[msg.sender] = 0;
+        emit LevelReseted(tokenId, msg.sender);
+    }
+
+    function burnBatch(uint256[] memory tokenIds, uint256[] memory amounts) public nonReentrant {
+        revert("You can't burn more of one of this token");
+        _burnBatch(msg.sender, tokenIds, amounts);
+    }
+
     function safeTransferFrom(address _from, address _to, uint256 _id, uint256 _amount, bytes memory _data) public virtual override {
         revert("You can't transfer this token");
         super.safeTransferFrom(_from, _to, _id, _amount, _data);
@@ -99,22 +113,6 @@ contract LevelsBound is ERC1155, Ownable, ReentrancyGuard, ERCWhitelistSignature
     function safeBatchTransferFrom(address _from, address _to, uint256[] memory _ids, uint256[] memory _amounts, bytes memory _data) public virtual override {
         revert("You can't transfer this token");
         super.safeBatchTransferFrom(_from, _to, _ids, _amounts, _data);
-    }
-
-    function burnLevel(address account, uint256 tokenId) public nonReentrant {
-        _burn(account, tokenId, 1);
-        playerLevel[account] = 0;
-        emit LevelReseted(tokenId, account);
-    }
-
-    function burn(uint256 tokenId, uint256 amount) public nonReentrant {
-        _burn(msg.sender, tokenId, amount);
-        playerLevel[msg.sender] = 0;
-    }
-
-    function burnBatch(uint256[] memory tokenIds, uint256[] memory amounts) public nonReentrant {
-        _burnBatch(msg.sender, tokenIds, amounts);
-        playerLevel[msg.sender] = 0;
     }
 
     function supportsInterface(bytes4 interfaceId) public view override(AccessControl, ERC1155) returns (bool) {

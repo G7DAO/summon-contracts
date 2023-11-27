@@ -16,7 +16,7 @@ describe('LevelsBound', function () {
         playerAccount = player;
         playerAccount2 = player2;
         // @ts-ignore-next-line
-        levelsBound = await contract.deploy();
+        levelsBound = await contract.deploy(adminAccount.address);
         await levelsBound.waitForDeployment();
     });
 
