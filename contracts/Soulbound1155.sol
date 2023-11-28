@@ -2,6 +2,11 @@
 ///@notice This contract is for mock for WETH token.
 pragma solidity 0.8.17;
 
+/**
+ * Author: Max <max@game7.io>(https://github.com/vasinl124)
+ * Co-Authors: Omar <omar@game7.io>(https://github.com/ogarciarevett)
+ */
+
 /**                        .;c;.
  *                      'lkXWWWXk:.
  *                    .dXMMMMMMMMWXkc'.

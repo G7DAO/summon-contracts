@@ -21,6 +21,10 @@ interface ISoulbound1155 {
 
     function mint(address to, uint256 id, uint256 amount, bool soulbound) external;
 
+    function adminMintId(address to, uint256 id, uint256 amount, bool soulbound) external;
+
+    function adminMint(address to, bytes calldata data, bool soulbound) external;
+
     function mintBatch(address to, uint256[] calldata ids, uint256[] calldata amounts, bool soulbound) external;
 
     function uri(uint256 tokenId) external view returns (string memory);

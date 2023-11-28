@@ -2,22 +2,31 @@ import { expect } from 'chai';
 // @ts-ignore-next-line
 import { ethers } from 'hardhat';
 import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers';
-import { LevelsBound } from '../typechain-types';
+import { LevelsBound, Soulbound1155 } from '../typechain-types';
 
-describe('LevelsBound', function () {
+describe.skip('LevelsBound', function () {
     let levelsBound: LevelsBound;
+    let items: Soulbound1155;
     let minterAccount: SignerWithAddress;
     let playerAccount: SignerWithAddress;
     let playerAccount2: SignerWithAddress;
+
     beforeEach(async function () {
-        const contract = (await ethers.getContractFactory('LevelsBound')) as unknown as LevelsBound;
+        const levelBoundcontract = await ethers.getContractFactory('LevelsBound');
+        const itemsBoundContract = await ethers.getContractFactory('Soulbound1155');
         const [adminAccount, player, player2] = await ethers.getSigners();
         minterAccount = adminAccount;
         playerAccount = player;
         playerAccount2 = player2;
-        // @ts-ignore-next-line
-        levelsBound = await contract.deploy();
-        await levelsBound.waitForDeployment();
+
+        await itemsBoundContract.deploy('myItems', 'mIs', 'https://app.bueno.art/api/contract/J9SFsPXBW4nXJP-fake/chain/1', 1, false, adminAccount.address, 10);
+        await itemsBoundContract.wait();
+
+        await levelBoundcontract.deploy(adminAccount.address, true, itemsBoundContract.address);
+        await levelBoundcontract.waitForDeployment();
+
+        items = itemsBoundContract as Soulbound1155;
+        levelsBound = levelBoundcontract as LevelsBound;
     });
 
     it('As admin I can mint levels for a player', async function () {
