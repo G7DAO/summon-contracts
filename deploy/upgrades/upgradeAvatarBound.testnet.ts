@@ -5,7 +5,7 @@ import { log } from '@helpers/logger';
 
 const PRIVATE_KEY = process.env.PRIVATE_KEY || '';
 
-const PROXY_ADDRESS = '0xADF7c47c5dC4Be517C80d1cB89fDC7EEB57D0aE4';
+const PROXY_ADDRESS = '0x6cE94192e5B8cCE8526dEB6967CC2478fF12878c';
 
 if (!PRIVATE_KEY) throw '⛔️ Private key not detected! Add it to the .env file!';
 
