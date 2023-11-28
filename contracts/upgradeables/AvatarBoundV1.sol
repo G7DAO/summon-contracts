@@ -60,7 +60,7 @@ contract AvatarBoundV1 is
     bytes32 public constant URI_SETTER_ROLE = keccak256("URI_SETTER_ROLE");
     bytes32 public constant PAUSER_ROLE = keccak256("PAUSER_ROLE");
     uint256 private _tokenIdCounter;
-    uint256 private _baseSkinCounter;
+    uint256 public _baseSkinCounter;
     uint256 private _specialItemId;
     uint256 private defaultItemId;
     string public baseTokenURI;
@@ -265,13 +265,11 @@ contract AvatarBoundV1 is
     }
 
     function setBaseSkin(uint256 baseSkinId, string memory uri) public onlyRole(DEFAULT_ADMIN_ROLE) {
-        if (keccak256(bytes(baseSkins[baseSkinId])) != keccak256(bytes(uri))) {
-            if (bytes(baseSkins[baseSkinId]).length == 0) {
-                _baseSkinCounter++;
-            }
-            baseSkins[baseSkinId] = uri;
-            emit SkinBaseChanged(baseSkinId, uri, _msgSender());
+        if (bytes(baseSkins[baseSkinId]).length == 0) {
+            _baseSkinCounter++;
         }
+        baseSkins[baseSkinId] = uri;
+        emit SkinBaseChanged(baseSkinId, uri, _msgSender());
     }
 
     function setMintRandomItemEnabled(bool _mintRandomItemEnabled) public onlyRole(DEFAULT_ADMIN_ROLE) {

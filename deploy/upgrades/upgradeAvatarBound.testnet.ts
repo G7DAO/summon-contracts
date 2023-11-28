@@ -5,11 +5,11 @@ import { log } from '@helpers/logger';
 
 const PRIVATE_KEY = process.env.PRIVATE_KEY || '';
 
-const PROXY_ADDRESS = '0x9b6d1A10F089B12238eED0cDA5de349A7DdEf303';
+const PROXY_ADDRESS = '0xADF7c47c5dC4Be517C80d1cB89fDC7EEB57D0aE4';
 
 if (!PRIVATE_KEY) throw '⛔️ Private key not detected! Add it to the .env file!';
 
-const VERSION = 'V2';
+const VERSION = 'V1';
 
 async function main() {
     const wallet = await getWallet(PRIVATE_KEY);
