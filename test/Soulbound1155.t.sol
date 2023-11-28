@@ -47,10 +47,6 @@ contract Soulbound1155Test is Test {
         return (_nonce, abi.encodePacked(r, s, v));
     }
 
-    function concatenateStrings(string memory a, string memory b) internal pure returns (string memory) {
-        return string(abi.encodePacked(a, b));
-    }
-
     function setUp() public {
         playerWallet = getWallet(playerLabel);
         playerWallet2 = getWallet(player2Label);

@@ -87,9 +87,9 @@ contract ItemBound is ERC1155Burnable, ERC1155Supply, ERCSoulbound, ERC2981, Acc
         }
     }
 
-    function decodeData(bytes calldata data) internal pure returns (uint256[] memory) {
-        // TODO * split data by comma to get tokenIds 
-        return abi.decode(data, (uint256[]));
+    function _decodeData(bytes calldata _data) private view returns (uint256[] memory) {
+        (uint256[] memory itemIds) = abi.decode(_data, (uint256[]));
+        return itemIds;
     }
 
     constructor(
@@ -167,9 +167,7 @@ contract ItemBound is ERC1155Burnable, ERC1155Supply, ERCSoulbound, ERC2981, Acc
     function _mintBatch(address to, uint256[] memory _tokenIds, uint256 amount, bool soulbound) private {
         for (uint256 i = 0; i < _tokenIds.length; i++) {
             uint256 _id = _tokenIds[i];
-            if (!tokenExists[_id]) {
-                revert("TokenNotExist");
-            }
+            isTokenExist(_id);
             if (isTokenMintPaused[_id]) {
                 revert("TokenMintPaused");
             }
@@ -188,7 +186,7 @@ contract ItemBound is ERC1155Burnable, ERC1155Supply, ERCSoulbound, ERC2981, Acc
         uint256 nonce,
         bytes calldata signature
     ) external signatureCheck(nonce, data, signature) maxPerMintCheck(amount) whenNotPaused {
-        uint256[] memory _tokenIds = decodeData(data);
+        uint256[] memory _tokenIds = _decodeData(data);
         _mintBatch(_msgSender(), _tokenIds, amount, soulbound);
     }
 
@@ -197,14 +195,13 @@ contract ItemBound is ERC1155Burnable, ERC1155Supply, ERCSoulbound, ERC2981, Acc
         bytes calldata data,
         bool soulbound
     ) external onlyRole(MINTER_ROLE) whenNotPaused {
-        uint256[] memory _tokenIds = decodeData(data);
-        _mintBatch(_msgSender(), _tokenIds, 1, soulbound);
+        uint256[] memory _tokenIds = _decodeData(data);
+        _mintBatch(to, _tokenIds, 1, soulbound);
     }
 
     function adminMintId(address to, uint256 id, uint256 amount, bool soulbound) external onlyRole(MINTER_ROLE) whenNotPaused {
-        if (!tokenExists[id]) {
-            revert("TokenNotExist");
-        }
+        isTokenExist(id);
+
         if (isTokenMintPaused[id]) {
             revert("TokenMintPaused");
         }
@@ -259,6 +256,7 @@ contract ItemBound is ERC1155Burnable, ERC1155Supply, ERCSoulbound, ERC2981, Acc
     }
 
     function uri(uint256 tokenId) public view override returns (string memory) {
+        isTokenExist(tokenId);
         if (bytes(tokenUris[tokenId]).length > 0) {
             return tokenUris[tokenId];
         } else {
@@ -279,7 +277,7 @@ contract ItemBound is ERC1155Burnable, ERC1155Supply, ERCSoulbound, ERC2981, Acc
     }
 
     function recoverAddress(address to, uint256 nonce, bytes calldata data, bytes memory signature) private pure returns (address) {
-        bytes32 message = keccak256(abi.encodePacked(to, nonce, data));
+        bytes32 message = keccak256(abi.encodePacked(to, data, nonce));
         bytes32 hash = ECDSA.toEthSignedMessageHash(message);
         address signer = ECDSA.recover(hash, signature);
         return signer;
