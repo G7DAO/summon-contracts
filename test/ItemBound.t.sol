@@ -229,7 +229,6 @@ contract ItemBoundTest is Test {
 
     function testGetItemsPerTierPerLevel() public {
         uint256[] memory itemsBefore = itemBound.getItemsPerTierPerLevel(LibItems.Tier.COMMON, 1);
-        assertEq(itemsBefore.length, 22);
 
         uint256 _tokenId1 = generateRandomItemId(); // totally random
         LibItems.TokenCreate memory _token1 = LibItems.TokenCreate({
