@@ -101,13 +101,13 @@ contract ItemBoundTest is Test {
         playerWallet3 = getWallet(player3Label);
         minterWallet = getWallet(minterLabel);
 
-        itemBound = new ItemBound("Test1155", "T1155", "MISSING_BASE_URL", 1, false, minterWallet.addr, 250);
+        itemBound = new ItemBound("Test1155", "T1155", "MISSING_BASE_URL", "MISSING_CONTRACT_URL", 1, false, minterWallet.addr, 250);
 
         itemBound.addWhitelistSigner(minterWallet.addr);        
 
         mockERC1155Receiver = new MockERC1155Receiver();
 
-        for (uint256 i = 0; i < 300; i++) {
+        for (uint256 i = 0; i < 1300; i++) {
             uint256 _tokenId = generateRandomItemId(); // totally random
             uint256 _level = generateRandomLevel(); // level 1-10
             LibItems.Tier _tier = generateRandomTier(); // tier 0-4
@@ -367,6 +367,20 @@ contract ItemBoundTest is Test {
         assertEq(itemBound.balanceOf(playerWallet.addr, _tokenIds[0]), 1);
     }
 
+    function testBurnNotOwnerShouldFail() public {
+        vm.prank(playerWallet.addr);
+        itemBound.mint(encodedItems1, 1, true, nonce, signature);
+        assertEq(itemBound.balanceOf(playerWallet.addr, _tokenIds[0]), 1);
+
+        vm.expectRevert("ERCSoulbound: The amount of soulbounded tokens is equal to the amount of tokens to be transferred");
+        vm.prank(playerWallet.addr);
+        itemBound.safeTransferFrom(playerWallet.addr, minterWallet.addr, _tokenIds[0], 1, "");
+
+        vm.expectRevert("ERC1155: caller is not token owner or approved");
+        vm.prank(playerWallet2.addr);
+        itemBound.burn(playerWallet.addr, _tokenIds[0], 1);
+    }
+
     function testBurn() public {
         vm.prank(playerWallet.addr);
         itemBound.mint(encodedItems1, 1, true, nonce, signature);
@@ -392,6 +406,78 @@ contract ItemBoundTest is Test {
 
         vm.prank(playerWallet3.addr);
         itemBound.burn(playerWallet3.addr, _tokenIds[3], 1);
+
+        assertEq(itemBound.balanceOf(playerWallet3.addr, _tokenIds[3]), 0);
+    }
+
+    function testBurnBatchNotOwnerShouldFail() public {
+        uint256[] memory _itemIds1 = new uint256[](3);
+        _itemIds1[0] = _tokenIds[0];
+        _itemIds1[1] = _tokenIds[1];
+        _itemIds1[2] = _tokenIds[2];
+
+        uint256[] memory _amount1 = new uint256[](3);
+        _amount1[0] = 1;
+        _amount1[1] = 1;
+        _amount1[2] = 1;
+
+        vm.prank(playerWallet.addr);
+        itemBound.mint(encodedItems1, 1, true, nonce, signature);
+        assertEq(itemBound.balanceOf(playerWallet.addr, _tokenIds[0]), 1);
+
+        vm.expectRevert("ERCSoulbound: The amount of soulbounded tokens is equal to the amount of tokens to be transferred");
+        vm.prank(playerWallet.addr);
+        itemBound.safeTransferFrom(playerWallet.addr, minterWallet.addr, _tokenIds[0], 1, "");
+
+        vm.expectRevert("ERC1155: caller is not token owner or approved");
+        vm.prank(playerWallet2.addr);
+        itemBound.burnBatch(playerWallet.addr, _itemIds1, _amount1);
+    }
+
+    function testBurnBatch() public {
+        uint256[] memory _itemIds1 = new uint256[](3);
+        _itemIds1[0] = _tokenIds[0];
+        _itemIds1[1] = _tokenIds[1];
+        _itemIds1[2] = _tokenIds[2];
+
+        uint256[] memory _itemIds2 = new uint256[](3);
+        _itemIds2[0] = _tokenIds[3];
+        _itemIds2[1] = _tokenIds[4];
+        _itemIds2[2] = _tokenIds[5];
+
+        uint256[] memory _amount1 = new uint256[](3);
+        _amount1[0] = 1;
+        _amount1[1] = 1;
+        _amount1[2] = 1;
+
+        vm.prank(playerWallet.addr);
+        itemBound.mint(encodedItems1, 1, true, nonce, signature);
+        assertEq(itemBound.balanceOf(playerWallet.addr, _tokenIds[0]), 1);
+
+        vm.expectRevert("ERCSoulbound: The amount of soulbounded tokens is equal to the amount of tokens to be transferred");
+        vm.prank(playerWallet.addr);
+        itemBound.safeTransferFrom(playerWallet.addr, minterWallet.addr, _tokenIds[0], 1, "");
+
+        vm.prank(playerWallet.addr);
+        itemBound.burnBatch(playerWallet.addr, _itemIds1, _amount1);
+
+        assertEq(itemBound.balanceOf(playerWallet.addr, _tokenIds[0]), 0);
+
+        vm.prank(playerWallet2.addr);
+        itemBound.mint(encodedItems2, 1, false, nonce2, signature2);
+
+        vm.prank(playerWallet2.addr);
+        itemBound.safeTransferFrom(playerWallet2.addr, playerWallet3.addr, _tokenIds[3], 1, "");
+        vm.prank(playerWallet2.addr);
+        itemBound.safeTransferFrom(playerWallet2.addr, playerWallet3.addr, _tokenIds[4], 1, "");
+        vm.prank(playerWallet2.addr);
+        itemBound.safeTransferFrom(playerWallet2.addr, playerWallet3.addr, _tokenIds[5], 1, "");
+
+        assertEq(itemBound.balanceOf(playerWallet2.addr, _tokenIds[3]), 0);
+        assertEq(itemBound.balanceOf(playerWallet3.addr, _tokenIds[3]), 1);
+
+        vm.prank(playerWallet3.addr);
+        itemBound.burnBatch(playerWallet3.addr, _itemIds2, _amount1);
 
         assertEq(itemBound.balanceOf(playerWallet3.addr, _tokenIds[3]), 0);
     }
@@ -570,5 +656,39 @@ contract ItemBoundTest is Test {
 
         assertEq(receiverAfter, playerWallet.addr);
         assertEq(royaltyAmountAfter, expectedRoyaltyAfter);
+    }
+
+    function testGetIventoryItems() public {
+        bytes memory encodedItemsAll = encode(_tokenIds);
+        itemBound.adminMint(playerWallet.addr, encodedItemsAll, false);
+
+        string memory newTokenUri = "https://something-new.com/232";
+        itemBound.updateTokenUri(_tokenIds[23], newTokenUri);
+        assertEq(itemBound.uri(_tokenIds[23]), 'https://something-new.com/232');
+
+        LibItems.TokenReturn[] memory allTokensInfo = itemBound.getIventoryItems(playerWallet.addr);
+        assertEq(allTokensInfo.length, 1300);
+
+        vm.prank(playerWallet.addr);
+        itemBound.safeTransferFrom(playerWallet.addr, minterWallet.addr, _tokenIds[24], 1, "");
+
+        LibItems.TokenReturn[] memory allTokensInfo2 = itemBound.getIventoryItems(playerWallet.addr);
+        assertEq(allTokensInfo2.length, 1299);
+
+        for (uint256 i = 0; i < allTokensInfo.length; i++) {
+            assertEq(allTokensInfo[i].tokenId, _tokenIds[i]);
+
+            if (i == 23) {
+                assertEq(allTokensInfo[i].tokenUri, newTokenUri);
+                assertEq(allTokensInfo[i].amount, 1);
+            } else {
+                assertEq(allTokensInfo[i].amount, 1);
+                assertEq(allTokensInfo[i].tokenUri, string(abi.encodePacked("https://something.com", "/", _tokenIds[i].toString())));
+            }
+        }
+
+        LibItems.TokenReturn[] memory allTokensInfo3 = itemBound.getIventoryItems(minterWallet.addr);
+        assertEq(allTokensInfo3.length, 1);
+
     }
 }

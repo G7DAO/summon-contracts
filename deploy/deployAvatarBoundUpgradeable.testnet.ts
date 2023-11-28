@@ -1,14 +1,13 @@
 import fs from 'fs';
 import path from 'path';
 
+import { AvatarBoundArgs } from '@constants/constructor-args';
 import { log } from '@helpers/logger';
+import { DeploymentMap } from '@helpers/types';
 import { Deployer } from '@matterlabs/hardhat-zksync-deploy';
 import { HardhatRuntimeEnvironment } from 'hardhat/types';
-import { AvatarBoundV1 } from 'typechain-types';
-import { AvatarBoundArgs } from '@constants/constructor-args';
-import { DeploymentMap } from '@helpers/types';
+
 import getWallet from './getWallet';
-import { Wallet } from 'zksync2-js';
 
 const {
     name,
@@ -36,7 +35,7 @@ if (!PRIVATE_KEY) throw '⛔️ Private key not detected! Add it to the .env fil
 export default async function (hre: HardhatRuntimeEnvironment) {
     log(`Running deploy script for the ${CONTRACT_NAME} Proxy featuring ZkSync`);
 
-    const wallet = await getWallet(PRIVATE_KEY);
+    const wallet = getWallet(PRIVATE_KEY);
 
     // Create deployer object and load the artifact of the contract you want to deploy.
     const deployer = new Deployer(hre, wallet);

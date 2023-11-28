@@ -22,7 +22,7 @@ contract AvatarBoundTest is Test {
 
     function setUp() public {
         mockERC721 = new Mock721ERC721();
-        soulbound1155 = new Soulbound1155("Test1155", "T1155", "MISSING_BASE_URL", 1, false, address(this), 10);
+        soulbound1155 = new Soulbound1155("Test1155", "T1155", "MISSING_BASE_URL", "MISSING_CONTRACT_URL", 1, false, address(this), 10);
 
         avatarBound = new AvatarBound(
             "Test",
@@ -38,7 +38,7 @@ contract AvatarBoundTest is Test {
         );
 
         signerAddress = address(1);
-        avatarBound.setSigner(signerAddress);
+        avatarBound.addWhitelistSigner(signerAddress);
         mockERC721Receiver = new MockERC721Receiver();
         mockERC1155Receiver = new MockERC1155Receiver();
         // Add necessary token IDs to the Soulbound1155.sol.sol contract

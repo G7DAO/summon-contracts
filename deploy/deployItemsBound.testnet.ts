@@ -1,6 +1,6 @@
+import { ItemsBoundArgs } from '@constants/constructor-args';
 import { HardhatRuntimeEnvironment } from 'hardhat/types';
 
-import { ItemsBoundArgs } from '@constants/constructor-args';
 import deploySoulbound1155Generic from './deploy.soulbound1155.generic';
 
 const CONTRACT_NAME = 'ItemBound';

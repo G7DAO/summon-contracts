@@ -17,4 +17,10 @@ library LibItems {
         LibItems.Tier tier;
         uint256 level;
     }
+
+    struct TokenReturn {
+        uint256 tokenId;
+        string tokenUri;
+        uint256 amount;
+    }
 }

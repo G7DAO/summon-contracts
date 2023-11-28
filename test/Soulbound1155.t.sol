@@ -53,7 +53,7 @@ contract Soulbound1155Test is Test {
         playerWallet3 = getWallet(player3Label);
         minterWallet = getWallet(minterLabel);
 
-        soulbound1155 = new Soulbound1155("Test1155", "T1155", "MISSING_BASE_URL", 1, false, minterWallet.addr, 250);
+        soulbound1155 = new Soulbound1155("Test1155", "T1155", "MISSING_BASE_URL", "MISSING_CONTRACT_URL", 1, false, minterWallet.addr, 250);
 
         soulbound1155.setSigner(minterWallet.addr);
 
@@ -106,30 +106,6 @@ contract Soulbound1155Test is Test {
         vm.prank(playerWallet.addr);
         vm.expectRevert("Signature already used");
         soulbound1155.mint(1, 1, true, nonce, signature);
-    }
-
-    function testReuseSignatureMintBatch() public {
-        soulbound1155.addNewToken(1);
-        soulbound1155.addNewToken(2);
-        soulbound1155.addNewToken(3);
-
-        uint256[] memory tokenIds = new uint256[](3);
-        tokenIds[0] = 1;
-        tokenIds[1] = 2;
-        tokenIds[2] = 3;
-
-        uint256[] memory amounts = new uint256[](3);
-        amounts[0] = 1;
-        amounts[1] = 1;
-        amounts[2] = 1;
-
-        vm.prank(playerWallet.addr);
-        soulbound1155.mintBatch(tokenIds, amounts, true, nonce, signature);
-        assertEq(soulbound1155.usedSignatures(signature), true);
-
-        vm.prank(playerWallet.addr);
-        vm.expectRevert("Signature already used");
-        soulbound1155.mintBatch(tokenIds, amounts, true, nonce, signature);
     }
 
     function testMintShouldPass() public {
@@ -196,107 +172,6 @@ contract Soulbound1155Test is Test {
         soulbound1155.adminMint(playerWallet.addr, 1, 1, true);
     }
 
-    function testMintBatchShouldPass() public {
-        soulbound1155.addNewToken(1);
-        soulbound1155.addNewToken(2);
-        soulbound1155.addNewToken(3);
-
-        uint256[] memory tokenIds = new uint256[](3);
-        tokenIds[0] = 1;
-        tokenIds[1] = 2;
-        tokenIds[2] = 3;
-
-        uint256[] memory amounts = new uint256[](3);
-        amounts[0] = 1;
-        amounts[1] = 1;
-        amounts[2] = 1;
-
-        vm.prank(playerWallet.addr);
-        soulbound1155.mintBatch(tokenIds, amounts, false, nonce, signature);
-
-        assertEq(soulbound1155.balanceOf(playerWallet.addr, 1), 1);
-        assertEq(soulbound1155.balanceOf(playerWallet.addr, 2), 1);
-        assertEq(soulbound1155.balanceOf(playerWallet.addr, 3), 1);
-
-        vm.prank(playerWallet.addr);
-        soulbound1155.safeBatchTransferFrom(playerWallet.addr, minterWallet.addr, tokenIds, amounts, "");
-
-        vm.prank(playerWallet2.addr);
-        soulbound1155.mintBatch(tokenIds, amounts, true, nonce2, signature2);
-
-        vm.expectRevert("ERCSoulbound: The amount of soulbounded tokens is equal to the amount of tokens to be transferred");
-        vm.prank(playerWallet2.addr);
-        soulbound1155.safeBatchTransferFrom(playerWallet2.addr, minterWallet.addr, tokenIds, amounts, "");
-    }
-
-    function testMintBatchMoreThanLimit() public {
-        soulbound1155.addNewToken(1);
-        soulbound1155.addNewToken(2);
-        soulbound1155.addNewToken(3);
-
-        uint256[] memory tokenIds = new uint256[](3);
-        tokenIds[0] = 1;
-        tokenIds[1] = 2;
-        tokenIds[2] = 3;
-
-        uint256[] memory amounts = new uint256[](3);
-        amounts[0] = 2;
-        amounts[1] = 2;
-        amounts[2] = 2;
-
-        vm.expectRevert("Exceed max mint");
-        vm.prank(playerWallet.addr);
-        soulbound1155.mintBatch(tokenIds, amounts, true, nonce, signature);
-    }
-
-    function testMintBatchAlreadyMinted() public {
-        soulbound1155.addNewToken(1);
-        soulbound1155.addNewToken(2);
-        soulbound1155.addNewToken(3);
-
-        uint256[] memory tokenIds = new uint256[](2);
-        tokenIds[0] = 1;
-        tokenIds[1] = 2;
-
-        uint256[] memory amounts = new uint256[](2);
-        amounts[0] = 1;
-        amounts[1] = 1;
-
-        vm.prank(playerWallet.addr);
-        soulbound1155.mintBatch(tokenIds, amounts, true, nonce, signature);
-
-        skip(3600); // so nonce is different
-        (uint256 newNonce, bytes memory newSignature) = generateSignature(playerWallet.addr, minterLabel);
-
-        uint256[] memory tokenIds2 = new uint256[](3);
-        tokenIds2[0] = 1;
-        tokenIds2[1] = 2;
-        tokenIds2[2] = 3;
-
-        uint256[] memory amounts2 = new uint256[](3);
-        amounts2[0] = 1;
-        amounts2[1] = 1;
-        amounts2[2] = 1;
-
-        vm.expectRevert("Already minted");
-        vm.prank(playerWallet.addr);
-        soulbound1155.mintBatch(tokenIds2, amounts2, true, newNonce, newSignature);
-    }
-
-    function testMintBatchInvalidTokenId() public {
-        uint256[] memory tokenIds = new uint256[](2);
-        tokenIds[0] = 111;
-        tokenIds[1] = 222;
-
-        uint256[] memory amounts = new uint256[](2);
-        amounts[0] = 1;
-        amounts[1] = 1;
-
-        vm.expectRevert("Token not exist");
-        vm.prank(playerWallet.addr);
-        soulbound1155.mintBatch(tokenIds, amounts, true, nonce, signature);
-    }
-
     function testAdminMintBatchNotMinterRole() public {
         uint256[] memory tokenIds = new uint256[](2);
         tokenIds[0] = 111;
@@ -325,6 +200,22 @@ contract Soulbound1155Test is Test {
         amounts[1] = 1;
 
         soulbound1155.adminMintBatch(playerWallet.addr, tokenIds, amounts, true);
+    }
+
+    function testBurnNotOwnerShouldFail() public {
+        soulbound1155.addNewToken(1);
+
+        vm.prank(playerWallet.addr);
+        soulbound1155.mint(1, 1, true, nonce, signature);
+        assertEq(soulbound1155.balanceOf(playerWallet.addr, 1), 1);
+
+        vm.expectRevert("ERCSoulbound: The amount of soulbounded tokens is equal to the amount of tokens to be transferred");
+        vm.prank(playerWallet.addr);
+        soulbound1155.safeTransferFrom(playerWallet.addr, minterWallet.addr, 1, 1, "");
+
+        vm.expectRevert("ERC1155: caller is not token owner or approved");
+        vm.prank(playerWallet2.addr);
+        soulbound1155.burn(playerWallet.addr, 1, 1);
     }
 
     function testBurn() public {
@@ -356,6 +247,87 @@ contract Soulbound1155Test is Test {
         soulbound1155.burn(playerWallet3.addr, 1, 1);
 
         assertEq(soulbound1155.balanceOf(playerWallet3.addr, 1), 0);
+    }
+
+    function testBurnBatchNotOwnerShouldFail() public {
+        uint256[] memory _itemIds1 = new uint256[](3);
+        _itemIds1[0] = 1;
+        _itemIds1[1] = 2;
+        _itemIds1[2] = 3;
+
+        uint256[] memory _amount1 = new uint256[](3);
+        _amount1[0] = 1;
+        _amount1[1] = 1;
+        _amount1[2] = 1;
+
+        soulbound1155.addNewToken(1);
+        soulbound1155.addNewToken(2);
+        soulbound1155.addNewToken(3);
+
+
+        soulbound1155.adminMintBatch(playerWallet.addr, _itemIds1, _amount1, true);
+        assertEq(soulbound1155.balanceOf(playerWallet.addr, 1), 1);
+
+        vm.expectRevert("ERCSoulbound: The amount of soulbounded tokens is equal to the amount of tokens to be transferred");
+        vm.prank(playerWallet.addr);
+        soulbound1155.safeTransferFrom(playerWallet.addr, minterWallet.addr, 1, 1, "");
+
+        vm.expectRevert("ERC1155: caller is not token owner or approved");
+        vm.prank(playerWallet2.addr);
+        soulbound1155.burnBatch(playerWallet.addr, _itemIds1, _amount1);
+    }
+
+    function testBurnBatch() public {
+        uint256[] memory _itemIds1 = new uint256[](3);
+        _itemIds1[0] = 1;
+        _itemIds1[1] = 2;
+        _itemIds1[2] = 3;
+
+        uint256[] memory _itemIds2 = new uint256[](3);
+        _itemIds2[0] = 4;
+        _itemIds2[1] = 5;
+        _itemIds2[2] = 6;
+
+        uint256[] memory _amount1 = new uint256[](3);
+        _amount1[0] = 1;
+        _amount1[1] = 1;
+        _amount1[2] = 1;
+
+        soulbound1155.addNewToken(1);
+        soulbound1155.addNewToken(2);
+        soulbound1155.addNewToken(3);
+        soulbound1155.addNewToken(4);
+        soulbound1155.addNewToken(5);
+        soulbound1155.addNewToken(6);
+
+        soulbound1155.adminMintBatch(playerWallet.addr, _itemIds1, _amount1, true);
+        assertEq(soulbound1155.balanceOf(playerWallet.addr, 1), 1);
+
+        vm.expectRevert("ERCSoulbound: The amount of soulbounded tokens is equal to the amount of tokens to be transferred");
+        vm.prank(playerWallet.addr);
+        soulbound1155.safeTransferFrom(playerWallet.addr, minterWallet.addr, 1, 1, "");
+
+        vm.prank(playerWallet.addr);
+        soulbound1155.burnBatch(playerWallet.addr, _itemIds1, _amount1);
+
+        assertEq(soulbound1155.balanceOf(playerWallet.addr, 1), 0);
+
+        soulbound1155.adminMintBatch(playerWallet2.addr, _itemIds2, _amount1, false);
+
+        vm.prank(playerWallet2.addr);
+        soulbound1155.safeTransferFrom(playerWallet2.addr, playerWallet3.addr, 4, 1, "");
+        vm.prank(playerWallet2.addr);
+        soulbound1155.safeTransferFrom(playerWallet2.addr, playerWallet3.addr, 5, 1, "");
+        vm.prank(playerWallet2.addr);
+        soulbound1155.safeTransferFrom(playerWallet2.addr, playerWallet3.addr, 6, 1, "");
+
+        assertEq(soulbound1155.balanceOf(playerWallet2.addr, 4), 0);
+        assertEq(soulbound1155.balanceOf(playerWallet3.addr, 4), 1);
+
+        vm.prank(playerWallet3.addr);
+        soulbound1155.burnBatch(playerWallet3.addr, _itemIds2, _amount1);
+
+        assertEq(soulbound1155.balanceOf(playerWallet3.addr, 4), 0);
     }
 
     function testTokenURIIfTokenIdNotExist() public {
