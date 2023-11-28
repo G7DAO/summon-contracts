@@ -31,11 +31,11 @@ import "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
 
 contract ERCWhitelistSignature {
     mapping(address => bool) public whitelistSigners;
+    mapping(bytes => bool) private usedSignatures;
 
     event WhitelistSignerAdded(address indexed signer);
     event WhitelistSignerRemoved(address indexed signer);
 
-    mapping(bytes => bool) private usedSignatures;
 
     function _addWhitelistSigner(address _signer) internal virtual {
         require(_signer != address(0), "ERCWhitelistSignature: signer is the zero address");
@@ -57,6 +57,8 @@ contract ERCWhitelistSignature {
     }
 
     function _verifySignature(address to, uint256 nonce, bytes calldata data, bytes calldata signature) internal virtual returns (bool) {
+        if (usedSignatures[signature]) revert("AlreadyUsedSignature");
+
         address signer = _recoverAddress(to, nonce, data, signature);
         if (whitelistSigners[signer]) {
             usedSignatures[signature] = true;

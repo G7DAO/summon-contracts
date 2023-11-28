@@ -103,7 +103,7 @@ contract ItemBoundTest is Test {
 
         itemBound = new ItemBound("Test1155", "T1155", "MISSING_BASE_URL", 1, false, minterWallet.addr, 250);
 
-        itemBound.setSigner(minterWallet.addr);        
+        itemBound.addWhitelistSigner(minterWallet.addr);        
 
         mockERC1155Receiver = new MockERC1155Receiver();
 
@@ -242,8 +242,6 @@ contract ItemBoundTest is Test {
         itemBound.addNewToken(_token1);
 
         uint256[] memory itemsAfter = itemBound.getItemsPerTierPerLevel(LibItems.Tier.COMMON, 1);
-        console.log('afere amount', itemsAfter.length);
-
         assertEq(itemsAfter.length, itemsBefore.length + 1);
     }
 
@@ -292,7 +290,6 @@ contract ItemBoundTest is Test {
     function testReuseSignatureMint() public {
         vm.prank(playerWallet.addr);
         itemBound.mint(encodedItems1, 1, true, nonce, signature);
-        assertEq(itemBound.usedSignatures(signature), true);
         vm.prank(playerWallet.addr);
         vm.expectRevert("AlreadyUsedSignature");
         itemBound.mint(encodedItems1, 1, true, nonce, signature);

@@ -31,9 +31,10 @@ import "@openzeppelin/contracts/utils/Strings.sol";
 import "@openzeppelin/contracts/token/common/ERC2981.sol";
 import "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
 import "./ERCSoulbound.sol";
+import "./ERCWhitelistSignature.sol";
 import "./libraries/LibItems.sol";
 
-contract ItemBound is ERC1155Burnable, ERC1155Supply, ERCSoulbound, ERC2981, AccessControl, Pausable {
+contract ItemBound is ERC1155Burnable, ERC1155Supply, ERCSoulbound, ERC2981, ERCWhitelistSignature, AccessControl, Pausable {
     event SignerAdded(address signer);
     event SignerRemoved(address signer);
 
@@ -56,15 +57,12 @@ contract ItemBound is ERC1155Burnable, ERC1155Supply, ERCSoulbound, ERC2981, Acc
 
     uint256[] public itemIds;
 
-    mapping(address => bool) public whitelistSigners;
-    mapping(bytes => bool) public usedSignatures;
-
     modifier signatureCheck(
         uint256 nonce,
         bytes calldata data,
         bytes calldata signature
     ) {
-        if (!verifySignature(_msgSender(), nonce, data, signature)) {
+        if (!_verifySignature(_msgSender(), nonce, data, signature)) {
             revert("InvalidSignature");
         }
         _;
@@ -104,7 +102,7 @@ contract ItemBound is ERC1155Burnable, ERC1155Supply, ERCSoulbound, ERC2981, Acc
         _grantRole(DEFAULT_ADMIN_ROLE, msg.sender);
         _grantRole(MINTER_ROLE, msg.sender);
         _grantRole(MANAGER_ROLE, msg.sender);
-        setSigner(msg.sender);
+        _addWhitelistSigner(msg.sender);
 
         _setDefaultRoyalty(_devWallet, _royalty);
         name = _name;
@@ -276,36 +274,15 @@ contract ItemBound is ERC1155Burnable, ERC1155Supply, ERCSoulbound, ERC2981, Acc
         _updateWhitelistAddress(_address, _isWhitelisted);
     }
 
-    function recoverAddress(address to, uint256 nonce, bytes calldata data, bytes memory signature) private pure returns (address) {
-        bytes32 message = keccak256(abi.encodePacked(to, data, nonce));
-        bytes32 hash = ECDSA.toEthSignedMessageHash(message);
-        address signer = ECDSA.recover(hash, signature);
-        return signer;
-    }
-
-    function verifySignature(address to, uint256 nonce, bytes calldata data, bytes calldata signature) private returns (bool) {
-        if (usedSignatures[signature]) revert("AlreadyUsedSignature");
-
-        address signer = recoverAddress(to, nonce, data, signature);
-        if (whitelistSigners[signer]) {
-            usedSignatures[signature] = true;
-            return true;
-        } else {
-            return false;
-        }
-    }
-
     function adminVerifySignature(address to, uint256 nonce, bytes calldata data, bytes calldata signature) public onlyRole(DEFAULT_ADMIN_ROLE) returns (bool) {
-        return verifySignature(to, nonce, data, signature);
+        return _verifySignature(to, nonce, data, signature);
     }
 
-    function setSigner(address _signer) public onlyRole(DEFAULT_ADMIN_ROLE) {
-        whitelistSigners[_signer] = true;
-        emit SignerAdded(_signer);
+    function addWhitelistSigner(address _signer) external onlyRole(DEFAULT_ADMIN_ROLE) {
+        _addWhitelistSigner(_signer);
     }
 
-    function removeSigner(address signer) public onlyRole(DEFAULT_ADMIN_ROLE) {
-        whitelistSigners[signer] = false;
-        emit SignerRemoved(signer);
+    function removeWhitelistSigner(address signer) external onlyRole(DEFAULT_ADMIN_ROLE) {
+        _removeWhitelistSigner(signer);
     }
 }

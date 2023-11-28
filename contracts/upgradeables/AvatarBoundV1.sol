@@ -346,4 +346,12 @@ contract AvatarBoundV1 is
     ) public view override(ERC721EnumerableUpgradeable, ERC721URIStorageUpgradeable, AccessControlUpgradeable) returns (bool) {
         return super.supportsInterface(interfaceId);
     }
+
+    function addWhitelistSigner(address _signer) external onlyRole(DEFAULT_ADMIN_ROLE) {
+        _addWhitelistSigner(_signer);
+    }
+
+    function removeWhitelistSigner(address signer) external onlyRole(DEFAULT_ADMIN_ROLE) {
+        _removeWhitelistSigner(signer);
+    }
 }

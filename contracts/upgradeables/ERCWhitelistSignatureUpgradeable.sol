@@ -65,6 +65,8 @@ contract ERCWhitelistSignatureUpgradeable is Initializable {
     }
 
     function _verifySignature(address to, uint256 nonce, bytes calldata data, bytes calldata signature) internal virtual returns (bool) {
+        if (usedSignatures[signature]) revert("AlreadyUsedSignature");
+
         address signer = _recoverAddress(to, nonce, data, signature);
         if (whitelistSigners[signer]) {
             usedSignatures[signature] = true;

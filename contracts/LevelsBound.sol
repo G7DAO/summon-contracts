@@ -137,4 +137,12 @@ contract LevelsBound is ERC1155, Ownable, ReentrancyGuard, ERCWhitelistSignature
     function supportsInterface(bytes4 interfaceId) public view override(AccessControl, ERC1155) returns (bool) {
         return super.supportsInterface(interfaceId);
     }
+
+    function addWhitelistSigner(address _signer) external onlyRole(DEFAULT_ADMIN_ROLE) {
+        _addWhitelistSigner(_signer);
+    }
+
+    function removeWhitelistSigner(address signer) external onlyRole(DEFAULT_ADMIN_ROLE) {
+        _removeWhitelistSigner(signer);
+    }
 }
