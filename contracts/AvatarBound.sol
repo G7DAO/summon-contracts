@@ -37,7 +37,7 @@ import "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
 
 import { ERCSoulbound } from "./ERCSoulbound.sol";
 import { ERCWhitelistSignature } from "./ERCWhitelistSignature.sol";
-import { ISoulbound1155 } from "./interfaces/ISoulbound1155.sol";
+import { IItemBound } from "./interfaces/IItemBound.sol";
 import { IOpenMint } from "./interfaces/IOpenMint.sol";
 
 // DEPRECATED CONTRACT, the current contract is in  upgradeables/AvatarBoundV1.sol
@@ -158,7 +158,7 @@ contract AvatarBound is ERC721URIStorage, ERC721Enumerable, AccessControl, ERCSo
     }
 
     function mintItem(address to, uint256 itemId) public onlyRole(MINTER_ROLE) whenNotPaused {
-        ISoulbound1155(itemsNFTAddress).mint(to, itemId, 1, true);
+        IItemBound(itemsNFTAddress).mint(to, itemId, 1, true);
         if (itemId == _specialItemId) {
             emit SpecialItemMinted(itemId, to, itemsNFTAddress);
         } else {
@@ -170,7 +170,7 @@ contract AvatarBound is ERC721URIStorage, ERC721Enumerable, AccessControl, ERCSo
         // Do randomness here to mint a random item between the id 1 and 26
         uint256 random = uint256(keccak256(abi.encodePacked(block.timestamp, block.difficulty, to)));
         uint256 randomItem = random % 26;
-        ISoulbound1155(itemsNFTAddress).mint(to, randomItem, 1, false);
+        IItemBound(itemsNFTAddress).mint(to, randomItem, 1, false);
         emit RandomItemMinted(randomItem, to, itemsNFTAddress);
     }
 
