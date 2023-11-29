@@ -52,7 +52,7 @@ contract ItemBound is ERC1155Burnable, ERC1155Supply, ERCSoulbound, ERC2981, ERC
 
     uint256 public currentMaxLevel;
 
-    uint256 public MAX_PER_MINT = 1;
+    uint256 public MAX_PER_MINT;
 
     mapping(uint256 => bool) public tokenExists;
     mapping(uint256 => string) public tokenUris; // tokenId => tokenUri
