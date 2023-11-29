@@ -236,11 +236,11 @@ contract AvatarBoundV1 is
     }
 
     function getAllBaseSkins() public view returns (string[] memory) {
-        string[] memory skins = new string[](_baseSkinCounter);
+        string[] memory allBaseSkins = new string[](_baseSkinCounter);
         for (uint256 i = 0; i < _baseSkinCounter; i++) {
-            skins[i] = baseSkins[i];
-        }
-        return skins;
+            allBaseSkins[i] = baseSkins[i];
+        }a
+        return allBaseSkins;
     }
 
     function setContractURI(string memory _contractURI) public onlyRole(DEFAULT_ADMIN_ROLE) {
@@ -270,6 +270,13 @@ contract AvatarBoundV1 is
         }
         baseSkins[baseSkinId] = uri;
         emit SkinBaseChanged(baseSkinId, uri, _msgSender());
+    }
+
+    function removeBaseSkin(uint256 baseSkinId) public onlyRole(DEFAULT_ADMIN_ROLE) {
+        require(bytes(baseSkins[baseSkinId]).length > 0, "Base Skin not found on-chain");
+        delete baseSkins[baseSkinId];
+        _baseSkinCounter--;
+        emit SkinBaseChanged(baseSkinId, "", _msgSender());
     }
 
     function setMintRandomItemEnabled(bool _mintRandomItemEnabled) public onlyRole(DEFAULT_ADMIN_ROLE) {

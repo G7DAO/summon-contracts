@@ -9,10 +9,10 @@ const PROXY_ADDRESS = '0x6cE94192e5B8cCE8526dEB6967CC2478fF12878c';
 
 if (!PRIVATE_KEY) throw '⛔️ Private key not detected! Add it to the .env file!';
 
-const VERSION = 'V1';
+const VERSION = 'V2';
 
 async function main() {
-    const wallet = await getWallet(PRIVATE_KEY);
+    const wallet = getWallet(PRIVATE_KEY);
 
     // Create deployer object and load the artifact of the contract you want to deploy.
     const deployer = new Deployer(hre, wallet);
