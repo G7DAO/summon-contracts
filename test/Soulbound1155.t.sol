@@ -114,7 +114,7 @@ contract Soulbound1155Test is Test {
         vm.prank(playerWallet.addr);
         soulbound1155.mint(1, 1, true, nonce, signature);
 
-        vm.expectRevert("ERCSoulbound: The amount of soulbounded tokens is equal to the amount of tokens to be transferred");
+        vm.expectRevert("ERCSoulbound: The amount of soulbounded tokens is more than the amount of tokens to be transferred");
         vm.prank(playerWallet.addr);
         soulbound1155.safeTransferFrom(playerWallet.addr, minterWallet.addr, 1, 1, "");
 
@@ -206,12 +206,8 @@ contract Soulbound1155Test is Test {
         soulbound1155.addNewToken(1);
 
         vm.prank(playerWallet.addr);
-        soulbound1155.mint(1, 1, true, nonce, signature);
+        soulbound1155.mint(1, 1, false, nonce, signature);
         assertEq(soulbound1155.balanceOf(playerWallet.addr, 1), 1);
-
-        vm.expectRevert("ERCSoulbound: The amount of soulbounded tokens is equal to the amount of tokens to be transferred");
-        vm.prank(playerWallet.addr);
-        soulbound1155.safeTransferFrom(playerWallet.addr, minterWallet.addr, 1, 1, "");
 
         vm.expectRevert("ERC1155: caller is not token owner or approved");
         vm.prank(playerWallet2.addr);
@@ -225,14 +221,13 @@ contract Soulbound1155Test is Test {
         soulbound1155.mint(1, 1, true, nonce, signature);
         assertEq(soulbound1155.balanceOf(playerWallet.addr, 1), 1);
 
-        vm.expectRevert("ERCSoulbound: The amount of soulbounded tokens is equal to the amount of tokens to be transferred");
+        vm.expectRevert("ERCSoulbound: The amount of soulbounded tokens is more than the amount of tokens to be transferred");
         vm.prank(playerWallet.addr);
         soulbound1155.safeTransferFrom(playerWallet.addr, minterWallet.addr, 1, 1, "");
 
+        vm.expectRevert("ERCSoulbound: The amount of soulbounded tokens is more than the amount of tokens to be transferred");
         vm.prank(playerWallet.addr);
         soulbound1155.burn(playerWallet.addr, 1, 1);
-
-        assertEq(soulbound1155.balanceOf(playerWallet.addr, 1), 0);
 
         vm.prank(playerWallet2.addr);
         soulbound1155.mint(1, 1, false, nonce2, signature2);
@@ -265,12 +260,8 @@ contract Soulbound1155Test is Test {
         soulbound1155.addNewToken(3);
 
 
-        soulbound1155.adminMintBatch(playerWallet.addr, _itemIds1, _amount1, true);
+        soulbound1155.adminMintBatch(playerWallet.addr, _itemIds1, _amount1, false);
         assertEq(soulbound1155.balanceOf(playerWallet.addr, 1), 1);
-
-        vm.expectRevert("ERCSoulbound: The amount of soulbounded tokens is equal to the amount of tokens to be transferred");
-        vm.prank(playerWallet.addr);
-        soulbound1155.safeTransferFrom(playerWallet.addr, minterWallet.addr, 1, 1, "");
 
         vm.expectRevert("ERC1155: caller is not token owner or approved");
         vm.prank(playerWallet2.addr);
@@ -303,14 +294,13 @@ contract Soulbound1155Test is Test {
         soulbound1155.adminMintBatch(playerWallet.addr, _itemIds1, _amount1, true);
         assertEq(soulbound1155.balanceOf(playerWallet.addr, 1), 1);
 
-        vm.expectRevert("ERCSoulbound: The amount of soulbounded tokens is equal to the amount of tokens to be transferred");
+        vm.expectRevert("ERCSoulbound: The amount of soulbounded tokens is more than the amount of tokens to be transferred");
         vm.prank(playerWallet.addr);
         soulbound1155.safeTransferFrom(playerWallet.addr, minterWallet.addr, 1, 1, "");
 
+        vm.expectRevert("ERCSoulbound: The amount of soulbounded tokens is more than the amount of tokens to be transferred");
         vm.prank(playerWallet.addr);
         soulbound1155.burnBatch(playerWallet.addr, _itemIds1, _amount1);
-
-        assertEq(soulbound1155.balanceOf(playerWallet.addr, 1), 0);
 
         soulbound1155.adminMintBatch(playerWallet2.addr, _itemIds2, _amount1, false);
 
@@ -380,7 +370,7 @@ contract Soulbound1155Test is Test {
         vm.prank(playerWallet.addr);
         soulbound1155.mint(1, 1, true, nonce, signature);
 
-        vm.expectRevert("ERCSoulbound: The amount of soulbounded tokens is equal to the amount of tokens to be transferred");
+        vm.expectRevert("ERCSoulbound: The amount of soulbounded tokens is more than the amount of tokens to be transferred");
         vm.prank(playerWallet.addr);
         soulbound1155.safeTransferFrom(playerWallet.addr, minterWallet.addr, 1, 1, "");
 
@@ -395,7 +385,7 @@ contract Soulbound1155Test is Test {
         vm.prank(playerWallet.addr);
         soulbound1155.mint(1, 1, true, nonce, signature);
 
-        vm.expectRevert("ERCSoulbound: The amount of soulbounded tokens is equal to the amount of tokens to be transferred");
+        vm.expectRevert("ERCSoulbound: The amount of soulbounded tokens is more than the amount of tokens to be transferred");
         vm.prank(playerWallet.addr);
         soulbound1155.safeTransferFrom(playerWallet.addr, minterWallet.addr, 1, 1, "");
 
@@ -409,7 +399,7 @@ contract Soulbound1155Test is Test {
 
         soulbound1155.updateWhitelistAddress(playerWallet3.addr, false);
 
-        vm.expectRevert("ERCSoulbound: The amount of soulbounded tokens is equal to the amount of tokens to be transferred");
+        vm.expectRevert("ERCSoulbound: The amount of soulbounded tokens is more than the amount of tokens to be transferred");
         vm.prank(playerWallet.addr);
         soulbound1155.safeTransferFrom(playerWallet.addr, playerWallet3.addr, 1, 1, "");
     }

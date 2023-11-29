@@ -194,7 +194,7 @@ contract Soulbound1155 is ERC1155Burnable, ERCSoulbound, ERC2981, AccessControl,
         uint256 _id,
         uint256 _amount,
         bytes memory _data
-    ) public virtual override soulboundCheck(_from, _to, _id, _amount) {
+    ) public virtual override soulboundCheck(_from, _to, _id, _amount, balanceOf(_from, _id)) syncSoulbound(_from, _to, _id, _amount, balanceOf(_from, _id)) {
         super.safeTransferFrom(_from, _to, _id, _amount, _data);
     }
 
@@ -204,15 +204,25 @@ contract Soulbound1155 is ERC1155Burnable, ERCSoulbound, ERC2981, AccessControl,
         uint256[] memory _ids,
         uint256[] memory _amounts,
         bytes memory _data
-    ) public virtual override soulboundCheckBatch(_from, _to, _ids, _amounts) {
+    ) public virtual override soulboundCheckBatch(_from, _to, _ids, _amounts, balanceOfBatchOneAccount(_from, _ids)) syncBatchSoulbound(_from, _to, _ids, _amounts, balanceOfBatchOneAccount(_from, _ids)) {
         super.safeBatchTransferFrom(_from, _to, _ids, _amounts, _data);
     }
 
-     function burn(address to, uint256 tokenId, uint256 amount) public virtual override syncSoulbound(to, tokenId, amount) {
+    function balanceOfBatchOneAccount(address account, uint256[] memory ids) public view virtual returns (uint256[] memory) {
+        uint256[] memory batchBalances = new uint256[](ids.length);
+
+        for (uint256 i = 0; i < ids.length; ++i) {
+            batchBalances[i] = balanceOf(account, ids[i]);
+        }
+
+        return batchBalances;
+    }
+
+    function burn(address to, uint256 tokenId, uint256 amount) public virtual override soulboundCheck(to, address(0), tokenId, amount, balanceOf(to, tokenId)) syncSoulbound(to, address(0), tokenId, amount, balanceOf(to, tokenId)) {
         ERC1155Burnable.burn(to, tokenId, amount);
     }
 
-    function burnBatch(address to, uint256[] memory tokenIds, uint256[] memory amounts) public virtual override syncBatchSoulbound(to, tokenIds, amounts) {
+    function burnBatch(address to, uint256[] memory tokenIds, uint256[] memory amounts) public virtual override soulboundCheckBatch(to, address(0), tokenIds, amounts, balanceOfBatchOneAccount(to, tokenIds)) syncBatchSoulbound(to, address(0), tokenIds, amounts, balanceOfBatchOneAccount(to, tokenIds)) {
         ERC1155Burnable.burnBatch(to, tokenIds, amounts);
     }
 

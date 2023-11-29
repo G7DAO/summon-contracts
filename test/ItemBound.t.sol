@@ -298,7 +298,7 @@ contract ItemBoundTest is Test {
         vm.prank(playerWallet.addr);
         itemBound.mint(encodedItems1, 1, true, nonce, signature);
 
-        vm.expectRevert("ERCSoulbound: The amount of soulbounded tokens is equal to the amount of tokens to be transferred");
+        vm.expectRevert("ERCSoulbound: The amount of soulbounded tokens is more than the amount of tokens to be transferred");
         vm.prank(playerWallet.addr);
         itemBound.safeTransferFrom(playerWallet.addr, minterWallet.addr, _tokenIds[0], 1, "");
 
@@ -369,12 +369,8 @@ contract ItemBoundTest is Test {
 
     function testBurnNotOwnerShouldFail() public {
         vm.prank(playerWallet.addr);
-        itemBound.mint(encodedItems1, 1, true, nonce, signature);
+        itemBound.mint(encodedItems1, 1, false, nonce, signature);
         assertEq(itemBound.balanceOf(playerWallet.addr, _tokenIds[0]), 1);
-
-        vm.expectRevert("ERCSoulbound: The amount of soulbounded tokens is equal to the amount of tokens to be transferred");
-        vm.prank(playerWallet.addr);
-        itemBound.safeTransferFrom(playerWallet.addr, minterWallet.addr, _tokenIds[0], 1, "");
 
         vm.expectRevert("ERC1155: caller is not token owner or approved");
         vm.prank(playerWallet2.addr);
@@ -386,14 +382,13 @@ contract ItemBoundTest is Test {
         itemBound.mint(encodedItems1, 1, true, nonce, signature);
         assertEq(itemBound.balanceOf(playerWallet.addr, _tokenIds[0]), 1);
 
-        vm.expectRevert("ERCSoulbound: The amount of soulbounded tokens is equal to the amount of tokens to be transferred");
+        vm.expectRevert("ERCSoulbound: The amount of soulbounded tokens is more than the amount of tokens to be transferred");
         vm.prank(playerWallet.addr);
         itemBound.safeTransferFrom(playerWallet.addr, minterWallet.addr, _tokenIds[0], 1, "");
 
+        vm.expectRevert("ERCSoulbound: The amount of soulbounded tokens is more than the amount of tokens to be transferred");
         vm.prank(playerWallet.addr);
         itemBound.burn(playerWallet.addr, _tokenIds[0], 1);
-
-        assertEq(itemBound.balanceOf(playerWallet.addr, _tokenIds[0]), 0);
 
         vm.prank(playerWallet2.addr);
         itemBound.mint(encodedItems2, 1, false, nonce2, signature2);
@@ -410,6 +405,27 @@ contract ItemBoundTest is Test {
         assertEq(itemBound.balanceOf(playerWallet3.addr, _tokenIds[3]), 0);
     }
 
+    function testBurnIfHoldBothNonSoulboundAndSouldbound() public {
+        vm.prank(playerWallet.addr);
+        itemBound.mint(encodedItems1, 1, true, nonce, signature);
+
+        itemBound.adminMint(playerWallet2.addr, encodedItems1, false);
+
+        vm.prank(playerWallet2.addr);
+        itemBound.safeTransferFrom(playerWallet2.addr, playerWallet.addr, _tokenIds[0], 1, "");
+
+
+        assertEq(itemBound.balanceOf(playerWallet.addr, _tokenIds[0]), 2);
+        
+
+        vm.expectRevert("ERCSoulbound: The amount of soulbounded tokens is more than the amount of tokens to be transferred");
+        vm.prank(playerWallet.addr);
+        itemBound.safeTransferFrom(playerWallet.addr, minterWallet.addr, _tokenIds[0], 2, "");
+
+        vm.prank(playerWallet.addr);
+        itemBound.safeTransferFrom(playerWallet.addr, minterWallet.addr, _tokenIds[0], 1, "");
+    }
+
     function testBurnBatchNotOwnerShouldFail() public {
         uint256[] memory _itemIds1 = new uint256[](3);
         _itemIds1[0] = _tokenIds[0];
@@ -422,12 +438,8 @@ contract ItemBoundTest is Test {
         _amount1[2] = 1;
 
         vm.prank(playerWallet.addr);
-        itemBound.mint(encodedItems1, 1, true, nonce, signature);
+        itemBound.mint(encodedItems1, 1, false, nonce, signature);
         assertEq(itemBound.balanceOf(playerWallet.addr, _tokenIds[0]), 1);
-
-        vm.expectRevert("ERCSoulbound: The amount of soulbounded tokens is equal to the amount of tokens to be transferred");
-        vm.prank(playerWallet.addr);
-        itemBound.safeTransferFrom(playerWallet.addr, minterWallet.addr, _tokenIds[0], 1, "");
 
         vm.expectRevert("ERC1155: caller is not token owner or approved");
         vm.prank(playerWallet2.addr);
@@ -454,14 +466,13 @@ contract ItemBoundTest is Test {
         itemBound.mint(encodedItems1, 1, true, nonce, signature);
         assertEq(itemBound.balanceOf(playerWallet.addr, _tokenIds[0]), 1);
 
-        vm.expectRevert("ERCSoulbound: The amount of soulbounded tokens is equal to the amount of tokens to be transferred");
+        vm.expectRevert("ERCSoulbound: The amount of soulbounded tokens is more than the amount of tokens to be transferred");
         vm.prank(playerWallet.addr);
         itemBound.safeTransferFrom(playerWallet.addr, minterWallet.addr, _tokenIds[0], 1, "");
 
+        vm.expectRevert("ERCSoulbound: The amount of soulbounded tokens is more than the amount of tokens to be transferred");
         vm.prank(playerWallet.addr);
         itemBound.burnBatch(playerWallet.addr, _itemIds1, _amount1);
-
-        assertEq(itemBound.balanceOf(playerWallet.addr, _tokenIds[0]), 0);
 
         vm.prank(playerWallet2.addr);
         itemBound.mint(encodedItems2, 1, false, nonce2, signature2);
@@ -598,7 +609,7 @@ contract ItemBoundTest is Test {
         uint256 _tokenId = _tokenIds[0];
         itemBound.adminMintId(playerWallet.addr, _tokenId, 1, true);
 
-        vm.expectRevert("ERCSoulbound: The amount of soulbounded tokens is equal to the amount of tokens to be transferred");
+        vm.expectRevert("ERCSoulbound: The amount of soulbounded tokens is more than the amount of tokens to be transferred");
         vm.prank(playerWallet.addr);
         itemBound.safeTransferFrom(playerWallet.addr, minterWallet.addr, _tokenId, 1, "");
 
@@ -611,9 +622,9 @@ contract ItemBoundTest is Test {
         uint256 _tokenId = _tokenIds[0];
         itemBound.adminMintId(playerWallet.addr, _tokenId, 1, true);
 
-        vm.expectRevert("ERCSoulbound: The amount of soulbounded tokens is equal to the amount of tokens to be transferred");
+        vm.expectRevert("ERCSoulbound: The amount of soulbounded tokens is more than the amount of tokens to be transferred");
         vm.prank(playerWallet.addr);
-        itemBound.safeTransferFrom(playerWallet.addr, minterWallet.addr, _tokenId, 1, "");
+        itemBound.safeTransferFrom(playerWallet.addr, playerWallet3.addr, _tokenId, 1, "");
 
         itemBound.updateWhitelistAddress(playerWallet3.addr, true);
 
@@ -625,7 +636,7 @@ contract ItemBoundTest is Test {
 
         itemBound.updateWhitelistAddress(playerWallet3.addr, false);
 
-        vm.expectRevert("ERCSoulbound: The amount of soulbounded tokens is equal to the amount of tokens to be transferred");
+        vm.expectRevert("ERCSoulbound: The amount of soulbounded tokens is more than the amount of tokens to be transferred");
         vm.prank(playerWallet.addr);
         itemBound.safeTransferFrom(playerWallet.addr, playerWallet3.addr, _tokenId, 1, "");
     }
