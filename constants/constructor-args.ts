@@ -19,9 +19,9 @@ export const SoulboundBadgesArgs: Soulbound1155Args = {
         name: 'SoulboundBadges',
         symbol: 'SBB',
         // TODO: change this for the final gateway
-        baseURI: 'https://api.mysoulbound.com/tokens/',
+        baseURI: 'https://apricot-persistent-duck-562.mypinata.cloud/',
         // TODO: change this for the final gateway
-        contractURI: 'https://RANDOM/{contractURIHASH}',
+        contractURI: 'https://apricot-persistent-duck-562.mypinata.cloud/{contractURIHASH}',
         maxPerMint: 1,
         isPaused: true,
         devWallet: '0xA10648F8618A526Bd0Acb08a1b9f413BC44Fcb4B',
@@ -31,10 +31,8 @@ export const SoulboundBadgesArgs: Soulbound1155Args = {
     TESTNET: {
         name: 'MyBadges',
         symbol: 'MSB',
-        // TODO: change this for the final gateway
-        baseURI: 'https://api.mysoulbound.com/tokens/',
-        // TODO: change this for the final gateway
-        contractURI: 'https://RANDOM/{contractURIHASH}',
+        baseURI: 'https://apricot-persistent-duck-562.mypinata.cloud/',
+        contractURI: 'https://apricot-persistent-duck-562.mypinata.cloud/{contractURIHASH}',
         maxPerMint: 1,
         isPaused: true,
         devWallet: '0xA10648F8618A526Bd0Acb08a1b9f413BC44Fcb4B',
@@ -48,9 +46,9 @@ export const ItemsBoundArgs: Soulbound1155Args = {
         name: 'ItemsBound',
         symbol: 'ISB',
         // TODO: change this for the final gateway
-        baseURI: 'https://api.mysoulbound.com/tokens/',
+        baseURI: 'https://apricot-persistent-duck-562.mypinata.cloud/',
         // TODO: change this for the final gateway
-        contractURI: 'https://RANDOM/{contractURIHASH}',
+        contractURI: 'https://apricot-persistent-duck-562.mypinata.cloud/{contractURIHASH}',
         maxPerMint: 1,
         isPaused: true,
         devWallet: '0xA10648F8618A526Bd0Acb08a1b9f413BC44Fcb4B',
@@ -60,10 +58,8 @@ export const ItemsBoundArgs: Soulbound1155Args = {
     TESTNET: {
         name: 'MyItems',
         symbol: 'MI',
-        // TODO: change this for the final gateway
-        baseURI: 'https://api.itemsbound.com/tokens/',
-        // TODO: change this for the final gateway
-        contractURI: 'https://RANDOM/{contractURIHASH}',
+        baseURI: 'https://apricot-persistent-duck-562.mypinata.cloud/',
+        contractURI: 'https://apricot-persistent-duck-562.mypinata.cloud/{contractURIHASH}',
         maxPerMint: 1,
         isPaused: true,
         devWallet: '0xA10648F8618A526Bd0Acb08a1b9f413BC44Fcb4B',
