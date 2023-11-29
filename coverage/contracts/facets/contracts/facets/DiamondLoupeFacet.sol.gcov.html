@@ -1,0 +1,152 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+
+<html lang="en">
+
+<head>
+  <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+  <title>LCOV - lcov.info - contracts/facets/contracts/facets/DiamondLoupeFacet.sol</title>
+  <link rel="stylesheet" type="text/css" href="../../../../gcov.css">
+</head>
+
+<body>
+
+          <table width="100%" border=0 cellspacing=0 cellpadding=0>
+            <tr><td class="title">LCOV - code coverage report</td></tr>
+            <tr><td class="ruler"><img src="../../../../glass.png" width=3 height=3 alt=""></td></tr>
+
+            <tr>
+              <td width="100%">
+                <table cellpadding=1 border=0 width="100%">
+          <tr>
+            <td width="10%" class="headerItem">Current view:</td>
+            <td width="10%" class="headerValue"><a href="../../../../index.html">top level</a> - <a href="index.html">contracts/facets/contracts/facets</a> - DiamondLoupeFacet.sol<span style="font-size: 80%;"> (source / <a href="DiamondLoupeFacet.sol.func-c.html">functions</a>)</span></td>
+            <td width="5%"></td>
+            <td width="5%"></td>
+            <td width="5%" class="headerCovTableHead">Coverage</td>
+            <td width="5%" class="headerCovTableHead" title="Covered + Uncovered code">Total</td>
+            <td width="5%" class="headerCovTableHead" title="Exercised code only">Hit</td>
+          </tr>
+          <tr>
+            <td class="headerItem">Test:</td>
+            <td class="headerValue">lcov.info</td>
+            <td></td>
+            <td class="headerItem">Lines:</td>
+            <td class="headerCovTableEntryLo">0.0&nbsp;%</td>
+            <td class="headerCovTableEntry">15</td>
+            <td class="headerCovTableEntry">0</td>
+          </tr>
+          <tr>
+            <td class="headerItem">Test Date:</td>
+            <td class="headerValue">2023-11-28 17:38:59</td>
+            <td></td>
+            <td class="headerItem">Functions:</td>
+            <td class="headerCovTableEntryLo">0.0&nbsp;%</td>
+            <td class="headerCovTableEntry">5</td>
+            <td class="headerCovTableEntry">0</td>
+          </tr>
+          <tr>
+            <td></td>
+            <td></td>
+            <td></td>
+            <td class="headerItem">Branches:</td>
+            <td class="headerCovTableEntryHi">-</td>
+            <td class="headerCovTableEntry">0</td>
+            <td class="headerCovTableEntry">0</td>
+          </tr>
+                  <tr><td><img src="../../../../glass.png" width=3 height=3 alt=""></td></tr>
+                </table>
+              </td>
+            </tr>
+
+            <tr><td class="ruler"><img src="../../../../glass.png" width=3 height=3 alt=""></td></tr>
+          </table>
+
+          <table cellpadding=0 cellspacing=0 border=0>
+            <tr>
+              <td><br></td>
+            </tr>
+            <tr>
+              <td>
+<pre class="sourceHeading">             Branch data     Line data    Source code</pre>
+<pre class="source">
+<span id="L1"><span class="lineNum">       1</span>                 :             : // SPDX-License-Identifier: MIT</span>
+<span id="L2"><span class="lineNum">       2</span>                 :             : pragma solidity 0.8.17;</span>
+<span id="L3"><span class="lineNum">       3</span>                 :             : /******************************************************************************\</span>
+<span id="L4"><span class="lineNum">       4</span>                 :             : * Author: Nick Mudge &lt;nick@perfectabstractions.com&gt; (https://twitter.com/mudgen)</span>
+<span id="L5"><span class="lineNum">       5</span>                 :             : * EIP-2535 Diamonds: https://eips.ethereum.org/EIPS/eip-2535</span>
+<span id="L6"><span class="lineNum">       6</span>                 :             : /******************************************************************************/</span>
+<span id="L7"><span class="lineNum">       7</span>                 :             : </span>
+<span id="L8"><span class="lineNum">       8</span>                 :             : import { LibDiamond } from &quot;../libraries/LibDiamond.sol&quot;;</span>
+<span id="L9"><span class="lineNum">       9</span>                 :             : import { IDiamondLoupe } from &quot;../interfaces/IDiamondLoupe.sol&quot;;</span>
+<span id="L10"><span class="lineNum">      10</span>                 :             : import { IERC165 } from &quot;../interfaces/IERC165.sol&quot;;</span>
+<span id="L11"><span class="lineNum">      11</span>                 :             : </span>
+<span id="L12"><span class="lineNum">      12</span>                 :             : // The functions in DiamondLoupeFacet MUST be added to a diamond.</span>
+<span id="L13"><span class="lineNum">      13</span>                 :             : // The EIP-2535 Diamond standard requires these functions.</span>
+<span id="L14"><span class="lineNum">      14</span>                 :             : </span>
+<span id="L15"><span class="lineNum">      15</span>                 :             : contract DiamondLoupeFacet is IDiamondLoupe, IERC165 {</span>
+<span id="L16"><span class="lineNum">      16</span>                 :             :   // Diamond Loupe Functions</span>
+<span id="L17"><span class="lineNum">      17</span>                 :             :   ////////////////////////////////////////////////////////////////////</span>
+<span id="L18"><span class="lineNum">      18</span>                 :             :   /// These functions are expected to be called frequently by tools.</span>
+<span id="L19"><span class="lineNum">      19</span>                 :             :   //</span>
+<span id="L20"><span class="lineNum">      20</span>                 :             :   // struct Facet {</span>
+<span id="L21"><span class="lineNum">      21</span>                 :             :   //     address facetAddress;</span>
+<span id="L22"><span class="lineNum">      22</span>                 :             :   //     bytes4[] functionSelectors;</span>
+<span id="L23"><span class="lineNum">      23</span>                 :             :   // }</span>
+<span id="L24"><span class="lineNum">      24</span>                 :             : </span>
+<span id="L25"><span class="lineNum">      25</span>                 :             :   /// @notice Gets all facets and their selectors.</span>
+<span id="L26"><span class="lineNum">      26</span>                 :             :   /// @return facets_ Facet</span>
+<span id="L27"><span class="lineNum">      27</span>                 :<span class="tlaUNC tlaBgUNC">           0 :   function facets() external view override returns (Facet[] memory facets_) {</span></span>
+<span id="L28"><span class="lineNum">      28</span>                 :<span class="tlaUNC">           0 :     LibDiamond.DiamondStorage storage ds = LibDiamond.diamondStorage();</span></span>
+<span id="L29"><span class="lineNum">      29</span>                 :<span class="tlaUNC">           0 :     uint256 numFacets = ds.facetAddresses.length;</span></span>
+<span id="L30"><span class="lineNum">      30</span>                 :<span class="tlaUNC">           0 :     facets_ = new Facet[](numFacets);</span></span>
+<span id="L31"><span class="lineNum">      31</span>                 :<span class="tlaUNC">           0 :     for (uint256 i; i &lt; numFacets; i++) {</span></span>
+<span id="L32"><span class="lineNum">      32</span>                 :<span class="tlaUNC">           0 :       address facetAddress_ = ds.facetAddresses[i];</span></span>
+<span id="L33"><span class="lineNum">      33</span>                 :<span class="tlaUNC">           0 :       facets_[i].facetAddress = facetAddress_;</span></span>
+<span id="L34"><span class="lineNum">      34</span>                 :<span class="tlaUNC">           0 :       facets_[i].functionSelectors = ds.facetFunctionSelectors[facetAddress_].functionSelectors;</span></span>
+<span id="L35"><span class="lineNum">      35</span>                 :             :     }</span>
+<span id="L36"><span class="lineNum">      36</span>                 :             :   }</span>
+<span id="L37"><span class="lineNum">      37</span>                 :             : </span>
+<span id="L38"><span class="lineNum">      38</span>                 :             :   /// @notice Gets all the function selectors provided by a facet.</span>
+<span id="L39"><span class="lineNum">      39</span>                 :             :   /// @param _facet The facet address.</span>
+<span id="L40"><span class="lineNum">      40</span>                 :             :   /// @return facetFunctionSelectors_</span>
+<span id="L41"><span class="lineNum">      41</span>                 :<span class="tlaUNC">           0 :   function facetFunctionSelectors(address _facet) external view override returns (bytes4[] memory facetFunctionSelectors_) {</span></span>
+<span id="L42"><span class="lineNum">      42</span>                 :<span class="tlaUNC">           0 :     LibDiamond.DiamondStorage storage ds = LibDiamond.diamondStorage();</span></span>
+<span id="L43"><span class="lineNum">      43</span>                 :<span class="tlaUNC">           0 :     facetFunctionSelectors_ = ds.facetFunctionSelectors[_facet].functionSelectors;</span></span>
+<span id="L44"><span class="lineNum">      44</span>                 :             :   }</span>
+<span id="L45"><span class="lineNum">      45</span>                 :             : </span>
+<span id="L46"><span class="lineNum">      46</span>                 :             :   /// @notice Get all the facet addresses used by a diamond.</span>
+<span id="L47"><span class="lineNum">      47</span>                 :             :   /// @return facetAddresses_</span>
+<span id="L48"><span class="lineNum">      48</span>                 :<span class="tlaUNC">           0 :   function facetAddresses() external view override returns (address[] memory facetAddresses_) {</span></span>
+<span id="L49"><span class="lineNum">      49</span>                 :<span class="tlaUNC">           0 :     LibDiamond.DiamondStorage storage ds = LibDiamond.diamondStorage();</span></span>
+<span id="L50"><span class="lineNum">      50</span>                 :<span class="tlaUNC">           0 :     facetAddresses_ = ds.facetAddresses;</span></span>
+<span id="L51"><span class="lineNum">      51</span>                 :             :   }</span>
+<span id="L52"><span class="lineNum">      52</span>                 :             : </span>
+<span id="L53"><span class="lineNum">      53</span>                 :             :   /// @notice Gets the facet that supports the given selector.</span>
+<span id="L54"><span class="lineNum">      54</span>                 :             :   /// @dev If facet is not found return address(0).</span>
+<span id="L55"><span class="lineNum">      55</span>                 :             :   /// @param _functionSelector The function selector.</span>
+<span id="L56"><span class="lineNum">      56</span>                 :             :   /// @return facetAddress_ The facet address.</span>
+<span id="L57"><span class="lineNum">      57</span>                 :<span class="tlaUNC">           0 :   function facetAddress(bytes4 _functionSelector) external view override returns (address facetAddress_) {</span></span>
+<span id="L58"><span class="lineNum">      58</span>                 :<span class="tlaUNC">           0 :     LibDiamond.DiamondStorage storage ds = LibDiamond.diamondStorage();</span></span>
+<span id="L59"><span class="lineNum">      59</span>                 :<span class="tlaUNC">           0 :     facetAddress_ = ds.selectorToFacetAndPosition[_functionSelector].facetAddress;</span></span>
+<span id="L60"><span class="lineNum">      60</span>                 :             :   }</span>
+<span id="L61"><span class="lineNum">      61</span>                 :             : </span>
+<span id="L62"><span class="lineNum">      62</span>                 :             :   // This implements ERC-165.</span>
+<span id="L63"><span class="lineNum">      63</span>                 :<span class="tlaUNC">           0 :   function supportsInterface(bytes4 _interfaceId) external view override returns (bool) {</span></span>
+<span id="L64"><span class="lineNum">      64</span>                 :<span class="tlaUNC">           0 :     LibDiamond.DiamondStorage storage ds = LibDiamond.diamondStorage();</span></span>
+<span id="L65"><span class="lineNum">      65</span>                 :<span class="tlaUNC">           0 :     return ds.supportedInterfaces[_interfaceId];</span></span>
+<span id="L66"><span class="lineNum">      66</span>                 :             :   }</span>
+<span id="L67"><span class="lineNum">      67</span>                 :             : }</span>
+        </pre>
+              </td>
+            </tr>
+          </table>
+          <br>
+
+          <table width="100%" border=0 cellspacing=0 cellpadding=0>
+            <tr><td class="ruler"><img src="../../../../glass.png" width=3 height=3 alt=""></td></tr>
+            <tr><td class="versionInfo">Generated by: <a href="https://github.com//linux-test-project/lcov" target="_parent">LCOV version 2.0-1</a></td></tr>
+          </table>
+          <br>
+
+</body>
+</html>
