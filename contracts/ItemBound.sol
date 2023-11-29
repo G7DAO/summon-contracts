@@ -286,11 +286,11 @@ contract ItemBound is ERC1155Burnable, ERC1155Supply, ERCSoulbound, ERC2981, ERC
         return batchBalances;
     }
 
-    function burn(address to, uint256 tokenId, uint256 amount) public virtual override soulboundCheck(to, address(0), tokenId, amount, balanceOf(to, tokenId)) syncSoulbound(to, address(0), tokenId, amount, balanceOf(to, tokenId)) {
+    function burn(address to, uint256 tokenId, uint256 amount) public nonReentrant virtual override soulboundCheck(to, address(0), tokenId, amount, balanceOf(to, tokenId)) syncSoulbound(to, address(0), tokenId, amount, balanceOf(to, tokenId)) {
         ERC1155Burnable.burn(to, tokenId, amount);
     }
 
-    function burnBatch(address to, uint256[] memory tokenIds, uint256[] memory amounts) public virtual override soulboundCheckBatch(to, address(0), tokenIds, amounts, balanceOfBatchOneAccount(to, tokenIds)) syncBatchSoulbound(to, address(0), tokenIds, amounts, balanceOfBatchOneAccount(to, tokenIds)) {
+    function burnBatch(address to, uint256[] memory tokenIds, uint256[] memory amounts) public nonReentrant virtual override soulboundCheckBatch(to, address(0), tokenIds, amounts, balanceOfBatchOneAccount(to, tokenIds)) syncBatchSoulbound(to, address(0), tokenIds, amounts, balanceOfBatchOneAccount(to, tokenIds)) {
         ERC1155Burnable.burnBatch(to, tokenIds, amounts);
     }
 

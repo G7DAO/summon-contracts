@@ -95,7 +95,7 @@ contract LevelsBound is ERC1155, Ownable, ReentrancyGuard, ERCWhitelistSignature
         mintLevel(account, newLevel, data);
     }
 
-    function burnLevel(address account, uint256 tokenId) private {
+    function burnLevel(address account, uint256 tokenId) private nonReentrant {
         _burn(account, tokenId, 1);
     }
 
