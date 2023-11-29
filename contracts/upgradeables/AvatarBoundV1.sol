@@ -36,7 +36,7 @@ import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
 import "./ERCSoulboundUpgradeable.sol";
 import "./ERCWhitelistSignatureUpgradeable.sol";
 import "../interfaces/IOpenMint.sol";
-import "../interfaces/ISoulbound1155.sol";
+import "../interfaces/IItemBound.sol";
 
 contract AvatarBoundV1 is
     Initializable,
@@ -197,7 +197,7 @@ contract AvatarBoundV1 is
     }
 
     function mintItem(address to, uint256 itemId) private whenNotPaused {
-        ISoulbound1155(itemsNFTAddress).adminMintId(to, itemId, 1, true);
+        IItemBound(itemsNFTAddress).adminMintId(to, itemId, 1, true);
         if (itemId == _specialItemId) {
             emit SpecialItemMinted(itemId, to, itemsNFTAddress);
         } else {
@@ -206,7 +206,7 @@ contract AvatarBoundV1 is
     }
 
     function mintRandomItem(address to, bytes calldata data) private whenNotPaused {
-        ISoulbound1155(itemsNFTAddress).adminMint(to, data, false);
+        IItemBound(itemsNFTAddress).adminMint(to, data, false);
         emit RandomItemMinted(to, data, itemsNFTAddress);
     }
 
@@ -345,5 +345,13 @@ contract AvatarBoundV1 is
         bytes4 interfaceId
     ) public view override(ERC721EnumerableUpgradeable, ERC721URIStorageUpgradeable, AccessControlUpgradeable) returns (bool) {
         return super.supportsInterface(interfaceId);
+    }
+
+    function addWhitelistSigner(address _signer) external onlyRole(DEFAULT_ADMIN_ROLE) {
+        _addWhitelistSigner(_signer);
+    }
+
+    function removeWhitelistSigner(address signer) external onlyRole(DEFAULT_ADMIN_ROLE) {
+        _removeWhitelistSigner(signer);
     }
 }

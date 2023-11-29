@@ -34,55 +34,55 @@ import "@openzeppelin/contracts/access/AccessControl.sol";
 import "@openzeppelin/contracts/security/Pausable.sol";
 import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
 import "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
+
 import { ERCSoulbound } from "./ERCSoulbound.sol";
-import { ISoulbound1155 } from "./interfaces/ISoulbound1155.sol";
+import { ERCWhitelistSignature } from "./ERCWhitelistSignature.sol";
+import { IItemBound } from "./interfaces/IItemBound.sol";
 import { IOpenMint } from "./interfaces/IOpenMint.sol";
 
-// OUTDATED CONTRACT, the current contract is in  upgradeables/AvatarBoundV1.sol
-contract AvatarBound is ERC721URIStorage, ERC721Enumerable, AccessControl, ERCSoulbound, Pausable, ReentrancyGuard {
+contract AvatarBound is ERC721URIStorage, ERC721Enumerable, AccessControl, ERCSoulbound, ERCWhitelistSignature, Pausable, ReentrancyGuard {
     bytes32 public constant MINTER_ROLE = keccak256("MINTER_ROLE");
     bytes32 public constant URI_SETTER_ROLE = keccak256("URI_SETTER_ROLE");
     bytes32 public constant PAUSER_ROLE = keccak256("PAUSER_ROLE");
     uint256 private _tokenIdCounter;
-    uint256 private _specialItemId = 1;
-    uint256 private defaultItemId = 2;
+    uint256 public _baseSkinCounter;
+    uint256 private _specialItemId;
+    uint256 private defaultItemId;
     string public baseTokenURI;
     string public contractURI;
     string public revealURI;
     address public gatingNFTAddress;
     address public itemsNFTAddress;
-    bool public mintNftGatingEnabled;
-    bool public mintNftWithoutGatingEnabled;
-    bool public mintRandomItemEnabled;
-    bool public mintDefaultItemEnabled;
+    bool private mintNftGatingEnabled;
+    bool private mintNftWithoutGatingEnabled;
+    bool private mintRandomItemEnabled;
+    bool private mintSpecialItemEnabled;
+    bool private mintDefaultItemEnabled;
 
-    event BaseURIChanged(string indexed uri);
-    event ContractURIChanged(string indexed uri);
-    event RevealURIChanged(string indexed uri);
-    event SignerAdded(address signer);
-    event SignerRemoved(address signer);
-    event GatingNFTAddressChanged(address _newAddress);
-    event ItemsNFTAddressChanged(address _newAddress);
-    event MintNftWithoutGatingEnabledChanged(bool enabled);
-    event MintNftGatingEnabledChanged(bool enabled);
-    event MintRandomItemEnabledChanged(bool enabled);
-    event MintDefaultItemEnabledChanged(bool enabled);
-    event SpecialItemIdChanged(uint indexed newId);
-    event DefaultItemIdChanged(uint indexed newId);
-    event SkinBaseChanged(uint indexed newBaseSkinId, string newUri);
-    event URIChanged(uint indexed tokenId, string newURI);
-    event RandomItemMinted(uint indexed itemId, address to, address itemsNFTAddress);
+    event BaseURIChanged(string indexed uri, address admin);
+    event ContractURIChanged(string indexed uri, address admin);
+    event RevealURIChanged(string indexed uri, address admin);
+    event SignerAdded(address signer, address admin);
+    event SignerRemoved(address signer, address admin);
+    event GatingNFTAddressChanged(address _newAddress, address admin);
+    event ItemsNFTAddressChanged(address _newAddress, address admin);
+    event MintNftWithoutGatingEnabledChanged(bool enabled, address admin);
+    event MintNftGatingEnabledChanged(bool enabled, address admin);
+    event MintRandomItemEnabledChanged(bool enabled, address admin);
+    event MintSpecialItemEnabledChanged(bool enabled, address admin);
+    event MintDefaultItemEnabledChanged(bool enabled, address admin);
+    event RandomItemsMintsChanged(uint256 indexed newMints, address admin);
+    event SpecialItemIdChanged(uint indexed newId, address admin);
+    event DefaultItemIdChanged(uint indexed newId, address admin);
+    event SkinBaseChanged(uint indexed newBaseSkinId, string newUri, address admin);
+    event URIChanged(uint indexed tokenId, string newURI, address admin);
+    event RandomItemMinted(address to, bytes data, address itemsNFTAddress);
     event SpecialItemMinted(uint indexed specialItemId, address to, address itemsNFTAddress);
     event ItemMinted(uint indexed itemId, address to, address itemsNFTAddress);
     event NFTRevealed(uint indexed tokenId, address to, address gatingNFTAddress);
     event AvatarMinted(uint indexed tokenId, address to, string baseSkinUri);
 
     mapping(uint256 => string) public baseSkins;
-
-    mapping(address => bool) public whitelistSigners;
-
-    // bytes(signature) => used
-    mapping(bytes => bool) public usedSignatures;
 
     constructor(
         string memory _name,
@@ -116,27 +116,35 @@ contract AvatarBound is ERC721URIStorage, ERC721Enumerable, AccessControl, ERCSo
         emit AvatarMinted(tokenId, to, baseSkins[baseSkinId]);
     }
 
-    function mintAvatarNftGating(uint256 nftGatingId, uint256 baseSkinId, uint256 nonce, bytes memory signature) public nonReentrant whenNotPaused {
+    function mintAvatarNftGating(
+        uint256 nftGatingId,
+        uint256 baseSkinId,
+        uint256 nonce,
+        bytes calldata data,
+        bytes calldata signature
+    ) public nonReentrant whenNotPaused {
         require(mintNftGatingEnabled, "NFT gating mint is not enabled");
-        require(verifySignature(_msgSender(), nonce, signature), "Invalid signature");
+        require(_verifySignature(_msgSender(), nonce, data, signature), "Invalid signature");
         require(IOpenMint(gatingNFTAddress).ownerOf(nftGatingId) == _msgSender(), "Sender does not own the required NFT");
         mint(_msgSender(), baseSkinId);
         revealNFTGatingToken(nftGatingId);
 
         if (mintRandomItemEnabled) {
-            mintRandomItem(_msgSender());
+            mintRandomItem(_msgSender(), data);
         }
 
-        mintItem(_msgSender(), _specialItemId);
+        if (mintSpecialItemEnabled) {
+            mintItem(_msgSender(), _specialItemId);
+        }
     }
 
-    function mintAvatar(uint256 baseSkinId, uint256 nonce, bytes memory signature) public nonReentrant whenNotPaused {
+    function mintAvatar(uint256 baseSkinId, uint256 nonce, bytes calldata data, bytes calldata signature) public nonReentrant whenNotPaused {
         require(mintNftWithoutGatingEnabled, "Minting without nft gating is not enabled");
-        require(verifySignature(_msgSender(), nonce, signature), "Invalid signature");
+        require(_verifySignature(_msgSender(), nonce, data, signature), "Invalid signature");
         mint(_msgSender(), baseSkinId);
 
         if (mintRandomItemEnabled) {
-            mintRandomItem(_msgSender());
+            mintRandomItem(_msgSender(), data);
         }
 
         if (mintDefaultItemEnabled) {
@@ -160,8 +168,8 @@ contract AvatarBound is ERC721URIStorage, ERC721Enumerable, AccessControl, ERCSo
         emit NFTRevealed(tokenId, _msgSender(), gatingNFTAddress);
     }
 
-    function mintItem(address to, uint256 itemId) public onlyRole(MINTER_ROLE) whenNotPaused {
-        ISoulbound1155(itemsNFTAddress).mint(to, itemId, 1, true);
+    function mintItem(address to, uint256 itemId) private whenNotPaused {
+        IItemBound(itemsNFTAddress).adminMintId(to, itemId, 1, true);
         if (itemId == _specialItemId) {
             emit SpecialItemMinted(itemId, to, itemsNFTAddress);
         } else {
@@ -169,33 +177,13 @@ contract AvatarBound is ERC721URIStorage, ERC721Enumerable, AccessControl, ERCSo
         }
     }
 
-    function mintRandomItem(address to) internal onlyRole(MINTER_ROLE) whenNotPaused {
-        // Do randomness here to mint a random item between the id 1 and 26
-        uint256 random = uint256(keccak256(abi.encodePacked(block.timestamp, block.difficulty, to)));
-        uint256 randomItem = random % 26;
-        ISoulbound1155(itemsNFTAddress).mint(to, randomItem, 1, false);
-        emit RandomItemMinted(randomItem, to, itemsNFTAddress);
+    function mintRandomItem(address to, bytes calldata data) private whenNotPaused {
+        IItemBound(itemsNFTAddress).adminMint(to, data, false);
+        emit RandomItemMinted(to, data, itemsNFTAddress);
     }
 
-    function recoverAddress(address to, uint256 nonce, bytes memory signature) private pure returns (address) {
-        bytes32 message = keccak256(abi.encodePacked(to, nonce));
-        bytes32 hash = ECDSA.toEthSignedMessageHash(message);
-        address signer = ECDSA.recover(hash, signature);
-        return signer;
-    }
-
-    function verifySignature(address to, uint256 nonce, bytes memory signature) private returns (bool) {
-        address signer = recoverAddress(to, nonce, signature);
-        if (whitelistSigners[signer]) {
-            usedSignatures[signature] = true;
-            return true;
-        } else {
-            return false;
-        }
-    }
-
-    function adminVerifySignature(address to, uint256 nonce, bytes memory signature) public onlyRole(DEFAULT_ADMIN_ROLE) returns (bool) {
-        return verifySignature(to, nonce, signature);
+    function adminVerifySignature(address to, uint256 nonce, bytes calldata data, bytes calldata signature) public onlyRole(DEFAULT_ADMIN_ROLE) returns (bool) {
+        return _verifySignature(to, nonce, data, signature);
     }
 
     function pause() public onlyRole(PAUSER_ROLE) {
@@ -211,96 +199,103 @@ contract AvatarBound is ERC721URIStorage, ERC721Enumerable, AccessControl, ERCSo
         for (uint256 i = 0; i < tokenIds.length; i++) {
             require(_ownerOf(tokenIds[i]) != address(0), "URI set of nonexistent token");
             _setTokenURI(tokenIds[i], tokenURIs[i]);
-            emit URIChanged(tokenIds[i], tokenURIs[i]);
+            emit URIChanged(tokenIds[i], tokenURIs[i], _msgSender());
         }
-    }
-
-    function setContractURI(string memory _contractURI) public onlyRole(DEFAULT_ADMIN_ROLE) {
-        contractURI = _contractURI;
-        emit ContractURIChanged(_contractURI);
-    }
-
-    function setSigner(address _signer) public onlyRole(DEFAULT_ADMIN_ROLE) {
-        whitelistSigners[_signer] = true;
-        emit SignerAdded(_signer);
-    }
-
-    function removeSigner(address signer) public onlyRole(DEFAULT_ADMIN_ROLE) {
-        whitelistSigners[signer] = false;
-        emit SignerRemoved(signer);
-    }
-
-    function setTokenURI(uint256 tokenId, string memory tokenURL) public onlyRole(DEFAULT_ADMIN_ROLE) {
-        require(_ownerOf(tokenId) != address(0), "URI set of nonexistent token");
-        _setTokenURI(tokenId, tokenURL);
-        emit URIChanged(tokenId, tokenURL);
     }
 
     function _baseURI() internal view override returns (string memory) {
         return baseTokenURI;
     }
 
+    function getAllBaseSkins() public view returns (string[] memory) {
+        string[] memory skins = new string[](_baseSkinCounter);
+        for (uint256 i = 0; i < _baseSkinCounter; i++) {
+            skins[i] = baseSkins[i];
+        }
+        return skins;
+    }
+
+    function setContractURI(string memory _contractURI) public onlyRole(DEFAULT_ADMIN_ROLE) {
+        contractURI = _contractURI;
+        emit ContractURIChanged(_contractURI, _msgSender());
+    }
+
+    function setTokenURI(uint256 tokenId, string memory tokenURL) public onlyRole(DEFAULT_ADMIN_ROLE) {
+        require(_ownerOf(tokenId) != address(0), "URI set of nonexistent token");
+        _setTokenURI(tokenId, tokenURL);
+        emit URIChanged(tokenId, tokenURL, _msgSender());
+    }
+
     function setBaseURI(string memory _baseTokenURI) public onlyRole(DEFAULT_ADMIN_ROLE) {
         baseTokenURI = _baseTokenURI;
-        emit BaseURIChanged(baseTokenURI);
+        emit BaseURIChanged(baseTokenURI, _msgSender());
     }
 
     function setRevealURI(string memory _revealURI) public onlyRole(DEFAULT_ADMIN_ROLE) {
         revealURI = _revealURI;
-        emit RevealURIChanged(_revealURI);
+        emit RevealURIChanged(_revealURI, _msgSender());
     }
 
     function setBaseSkin(uint256 baseSkinId, string memory uri) public onlyRole(DEFAULT_ADMIN_ROLE) {
+        if (bytes(baseSkins[baseSkinId]).length == 0) {
+            _baseSkinCounter++;
+        }
         baseSkins[baseSkinId] = uri;
-        emit SkinBaseChanged(baseSkinId, uri);
+        emit SkinBaseChanged(baseSkinId, uri, _msgSender());
     }
 
     function setMintRandomItemEnabled(bool _mintRandomItemEnabled) public onlyRole(DEFAULT_ADMIN_ROLE) {
         require(_mintRandomItemEnabled != mintRandomItemEnabled, "Minting random item already set");
         mintRandomItemEnabled = _mintRandomItemEnabled;
-        emit MintRandomItemEnabledChanged(_mintRandomItemEnabled);
+        emit MintRandomItemEnabledChanged(_mintRandomItemEnabled, _msgSender());
     }
 
     function setMintDefaultItemEnabled(bool _mintDefaultItemEnabled) public onlyRole(DEFAULT_ADMIN_ROLE) {
         require(_mintDefaultItemEnabled != mintDefaultItemEnabled, "Minting default item already set");
         mintDefaultItemEnabled = _mintDefaultItemEnabled;
-        emit MintDefaultItemEnabledChanged(_mintDefaultItemEnabled);
+        emit MintDefaultItemEnabledChanged(_mintDefaultItemEnabled, _msgSender());
     }
 
     function setItemsNFTAddress(address _newAddress) public onlyRole(DEFAULT_ADMIN_ROLE) {
         itemsNFTAddress = _newAddress;
-        emit ItemsNFTAddressChanged(_newAddress);
+        emit ItemsNFTAddressChanged(_newAddress, _msgSender());
     }
 
     function setNftGatingAddress(address _newAddress) public onlyRole(DEFAULT_ADMIN_ROLE) {
         gatingNFTAddress = _newAddress;
-        emit GatingNFTAddressChanged(_newAddress);
+        emit GatingNFTAddressChanged(_newAddress, _msgSender());
     }
 
     function setSpecialItemId(uint256 _newId) public onlyRole(DEFAULT_ADMIN_ROLE) {
         require(_newId != _specialItemId, "Special Item ID already has this value");
         require(defaultItemId != _newId, "Special Item ID can't have the same value that the Default Item ID");
         _specialItemId = _newId;
-        emit SpecialItemIdChanged(_newId);
+        emit SpecialItemIdChanged(_newId, _msgSender());
     }
 
     function setDefaultItemId(uint256 _newId) public onlyRole(DEFAULT_ADMIN_ROLE) {
         require(_newId != defaultItemId, "Same value");
         require(_specialItemId != _newId, "Default Item Id must be different that Special Item Id");
         defaultItemId = _newId;
-        emit DefaultItemIdChanged(_newId);
+        emit DefaultItemIdChanged(_newId, _msgSender());
     }
 
     function setMintNftGatingEnabled(bool _mintNftGatingEnabled) public onlyRole(DEFAULT_ADMIN_ROLE) {
         require(_mintNftGatingEnabled != mintNftGatingEnabled, "NFT gating already set");
         mintNftGatingEnabled = _mintNftGatingEnabled;
-        emit MintNftGatingEnabledChanged(_mintNftGatingEnabled);
+        emit MintNftGatingEnabledChanged(_mintNftGatingEnabled, _msgSender());
+    }
+
+    function setMintSpecialItemEnabled(bool _mintSpecialItemEnabled) public onlyRole(DEFAULT_ADMIN_ROLE) {
+        require(_mintSpecialItemEnabled != mintSpecialItemEnabled, "NFT gating already set");
+        mintSpecialItemEnabled = _mintSpecialItemEnabled;
+        emit MintSpecialItemEnabledChanged(_mintSpecialItemEnabled, _msgSender());
     }
 
     function setMintNftWithoutGatingEnabled(bool _mintNftWithoutGatingEnabled) public onlyRole(DEFAULT_ADMIN_ROLE) {
         require(_mintNftWithoutGatingEnabled != mintNftWithoutGatingEnabled, "NFT without gating already set");
         mintNftWithoutGatingEnabled = _mintNftWithoutGatingEnabled;
-        emit MintNftGatingEnabledChanged(_mintNftWithoutGatingEnabled);
+        emit MintNftWithoutGatingEnabledChanged(_mintNftWithoutGatingEnabled, _msgSender());
     }
 
     function _beforeTokenTransfer(
@@ -318,7 +313,17 @@ contract AvatarBound is ERC721URIStorage, ERC721Enumerable, AccessControl, ERCSo
         return super.tokenURI(tokenId);
     }
 
-    function supportsInterface(bytes4 interfaceId) public view override(ERC721URIStorage, ERC721Enumerable, AccessControl) returns (bool) {
+    function supportsInterface(
+        bytes4 interfaceId
+    ) public view override(ERC721Enumerable, ERC721URIStorage, AccessControl) returns (bool) {
         return super.supportsInterface(interfaceId);
+    }
+
+    function addWhitelistSigner(address _signer) external onlyRole(DEFAULT_ADMIN_ROLE) {
+        _addWhitelistSigner(_signer);
+    }
+
+    function removeWhitelistSigner(address signer) external onlyRole(DEFAULT_ADMIN_ROLE) {
+        _removeWhitelistSigner(signer);
     }
 }

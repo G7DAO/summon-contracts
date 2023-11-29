@@ -131,7 +131,7 @@ contract ERCSoulboundUpgradeable is Initializable {
         }
 
         if (_soulbounds[from][tokenId] == amount) {
-            revert("ERCSoulbound: The amount of soulbounded tokens is equal to the amount of tokens to be transferred");
+            revert("ERCSoulbound: The amount of soulbounded tokens is more than the amount of tokens to be transferred");
         }
     }
 

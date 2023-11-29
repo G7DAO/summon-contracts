@@ -52,9 +52,10 @@ contract ERCSoulbound {
         address from,
         address to,
         uint256 tokenId,
-        uint256 amount
+        uint256 amount,
+        uint256 totalAmount
     ) {
-        _checkMultipleAmounts(from, to, tokenId, amount);
+        _checkMultipleAmounts(from, to, tokenId, amount, totalAmount);
         _;
     }
 
@@ -62,12 +63,13 @@ contract ERCSoulbound {
         address from,
         address to,
         uint256[] memory tokenIds,
-        uint256[] memory amount
+        uint256[] memory amounts,
+        uint256[] memory totalAmounts
     ) {
-        require(tokenIds.length == amount.length, "ERCSoulbound: tokenIds and amounts length mismatch");
+        require(tokenIds.length == amounts.length, "ERCSoulbound: tokenIds and amounts length mismatch");
 
         for (uint256 i = 0; i < tokenIds.length; i++) {
-            _checkMultipleAmounts(from, to, tokenIds[i], amount[i]);
+            _checkMultipleAmounts(from, to, tokenIds[i], amounts[i], totalAmounts[i]);
         }
         _;
     }
@@ -79,24 +81,44 @@ contract ERCSoulbound {
 
     modifier syncSoulbound(
         address from,
+        address to,
         uint256 tokenId,
-        uint256 amount
+        uint256 amount,
+        uint256 totalAmount
     ) {
         _;
         if (_soulbounds[from][tokenId] > 0) {
-            _soulbounds[from][tokenId] -= amount;
+            uint256 nonSoulboundAmount = totalAmount - _soulbounds[from][tokenId];
+
+            if (nonSoulboundAmount < amount) {
+                uint256 soulboundDiffAmount = amount - nonSoulboundAmount;
+                _soulbounds[from][tokenId] -= soulboundDiffAmount;
+                if (to != address(0)) {
+                    _soulbounds[to][tokenId] += soulboundDiffAmount;
+                }
+            }
         }
     }
 
     modifier syncBatchSoulbound(
         address from,
+        address to,
         uint256[] memory tokenIds,
-        uint256[] memory amounts
+        uint256[] memory amounts,
+        uint256[] memory totalAmounts
     ) {
         _;
         for (uint256 i = 0; i < tokenIds.length; i++) {
             if (_soulbounds[from][tokenIds[i]] > 0) {
-                _soulbounds[from][tokenIds[i]] -= amounts[i];
+                uint256 nonSoulboundAmount = totalAmounts[i] - _soulbounds[from][tokenIds[i]];
+
+                if (nonSoulboundAmount < amounts[i]) {
+                    uint256 soulboundDiffAmount = amounts[i] - nonSoulboundAmount;
+                    _soulbounds[from][tokenIds[i]] -= soulboundDiffAmount;
+                    if (to != address(0)) {
+                        _soulbounds[to][tokenIds[i]] += soulboundDiffAmount;
+                    }
+                }
             }
         }
     }
@@ -110,21 +132,18 @@ contract ERCSoulbound {
         whitelistAddresses[_address] = _isWhitelisted;
     }
 
-    function _checkMultipleAmounts(address from, address to, uint256 tokenId, uint256 amount) private view {
+    function _checkMultipleAmounts(address from, address to, uint256 tokenId, uint256 amount, uint256 totalAmount) private view {
         require(from != address(0), "ERCSoulbound: can't be zero address");
         require(amount > 0, "ERCSoulbound: can't be zero amount");
-
+        require(amount <= totalAmount, "ERCSoulbound: can't transfer more than you have");
         // check if from or to whitelist addresses let it through
         if (whitelistAddresses[from] || whitelistAddresses[to]) {
             return;
         }
 
-        if (_soulbounds[from][tokenId] > amount) {
-            revert("ERCSoulbound: The amount of soulbounded tokens is more than the amount of tokens to be transferred");
-        }
 
-        if (_soulbounds[from][tokenId] == amount) {
-            revert("ERCSoulbound: The amount of soulbounded tokens is equal to the amount of tokens to be transferred");
+        if (totalAmount - _soulbounds[from][tokenId] < amount) {
+            revert("ERCSoulbound: The amount of soulbounded tokens is more than the amount of tokens to be transferred");
         }
     }
 

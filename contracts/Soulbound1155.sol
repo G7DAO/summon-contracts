@@ -34,15 +34,19 @@ import "@openzeppelin/contracts/security/Pausable.sol";
 import "@openzeppelin/contracts/utils/Strings.sol";
 import "@openzeppelin/contracts/token/common/ERC2981.sol";
 import "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
+import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
+
 import "./ERCSoulbound.sol";
 
-contract Soulbound1155 is ERC1155Burnable, ERCSoulbound, ERC2981, AccessControl, Pausable {
+contract Soulbound1155 is ERC1155Burnable, ERCSoulbound, ERC2981, AccessControl, Pausable, ReentrancyGuard {
     event SignerAdded(address signer);
     event SignerRemoved(address signer);
+    event ContractURIChanged(string indexed uri);
 
     bytes32 public constant MINTER_ROLE = keccak256("MINTER_ROLE");
     bytes32 public constant MANAGER_ROLE = keccak256("MANAGER_ROLE");
 
+    string public contractURI;
     string private baseURI;
     string public name;
     string public symbol;
@@ -107,6 +111,7 @@ contract Soulbound1155 is ERC1155Burnable, ERCSoulbound, ERC2981, AccessControl,
         string memory _name,
         string memory _symbol,
         string memory _initBaseURI,
+        string memory _contractURI,
         uint256 _maxPerMint,
         bool _isPaused,
         address _devWallet,
@@ -121,6 +126,7 @@ contract Soulbound1155 is ERC1155Burnable, ERCSoulbound, ERC2981, AccessControl,
         name = _name;
         symbol = _symbol;
         baseURI = _initBaseURI;
+        contractURI = _contractURI;
         MAX_PER_MINT = _maxPerMint;
 
         if (_isPaused) _pause();
@@ -140,10 +146,10 @@ contract Soulbound1155 is ERC1155Burnable, ERCSoulbound, ERC2981, AccessControl,
 
     function __mint(address to, uint256 id, uint256 amount, bool soulbound) private {
         isMinted[id][to] = true;
-        _mint(to, id, amount, "");
         if (soulbound) {
             _soulbound(to, id, amount);
         }
+        _mint(to, id, amount, "");
     }
 
     function __mintBatch(address to, uint256[] memory ids, uint256[] memory amounts, bool soulbound) private {
@@ -151,10 +157,11 @@ contract Soulbound1155 is ERC1155Burnable, ERCSoulbound, ERC2981, AccessControl,
             isMinted[ids[i]][to] = true;
         }
 
-        _mintBatch(to, ids, amounts, "");
         if (soulbound) {
             _soulboundBatch(to, ids, amounts);
         }
+
+        _mintBatch(to, ids, amounts, "");
     }
 
     // optional soulbound minting
@@ -164,19 +171,8 @@ contract Soulbound1155 is ERC1155Burnable, ERCSoulbound, ERC2981, AccessControl,
         bool soulbound,
         uint256 nonce,
         bytes memory signature
-    ) external signatureCheck(nonce, signature) canMint(_msgSender(), id, amount) whenNotPaused {
+    ) external nonReentrant signatureCheck(nonce, signature) canMint(_msgSender(), id, amount) whenNotPaused {
         __mint(_msgSender(), id, amount, soulbound);
-    }
-
-    // optional soulbound batch minting
-    function mintBatch(
-        uint256[] memory ids,
-        uint256[] memory amounts,
-        bool soulbound,
-        uint256 nonce,
-        bytes memory signature
-    ) external signatureCheck(nonce, signature) canMintBatch(_msgSender(), ids, amounts) whenNotPaused {
-        __mintBatch(_msgSender(), ids, amounts, soulbound);
     }
 
     function adminMint(address to, uint256 id, uint256 amount, bool soulbound) external onlyRole(MINTER_ROLE) canMint(to, id, amount) whenNotPaused {
@@ -198,7 +194,7 @@ contract Soulbound1155 is ERC1155Burnable, ERCSoulbound, ERC2981, AccessControl,
         uint256 _id,
         uint256 _amount,
         bytes memory _data
-    ) public virtual override soulboundCheck(_from, _to, _id, _amount) {
+    ) public virtual override soulboundCheck(_from, _to, _id, _amount, balanceOf(_from, _id)) syncSoulbound(_from, _to, _id, _amount, balanceOf(_from, _id)) {
         super.safeTransferFrom(_from, _to, _id, _amount, _data);
     }
 
@@ -208,16 +204,26 @@ contract Soulbound1155 is ERC1155Burnable, ERCSoulbound, ERC2981, AccessControl,
         uint256[] memory _ids,
         uint256[] memory _amounts,
         bytes memory _data
-    ) public virtual override soulboundCheckBatch(_from, _to, _ids, _amounts) {
+    ) public virtual override soulboundCheckBatch(_from, _to, _ids, _amounts, balanceOfBatchOneAccount(_from, _ids)) syncBatchSoulbound(_from, _to, _ids, _amounts, balanceOfBatchOneAccount(_from, _ids)) {
         super.safeBatchTransferFrom(_from, _to, _ids, _amounts, _data);
     }
 
-    function burn(address to, uint256 tokenId, uint256 amount) public virtual override syncSoulbound(to, tokenId, amount) {
-        _burn(to, tokenId, amount);
+    function balanceOfBatchOneAccount(address account, uint256[] memory ids) public view virtual returns (uint256[] memory) {
+        uint256[] memory batchBalances = new uint256[](ids.length);
+
+        for (uint256 i = 0; i < ids.length; ++i) {
+            batchBalances[i] = balanceOf(account, ids[i]);
+        }
+
+        return batchBalances;
     }
 
-    function burnBatch(address to, uint256[] memory tokenIds, uint256[] memory amounts) public virtual override syncBatchSoulbound(to, tokenIds, amounts) {
-        _burnBatch(to, tokenIds, amounts);
+    function burn(address to, uint256 tokenId, uint256 amount) public nonReentrant virtual override soulboundCheck(to, address(0), tokenId, amount, balanceOf(to, tokenId)) syncSoulbound(to, address(0), tokenId, amount, balanceOf(to, tokenId)) {
+        ERC1155Burnable.burn(to, tokenId, amount);
+    }
+
+    function burnBatch(address to, uint256[] memory tokenIds, uint256[] memory amounts) public nonReentrant virtual override soulboundCheckBatch(to, address(0), tokenIds, amounts, balanceOfBatchOneAccount(to, tokenIds)) syncBatchSoulbound(to, address(0), tokenIds, amounts, balanceOfBatchOneAccount(to, tokenIds)) {
+        ERC1155Burnable.burnBatch(to, tokenIds, amounts);
     }
 
     function supportsInterface(bytes4 interfaceId) public view override(ERC1155, ERC2981, AccessControl) returns (bool) {
@@ -260,6 +266,11 @@ contract Soulbound1155 is ERC1155Burnable, ERCSoulbound, ERC2981, AccessControl,
         } else {
             return false;
         }
+    }
+
+    function setContractURI(string memory _contractURI) public onlyRole(DEFAULT_ADMIN_ROLE) {
+        contractURI = _contractURI;
+        emit ContractURIChanged(_contractURI);
     }
 
     function adminVerifySignature(address to, uint256 nonce, bytes memory signature) public onlyRole(DEFAULT_ADMIN_ROLE) returns (bool) {

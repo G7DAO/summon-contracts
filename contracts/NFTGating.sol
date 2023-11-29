@@ -36,7 +36,7 @@ import "@openzeppelin/contracts/security/Pausable.sol";
 import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
 import "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
 import { ERCSoulbound } from "./ERCSoulbound.sol";
-import { ISoulbound1155 } from "./interfaces/ISoulbound1155.sol";
+import { IItemBound } from "./interfaces/IItemBound.sol";
 import "./ERCSoulbound.sol";
 
 

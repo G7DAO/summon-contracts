@@ -1,16 +1,16 @@
 import fs from 'fs';
 import path from 'path';
 
+import { ConstructorArgs } from '@constants/constructor-args';
+import { ChainId, NetworkName, Currency, NetworkExplorer, rpcUrls } from '@constants/network';
+import { encryptPrivateKey } from '@helpers/encrypt';
+import { log } from '@helpers/logger';
 import { Deployer } from '@matterlabs/hardhat-zksync-deploy';
 import { HardhatRuntimeEnvironment } from 'hardhat/types';
-
-import { log } from '@helpers/logger';
-import getWallet from './getWallet';
-import { encryptPrivateKey } from '@helpers/encrypt';
-// import { submitContractToDB } from '@helpers/submit-contract-to-db';
-import { ChainId, NetworkName, Currency, NetworkExplorer, rpcUrls } from '@constants/network';
 import { DeploymentMap } from 'types/deployment-type';
-import { ConstructorArgs } from '@constants/constructor-args';
+
+import getWallet from './getWallet';
+// import { submitContractToDB } from '@helpers/submit-contract-to-db';
 
 // load wallet private key from env file
 const PRIVATE_KEY = process.env.PRIVATE_KEY || '';
@@ -24,7 +24,7 @@ export default async function (
     constructorArgs: ConstructorArgs
 ) {
     const { CONTRACT_NAME, CONTRACT_TYPE, ABI_PATH } = deploymentArgs;
-    const { name, symbol, baseURI, maxPerMint, isPaused, royalty, tenants } = constructorArgs;
+    const { name, symbol, baseURI, contractURI, maxPerMint, isPaused, royalty, tenants } = constructorArgs;
 
     log(`Running deploy script for the ${CONTRACT_NAME} featuring zkSync`);
 
@@ -49,7 +49,16 @@ export default async function (
     const { abi: contractAbi } = JSON.parse(abiContent);
 
     for (const tenant of tenants) {
-        const achievoContract = await deployer.deploy(artifact, [`${tenant}${name}`, symbol, baseURI, maxPerMint, isPaused, wallet.address, royalty]);
+        const achievoContract = await deployer.deploy(artifact, [
+            `${tenant}${name}`,
+            symbol,
+            baseURI,
+            contractURI,
+            maxPerMint,
+            isPaused,
+            wallet.address,
+            royalty,
+        ]);
 
         await achievoContract.waitForDeployment();
 
@@ -59,7 +68,7 @@ export default async function (
         await hre.run('verify:verify', {
             address: contractAddress,
             contract: `contracts/${CONTRACT_NAME}.sol:${CONTRACT_NAME}`,
-            constructorArguments: [`${tenant}${name}`, symbol, baseURI, maxPerMint, isPaused, wallet.address, royalty],
+            constructorArguments: [`${tenant}${name}`, symbol, baseURI, contractURI, maxPerMint, isPaused, wallet.address, royalty],
         });
 
         deployments[tenant] = {

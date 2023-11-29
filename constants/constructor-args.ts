@@ -3,6 +3,7 @@ export interface ConstructorArgs {
     name: string;
     symbol: string;
     baseURI: string;
+    contractURI: string;
     maxPerMint: number;
     isPaused: boolean;
     devWallet: string;
@@ -17,7 +18,10 @@ export const SoulboundBadgesArgs: Soulbound1155Args = {
     MAINNET: {
         name: 'SoulboundBadges',
         symbol: 'SBB',
-        baseURI: 'https://api.mysoulbound.com/tokens/',
+        // TODO: change this for the final gateway
+        baseURI: 'https://apricot-persistent-duck-562.mypinata.cloud/',
+        // TODO: change this for the final gateway
+        contractURI: 'https://apricot-persistent-duck-562.mypinata.cloud/{contractURIHASH}',
         maxPerMint: 1,
         isPaused: true,
         devWallet: '0xA10648F8618A526Bd0Acb08a1b9f413BC44Fcb4B',
@@ -27,7 +31,8 @@ export const SoulboundBadgesArgs: Soulbound1155Args = {
     TESTNET: {
         name: 'MyBadges',
         symbol: 'MSB',
-        baseURI: 'https://api.mysoulbound.com/tokens/',
+        baseURI: 'https://apricot-persistent-duck-562.mypinata.cloud/',
+        contractURI: 'https://apricot-persistent-duck-562.mypinata.cloud/{contractURIHASH}',
         maxPerMint: 1,
         isPaused: true,
         devWallet: '0xA10648F8618A526Bd0Acb08a1b9f413BC44Fcb4B',
@@ -40,7 +45,10 @@ export const ItemsBoundArgs: Soulbound1155Args = {
     MAINNET: {
         name: 'ItemsBound',
         symbol: 'ISB',
-        baseURI: 'https://api.mysoulbound.com/tokens/',
+        // TODO: change this for the final gateway
+        baseURI: 'https://apricot-persistent-duck-562.mypinata.cloud/',
+        // TODO: change this for the final gateway
+        contractURI: 'https://apricot-persistent-duck-562.mypinata.cloud/{contractURIHASH}',
         maxPerMint: 1,
         isPaused: true,
         devWallet: '0xA10648F8618A526Bd0Acb08a1b9f413BC44Fcb4B',
@@ -50,7 +58,8 @@ export const ItemsBoundArgs: Soulbound1155Args = {
     TESTNET: {
         name: 'MyItems',
         symbol: 'MI',
-        baseURI: 'https://api.itemsbound.com/tokens/',
+        baseURI: 'https://apricot-persistent-duck-562.mypinata.cloud/',
+        contractURI: 'https://apricot-persistent-duck-562.mypinata.cloud/{contractURIHASH}',
         maxPerMint: 1,
         isPaused: true,
         devWallet: '0xA10648F8618A526Bd0Acb08a1b9f413BC44Fcb4B',

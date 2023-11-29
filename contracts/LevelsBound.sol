@@ -32,7 +32,7 @@ import { Ownable } from "@openzeppelin/contracts/access/Ownable.sol";
 import { ReentrancyGuard } from "@openzeppelin/contracts/security/ReentrancyGuard.sol";
 import { AccessControl } from "@openzeppelin/contracts/access/AccessControl.sol";
 import { ERCWhitelistSignature } from "./ERCWhitelistSignature.sol";
-import { ISoulbound1155 } from "./interfaces/ISoulbound1155.sol";
+import { IItemBound } from "./interfaces/IItemBound.sol";
 
 contract LevelsBound is ERC1155, Ownable, ReentrancyGuard, ERCWhitelistSignature, AccessControl {
     mapping(address => uint256) public playerLevel;
@@ -73,7 +73,7 @@ contract LevelsBound is ERC1155, Ownable, ReentrancyGuard, ERCWhitelistSignature
     }
 
     function mintRandomItem(address to, bytes calldata data) private {
-        ISoulbound1155(itemsNFTAddress).adminMint(to, data, false);
+        IItemBound(itemsNFTAddress).adminMint(to, data, false);
         emit RandomItemMinted(to, data, itemsNFTAddress);
     }
 
@@ -95,7 +95,7 @@ contract LevelsBound is ERC1155, Ownable, ReentrancyGuard, ERCWhitelistSignature
         mintLevel(account, newLevel, data);
     }
 
-    function burnLevel(address account, uint256 tokenId) private {
+    function burnLevel(address account, uint256 tokenId) private nonReentrant {
         _burn(account, tokenId, 1);
     }
 
@@ -136,5 +136,13 @@ contract LevelsBound is ERC1155, Ownable, ReentrancyGuard, ERCWhitelistSignature
 
     function supportsInterface(bytes4 interfaceId) public view override(AccessControl, ERC1155) returns (bool) {
         return super.supportsInterface(interfaceId);
+    }
+
+    function addWhitelistSigner(address _signer) external onlyRole(DEFAULT_ADMIN_ROLE) {
+        _addWhitelistSigner(_signer);
+    }
+
+    function removeWhitelistSigner(address signer) external onlyRole(DEFAULT_ADMIN_ROLE) {
+        _removeWhitelistSigner(signer);
     }
 }
