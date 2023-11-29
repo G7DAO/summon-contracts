@@ -669,7 +669,7 @@ contract ItemBoundTest is Test {
         assertEq(royaltyAmountAfter, expectedRoyaltyAfter);
     }
 
-    function testGetIventoryItems() public {
+    function testgetAllItems() public {
         bytes memory encodedItemsAll = encode(_tokenIds);
         itemBound.adminMint(playerWallet.addr, encodedItemsAll, false);
 
@@ -677,13 +677,13 @@ contract ItemBoundTest is Test {
         itemBound.updateTokenUri(_tokenIds[23], newTokenUri);
         assertEq(itemBound.uri(_tokenIds[23]), 'https://something-new.com/232');
 
-        LibItems.TokenReturn[] memory allTokensInfo = itemBound.getIventoryItems(playerWallet.addr);
+        LibItems.TokenReturn[] memory allTokensInfo = itemBound.getAllItems(playerWallet.addr);
         assertEq(allTokensInfo.length, 1300);
 
         vm.prank(playerWallet.addr);
         itemBound.safeTransferFrom(playerWallet.addr, minterWallet.addr, _tokenIds[24], 1, "");
 
-        LibItems.TokenReturn[] memory allTokensInfo2 = itemBound.getIventoryItems(playerWallet.addr);
+        LibItems.TokenReturn[] memory allTokensInfo2 = itemBound.getAllItems(playerWallet.addr);
         assertEq(allTokensInfo2.length, 1299);
 
         for (uint256 i = 0; i < allTokensInfo.length; i++) {
@@ -698,7 +698,7 @@ contract ItemBoundTest is Test {
             }
         }
 
-        LibItems.TokenReturn[] memory allTokensInfo3 = itemBound.getIventoryItems(minterWallet.addr);
+        LibItems.TokenReturn[] memory allTokensInfo3 = itemBound.getAllItems(minterWallet.addr);
         assertEq(allTokensInfo3.length, 1);
 
     }

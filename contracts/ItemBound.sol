@@ -79,7 +79,7 @@ contract ItemBound is ERC1155Burnable, ERC1155Supply, ERCSoulbound, ERC2981, ERC
         _;
     }
     
-    function getIventoryItems(address _owner) public view returns (LibItems.TokenReturn[] memory) {
+    function getAllItems(address _owner) public view returns (LibItems.TokenReturn[] memory) {
         uint256 totalTokens = itemIds.length;
         LibItems.TokenReturn[] memory tokenReturns = new LibItems.TokenReturn[](totalTokens);
 
