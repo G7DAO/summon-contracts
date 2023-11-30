@@ -78,7 +78,7 @@ contract ItemBound is ERC1155Burnable, ERC1155Supply, ERCSoulbound, ERC2981, ERC
         }
         _;
     }
-    
+
     function getAllItems(address _owner) public view returns (LibItems.TokenReturn[] memory) {
         uint256 totalTokens = itemIds.length;
         LibItems.TokenReturn[] memory tokenReturns = new LibItems.TokenReturn[](totalTokens);
@@ -89,13 +89,7 @@ contract ItemBound is ERC1155Burnable, ERC1155Supply, ERCSoulbound, ERC2981, ERC
             uint256 amount = balanceOf(_owner, tokenId);
 
             if (amount > 0) {
-                LibItems.TokenReturn memory tokenReturn = LibItems.TokenReturn(
-                    {
-                        tokenId: tokenId,
-                        tokenUri: uri(tokenId),
-                        amount: amount
-                    }
-                );  
+                LibItems.TokenReturn memory tokenReturn = LibItems.TokenReturn({ tokenId: tokenId, tokenUri: uri(tokenId), amount: amount });
                 tokenReturns[index] = tokenReturn;
                 index++;
             }
@@ -117,7 +111,7 @@ contract ItemBound is ERC1155Burnable, ERC1155Supply, ERCSoulbound, ERC2981, ERC
     }
 
     function _decodeData(bytes calldata _data) private view returns (uint256[] memory) {
-        (uint256[] memory itemIds) = abi.decode(_data, (uint256[]));
+        uint256[] memory itemIds = abi.decode(_data, (uint256[]));
         return itemIds;
     }
 
@@ -222,11 +216,7 @@ contract ItemBound is ERC1155Burnable, ERC1155Supply, ERCSoulbound, ERC2981, ERC
         _mintBatch(_msgSender(), _tokenIds, amount, soulbound);
     }
 
-    function adminMint(
-        address to,
-        bytes calldata data,
-        bool soulbound
-    ) external onlyRole(MINTER_ROLE) whenNotPaused {
+    function adminMint(address to, bytes calldata data, bool soulbound) external onlyRole(MINTER_ROLE) whenNotPaused {
         uint256[] memory _tokenIds = _decodeData(data);
         _mintBatch(to, _tokenIds, 1, soulbound);
     }
@@ -272,7 +262,13 @@ contract ItemBound is ERC1155Burnable, ERC1155Supply, ERCSoulbound, ERC2981, ERC
         uint256[] memory _ids,
         uint256[] memory _amounts,
         bytes memory _data
-    ) public virtual override soulboundCheckBatch(_from, _to, _ids, _amounts, balanceOfBatchOneAccount(_from, _ids)) syncBatchSoulbound(_from, _to, _ids, _amounts, balanceOfBatchOneAccount(_from, _ids)) {
+    )
+        public
+        virtual
+        override
+        soulboundCheckBatch(_from, _to, _ids, _amounts, balanceOfBatchOneAccount(_from, _ids))
+        syncBatchSoulbound(_from, _to, _ids, _amounts, balanceOfBatchOneAccount(_from, _ids))
+    {
         super.safeBatchTransferFrom(_from, _to, _ids, _amounts, _data);
     }
 
@@ -286,11 +282,33 @@ contract ItemBound is ERC1155Burnable, ERC1155Supply, ERCSoulbound, ERC2981, ERC
         return batchBalances;
     }
 
-    function burn(address to, uint256 tokenId, uint256 amount) public nonReentrant virtual override soulboundCheck(to, address(0), tokenId, amount, balanceOf(to, tokenId)) syncSoulbound(to, address(0), tokenId, amount, balanceOf(to, tokenId)) {
+    function burn(
+        address to,
+        uint256 tokenId,
+        uint256 amount
+    )
+        public
+        virtual
+        override
+        nonReentrant
+        soulboundCheck(to, address(0), tokenId, amount, balanceOf(to, tokenId))
+        syncSoulbound(to, address(0), tokenId, amount, balanceOf(to, tokenId))
+    {
         ERC1155Burnable.burn(to, tokenId, amount);
     }
 
-    function burnBatch(address to, uint256[] memory tokenIds, uint256[] memory amounts) public nonReentrant virtual override soulboundCheckBatch(to, address(0), tokenIds, amounts, balanceOfBatchOneAccount(to, tokenIds)) syncBatchSoulbound(to, address(0), tokenIds, amounts, balanceOfBatchOneAccount(to, tokenIds)) {
+    function burnBatch(
+        address to,
+        uint256[] memory tokenIds,
+        uint256[] memory amounts
+    )
+        public
+        virtual
+        override
+        nonReentrant
+        soulboundCheckBatch(to, address(0), tokenIds, amounts, balanceOfBatchOneAccount(to, tokenIds))
+        syncBatchSoulbound(to, address(0), tokenIds, amounts, balanceOfBatchOneAccount(to, tokenIds))
+    {
         ERC1155Burnable.burnBatch(to, tokenIds, amounts);
     }
 

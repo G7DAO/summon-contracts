@@ -38,7 +38,7 @@ import "./ERCWhitelistSignatureUpgradeable.sol";
 import "../interfaces/IOpenMint.sol";
 import "../interfaces/IItemBound.sol";
 
-contract AvatarBoundV1 is
+contract AvatarBoundV6 is
     Initializable,
     ERC721EnumerableUpgradeable,
     ERC721URIStorageUpgradeable,
@@ -68,11 +68,17 @@ contract AvatarBoundV1 is
     string public revealURI;
     address public gatingNFTAddress;
     address public itemsNFTAddress;
-    bool private mintNftGatingEnabled;
-    bool private mintNftWithoutGatingEnabled;
-    bool private mintRandomItemEnabled;
-    bool private mintSpecialItemEnabled;
-    bool private mintDefaultItemEnabled;
+    bool public mintNftGatingEnabled;
+    bool public mintNftWithoutGatingEnabled;
+    bool public mintRandomItemEnabled;
+    bool public mintSpecialItemEnabled;
+    bool public mintDefaultItemEnabled;
+    bool public revealNftGatingEnabled;
+
+    struct BaseSkinResponse {
+        uint256 baseSkinId;
+        string tokenUri;
+    }
 
     event BaseURIChanged(string indexed uri, address admin);
     event ContractURIChanged(string indexed uri, address admin);
@@ -86,6 +92,7 @@ contract AvatarBoundV1 is
     event MintRandomItemEnabledChanged(bool enabled, address admin);
     event MintSpecialItemEnabledChanged(bool enabled, address admin);
     event MintDefaultItemEnabledChanged(bool enabled, address admin);
+    event EnabledRevealNftGatingEnabledChanged(bool enabled, address admin);
     event RandomItemsMintsChanged(uint256 indexed newMints, address admin);
     event SpecialItemIdChanged(uint indexed newId, address admin);
     event DefaultItemIdChanged(uint indexed newId, address admin);
@@ -104,6 +111,7 @@ contract AvatarBoundV1 is
         string memory _symbol,
         string memory _baseTokenURI,
         string memory _contractURI,
+        string memory _revealURI,
         address developerAdmin,
         address _gatingNFTAddress,
         address _itemsNFTAddress,
@@ -132,6 +140,8 @@ contract AvatarBoundV1 is
         mintNftWithoutGatingEnabled = _mintNftWithoutGatingEnabled;
         mintRandomItemEnabled = _mintRandomItemEnabled;
         mintSpecialItemEnabled = _mintSpecialItemEnabled;
+        revealNftGatingEnabled = true;
+        revealURI = _revealURI;
     }
 
     function mint(address to, uint256 baseSkinId) private {
@@ -155,7 +165,10 @@ contract AvatarBoundV1 is
         require(_verifySignature(_msgSender(), nonce, data, signature), "Invalid signature");
         require(IOpenMint(gatingNFTAddress).ownerOf(nftGatingId) == _msgSender(), "Sender does not own the required NFT");
         mint(_msgSender(), baseSkinId);
-        revealNFTGatingToken(nftGatingId);
+
+        if (revealNftGatingEnabled) {
+            revealNFTGatingToken(nftGatingId);
+        }
 
         if (mintRandomItemEnabled) {
             mintRandomItem(_msgSender(), data);
@@ -235,11 +248,12 @@ contract AvatarBoundV1 is
         return baseTokenURI;
     }
 
-    function getAllBaseSkins() public view returns (string[] memory) {
-        string[] memory allBaseSkins = new string[](_baseSkinCounter);
+    function getAllBaseSkins() public view returns (BaseSkinResponse[] memory) {
+        BaseSkinResponse[] memory allBaseSkins = new BaseSkinResponse[](_baseSkinCounter);
         for (uint256 i = 0; i < _baseSkinCounter; i++) {
-            allBaseSkins[i] = baseSkins[i];
-        }a
+            BaseSkinResponse memory avatarBaseSkinResponse = BaseSkinResponse({ baseSkinId: i, tokenUri: baseSkins[i] });
+            allBaseSkins[i] = avatarBaseSkinResponse;
+        }
         return allBaseSkins;
     }
 
@@ -331,6 +345,12 @@ contract AvatarBoundV1 is
         require(_mintNftWithoutGatingEnabled != mintNftWithoutGatingEnabled, "NFT without gating already set");
         mintNftWithoutGatingEnabled = _mintNftWithoutGatingEnabled;
         emit MintNftWithoutGatingEnabledChanged(_mintNftWithoutGatingEnabled, _msgSender());
+    }
+
+    function setRevealNftGatingEnabled(bool _revealNftGatingEnabled) public onlyRole(DEFAULT_ADMIN_ROLE) {
+        require(_revealNftGatingEnabled != revealNftGatingEnabled, "NFT without gating already set");
+        revealNftGatingEnabled = _revealNftGatingEnabled;
+        emit EnabledRevealNftGatingEnabledChanged(_revealNftGatingEnabled, _msgSender());
     }
 
     function _beforeTokenTransfer(

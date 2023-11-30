@@ -17,28 +17,28 @@ contract ItemBoundTest is Test {
         uint256 privateKey;
     }
 
-    string minterLabel = "minter";
-    string playerLabel = "player";
-    string player2Label = "player2";
-    string player3Label = "player3";
+    string public minterLabel = "minter";
+    string public playerLabel = "player";
+    string public player2Label = "player2";
+    string public player3Label = "player3";
 
-    Wallet minterWallet;
-    Wallet playerWallet;
-    Wallet playerWallet2;
-    Wallet playerWallet3;
+    Wallet public minterWallet;
+    Wallet public playerWallet;
+    Wallet public playerWallet2;
+    Wallet public playerWallet3;
 
-    uint256 seed1 = 1234;
-    uint256 seed2 = 4321;
-    uint256 nonce;
-    bytes signature;
-    bytes encodedItems1;
-    uint256 nonce2;
-    bytes signature2;
-    bytes encodedItems2;
+    uint256 public seed1 = 1234;
+    uint256 public seed2 = 4321;
+    uint256 public nonce;
+    bytes public signature;
+    bytes public encodedItems1;
+    uint256 public nonce2;
+    bytes public signature2;
+    bytes public encodedItems2;
 
     uint256 private _seed;
-    LibItems.TokenCreate[] _tokens;
-    uint256[] _tokenIds;
+    LibItems.TokenCreate[] public _tokens;
+    uint256[] public _tokenIds;
 
     function getWallet(string memory walletLabel) public returns (Wallet memory) {
         (address addr, uint256 privateKey) = makeAddrAndKey(walletLabel);
@@ -103,7 +103,7 @@ contract ItemBoundTest is Test {
 
         itemBound = new ItemBound("Test1155", "T1155", "MISSING_BASE_URL", "MISSING_CONTRACT_URL", 1, false, minterWallet.addr, 250);
 
-        itemBound.addWhitelistSigner(minterWallet.addr);        
+        itemBound.addWhitelistSigner(minterWallet.addr);
 
         mockERC1155Receiver = new MockERC1155Receiver();
 
@@ -204,21 +204,10 @@ contract ItemBoundTest is Test {
     function testUpdateTokenInfoCurrentMaxLevelShouldChange() public {
         uint256 _tokenId1 = generateRandomItemId(); // totally random
         uint256 _tokenId2 = generateRandomItemId(); // totally random
-        
 
-        LibItems.TokenCreate memory _token1 = LibItems.TokenCreate({
-            tokenId: _tokenId1,
-            level: 11,
-            tier: LibItems.Tier.UNCOMMON,
-            tokenUri: ""
-        });
+        LibItems.TokenCreate memory _token1 = LibItems.TokenCreate({ tokenId: _tokenId1, level: 11, tier: LibItems.Tier.UNCOMMON, tokenUri: "" });
 
-        LibItems.TokenCreate memory _token2 = LibItems.TokenCreate({
-            tokenId: _tokenId2,
-            level: 12,
-            tier: LibItems.Tier.UNCOMMON,
-            tokenUri: ""
-        });
+        LibItems.TokenCreate memory _token2 = LibItems.TokenCreate({ tokenId: _tokenId2, level: 12, tier: LibItems.Tier.UNCOMMON, tokenUri: "" });
 
         assertEq(itemBound.getCurrentMaxLevel(), 10);
         itemBound.addNewToken(_token1);
@@ -231,12 +220,7 @@ contract ItemBoundTest is Test {
         uint256[] memory itemsBefore = itemBound.getItemsPerTierPerLevel(LibItems.Tier.COMMON, 1);
 
         uint256 _tokenId1 = generateRandomItemId(); // totally random
-        LibItems.TokenCreate memory _token1 = LibItems.TokenCreate({
-            tokenId: _tokenId1,
-            level: 1,
-            tier: LibItems.Tier.COMMON,
-            tokenUri: ""
-        });
+        LibItems.TokenCreate memory _token1 = LibItems.TokenCreate({ tokenId: _tokenId1, level: 1, tier: LibItems.Tier.COMMON, tokenUri: "" });
 
         itemBound.addNewToken(_token1);
 
@@ -414,9 +398,7 @@ contract ItemBoundTest is Test {
         vm.prank(playerWallet2.addr);
         itemBound.safeTransferFrom(playerWallet2.addr, playerWallet.addr, _tokenIds[0], 1, "");
 
-
         assertEq(itemBound.balanceOf(playerWallet.addr, _tokenIds[0]), 2);
-        
 
         vm.expectRevert("ERCSoulbound: The amount of soulbounded tokens is more than the amount of tokens to be transferred");
         vm.prank(playerWallet.addr);
@@ -503,12 +485,7 @@ contract ItemBoundTest is Test {
         uint256 _level = generateRandomLevel(); // level 1-10
         LibItems.Tier _tier = generateRandomTier(); // tier 0-4
 
-        LibItems.TokenCreate memory _token = LibItems.TokenCreate({
-            tokenId: _tokenId,
-            level: _level,
-            tier: _tier,
-            tokenUri: ""
-        });
+        LibItems.TokenCreate memory _token = LibItems.TokenCreate({ tokenId: _tokenId, level: _level, tier: _tier, tokenUri: "" });
 
         itemBound.addNewToken(_token);
 
@@ -520,12 +497,7 @@ contract ItemBoundTest is Test {
         uint256 _level = generateRandomLevel(); // level 1-10
         LibItems.Tier _tier = generateRandomTier(); // tier 0-4
 
-        LibItems.TokenCreate memory _token = LibItems.TokenCreate({
-            tokenId: _tokenId,
-            level: _level,
-            tier: _tier,
-            tokenUri: "ipfs://specific-token-uri.com"
-        });
+        LibItems.TokenCreate memory _token = LibItems.TokenCreate({ tokenId: _tokenId, level: _level, tier: _tier, tokenUri: "ipfs://specific-token-uri.com" });
 
         itemBound.addNewToken(_token);
 
@@ -547,12 +519,7 @@ contract ItemBoundTest is Test {
         uint256 _level = generateRandomLevel(); // level 1-10
         LibItems.Tier _tier = generateRandomTier(); // tier 0-4
 
-        LibItems.TokenCreate memory _token = LibItems.TokenCreate({
-            tokenId: _tokenId,
-            level: _level,
-            tier: _tier,
-            tokenUri: ""
-        });
+        LibItems.TokenCreate memory _token = LibItems.TokenCreate({ tokenId: _tokenId, level: _level, tier: _tier, tokenUri: "" });
 
         itemBound.addNewToken(_token);
 
@@ -578,12 +545,7 @@ contract ItemBoundTest is Test {
         uint256 _level = generateRandomLevel(); // level 1-10
         LibItems.Tier _tier = generateRandomTier(); // tier 0-4
 
-        LibItems.TokenCreate memory _token = LibItems.TokenCreate({
-            tokenId: _tokenId,
-            level: _level,
-            tier: _tier,
-            tokenUri: ""
-        });
+        LibItems.TokenCreate memory _token = LibItems.TokenCreate({ tokenId: _tokenId, level: _level, tier: _tier, tokenUri: "" });
 
         itemBound.addNewToken(_token);
 
@@ -591,7 +553,7 @@ contract ItemBoundTest is Test {
 
         assertEq(itemBound.uri(_tokenId), string(abi.encodePacked("MISSING_BASE_URL", "/", _tokenId.toString())));
         itemBound.updateTokenUri(_tokenId, newTokenUri);
-        assertEq(itemBound.uri(_tokenId), 'https://something-new.com/232');
+        assertEq(itemBound.uri(_tokenId), "https://something-new.com/232");
     }
 
     function testNonSoulboundTokenTransfer() public {
@@ -675,7 +637,7 @@ contract ItemBoundTest is Test {
 
         string memory newTokenUri = "https://something-new.com/232";
         itemBound.updateTokenUri(_tokenIds[23], newTokenUri);
-        assertEq(itemBound.uri(_tokenIds[23]), 'https://something-new.com/232');
+        assertEq(itemBound.uri(_tokenIds[23]), "https://something-new.com/232");
 
         LibItems.TokenReturn[] memory allTokensInfo = itemBound.getAllItems(playerWallet.addr);
         assertEq(allTokensInfo.length, 1300);
@@ -700,6 +662,5 @@ contract ItemBoundTest is Test {
 
         LibItems.TokenReturn[] memory allTokensInfo3 = itemBound.getAllItems(minterWallet.addr);
         assertEq(allTokensInfo3.length, 1);
-
     }
 }

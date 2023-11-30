@@ -259,7 +259,6 @@ contract Soulbound1155Test is Test {
         soulbound1155.addNewToken(2);
         soulbound1155.addNewToken(3);
 
-
         soulbound1155.adminMintBatch(playerWallet.addr, _itemIds1, _amount1, false);
         assertEq(soulbound1155.balanceOf(playerWallet.addr, 1), 1);
 

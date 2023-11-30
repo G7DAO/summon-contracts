@@ -96,6 +96,7 @@ export const AvatarBoundArgs = {
         // TODO: change this for the final gateway
         contractURI: 'https://apricot-persistent-duck-562.mypinata.cloud/{contractURIHASH}',
         gatingNftAddress: '0xcc1eBf6Dbb9fF24A745D1cc7F6DC3eeDa5f9fa71',
+        revealURI: 'FILL_ME',
         // TODO: change this for the final address
         itemsNftAddress: 'FILL_ME',
         mintNftGatingEnabled: true,
@@ -111,7 +112,8 @@ export const AvatarBoundArgs = {
         baseURI: 'https://apricot-persistent-duck-562.mypinata.cloud/',
         contractURI: 'https://apricot-persistent-duck-562.mypinata.cloud/{contractURIHASH}',
         gatingNftAddress: '0xcc1eBf6Dbb9fF24A745D1cc7F6DC3eeDa5f9fa71',
-        itemsNftAddress: '0x482B4efC7c192567fDF51C5Bc8127279d63013F1',
+        itemsNftAddress: '0x613D384640769016985Ed4467aDcbb7D8e63f506',
+        revealURI: 'QmZnvSyeKRQxWwcofVmq41BNCtHbBmomk8Ny8mtGRTjtzS',
         mintNftGatingEnabled: true,
         mintNFtWithoutGatingEnabled: true,
         mintRandomItemEnabled: true,
