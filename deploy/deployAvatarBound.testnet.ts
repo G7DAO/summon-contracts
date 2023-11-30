@@ -29,7 +29,7 @@ const PRIVATE_KEY = process.env.PRIVATE_KEY || '';
 const CONTRACT_NAME = 'AvatarBoundV1';
 const CONTRACT_TYPE = 'Avatar';
 
-const ABI_PATH = 'artifacts/contracts/upgradeables/AvatarBound.sol/AvatarBound.json';
+const ABI_PATH = 'artifacts/contracts/AvatarBound.sol/AvatarBound.json';
 
 if (!PRIVATE_KEY) throw '⛔️ Private key not detected! Add it to the .env file!';
 
