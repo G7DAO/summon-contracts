@@ -38,7 +38,7 @@ import "./ERCWhitelistSignatureUpgradeable.sol";
 import "../interfaces/IOpenMint.sol";
 import "../interfaces/IItemBound.sol";
 
-contract AvatarBoundV6 is
+contract AvatarBoundV1 is
     Initializable,
     ERC721EnumerableUpgradeable,
     ERC721URIStorageUpgradeable,

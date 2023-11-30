@@ -102,7 +102,8 @@ contract AvatarBound is ERC721URIStorage, ERC721Enumerable, AccessControl, ERCSo
         address _itemsNFTAddress,
         bool _mintNftGatingEnabled,
         bool _mintNftWithoutGatingEnabled,
-        bool _mintRandomItemEnabled
+        bool _mintRandomItemEnabled,
+        bool _mintSpecialItemEnabled
     ) ERC721(_name, _symbol) {
         _grantRole(DEFAULT_ADMIN_ROLE, developerAdmin);
         _grantRole(MINTER_ROLE, developerAdmin);

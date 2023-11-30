@@ -26,7 +26,7 @@ const {
 } = AvatarBoundArgs.TESTNET;
 
 const PRIVATE_KEY = process.env.PRIVATE_KEY || '';
-const CONTRACT_NAME = 'AvatarBoundV1';
+const CONTRACT_NAME = 'AvatarBound';
 const CONTRACT_TYPE = 'Avatar';
 
 const ABI_PATH = 'artifacts/contracts/AvatarBound.sol/AvatarBound.json';
@@ -73,9 +73,9 @@ export default async function (hre: HardhatRuntimeEnvironment) {
             wallet.address,
             gatingNftAddress,
             itemsNftAddress,
+            mintNftGatingEnabled,
             mintNFtWithoutGatingEnabled,
             mintRandomItemEnabled,
-            mintNftGatingEnabled,
             mintSpecialItemEnabled,
         ]);
 
