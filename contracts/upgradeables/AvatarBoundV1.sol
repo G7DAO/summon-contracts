@@ -142,6 +142,7 @@ contract AvatarBoundV1 is
         mintNftWithoutGatingEnabled = _mintNftWithoutGatingEnabled;
         mintRandomItemEnabled = _mintRandomItemEnabled;
         mintSpecialItemEnabled = _mintSpecialItemEnabled;
+        mintDefaultItemEnabled = true;
         revealNftGatingEnabled = true;
         revealURI = _revealURI;
     }
