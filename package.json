@@ -1,6 +1,6 @@
 {
     "name": "achievo-contracts",
-    "version": "0.9.3",
+    "version": "0.10.2",
     "description": "Smart contracts for achievo.xyz",
     "scripts": {
         "localChain": "hardhat --config hardhat.config.ts node",
@@ -14,6 +14,7 @@
         "deployNftGating:ZkSync:testnet": "pnpm compile:zkSync && hardhat --config zkSync.config.ts deploy-zksync --network zkSyncTestnet --script deployNFTGating.testnet.ts",
         "deployItemsBound:ZkSync:testnet": "pnpm compile:zkSync && hardhat --config zkSync.config.ts deploy-zksync --network zkSyncTestnet --script deployItemsBound.testnet.ts",
         "deployAvatarBoundUpgradeable:ZkSync:testnet": "pnpm compile:zkSync && hardhat --config zkSync.config.ts deploy-zksync --network zkSyncTestnet --script deployAvatarBoundUpgradeable.testnet.ts",
+        "deployAvatarBound:ZkSync:testnet": "pnpm compile:zkSync && hardhat --config zkSync.config.ts deploy-zksync --network zkSyncTestnet --script deployAvatarBound.testnet.ts",
         "deployLevelsOnChainUpgradable:ZkSync:testnet": "pnpm compile:zkSync && hardhat --config zkSync.config.ts deploy-zksync --network zkSyncTestnet --script deployLevelsBoundUpgradeable.ts",
         "deploySoulboundBadges:ZkSync:testnet": "pnpm compile:zkSync && hardhat --config zkSync.config.ts deploy-zksync --network zkSyncTestnet --script deploySoulboundBadges.testnet.ts",
         "deployGameSummary:mumbai": "hardhat --config polygon.config.ts run scripts/deployGameSummary1155.ts --network mumbai",

@@ -5,14 +5,14 @@ import { log } from '@helpers/logger';
 
 const PRIVATE_KEY = process.env.PRIVATE_KEY || '';
 
-const PROXY_ADDRESS = '0x6cE94192e5B8cCE8526dEB6967CC2478fF12878c';
+const PROXY_ADDRESS = '0xd34b70262CE2a82F08710fc97fA23c9F2741FA59';
 
 if (!PRIVATE_KEY) throw '⛔️ Private key not detected! Add it to the .env file!';
 
-const VERSION = 'V1';
+const VERSION = 'V6';
 
 async function main() {
-    const wallet = await getWallet(PRIVATE_KEY);
+    const wallet = getWallet(PRIVATE_KEY);
 
     // Create deployer object and load the artifact of the contract you want to deploy.
     const deployer = new Deployer(hre, wallet);
