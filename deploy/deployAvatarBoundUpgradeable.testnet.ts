@@ -103,20 +103,22 @@ export default async function (hre: HardhatRuntimeEnvironment) {
             `Deployed ${CONTRACT_TYPE}(${artifact.contractName}) for ${tenant} to :\n ${blockExplorerBaseUrl}/address/${contractAddress}#contract`
         );
 
-        await new Promise((resolve, reject) => {
-            exec(
-                `npx hardhat verify --network zkSyncTestnet ${contractAddress} --config zkSync.config.ts`,
-                (error, stdout, stderr) => {
-                    if (error) {
-                        console.warn(error);
-                        reject(error);
+        if (process.env.AUTO_VERIFY === 'true') {
+            await new Promise((resolve, reject) => {
+                exec(
+                    `npx hardhat verify --network zkSyncTestnet ${contractAddress} --config zkSync.config.ts`,
+                    (error, stdout, stderr) => {
+                        if (error) {
+                            console.warn(error);
+                            reject(error);
+                        }
+                        resolve(stdout ? stdout : stderr);
                     }
-                    resolve(stdout ? stdout : stderr);
-                }
-            );
-        });
+                );
+            });
 
-        log(`${CONTRACT_TYPE}(${artifact.contractName}) for ${tenant} verified!`);
+            log(`${CONTRACT_TYPE}(${artifact.contractName}) for ${tenant} verified!`);
+        }
     }
 
     // Define the path to the file
