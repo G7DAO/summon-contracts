@@ -68,7 +68,16 @@ export default async function (
         await hre.run('verify:verify', {
             address: contractAddress,
             contract: `contracts/${CONTRACT_NAME}.sol:${CONTRACT_NAME}`,
-            constructorArguments: [`${tenant}${name}`, symbol, baseURI, contractURI, maxPerMint, isPaused, wallet.address, royalty],
+            constructorArguments: [
+                `${tenant}${name}`,
+                symbol,
+                baseURI,
+                contractURI,
+                maxPerMint,
+                isPaused,
+                wallet.address,
+                royalty,
+            ],
         });
 
         deployments[tenant] = {
@@ -89,7 +98,9 @@ export default async function (
             },
             explorerUrl: `${blockExplorerBaseUrl}/address/${contractAddress}#contract`,
         };
-        log(`Deployed ${CONTRACT_TYPE}(${artifact.contractName}) for ${tenant} to :\n ${blockExplorerBaseUrl}/address/${contractAddress}#contract`);
+        log(
+            `Deployed ${CONTRACT_TYPE}(${artifact.contractName}) for ${tenant} to :\n ${blockExplorerBaseUrl}/address/${contractAddress}#contract`
+        );
     }
 
     // await submitContractToDB(deployments);
