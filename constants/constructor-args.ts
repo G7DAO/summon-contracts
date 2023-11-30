@@ -50,7 +50,7 @@ export const ItemsBoundArgs: Soulbound1155Args = {
         // TODO: change this for the final gateway
         contractURI: 'https://apricot-persistent-duck-562.mypinata.cloud/{contractURIHASH}',
         maxPerMint: 1,
-        isPaused: true,
+        isPaused: false,
         devWallet: '0xA10648F8618A526Bd0Acb08a1b9f413BC44Fcb4B',
         royalty: 250n,
         tenants: ['Game7', 'zkSync'],
@@ -61,7 +61,7 @@ export const ItemsBoundArgs: Soulbound1155Args = {
         baseURI: 'https://apricot-persistent-duck-562.mypinata.cloud/',
         contractURI: 'https://apricot-persistent-duck-562.mypinata.cloud/{contractURIHASH}',
         maxPerMint: 1,
-        isPaused: true,
+        isPaused: false,
         devWallet: '0xA10648F8618A526Bd0Acb08a1b9f413BC44Fcb4B',
         royalty: 250n,
         tenants: ['Game7', 'zkSync'],
