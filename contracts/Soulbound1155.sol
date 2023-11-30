@@ -175,7 +175,12 @@ contract Soulbound1155 is ERC1155Burnable, ERCSoulbound, ERC2981, AccessControl,
         __mint(_msgSender(), id, amount, soulbound);
     }
 
-    function adminMint(address to, uint256 id, uint256 amount, bool soulbound) external onlyRole(MINTER_ROLE) canMint(to, id, amount) whenNotPaused {
+    function adminMint(
+        address to,
+        uint256 id,
+        uint256 amount,
+        bool soulbound
+    ) external onlyRole(MINTER_ROLE) canMint(to, id, amount) whenNotPaused {
         __mint(to, id, amount, soulbound);
     }
 
@@ -194,7 +199,13 @@ contract Soulbound1155 is ERC1155Burnable, ERCSoulbound, ERC2981, AccessControl,
         uint256 _id,
         uint256 _amount,
         bytes memory _data
-    ) public virtual override soulboundCheck(_from, _to, _id, _amount, balanceOf(_from, _id)) syncSoulbound(_from, _to, _id, _amount, balanceOf(_from, _id)) {
+    )
+        public
+        virtual
+        override
+        soulboundCheck(_from, _to, _id, _amount, balanceOf(_from, _id))
+        syncSoulbound(_from, _to, _id, _amount, balanceOf(_from, _id))
+    {
         super.safeTransferFrom(_from, _to, _id, _amount, _data);
     }
 
@@ -204,11 +215,20 @@ contract Soulbound1155 is ERC1155Burnable, ERCSoulbound, ERC2981, AccessControl,
         uint256[] memory _ids,
         uint256[] memory _amounts,
         bytes memory _data
-    ) public virtual override soulboundCheckBatch(_from, _to, _ids, _amounts, balanceOfBatchOneAccount(_from, _ids)) syncBatchSoulbound(_from, _to, _ids, _amounts, balanceOfBatchOneAccount(_from, _ids)) {
+    )
+        public
+        virtual
+        override
+        soulboundCheckBatch(_from, _to, _ids, _amounts, balanceOfBatchOneAccount(_from, _ids))
+        syncBatchSoulbound(_from, _to, _ids, _amounts, balanceOfBatchOneAccount(_from, _ids))
+    {
         super.safeBatchTransferFrom(_from, _to, _ids, _amounts, _data);
     }
 
-    function balanceOfBatchOneAccount(address account, uint256[] memory ids) public view virtual returns (uint256[] memory) {
+    function balanceOfBatchOneAccount(
+        address account,
+        uint256[] memory ids
+    ) public view virtual returns (uint256[] memory) {
         uint256[] memory batchBalances = new uint256[](ids.length);
 
         for (uint256 i = 0; i < ids.length; ++i) {
@@ -218,15 +238,39 @@ contract Soulbound1155 is ERC1155Burnable, ERCSoulbound, ERC2981, AccessControl,
         return batchBalances;
     }
 
-    function burn(address to, uint256 tokenId, uint256 amount) public nonReentrant virtual override soulboundCheck(to, address(0), tokenId, amount, balanceOf(to, tokenId)) syncSoulbound(to, address(0), tokenId, amount, balanceOf(to, tokenId)) {
+    function burn(
+        address to,
+        uint256 tokenId,
+        uint256 amount
+    )
+        public
+        virtual
+        override
+        nonReentrant
+        soulboundCheck(to, address(0), tokenId, amount, balanceOf(to, tokenId))
+        syncSoulbound(to, address(0), tokenId, amount, balanceOf(to, tokenId))
+    {
         ERC1155Burnable.burn(to, tokenId, amount);
     }
 
-    function burnBatch(address to, uint256[] memory tokenIds, uint256[] memory amounts) public nonReentrant virtual override soulboundCheckBatch(to, address(0), tokenIds, amounts, balanceOfBatchOneAccount(to, tokenIds)) syncBatchSoulbound(to, address(0), tokenIds, amounts, balanceOfBatchOneAccount(to, tokenIds)) {
+    function burnBatch(
+        address to,
+        uint256[] memory tokenIds,
+        uint256[] memory amounts
+    )
+        public
+        virtual
+        override
+        nonReentrant
+        soulboundCheckBatch(to, address(0), tokenIds, amounts, balanceOfBatchOneAccount(to, tokenIds))
+        syncBatchSoulbound(to, address(0), tokenIds, amounts, balanceOfBatchOneAccount(to, tokenIds))
+    {
         ERC1155Burnable.burnBatch(to, tokenIds, amounts);
     }
 
-    function supportsInterface(bytes4 interfaceId) public view override(ERC1155, ERC2981, AccessControl) returns (bool) {
+    function supportsInterface(
+        bytes4 interfaceId
+    ) public view override(ERC1155, ERC2981, AccessControl) returns (bool) {
         return super.supportsInterface(interfaceId);
     }
 
@@ -273,7 +317,11 @@ contract Soulbound1155 is ERC1155Burnable, ERCSoulbound, ERC2981, AccessControl,
         emit ContractURIChanged(_contractURI);
     }
 
-    function adminVerifySignature(address to, uint256 nonce, bytes memory signature) public onlyRole(DEFAULT_ADMIN_ROLE) returns (bool) {
+    function adminVerifySignature(
+        address to,
+        uint256 nonce,
+        bytes memory signature
+    ) public onlyRole(DEFAULT_ADMIN_ROLE) returns (bool) {
         return verifySignature(to, nonce, signature);
     }
 

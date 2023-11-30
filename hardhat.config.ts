@@ -61,7 +61,7 @@ const config: HardhatUserConfig = {
 
 if (USE_PAYMASTER) {
     // @ts-ignore
-    config.solidity.viaIR = true;
+    config.solidity.settings.viaIR = true;
 }
 
 export default config;
