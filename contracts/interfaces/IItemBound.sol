@@ -5,13 +5,11 @@ pragma solidity ^0.8.17;
 import "../libraries/LibItems.sol";
 
 interface IItemBound {
-
     event SignerAdded(address indexed signer);
 
     event SignerRemoved(address indexed signer);
 
     event ContractURIChanged(string indexed uri);
-
 
     function getAllItems(address _owner) external view returns (LibItems.TokenReturn[] memory);
 
@@ -31,32 +29,17 @@ interface IItemBound {
 
     function mint(
         bytes calldata data,
-        uint256 amount, 
+        uint256 amount,
         bool soulbound,
         uint256 nonce,
         bytes calldata signature
     ) external;
 
-    function adminMint(
-        address to,
-        bytes calldata data,
-        bool soulbound
-    ) external;
+    function adminMint(address to, bytes calldata data, bool soulbound) external;
 
-    function adminMintId(
-        address to, 
-        uint256 id, 
-        uint256 amount, 
-        bool soulbound
-    ) external;
+    function adminMintId(address to, uint256 id, uint256 amount, bool soulbound) external;
 
-    function safeTransferFrom(
-        address _from,
-        address _to,
-        uint256 _id,
-        uint256 _amount,
-        bytes memory _data
-    ) external;
+    function safeTransferFrom(address _from, address _to, uint256 _id, uint256 _amount, bytes memory _data) external;
 
     function safeBatchTransferFrom(
         address _from,
@@ -66,17 +49,9 @@ interface IItemBound {
         bytes memory _data
     ) external;
 
-    function burn(
-        address to, 
-        uint256 tokenId, 
-        uint256 amount
-    ) external;
+    function burn(address to, uint256 tokenId, uint256 amount) external;
 
-    function burnBatch(
-        address to, 
-        uint256[] memory tokenIds, 
-        uint256[] memory amounts
-    ) external;
+    function burnBatch(address to, uint256[] memory tokenIds, uint256[] memory amounts) external;
 
     function supportsInterface(bytes4 interfaceId) external view returns (bool);
 
@@ -85,20 +60,19 @@ interface IItemBound {
     function updateBaseUri(string memory _baseURI) external;
 
     function setRoyaltyInfo(address receiver, uint96 feeBasisPoints) external;
-        
+
     function updateWhitelistAddress(address _address, bool _isWhitelisted) external;
 
     function setContractURI(string memory _contractURI) external;
 
     function adminVerifySignature(
-        address to, 
-        uint256 nonce, 
-        bytes calldata data, 
+        address to,
+        uint256 nonce,
+        bytes calldata data,
         bytes calldata signature
     ) external view returns (bool);
 
     function addWhitelistSigner(address _signer) external;
 
     function removeWhitelistSigner(address signer) external;
-
 }

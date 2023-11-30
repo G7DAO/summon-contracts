@@ -33,10 +33,10 @@ import "@openzeppelin/contracts-upgradeable/access/AccessControlUpgradeable.sol"
 import "@openzeppelin/contracts-upgradeable/security/PausableUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/security/ReentrancyGuardUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
-import "./ERCSoulboundUpgradeable.sol";
-import "./ERCWhitelistSignatureUpgradeable.sol";
-import "../interfaces/IOpenMint.sol";
-import "../interfaces/IItemBound.sol";
+import { ERCSoulboundUpgradeable } from "./ERCSoulboundUpgradeable.sol";
+import { ERCWhitelistSignatureUpgradeable } from "./ERCWhitelistSignatureUpgradeable.sol";
+import { IOpenMint } from "../interfaces/IOpenMint.sol";
+import { IItemBound } from "../interfaces/IItemBound.sol";
 
 contract AvatarBoundV1 is
     Initializable,
@@ -127,6 +127,7 @@ contract AvatarBoundV1 is
         __Pausable_init();
         __ReentrancyGuard_init();
         __ERCSoulboundUpgradable_init();
+        __ERCWhitelistSignatureUpgradeable_init();
         _grantRole(DEFAULT_ADMIN_ROLE, developerAdmin);
         _grantRole(MINTER_ROLE, developerAdmin);
         _grantRole(URI_SETTER_ROLE, developerAdmin);
