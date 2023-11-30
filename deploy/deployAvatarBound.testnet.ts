@@ -29,12 +29,12 @@ const PRIVATE_KEY = process.env.PRIVATE_KEY || '';
 const CONTRACT_NAME = 'AvatarBoundV1';
 const CONTRACT_TYPE = 'Avatar';
 
-const ABI_PATH = 'artifacts/contracts/upgradeables/AvatarBoundV1.sol/AvatarBoundV1.json';
+const ABI_PATH = 'artifacts/contracts/upgradeables/AvatarBound.sol/AvatarBound.json';
 
 if (!PRIVATE_KEY) throw '⛔️ Private key not detected! Add it to the .env file!';
 
 export default async function (hre: HardhatRuntimeEnvironment) {
-    log(`Running deploy script for the ${CONTRACT_NAME} Proxy featuring ZkSync`);
+    log(`Running deploy script for the ${CONTRACT_NAME} ZkSync`);
 
     const wallet = getWallet(PRIVATE_KEY);
 
@@ -64,7 +64,7 @@ export default async function (hre: HardhatRuntimeEnvironment) {
     const deployments: DeploymentMap = {};
 
     for (const tenant of tenants) {
-        const achievoContract = await hre.zkUpgrades.deployProxy(deployer.zkWallet as any, artifact, [
+        const achievoContract = await deployer.deploy(artifact, [
             name,
             symbol,
             baseURI,
@@ -83,25 +83,24 @@ export default async function (hre: HardhatRuntimeEnvironment) {
         const contractAddress = achievoContract.target;
         log(`${CONTRACT_TYPE}(${artifact.contractName}) for ${tenant} was deployed to https://goerli.explorer.zksync.io/address/${contractAddress}#contract`);
 
-        // const verificationId = await hre.run('verify:verify', {
-        //     address: contractAddress,
-        //     contract: `contracts/${CONTRACT_NAME}.sol:${CONTRACT_NAME}`,
-        //     constructorArguments: [
-        //         name,
-        //         symbol,
-        //         baseURI,
-        //         contractURI,
-        //         revealURI,
-        //         wallet.address,
-        //         gatingNftAddress,
-        //         itemsNftAddress,
-        //         mintNFtWithoutGatingEnabled,
-        //         mintRandomItemEnabled,
-        //         mintNftGatingEnabled,
-        //     ],
-        // });
-
-        // log(`Verification ID: ${verificationId}`);
+        await hre.run('verify:verify', {
+            address: contractAddress,
+            contract: `contracts/${CONTRACT_NAME}.sol:${CONTRACT_NAME}`,
+            constructorArguments: [
+                name,
+                symbol,
+                baseURI,
+                contractURI,
+                revealURI,
+                wallet.address,
+                gatingNftAddress,
+                itemsNftAddress,
+                mintNFtWithoutGatingEnabled,
+                mintRandomItemEnabled,
+                mintNftGatingEnabled,
+                mintSpecialItemEnabled,
+            ],
+        });
 
         deployments[tenant] = {
             dbPayload: {
