@@ -204,7 +204,7 @@ contract AvatarBoundV1 is
         }
     }
 
-    function revealNFTGatingToken(uint256 tokenId) public onlyRole(MINTER_ROLE) whenNotPaused {
+    function revealNFTGatingToken(uint256 tokenId) private whenNotPaused {
         IOpenMint(gatingNFTAddress).reveal(tokenId, revealURI);
         emit NFTRevealed(tokenId, _msgSender(), gatingNFTAddress);
     }
