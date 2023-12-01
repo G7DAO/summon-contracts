@@ -1,5 +1,5 @@
 //// SPDX-License-Identifier: MIT
-//pragma solidity ^0.8.17;
+//pragma solidity 0.8.17;
 //
 //import "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
 //import { ExecutionResult, PAYMASTER_VALIDATION_SUCCESS_MAGIC, IPaymaster } from "@matterlabs/zksync-contracts/l2/system-contracts/interfaces/IPaymaster.sol";

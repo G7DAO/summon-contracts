@@ -40,7 +40,17 @@ import { ERCWhitelistSignature } from "./ERCWhitelistSignature.sol";
 import { IItemBound } from "./interfaces/IItemBound.sol";
 import { IOpenMint } from "./interfaces/IOpenMint.sol";
 
-contract AvatarBound is ERC721URIStorage, ERC721Enumerable, AccessControl, ERCSoulbound, ERCWhitelistSignature, Pausable, ReentrancyGuard {
+import "forge-std/Test.sol";
+
+contract AvatarBound is
+    ERC721URIStorage,
+    ERC721Enumerable,
+    AccessControl,
+    ERCSoulbound,
+    ERCWhitelistSignature,
+    Pausable,
+    ReentrancyGuard
+{
     bytes32 public constant MINTER_ROLE = keccak256("MINTER_ROLE");
     bytes32 public constant URI_SETTER_ROLE = keccak256("URI_SETTER_ROLE");
     bytes32 public constant PAUSER_ROLE = keccak256("PAUSER_ROLE");
@@ -108,6 +118,8 @@ contract AvatarBound is ERC721URIStorage, ERC721Enumerable, AccessControl, ERCSo
         _grantRole(DEFAULT_ADMIN_ROLE, developerAdmin);
         _grantRole(MINTER_ROLE, developerAdmin);
         _grantRole(PAUSER_ROLE, developerAdmin);
+        _addWhitelistSigner(developerAdmin);
+
         baseTokenURI = _baseTokenURI;
         contractURI = _contractURI;
         gatingNFTAddress = _gatingNFTAddress;
@@ -115,6 +127,8 @@ contract AvatarBound is ERC721URIStorage, ERC721Enumerable, AccessControl, ERCSo
         mintNftGatingEnabled = _mintNftGatingEnabled;
         mintNftWithoutGatingEnabled = _mintNftWithoutGatingEnabled;
         mintRandomItemEnabled = _mintRandomItemEnabled;
+        mintSpecialItemEnabled = _mintSpecialItemEnabled;
+        mintDefaultItemEnabled = true;
         revealNftGatingEnabled = true;
         revealURI = _revealURI;
     }
@@ -138,7 +152,10 @@ contract AvatarBound is ERC721URIStorage, ERC721Enumerable, AccessControl, ERCSo
     ) public nonReentrant whenNotPaused {
         require(mintNftGatingEnabled, "NFT gating mint is not enabled");
         require(_verifySignature(_msgSender(), nonce, data, signature), "Invalid signature");
-        require(IOpenMint(gatingNFTAddress).ownerOf(nftGatingId) == _msgSender(), "Sender does not own the required NFT");
+        require(
+            IOpenMint(gatingNFTAddress).ownerOf(nftGatingId) == _msgSender(),
+            "Sender does not own the required NFT"
+        );
         mint(_msgSender(), baseSkinId);
 
         if (revealNftGatingEnabled) {
@@ -154,7 +171,12 @@ contract AvatarBound is ERC721URIStorage, ERC721Enumerable, AccessControl, ERCSo
         }
     }
 
-    function mintAvatar(uint256 baseSkinId, uint256 nonce, bytes calldata data, bytes calldata signature) public nonReentrant whenNotPaused {
+    function mintAvatar(
+        uint256 baseSkinId,
+        uint256 nonce,
+        bytes calldata data,
+        bytes calldata signature
+    ) public nonReentrant whenNotPaused {
         require(mintNftWithoutGatingEnabled, "Minting without nft gating is not enabled");
         require(_verifySignature(_msgSender(), nonce, data, signature), "Invalid signature");
         mint(_msgSender(), baseSkinId);
@@ -172,7 +194,10 @@ contract AvatarBound is ERC721URIStorage, ERC721Enumerable, AccessControl, ERCSo
         mint(to, baseSkinId);
     }
 
-    function batchMint(address[] calldata addresses, uint256[] calldata baseSkinIds) public onlyRole(MINTER_ROLE) whenNotPaused {
+    function batchMint(
+        address[] calldata addresses,
+        uint256[] calldata baseSkinIds
+    ) public onlyRole(MINTER_ROLE) whenNotPaused {
         require(addresses.length == baseSkinIds.length, "Addresses and URIs length mismatch");
         for (uint256 i = 0; i < baseSkinIds.length; i++) {
             mint(addresses[i], baseSkinIds[i]);
@@ -198,7 +223,12 @@ contract AvatarBound is ERC721URIStorage, ERC721Enumerable, AccessControl, ERCSo
         emit RandomItemMinted(to, data, itemsNFTAddress);
     }
 
-    function adminVerifySignature(address to, uint256 nonce, bytes calldata data, bytes calldata signature) public onlyRole(DEFAULT_ADMIN_ROLE) returns (bool) {
+    function adminVerifySignature(
+        address to,
+        uint256 nonce,
+        bytes calldata data,
+        bytes calldata signature
+    ) public onlyRole(DEFAULT_ADMIN_ROLE) returns (bool) {
         return _verifySignature(to, nonce, data, signature);
     }
 
@@ -226,7 +256,10 @@ contract AvatarBound is ERC721URIStorage, ERC721Enumerable, AccessControl, ERCSo
     function getAllBaseSkins() public view returns (BaseSkinResponse[] memory) {
         BaseSkinResponse[] memory allBaseSkins = new BaseSkinResponse[](_baseSkinCounter);
         for (uint256 i = 0; i < _baseSkinCounter; i++) {
-            BaseSkinResponse memory avatarBaseSkinResponse = BaseSkinResponse({ baseSkinId: i, tokenUri: baseSkins[i] });
+            BaseSkinResponse memory avatarBaseSkinResponse = BaseSkinResponse({
+                baseSkinId: i,
+                tokenUri: baseSkins[i]
+            });
             allBaseSkins[i] = avatarBaseSkinResponse;
         }
         return allBaseSkins;
@@ -336,7 +369,9 @@ contract AvatarBound is ERC721URIStorage, ERC721Enumerable, AccessControl, ERCSo
         return super.tokenURI(tokenId);
     }
 
-    function supportsInterface(bytes4 interfaceId) public view override(ERC721Enumerable, ERC721URIStorage, AccessControl) returns (bool) {
+    function supportsInterface(
+        bytes4 interfaceId
+    ) public view override(ERC721Enumerable, ERC721URIStorage, AccessControl) returns (bool) {
         return super.supportsInterface(interfaceId);
     }
 

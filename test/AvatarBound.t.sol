@@ -84,10 +84,15 @@ contract AvatarBoundTest is Test {
         return (abi.encode(itemIds));
     }
 
-    function generateSignature(address wallet, bytes memory encodedItems, string memory signerLabel) public returns (uint256, bytes memory) {
+    function generateSignature(
+        address wallet,
+        bytes memory encodedItems,
+        string memory signerLabel
+    ) public returns (uint256, bytes memory) {
         Wallet memory signerWallet = getWallet(signerLabel);
 
-        uint256 _nonce = uint256(keccak256(abi.encodePacked(block.timestamp, block.difficulty, signerWallet.addr))) % 50;
+        uint256 _nonce = uint256(keccak256(abi.encodePacked(block.timestamp, block.difficulty, signerWallet.addr))) %
+            50;
 
         bytes32 message = keccak256(abi.encodePacked(wallet, encodedItems, _nonce));
         bytes32 hash = ECDSA.toEthSignedMessageHash(message);
@@ -114,6 +119,24 @@ contract AvatarBoundTest is Test {
             _tokenItemsIds.push(_tokenId);
         }
 
+        LibItems.TokenCreate memory defaultItem = LibItems.TokenCreate({
+            tokenId: defaultItemId,
+            level: 1,
+            tier: LibItems.Tier.COMMON,
+            tokenUri: ""
+        });
+
+        _tokens.push(defaultItem);
+
+        LibItems.TokenCreate memory specialItem = LibItems.TokenCreate({
+            tokenId: specialItemId,
+            level: 1,
+            tier: LibItems.Tier.UNCOMMON,
+            tokenUri: ""
+        });
+
+        _tokens.push(specialItem);
+
         itemBound.addNewTokens(_tokens);
 
         encodedItems = encode(_tokenItemsIds);
@@ -123,7 +146,16 @@ contract AvatarBoundTest is Test {
     function setUp() public {
         playerWallet = getWallet(playerLabel);
         minterWallet = getWallet(minterLabel);
-        itemBound = new ItemBound("Test1155", "T1155", "MISSING_BASE_URL", "MISSING_CONTRACT_URL", 1, false, minterWallet.addr, 250);
+        itemBound = new ItemBound(
+            "Test1155",
+            "T1155",
+            "MISSING_BASE_URL",
+            "MISSING_CONTRACT_URL",
+            1,
+            false,
+            minterWallet.addr,
+            250
+        );
         capsuleNft = new OpenMint("https://summon.mypinata.cloud/ipfs/");
 
         encodedItems = setupItems();
@@ -139,16 +171,18 @@ contract AvatarBoundTest is Test {
             address(itemBound),
             true,
             true,
+            true,
             true
         );
 
         capsuleNft.grantRole(capsuleNft.MINTER_ROLE(), address(avatarBound));
+        capsuleNft.grantRole(capsuleNft.MINTER_ROLE(), address(minterWallet.addr));
 
         vm.startPrank(minterWallet.addr);
+        capsuleNft.safeMint(playerWallet.addr);
         avatarBound.setBaseSkin(defaultBaseSkinId, "ipfs://{hash}/baseSkin/1.glb");
         avatarBound.setSpecialItemId(specialItemId);
         avatarBound.setDefaultItemId(defaultItemId);
-
         vm.stopPrank();
 
         itemBound.grantRole(itemBound.MINTER_ROLE(), address(avatarBound));
@@ -156,7 +190,6 @@ contract AvatarBoundTest is Test {
 
     function testMintAvatarNftGating() public {
         vm.startPrank(playerWallet.addr);
-
         (nonce, signature) = generateSignature(playerWallet.addr, encodedItems, minterLabel);
 
         avatarBound.mintAvatarNftGating(defaultCapsuleNftId, defaultBaseSkinId, nonce, encodedItems, signature);
@@ -174,11 +207,14 @@ contract AvatarBoundTest is Test {
         assertEq(itemBound.balanceOf(playerWallet.addr, _tokenItemsIds[8]), 1);
         assertEq(itemBound.balanceOf(playerWallet.addr, _tokenItemsIds[9]), 1);
         // check the default item Id
-        assertEq(itemBound.balanceOf(playerWallet.addr, defaultItemId), 1);
+        assertEq(itemBound.balanceOf(playerWallet.addr, defaultItemId), 0);
         // check the special item Id
         assertEq(itemBound.balanceOf(playerWallet.addr, specialItemId), 1);
         // test that the capsule now has the new uri(revealed uri)
-        assertEq(capsuleNft.tokenURI(defaultCapsuleNftId), "https://summon.mypinata.cloud/ipfs/QmZnvSyeKRQxWwcofVmq41BNCtHbBmomk8Ny8mtGRTjtzS");
+        assertEq(
+            capsuleNft.tokenURI(defaultCapsuleNftId),
+            "https://summon.mypinata.cloud/ipfs/MISSING_REVEAL_CAPSULE_URL"
+        );
         vm.stopPrank();
     }
 
@@ -203,6 +239,9 @@ contract AvatarBoundTest is Test {
 
         // check the default item Id
         assertEq(itemBound.balanceOf(playerWallet.addr, defaultItemId), 1);
+
+        // check the special item Id
+        assertEq(itemBound.balanceOf(playerWallet.addr, specialItemId), 0);
         vm.stopPrank();
     }
 
@@ -210,6 +249,7 @@ contract AvatarBoundTest is Test {
         vm.startPrank(minterWallet.addr);
         avatarBound.setBaseSkin(2, "ipfs://{hash}/baseSkin/2.glb");
         avatarBound.setBaseSkin(3, "ipfs://{hash}/baseSkin/3.glb");
+        vm.stopPrank();
         vm.startPrank(playerWallet.addr);
         AvatarBound.BaseSkinResponse[] memory allBaseSkins = avatarBound.getAllBaseSkins();
         assertEq(allBaseSkins.length, 3);
@@ -277,11 +317,22 @@ contract AvatarBoundTest is Test {
         vm.stopPrank();
     }
 
-    function onERC721Received(address operator, address from, uint256 tokenId, bytes calldata data) public returns (bytes4) {
+    function onERC721Received(
+        address operator,
+        address from,
+        uint256 tokenId,
+        bytes calldata data
+    ) public returns (bytes4) {
         return this.onERC721Received.selector;
     }
 
-    function onERC1155Received(address operator, address from, uint256 id, uint256 value, bytes calldata data) public returns (bytes4) {
+    function onERC1155Received(
+        address operator,
+        address from,
+        uint256 id,
+        uint256 value,
+        bytes calldata data
+    ) public returns (bytes4) {
         return this.onERC1155Received.selector;
     }
 }
