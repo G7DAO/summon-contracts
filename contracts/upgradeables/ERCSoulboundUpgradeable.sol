@@ -234,5 +234,5 @@ contract ERCSoulboundUpgradeable is Initializable {
     }
 
     // Reserved storage space to allow for layout changes in the future.
-    uint256[50] private __gap;
+    uint256[46] private __gap;
 }

@@ -424,7 +424,4 @@ contract AvatarBoundV1 is
     function removeWhitelistSigner(address signer) external onlyRole(DEFAULT_ADMIN_ROLE) {
         _removeWhitelistSigner(signer);
     }
-
-    // Reserved storage space to allow for layout changes in the future.
-    uint256[50] private __gap;
 }

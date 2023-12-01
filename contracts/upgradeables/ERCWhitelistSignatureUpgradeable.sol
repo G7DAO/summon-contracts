@@ -32,11 +32,10 @@ import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
 
 contract ERCWhitelistSignatureUpgradeable is Initializable {
     mapping(address => bool) public whitelistSigners;
+    mapping(bytes => bool) private usedSignatures;
 
     event WhitelistSignerAdded(address indexed signer);
     event WhitelistSignerRemoved(address indexed signer);
-
-    mapping(bytes => bool) private usedSignatures;
 
     function __ERCWhitelistSignatureUpgradeable_init() internal onlyInitializing {}
 
@@ -84,5 +83,5 @@ contract ERCWhitelistSignatureUpgradeable is Initializable {
     }
 
     // Reserved storage space to allow for layout changes in the future.
-    uint256[50] private __gap;
+    uint256[48] private __gap;
 }
