@@ -1,4 +1,5 @@
 import fs from 'fs';
+import { exec } from 'node:child_process';
 import path from 'path';
 
 import { ConstructorArgs } from '@constants/constructor-args';
@@ -10,9 +11,7 @@ import { HardhatRuntimeEnvironment } from 'hardhat/types';
 import { DeploymentMap } from 'types/deployment-type';
 
 import getWallet from './getWallet';
-// import { submitContractToDB } from '@helpers/submit-contract-to-db';
 
-// load wallet private key from env file
 const PRIVATE_KEY = process.env.PRIVATE_KEY || '';
 const encryptedPrivateKey = encryptPrivateKey(PRIVATE_KEY);
 
@@ -26,7 +25,7 @@ export default async function (
     const { CONTRACT_NAME, CONTRACT_TYPE, ABI_PATH } = deploymentArgs;
     const { name, symbol, baseURI, contractURI, maxPerMint, isPaused, royalty, tenants } = constructorArgs;
 
-    log(`Running deploy script for the ${CONTRACT_NAME} featuring zkSync`);
+    log(`Running deploy script for the ${CONTRACT_NAME} Proxy featuring ZkSync`);
 
     const networkName = hre.network.name as NetworkName;
     const networkNameKey = Object.keys(NetworkName)[Object.values(NetworkName).indexOf(networkName)]; // get NetworkName Key from Value
@@ -49,7 +48,7 @@ export default async function (
     const { abi: contractAbi } = JSON.parse(abiContent);
 
     for (const tenant of tenants) {
-        const achievoContract = await deployer.deploy(artifact, [
+        const achievoContract = await hre.zkUpgrades.deployProxy(deployer.zkWallet as any, artifact, [
             `${tenant}${name}`,
             symbol,
             baseURI,
@@ -65,20 +64,9 @@ export default async function (
         // Show the contract info.
         const contractAddress = await achievoContract.getAddress();
 
-        await hre.run('verify:verify', {
-            address: contractAddress,
-            contract: `contracts/${CONTRACT_NAME}.sol:${CONTRACT_NAME}`,
-            constructorArguments: [
-                `${tenant}${name}`,
-                symbol,
-                baseURI,
-                contractURI,
-                maxPerMint,
-                isPaused,
-                wallet.address,
-                royalty,
-            ],
-        });
+        log(
+            `${CONTRACT_TYPE}(${artifact.contractName}) for ${tenant} was deployed to https://goerli.explorer.zksync.io/address/${contractAddress}#contract`
+        );
 
         deployments[tenant] = {
             dbPayload: {
@@ -98,12 +86,28 @@ export default async function (
             },
             explorerUrl: `${blockExplorerBaseUrl}/address/${contractAddress}#contract`,
         };
+
         log(
             `Deployed ${CONTRACT_TYPE}(${artifact.contractName}) for ${tenant} to :\n ${blockExplorerBaseUrl}/address/${contractAddress}#contract`
         );
-    }
 
-    // await submitContractToDB(deployments);
+        if (process.env.AUTO_VERIFY === 'true') {
+            await new Promise((resolve, reject) => {
+                exec(
+                    `npx hardhat verify --network zkSyncTestnet ${contractAddress} --config zkSync.config.ts`,
+                    (error, stdout, stderr) => {
+                        if (error) {
+                            console.warn(error);
+                            reject(error);
+                        }
+                        resolve(stdout ? stdout : stderr);
+                    }
+                );
+            });
+
+            log(`${CONTRACT_TYPE}(${artifact.contractName}) for ${tenant} verified!`);
+        }
+    }
 
     // Define the path to the file
     const filePath = path.resolve(`deployments-${CONTRACT_TYPE}.json`);
@@ -113,5 +117,4 @@ export default async function (
 
     // Write to the file
     fs.writeFileSync(filePath, deploymentsJson);
-    log('Deployments saved to deployments.json');
 }

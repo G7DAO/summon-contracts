@@ -1,6 +1,10 @@
-// SPDX-License-Identifier: UNLICENSED
-///@notice This contract is for mock for WETH token.
+// SPDX-License-Identifier: MIT
 pragma solidity 0.8.17;
+
+/**
+ * Author: Omar <omar@game7.io>(https://github.com/ogarciarevett)
+ * Co-Authors: Max <max@game7.io>(https://github.com/vasinl124)
+ */
 
 /**                        .;c;.
  *                      'lkXWWWXk:.
@@ -23,29 +27,41 @@ pragma solidity 0.8.17;
  *                          ...
  */
 
-import "@openzeppelin/contracts/token/ERC1155/extensions/ERC1155Burnable.sol";
-import "@openzeppelin/contracts/token/ERC1155/extensions/ERC1155Supply.sol";
-import "@openzeppelin/contracts/access/AccessControl.sol";
-import "@openzeppelin/contracts/security/Pausable.sol";
-import "@openzeppelin/contracts/utils/Strings.sol";
-import "@openzeppelin/contracts/token/common/ERC2981.sol";
-import "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
-import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
+import { Initializable } from "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
+import { ERC1155Upgradeable } from "@openzeppelin/contracts-upgradeable/token/ERC1155/ERC1155Upgradeable.sol";
+import {
+    ERC1155BurnableUpgradeable
+} from "@openzeppelin/contracts-upgradeable/token/ERC1155/extensions/ERC1155BurnableUpgradeable.sol";
+import {
+    ERC1155SupplyUpgradeable
+} from "@openzeppelin/contracts-upgradeable/token/ERC1155/extensions/ERC1155SupplyUpgradeable.sol";
+import { AccessControlUpgradeable } from "@openzeppelin/contracts-upgradeable/access/AccessControlUpgradeable.sol";
+import { PausableUpgradeable } from "@openzeppelin/contracts-upgradeable/security/PausableUpgradeable.sol";
+import { StringsUpgradeable } from "@openzeppelin/contracts-upgradeable/utils/StringsUpgradeable.sol";
+import { ERC2981Upgradeable } from "@openzeppelin/contracts-upgradeable/token/common/ERC2981Upgradeable.sol";
+import { ECDSAUpgradeable } from "@openzeppelin/contracts-upgradeable/utils/cryptography/ECDSAUpgradeable.sol";
+import {
+    ReentrancyGuardUpgradeable
+} from "@openzeppelin/contracts-upgradeable/security/ReentrancyGuardUpgradeable.sol";
 
-import "./ERCSoulbound.sol";
-import "./ERCWhitelistSignature.sol";
-import "./libraries/LibItems.sol";
+import { ERCSoulboundUpgradeable } from "./ERCSoulboundUpgradeable.sol";
+import { ERCWhitelistSignatureUpgradeable } from "./ERCWhitelistSignatureUpgradeable.sol";
+import { LibItems } from "../libraries/LibItems.sol";
 
-contract ItemBound is
-    ERC1155Burnable,
-    ERC1155Supply,
-    ERCSoulbound,
-    ERC2981,
-    ERCWhitelistSignature,
-    AccessControl,
-    Pausable,
-    ReentrancyGuard
+contract ItemBoundV1 is
+    Initializable,
+    ERC1155BurnableUpgradeable,
+    ERC1155SupplyUpgradeable,
+    ERCSoulboundUpgradeable,
+    ERC2981Upgradeable,
+    ERCWhitelistSignatureUpgradeable,
+    AccessControlUpgradeable,
+    PausableUpgradeable,
+    ReentrancyGuardUpgradeable
 {
+    // Reserved storage space to allow for layout changes in the future.
+    uint256[50] private __gap;
+
     event SignerAdded(address signer);
     event SignerRemoved(address signer);
     event ContractURIChanged(string indexed uri);
@@ -57,7 +73,7 @@ contract ItemBound is
     string private baseURI;
     string public name;
     string public symbol;
-    using Strings for uint256;
+    using StringsUpgradeable for uint256;
 
     uint256 public currentMaxLevel;
 
@@ -128,7 +144,12 @@ contract ItemBound is
         return itemIds;
     }
 
-    constructor(
+    /// @custom:oz-upgrades-unsafe-allow constructor
+    constructor() {
+        _disableInitializers();
+    }
+
+    function initialize(
         string memory _name,
         string memory _symbol,
         string memory _initBaseURI,
@@ -137,7 +158,13 @@ contract ItemBound is
         bool _isPaused,
         address _devWallet,
         uint96 _royalty
-    ) ERC1155(_initBaseURI) {
+    ) public initializer {
+        __ERC1155_init("");
+        __ReentrancyGuard_init();
+        __ERCSoulboundUpgradable_init();
+        __ERCWhitelistSignatureUpgradeable_init();
+        __AccessControl_init();
+
         _grantRole(DEFAULT_ADMIN_ROLE, msg.sender);
         _grantRole(MINTER_ROLE, msg.sender);
         _grantRole(MANAGER_ROLE, msg.sender);
@@ -260,7 +287,7 @@ contract ItemBound is
         uint256[] memory ids,
         uint256[] memory amounts,
         bytes memory data
-    ) internal virtual override(ERC1155, ERC1155Supply) {
+    ) internal virtual override(ERC1155Upgradeable, ERC1155SupplyUpgradeable) {
         super._beforeTokenTransfer(operator, from, to, ids, amounts, data);
     }
 
@@ -321,7 +348,7 @@ contract ItemBound is
         soulboundCheck(to, address(0), tokenId, amount, balanceOf(to, tokenId))
         syncSoulbound(to, address(0), tokenId, amount, balanceOf(to, tokenId))
     {
-        ERC1155Burnable.burn(to, tokenId, amount);
+        ERC1155BurnableUpgradeable.burn(to, tokenId, amount);
     }
 
     function burnBatch(
@@ -336,12 +363,12 @@ contract ItemBound is
         soulboundCheckBatch(to, address(0), tokenIds, amounts, balanceOfBatchOneAccount(to, tokenIds))
         syncBatchSoulbound(to, address(0), tokenIds, amounts, balanceOfBatchOneAccount(to, tokenIds))
     {
-        ERC1155Burnable.burnBatch(to, tokenIds, amounts);
+        ERC1155BurnableUpgradeable.burnBatch(to, tokenIds, amounts);
     }
 
     function supportsInterface(
         bytes4 interfaceId
-    ) public view override(ERC1155, ERC2981, AccessControl) returns (bool) {
+    ) public view override(ERC1155Upgradeable, ERC2981Upgradeable, AccessControlUpgradeable) returns (bool) {
         return super.supportsInterface(interfaceId);
     }
 

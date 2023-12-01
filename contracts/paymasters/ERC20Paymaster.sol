@@ -1,5 +1,5 @@
 //// SPDX-License-Identifier: MIT
-//pragma solidity ^0.8.8;
+//pragma solidity 0.8.8;
 //
 //import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 //import { ExecutionResult, PAYMASTER_VALIDATION_SUCCESS_MAGIC, IPaymaster } from "@matterlabs/zksync-contracts/l2/system-contracts/interfaces/IPaymaster.sol";
