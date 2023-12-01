@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: UNLICENSED
 ///@notice This contract is for mock for WETH token.
-pragma solidity ^0.8.17;
+pragma solidity 0.8.17;
 
 /**                        .;c;.
  *                      'lkXWWWXk:.
