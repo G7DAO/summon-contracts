@@ -132,7 +132,13 @@ contract ERCSoulbound {
         whitelistAddresses[_address] = _isWhitelisted;
     }
 
-    function _checkMultipleAmounts(address from, address to, uint256 tokenId, uint256 amount, uint256 totalAmount) private view {
+    function _checkMultipleAmounts(
+        address from,
+        address to,
+        uint256 tokenId,
+        uint256 amount,
+        uint256 totalAmount
+    ) private view {
         require(from != address(0), "ERCSoulbound: can't be zero address");
         require(amount > 0, "ERCSoulbound: can't be zero amount");
         require(amount <= totalAmount, "ERCSoulbound: can't transfer more than you have");
@@ -141,9 +147,10 @@ contract ERCSoulbound {
             return;
         }
 
-
         if (totalAmount - _soulbounds[from][tokenId] < amount) {
-            revert("ERCSoulbound: The amount of soulbounded tokens is more than the amount of tokens to be transferred");
+            revert(
+                "ERCSoulbound: The amount of soulbounded tokens is more than the amount of tokens to be transferred"
+            );
         }
     }
 

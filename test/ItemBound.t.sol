@@ -219,9 +219,19 @@ contract ItemBoundTest is Test {
         uint256 _tokenId1 = generateRandomItemId(); // totally random
         uint256 _tokenId2 = generateRandomItemId(); // totally random
 
-        LibItems.TokenCreate memory _token1 = LibItems.TokenCreate({ tokenId: _tokenId1, level: 11, tier: LibItems.Tier.UNCOMMON, tokenUri: "" });
+        LibItems.TokenCreate memory _token1 = LibItems.TokenCreate({
+            tokenId: _tokenId1,
+            level: 11,
+            tier: LibItems.Tier.UNCOMMON,
+            tokenUri: ""
+        });
 
-        LibItems.TokenCreate memory _token2 = LibItems.TokenCreate({ tokenId: _tokenId2, level: 12, tier: LibItems.Tier.UNCOMMON, tokenUri: "" });
+        LibItems.TokenCreate memory _token2 = LibItems.TokenCreate({
+            tokenId: _tokenId2,
+            level: 12,
+            tier: LibItems.Tier.UNCOMMON,
+            tokenUri: ""
+        });
 
         assertEq(itemBound.getCurrentMaxLevel(), 10);
         itemBound.addNewToken(_token1);
@@ -234,7 +244,12 @@ contract ItemBoundTest is Test {
         uint256[] memory itemsBefore = itemBound.getItemsPerTierPerLevel(LibItems.Tier.COMMON, 1);
 
         uint256 _tokenId1 = generateRandomItemId(); // totally random
-        LibItems.TokenCreate memory _token1 = LibItems.TokenCreate({ tokenId: _tokenId1, level: 1, tier: LibItems.Tier.COMMON, tokenUri: "" });
+        LibItems.TokenCreate memory _token1 = LibItems.TokenCreate({
+            tokenId: _tokenId1,
+            level: 1,
+            tier: LibItems.Tier.COMMON,
+            tokenUri: ""
+        });
 
         itemBound.addNewToken(_token1);
 
@@ -511,7 +526,12 @@ contract ItemBoundTest is Test {
         uint256 _level = generateRandomLevel(); // level 1-10
         LibItems.Tier _tier = generateRandomTier(); // tier 0-4
 
-        LibItems.TokenCreate memory _token = LibItems.TokenCreate({ tokenId: _tokenId, level: _level, tier: _tier, tokenUri: "" });
+        LibItems.TokenCreate memory _token = LibItems.TokenCreate({
+            tokenId: _tokenId,
+            level: _level,
+            tier: _tier,
+            tokenUri: ""
+        });
 
         itemBound.addNewToken(_token);
 
@@ -523,7 +543,12 @@ contract ItemBoundTest is Test {
         uint256 _level = generateRandomLevel(); // level 1-10
         LibItems.Tier _tier = generateRandomTier(); // tier 0-4
 
-        LibItems.TokenCreate memory _token = LibItems.TokenCreate({ tokenId: _tokenId, level: _level, tier: _tier, tokenUri: "ipfs://specific-token-uri.com" });
+        LibItems.TokenCreate memory _token = LibItems.TokenCreate({
+            tokenId: _tokenId,
+            level: _level,
+            tier: _tier,
+            tokenUri: "ipfs://specific-token-uri.com"
+        });
 
         itemBound.addNewToken(_token);
 
@@ -545,7 +570,12 @@ contract ItemBoundTest is Test {
         uint256 _level = generateRandomLevel(); // level 1-10
         LibItems.Tier _tier = generateRandomTier(); // tier 0-4
 
-        LibItems.TokenCreate memory _token = LibItems.TokenCreate({ tokenId: _tokenId, level: _level, tier: _tier, tokenUri: "" });
+        LibItems.TokenCreate memory _token = LibItems.TokenCreate({
+            tokenId: _tokenId,
+            level: _level,
+            tier: _tier,
+            tokenUri: ""
+        });
 
         itemBound.addNewToken(_token);
 
@@ -574,7 +604,12 @@ contract ItemBoundTest is Test {
         uint256 _level = generateRandomLevel(); // level 1-10
         LibItems.Tier _tier = generateRandomTier(); // tier 0-4
 
-        LibItems.TokenCreate memory _token = LibItems.TokenCreate({ tokenId: _tokenId, level: _level, tier: _tier, tokenUri: "" });
+        LibItems.TokenCreate memory _token = LibItems.TokenCreate({
+            tokenId: _tokenId,
+            level: _level,
+            tier: _tier,
+            tokenUri: ""
+        });
 
         itemBound.addNewToken(_token);
 
