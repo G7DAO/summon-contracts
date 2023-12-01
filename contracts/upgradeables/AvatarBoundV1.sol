@@ -53,9 +53,6 @@ contract AvatarBoundV1 is
         _disableInitializers();
     }
 
-    // Reserved storage space to allow for layout changes in the future.
-    uint256[50] private __gap;
-
     bytes32 public constant MINTER_ROLE = keccak256("MINTER_ROLE");
     bytes32 public constant URI_SETTER_ROLE = keccak256("URI_SETTER_ROLE");
     bytes32 public constant PAUSER_ROLE = keccak256("PAUSER_ROLE");
@@ -427,4 +424,7 @@ contract AvatarBoundV1 is
     function removeWhitelistSigner(address signer) external onlyRole(DEFAULT_ADMIN_ROLE) {
         _removeWhitelistSigner(signer);
     }
+
+    // Reserved storage space to allow for layout changes in the future.
+    uint256[50] private __gap;
 }

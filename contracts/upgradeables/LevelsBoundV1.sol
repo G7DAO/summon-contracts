@@ -30,7 +30,9 @@ pragma solidity 0.8.17;
 import { Initializable } from "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
 import { ERC1155Upgradeable } from "@openzeppelin/contracts-upgradeable/token/ERC1155/ERC1155Upgradeable.sol";
 import { OwnableUpgradeable } from "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
-import { ReentrancyGuardUpgradeable } from "@openzeppelin/contracts-upgradeable/security/ReentrancyGuardUpgradeable.sol";
+import {
+    ReentrancyGuardUpgradeable
+} from "@openzeppelin/contracts-upgradeable/security/ReentrancyGuardUpgradeable.sol";
 import { AccessControlUpgradeable } from "@openzeppelin/contracts-upgradeable/access/AccessControlUpgradeable.sol";
 import { ERCWhitelistSignatureUpgradeable } from "./ERCWhitelistSignatureUpgradeable.sol";
 import { IItemBound } from "../interfaces/IItemBound.sol";
@@ -43,9 +45,6 @@ contract LevelsBoundV1 is
     ERCWhitelistSignatureUpgradeable,
     AccessControlUpgradeable
 {
-    // Reserved storage space to allow for layout changes in the future.
-    uint256[50] private __gap;
-
     mapping(address => uint256) public playerLevel;
     bytes32 public constant MINTER_ROLE = keccak256("MINTER_ROLE");
 
@@ -62,7 +61,11 @@ contract LevelsBoundV1 is
         _disableInitializers();
     }
 
-    function initialize(address developerAdmin, bool _mintRandomItemEnabled, address _itemsNFTAddress) public initializer {
+    function initialize(
+        address developerAdmin,
+        bool _mintRandomItemEnabled,
+        address _itemsNFTAddress
+    ) public initializer {
         __ERC1155_init("");
         __Ownable_init();
         __ReentrancyGuard_init();
@@ -99,7 +102,13 @@ contract LevelsBoundV1 is
         emit RandomItemMinted(to, data, itemsNFTAddress);
     }
 
-    function levelUp(address account, uint256 newLevel, uint256 nonce, bytes calldata data, bytes calldata signature) public nonReentrant {
+    function levelUp(
+        address account,
+        uint256 newLevel,
+        uint256 nonce,
+        bytes calldata data,
+        bytes calldata signature
+    ) public nonReentrant {
         require(newLevel > 0, "New level must be greater than 0");
         require(_verifySignature(_msgSender(), nonce, data, signature), "Invalid signature");
         require(playerLevel[account] != 0, "Player already has this level token");
@@ -146,17 +155,31 @@ contract LevelsBoundV1 is
         _burnBatch(msg.sender, tokenIds, amounts);
     }
 
-    function safeTransferFrom(address _from, address _to, uint256 _id, uint256 _amount, bytes memory _data) public virtual override {
+    function safeTransferFrom(
+        address _from,
+        address _to,
+        uint256 _id,
+        uint256 _amount,
+        bytes memory _data
+    ) public virtual override {
         revert("You can't transfer this token");
         super.safeTransferFrom(_from, _to, _id, _amount, _data);
     }
 
-    function safeBatchTransferFrom(address _from, address _to, uint256[] memory _ids, uint256[] memory _amounts, bytes memory _data) public virtual override {
+    function safeBatchTransferFrom(
+        address _from,
+        address _to,
+        uint256[] memory _ids,
+        uint256[] memory _amounts,
+        bytes memory _data
+    ) public virtual override {
         revert("You can't transfer this token");
         super.safeBatchTransferFrom(_from, _to, _ids, _amounts, _data);
     }
 
-    function supportsInterface(bytes4 interfaceId) public view override(AccessControlUpgradeable, ERC1155Upgradeable) returns (bool) {
+    function supportsInterface(
+        bytes4 interfaceId
+    ) public view override(AccessControlUpgradeable, ERC1155Upgradeable) returns (bool) {
         return super.supportsInterface(interfaceId);
     }
 
