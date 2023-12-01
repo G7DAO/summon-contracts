@@ -30,9 +30,6 @@ pragma solidity 0.8.17;
 import { Initializable } from "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
 
 contract ERCSoulboundUpgradeable is Initializable {
-    // Reserved storage space to allow for layout changes in the future.
-    uint256[50] private __gap;
-
     mapping(uint256 => bool) internal _soulboundTokens; // low gas usage
     mapping(address => bool) internal _soulboundAddresses; // mid gas usage
     mapping(address => mapping(uint256 => uint256)) internal _soulbounds; // high gas usage
@@ -139,7 +136,13 @@ contract ERCSoulboundUpgradeable is Initializable {
         whitelistAddresses[_address] = _isWhitelisted;
     }
 
-    function _checkMultipleAmounts(address from, address to, uint256 tokenId, uint256 amount, uint256 totalAmount) private view {
+    function _checkMultipleAmounts(
+        address from,
+        address to,
+        uint256 tokenId,
+        uint256 amount,
+        uint256 totalAmount
+    ) private view {
         require(from != address(0), "ERCSoulbound: can't be zero address");
         require(amount > 0, "ERCSoulbound: can't be zero amount");
         require(amount <= totalAmount, "ERCSoulbound: can't transfer more than you have");
@@ -149,7 +152,9 @@ contract ERCSoulboundUpgradeable is Initializable {
         }
 
         if (totalAmount - _soulbounds[from][tokenId] < amount) {
-            revert("ERCSoulbound: The amount of soulbounded tokens is more than the amount of tokens to be transferred");
+            revert(
+                "ERCSoulbound: The amount of soulbounded tokens is more than the amount of tokens to be transferred"
+            );
         }
     }
 
@@ -227,4 +232,7 @@ contract ERCSoulboundUpgradeable is Initializable {
     function isSoulboundAddress(address to) public view virtual returns (bool) {
         return _soulboundAddresses[to];
     }
+
+    // Reserved storage space to allow for layout changes in the future.
+    uint256[46] private __gap;
 }

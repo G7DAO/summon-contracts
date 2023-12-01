@@ -53,9 +53,6 @@ contract AvatarBoundV1 is
         _disableInitializers();
     }
 
-    // Reserved storage space to allow for layout changes in the future.
-    uint256[50] private __gap;
-
     bytes32 public constant MINTER_ROLE = keccak256("MINTER_ROLE");
     bytes32 public constant URI_SETTER_ROLE = keccak256("URI_SETTER_ROLE");
     bytes32 public constant PAUSER_ROLE = keccak256("PAUSER_ROLE");
@@ -382,6 +379,23 @@ contract AvatarBoundV1 is
         uint256 batch
     ) internal override(ERC721Upgradeable, ERC721EnumerableUpgradeable) soulboundAddressCheck(from) {
         super._beforeTokenTransfer(from, to, tokenId, batch);
+    }
+
+    function safeTransferFrom(
+        address from,
+        address to,
+        uint256 tokenId
+    ) public override(IERC721Upgradeable, ERC721Upgradeable) nonReentrant {
+        super.safeTransferFrom(from, to, tokenId, "");
+    }
+
+    function safeTransferFrom(
+        address from,
+        address to,
+        uint256 tokenId,
+        bytes memory data
+    ) public override(IERC721Upgradeable, ERC721Upgradeable) nonReentrant {
+        super._safeTransfer(from, to, tokenId, data);
     }
 
     function _burn(uint256 tokenId) internal override(ERC721Upgradeable, ERC721URIStorageUpgradeable) {}

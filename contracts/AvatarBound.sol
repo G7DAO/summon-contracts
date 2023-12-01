@@ -363,6 +363,19 @@ contract AvatarBound is
         super._beforeTokenTransfer(from, to, tokenId, batch);
     }
 
+    function safeTransferFrom(address from, address to, uint256 tokenId) public override(IERC721, ERC721) nonReentrant {
+        super.safeTransferFrom(from, to, tokenId, "");
+    }
+
+    function safeTransferFrom(
+        address from,
+        address to,
+        uint256 tokenId,
+        bytes memory data
+    ) public override(IERC721, ERC721) nonReentrant {
+        super._safeTransfer(from, to, tokenId, data);
+    }
+
     function _burn(uint256 tokenId) internal override(ERC721, ERC721URIStorage) {}
 
     function tokenURI(uint256 tokenId) public view override(ERC721, ERC721URIStorage) returns (string memory) {

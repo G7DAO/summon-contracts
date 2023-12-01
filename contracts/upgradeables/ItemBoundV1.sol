@@ -59,9 +59,6 @@ contract ItemBoundV1 is
     PausableUpgradeable,
     ReentrancyGuardUpgradeable
 {
-    // Reserved storage space to allow for layout changes in the future.
-    uint256[50] private __gap;
-
     event SignerAdded(address signer);
     event SignerRemoved(address signer);
     event ContractURIChanged(string indexed uri);

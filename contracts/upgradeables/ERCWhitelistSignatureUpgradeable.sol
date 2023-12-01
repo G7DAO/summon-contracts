@@ -31,15 +31,11 @@ import "@openzeppelin/contracts-upgradeable/utils/cryptography/ECDSAUpgradeable.
 import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
 
 contract ERCWhitelistSignatureUpgradeable is Initializable {
-    // Reserved storage space to allow for layout changes in the future.
-    uint256[50] private __gap;
-
     mapping(address => bool) public whitelistSigners;
+    mapping(bytes => bool) private usedSignatures;
 
     event WhitelistSignerAdded(address indexed signer);
     event WhitelistSignerRemoved(address indexed signer);
-
-    mapping(bytes => bool) private usedSignatures;
 
     function __ERCWhitelistSignatureUpgradeable_init() internal onlyInitializing {}
 
@@ -57,14 +53,24 @@ contract ERCWhitelistSignatureUpgradeable is Initializable {
         emit WhitelistSignerRemoved(_signer);
     }
 
-    function _recoverAddress(address to, uint256 nonce, bytes calldata data, bytes calldata signature) internal pure virtual returns (address) {
+    function _recoverAddress(
+        address to,
+        uint256 nonce,
+        bytes calldata data,
+        bytes calldata signature
+    ) internal pure virtual returns (address) {
         bytes32 message = keccak256(abi.encodePacked(to, data, nonce));
         bytes32 hash = ECDSAUpgradeable.toEthSignedMessageHash(message);
         address signer = ECDSAUpgradeable.recover(hash, signature);
         return signer;
     }
 
-    function _verifySignature(address to, uint256 nonce, bytes calldata data, bytes calldata signature) internal virtual returns (bool) {
+    function _verifySignature(
+        address to,
+        uint256 nonce,
+        bytes calldata data,
+        bytes calldata signature
+    ) internal virtual returns (bool) {
         if (usedSignatures[signature]) revert("AlreadyUsedSignature");
 
         address signer = _recoverAddress(to, nonce, data, signature);
@@ -75,4 +81,7 @@ contract ERCWhitelistSignatureUpgradeable is Initializable {
             return false;
         }
     }
+
+    // Reserved storage space to allow for layout changes in the future.
+    uint256[48] private __gap;
 }
