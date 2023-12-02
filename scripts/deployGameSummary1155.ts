@@ -15,7 +15,9 @@ async function main() {
     const signer = new ethers.Wallet(PRIVATE_KEY, provider);
     const gameAchievementsContract = await ethers.getContractFactory('GameSummary1155', signer);
 
-    const gameAchievements = (await gameAchievementsContract.deploy('https://achievo.mypinata.cloud/ipfs')) as unknown as GameSummary1155;
+    const gameAchievements = (await gameAchievementsContract.deploy(
+        'https://summon.mypinata.cloud/ipfs'
+    )) as unknown as GameSummary1155;
     await gameAchievements.waitForDeployment();
     log('GameSummary1155 deployed:', gameAchievements.address);
 
@@ -38,7 +40,7 @@ async function main() {
     log('Verifying contract ... ');
     await verifyContract({
         contractAddress: gameAchievements.address,
-        constructorArguments: ['https://achievo.mypinata.cloud/ipfs'],
+        constructorArguments: ['https://summon.mypinata.cloud/ipfs'],
         signer,
         txHash: gameAchievements.deployTransaction.hash,
     });

@@ -2,11 +2,15 @@
 pragma solidity 0.8.17;
 
 import "forge-std/Test.sol";
-import "@openzeppelin/contracts/utils/Strings.sol";
-import "../contracts/ItemBound.sol";
-import "../contracts/mocks/MockERC1155Receiver.sol";
+import "forge-std/StdCheats.sol";
+import { Strings } from "@openzeppelin/contracts/utils/Strings.sol";
+import { ECDSA } from "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
 
-contract ItemBoundTest is Test {
+import { ItemBound } from "../contracts/ItemBound.sol";
+import { MockERC1155Receiver } from "../contracts/mocks/MockERC1155Receiver.sol";
+import { LibItems } from "../contracts/libraries/LibItems.sol";
+
+contract ItemBoundTest is StdCheats, Test {
     using Strings for uint256;
 
     ItemBound public itemBound;
@@ -514,6 +518,52 @@ contract ItemBoundTest is Test {
         itemBound.burnBatch(playerWallet3.addr, _itemIds2, _amount1);
 
         assertEq(itemBound.balanceOf(playerWallet3.addr, _tokenIds[3]), 0);
+    }
+
+    function testBatchTransferFrom() public {
+        uint256[] memory _itemIds1 = new uint256[](3);
+        _itemIds1[0] = _tokenIds[0];
+        _itemIds1[1] = _tokenIds[1];
+        _itemIds1[2] = _tokenIds[2];
+
+        uint256[] memory _itemIds2 = new uint256[](3);
+        _itemIds2[0] = _tokenIds[3];
+        _itemIds2[1] = _tokenIds[4];
+        _itemIds2[2] = _tokenIds[5];
+
+        uint256[] memory _amount1 = new uint256[](3);
+        _amount1[0] = 1;
+        _amount1[1] = 1;
+        _amount1[2] = 1;
+
+        vm.prank(playerWallet.addr);
+        itemBound.mint(encodedItems1, 1, true, nonce, signature);
+        assertEq(itemBound.balanceOf(playerWallet.addr, _tokenIds[0]), 1);
+
+        itemBound.adminMint(playerWallet2.addr, encodedItems1, false);
+
+        vm.prank(playerWallet2.addr);
+        itemBound.safeTransferFrom(playerWallet2.addr, playerWallet.addr, _tokenIds[0], 1, "");
+
+        assertEq(itemBound.balanceOf(playerWallet.addr, _tokenIds[0]), 2);
+
+        uint256[] memory _itemIds3 = new uint256[](2);
+        _itemIds3[0] = _tokenIds[0];
+        _itemIds3[1] = _tokenIds[0];
+
+        uint256[] memory _amount3 = new uint256[](2);
+        _amount3[0] = 1;
+        _amount3[1] = 1;
+
+        vm.expectRevert("ERC1155: duplicate ID");
+        vm.prank(playerWallet.addr);
+        itemBound.safeBatchTransferFrom(playerWallet.addr, minterWallet.addr, _itemIds3, _amount3, "");
+
+        assertEq(itemBound.balanceOf(minterWallet.addr, _tokenIds[0]), 0);
+
+        vm.prank(playerWallet.addr);
+        itemBound.safeTransferFrom(playerWallet.addr, minterWallet.addr, _tokenIds[0], 1, "");
+        assertEq(itemBound.balanceOf(minterWallet.addr, _tokenIds[0]), 1);
     }
 
     function testTokenURIIfTokenIdNotExist() public {

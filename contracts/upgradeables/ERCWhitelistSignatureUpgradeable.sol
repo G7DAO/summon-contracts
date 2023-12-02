@@ -37,6 +37,18 @@ contract ERCWhitelistSignatureUpgradeable is Initializable {
     event WhitelistSignerAdded(address indexed signer);
     event WhitelistSignerRemoved(address indexed signer);
 
+    modifier signatureCheck(
+        address wallet,
+        uint256 nonce,
+        bytes calldata data,
+        bytes calldata signature
+    ) {
+        if (!_verifySignature(wallet, nonce, data, signature)) {
+            revert("InvalidSignature");
+        }
+        _;
+    }
+
     function __ERCWhitelistSignatureUpgradeable_init() internal onlyInitializing {}
 
     function _addWhitelistSigner(address _signer) internal virtual {

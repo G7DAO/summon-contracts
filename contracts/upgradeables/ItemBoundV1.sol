@@ -59,8 +59,6 @@ contract ItemBoundV1 is
     PausableUpgradeable,
     ReentrancyGuardUpgradeable
 {
-    event SignerAdded(address signer);
-    event SignerRemoved(address signer);
     event ContractURIChanged(string indexed uri);
 
     bytes32 public constant MINTER_ROLE = keccak256("MINTER_ROLE");
@@ -83,16 +81,7 @@ contract ItemBoundV1 is
 
     uint256[] public itemIds;
 
-    modifier signatureCheck(
-        uint256 nonce,
-        bytes calldata data,
-        bytes calldata signature
-    ) {
-        if (!_verifySignature(_msgSender(), nonce, data, signature)) {
-            revert("InvalidSignature");
-        }
-        _;
-    }
+    mapping(address => mapping(uint256 => bool)) private tokenIdProcessed;
 
     modifier maxPerMintCheck(uint256 amount) {
         if (amount > MAX_PER_MINT) {
@@ -214,6 +203,18 @@ contract ItemBoundV1 is
         tokenUris[_tokenId] = _tokenUri;
     }
 
+    function batchUpdateTokenUri(
+        uint256[] calldata _tokenIds,
+        string[] calldata _tokenUris
+    ) public onlyRole(MANAGER_ROLE) {
+        if (_tokenIds.length != _tokenUris.length) {
+            revert("InvalidInput");
+        }
+        for (uint256 i = 0; i < _tokenIds.length; i++) {
+            updateTokenUri(_tokenIds[i], _tokenUris[i]);
+        }
+    }
+
     function updateTokenMintPaused(uint256 _tokenId, bool _isTokenMintPaused) public onlyRole(MANAGER_ROLE) {
         isTokenMintPaused[_tokenId] = _isTokenMintPaused;
     }
@@ -248,7 +249,7 @@ contract ItemBoundV1 is
         bool soulbound,
         uint256 nonce,
         bytes calldata signature
-    ) external nonReentrant signatureCheck(nonce, data, signature) maxPerMintCheck(amount) whenNotPaused {
+    ) external nonReentrant signatureCheck(_msgSender(), nonce, data, signature) maxPerMintCheck(amount) whenNotPaused {
         uint256[] memory _tokenIds = _decodeData(data);
         _mintBatch(_msgSender(), _tokenIds, amount, soulbound);
     }
@@ -294,13 +295,7 @@ contract ItemBoundV1 is
         uint256 _id,
         uint256 _amount,
         bytes memory _data
-    )
-        public
-        virtual
-        override
-        soulboundCheck(_from, _to, _id, _amount, balanceOf(_from, _id))
-        syncSoulbound(_from, _to, _id, _amount, balanceOf(_from, _id))
-    {
+    ) public virtual override soulboundCheckAndSync(_from, _to, _id, _amount, balanceOf(_from, _id)) {
         super.safeTransferFrom(_from, _to, _id, _amount, _data);
     }
 
@@ -314,10 +309,25 @@ contract ItemBoundV1 is
         public
         virtual
         override
-        soulboundCheckBatch(_from, _to, _ids, _amounts, balanceOfBatchOneAccount(_from, _ids))
-        syncBatchSoulbound(_from, _to, _ids, _amounts, balanceOfBatchOneAccount(_from, _ids))
+        soulboundCheckAndSyncBatch(_from, _to, _ids, _amounts, balanceOfBatchOneAccount(_from, _ids))
     {
+        for (uint256 i = 0; i < _ids.length; i++) {
+            uint256 id = _ids[i];
+
+            if (tokenIdProcessed[_from][id]) {
+                revert("ERC1155: duplicate ID");
+            }
+
+            tokenIdProcessed[_from][id] = true;
+        }
+
         super.safeBatchTransferFrom(_from, _to, _ids, _amounts, _data);
+
+        // Reset processed status after the transfer is completed
+        for (uint256 i = 0; i < _ids.length; i++) {
+            uint256 id = _ids[i];
+            tokenIdProcessed[_from][id] = false;
+        }
     }
 
     function balanceOfBatchOneAccount(
@@ -342,8 +352,7 @@ contract ItemBoundV1 is
         virtual
         override
         nonReentrant
-        soulboundCheck(to, address(0), tokenId, amount, balanceOf(to, tokenId))
-        syncSoulbound(to, address(0), tokenId, amount, balanceOf(to, tokenId))
+        soulboundCheckAndSync(to, address(0), tokenId, amount, balanceOf(to, tokenId))
     {
         ERC1155BurnableUpgradeable.burn(to, tokenId, amount);
     }
@@ -357,10 +366,25 @@ contract ItemBoundV1 is
         virtual
         override
         nonReentrant
-        soulboundCheckBatch(to, address(0), tokenIds, amounts, balanceOfBatchOneAccount(to, tokenIds))
-        syncBatchSoulbound(to, address(0), tokenIds, amounts, balanceOfBatchOneAccount(to, tokenIds))
+        soulboundCheckAndSyncBatch(to, address(0), tokenIds, amounts, balanceOfBatchOneAccount(to, tokenIds))
     {
+        for (uint256 i = 0; i < tokenIds.length; i++) {
+            uint256 id = tokenIds[i];
+
+            if (tokenIdProcessed[to][id]) {
+                revert("ERC1155: duplicate ID");
+            }
+
+            tokenIdProcessed[to][id] = true;
+        }
+
         ERC1155BurnableUpgradeable.burnBatch(to, tokenIds, amounts);
+
+        // Reset processed status after the transfer is completed
+        for (uint256 i = 0; i < tokenIds.length; i++) {
+            uint256 id = tokenIds[i];
+            tokenIdProcessed[to][id] = false;
+        }
     }
 
     function supportsInterface(

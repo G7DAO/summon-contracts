@@ -18,10 +18,8 @@ export const SoulboundBadgesArgs: Soulbound1155Args = {
     MAINNET: {
         name: 'SoulboundBadges',
         symbol: 'SBB',
-        // TODO: change this for the final gateway
-        baseURI: 'https://apricot-persistent-duck-562.mypinata.cloud/',
-        // TODO: change this for the final gateway
-        contractURI: 'https://apricot-persistent-duck-562.mypinata.cloud/{contractURIHASH}',
+        baseURI: 'https://summon.mypinata.cloud/ipfs',
+        contractURI: 'https://summon.mypinata.cloud/ipfs/{contractURIHASH}',
         maxPerMint: 1,
         isPaused: true,
         devWallet: '0xA10648F8618A526Bd0Acb08a1b9f413BC44Fcb4B',
@@ -31,8 +29,8 @@ export const SoulboundBadgesArgs: Soulbound1155Args = {
     TESTNET: {
         name: 'MyBadges',
         symbol: 'MSB',
-        baseURI: 'https://apricot-persistent-duck-562.mypinata.cloud/',
-        contractURI: 'https://apricot-persistent-duck-562.mypinata.cloud/{contractURIHASH}',
+        baseURI: 'https://summon.mypinata.cloud/ipfs',
+        contractURI: 'https://summon.mypinata.cloud/ipfs/{contractURIHASH}',
         maxPerMint: 1,
         isPaused: false,
         devWallet: '0xA10648F8618A526Bd0Acb08a1b9f413BC44Fcb4B',
@@ -45,10 +43,8 @@ export const ItemsBoundArgs: Soulbound1155Args = {
     MAINNET: {
         name: 'ItemsBound',
         symbol: 'ISB',
-        // TODO: change this for the final gateway
-        baseURI: 'https://apricot-persistent-duck-562.mypinata.cloud/',
-        // TODO: change this for the final gateway
-        contractURI: 'https://apricot-persistent-duck-562.mypinata.cloud/{contractURIHASH}',
+        baseURI: 'https://summon.mypinata.cloud/ipfs',
+        contractURI: 'https://summon.mypinata.cloud/ipfs/{contractURIHASH}',
         maxPerMint: 1,
         isPaused: false,
         devWallet: '0xA10648F8618A526Bd0Acb08a1b9f413BC44Fcb4B',
@@ -58,8 +54,8 @@ export const ItemsBoundArgs: Soulbound1155Args = {
     TESTNET: {
         name: 'MyItems',
         symbol: 'MI',
-        baseURI: 'https://apricot-persistent-duck-562.mypinata.cloud/',
-        contractURI: 'https://apricot-persistent-duck-562.mypinata.cloud/{contractURIHASH}',
+        baseURI: 'https://summon.mypinata.cloud/ipfs',
+        contractURI: 'https://summon.mypinata.cloud/ipfs/{contractURIHASH}',
         maxPerMint: 1,
         isPaused: false,
         devWallet: '0xA10648F8618A526Bd0Acb08a1b9f413BC44Fcb4B',
@@ -92,7 +88,7 @@ export const AvatarBoundArgs = {
         name: 'AvatarBoundV1',
         symbol: 'AVB',
         // TODO: change this for the final gateway
-        baseURI: 'https://apricot-persistent-duck-562.mypinata.cloud/',
+        baseURI: 'https://summon.mypinata.cloud/ipfs',
         // TODO: change this for the final gateway
         contractURI: 'https://apricot-persistent-duck-562.mypinata.cloud/{contractURIHASH}',
         gatingNftAddress: '0xcc1eBf6Dbb9fF24A745D1cc7F6DC3eeDa5f9fa71',
@@ -109,8 +105,8 @@ export const AvatarBoundArgs = {
     TESTNET: {
         name: 'AvatarBoundV1',
         symbol: 'AVB',
-        baseURI: 'https://apricot-persistent-duck-562.mypinata.cloud/',
-        contractURI: 'https://apricot-persistent-duck-562.mypinata.cloud/{contractURIHASH}',
+        baseURI: 'https://summon.mypinata.cloud/ipfs',
+        contractURI: 'https://summon.mypinata.cloud/ipfs/{contractURIHASH}',
         gatingNftAddress: '0xcc1eBf6Dbb9fF24A745D1cc7F6DC3eeDa5f9fa71',
         itemsNftAddress: '0x613D384640769016985Ed4467aDcbb7D8e63f506',
         revealURI: 'QmZnvSyeKRQxWwcofVmq41BNCtHbBmomk8Ny8mtGRTjtzS',
