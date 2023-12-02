@@ -2,12 +2,15 @@
 pragma solidity 0.8.17;
 
 import { Test, console } from "forge-std/Test.sol";
-import "@openzeppelin/contracts/utils/Strings.sol";
-import "../contracts/AvatarBound.sol";
-import "../contracts/ItemBound.sol";
-import "../contracts/mocks/MockERC721Receiver.sol";
-import "../contracts/mocks/MockERC1155Receiver.sol";
-import "../contracts/OpenMint.sol";
+import { Strings } from "@openzeppelin/contracts/utils/Strings.sol";
+import { ECDSA } from "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
+
+import { AvatarBound } from "../contracts/AvatarBound.sol";
+import { ItemBound } from "../contracts/ItemBound.sol";
+import { MockERC721Receiver } from "../contracts/mocks/MockERC721Receiver.sol";
+import { MockERC1155Receiver } from "../contracts/mocks/MockERC1155Receiver.sol";
+import { OpenMint } from "../contracts/OpenMint.sol";
+import { LibItems } from "../contracts/libraries/LibItems.sol";
 
 contract AvatarBoundTest is Test {
     using Strings for uint256;

@@ -534,6 +534,52 @@ contract ItemBoundV1Test is StdCheats, Test {
         assertEq(itemBoundProxy.balanceOf(playerWallet3.addr, _tokenIds[3]), 0);
     }
 
+    function testBatchTransferFrom() public {
+        uint256[] memory _itemIds1 = new uint256[](3);
+        _itemIds1[0] = _tokenIds[0];
+        _itemIds1[1] = _tokenIds[1];
+        _itemIds1[2] = _tokenIds[2];
+
+        uint256[] memory _itemIds2 = new uint256[](3);
+        _itemIds2[0] = _tokenIds[3];
+        _itemIds2[1] = _tokenIds[4];
+        _itemIds2[2] = _tokenIds[5];
+
+        uint256[] memory _amount1 = new uint256[](3);
+        _amount1[0] = 1;
+        _amount1[1] = 1;
+        _amount1[2] = 1;
+
+        vm.prank(playerWallet.addr);
+        itemBoundProxy.mint(encodedItems1, 1, true, nonce, signature);
+        assertEq(itemBoundProxy.balanceOf(playerWallet.addr, _tokenIds[0]), 1);
+
+        itemBoundProxy.adminMint(playerWallet2.addr, encodedItems1, false);
+
+        vm.prank(playerWallet2.addr);
+        itemBoundProxy.safeTransferFrom(playerWallet2.addr, playerWallet.addr, _tokenIds[0], 1, "");
+
+        assertEq(itemBoundProxy.balanceOf(playerWallet.addr, _tokenIds[0]), 2);
+
+        uint256[] memory _itemIds3 = new uint256[](2);
+        _itemIds3[0] = _tokenIds[0];
+        _itemIds3[1] = _tokenIds[0];
+
+        uint256[] memory _amount3 = new uint256[](2);
+        _amount3[0] = 1;
+        _amount3[1] = 1;
+
+        vm.expectRevert("ERC1155: duplicate ID");
+        vm.prank(playerWallet.addr);
+        itemBoundProxy.safeBatchTransferFrom(playerWallet.addr, minterWallet.addr, _itemIds3, _amount3, "");
+
+        assertEq(itemBoundProxy.balanceOf(minterWallet.addr, _tokenIds[0]), 0);
+
+        vm.prank(playerWallet.addr);
+        itemBoundProxy.safeTransferFrom(playerWallet.addr, minterWallet.addr, _tokenIds[0], 1, "");
+        assertEq(itemBoundProxy.balanceOf(minterWallet.addr, _tokenIds[0]), 1);
+    }
+
     function testTokenURIIfTokenIdNotExist() public {
         vm.expectRevert("TokenNotExist");
         itemBoundProxy.uri(1);

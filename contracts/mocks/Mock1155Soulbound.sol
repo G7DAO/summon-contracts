@@ -8,6 +8,8 @@ import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
 import "../ERCSoulbound.sol";
 
 contract Mock1155Soulbound is ERC1155Burnable, ERCSoulbound, ReentrancyGuard {
+    mapping(address => mapping(uint256 => bool)) private tokenIdProcessed;
+
     constructor() ERC1155("lol://lol/{id}") {}
 
     // optional soulbound minting
@@ -19,7 +21,12 @@ contract Mock1155Soulbound is ERC1155Burnable, ERCSoulbound, ReentrancyGuard {
     }
 
     // optional soulbound batch minting
-    function mintBatch(address to, uint256[] memory ids, uint256[] memory amounts, bool soulbound) public virtual nonReentrant {
+    function mintBatch(
+        address to,
+        uint256[] memory ids,
+        uint256[] memory amounts,
+        bool soulbound
+    ) public virtual nonReentrant {
         if (soulbound) {
             _soulboundBatch(to, ids, amounts);
         }
@@ -32,7 +39,7 @@ contract Mock1155Soulbound is ERC1155Burnable, ERCSoulbound, ReentrancyGuard {
         uint256 _id,
         uint256 _amount,
         bytes memory _data
-    ) public virtual override soulboundCheck(_from, _to, _id, _amount, balanceOf(_from, _id)) syncSoulbound(_from, _to, _id, _amount, balanceOf(_from, _id)) {
+    ) public virtual override soulboundCheckAndSync(_from, _to, _id, _amount, balanceOf(_from, _id)) {
         super.safeTransferFrom(_from, _to, _id, _amount, _data);
     }
 
@@ -42,12 +49,35 @@ contract Mock1155Soulbound is ERC1155Burnable, ERCSoulbound, ReentrancyGuard {
         uint256[] memory _ids,
         uint256[] memory _amounts,
         bytes memory _data
-    ) public virtual override soulboundCheckBatch(_from, _to, _ids, _amounts, balanceOfBatchOneAccount(_from, _ids)) syncBatchSoulbound(_from, _to, _ids, _amounts, balanceOfBatchOneAccount(_from, _ids)) {
+    )
+        public
+        virtual
+        override
+        soulboundCheckAndSyncBatch(_from, _to, _ids, _amounts, balanceOfBatchOneAccount(_from, _ids))
+    {
+        for (uint256 i = 0; i < _ids.length; i++) {
+            uint256 id = _ids[i];
+
+            if (tokenIdProcessed[_from][id]) {
+                revert("ERC1155: duplicate ID");
+            }
+
+            tokenIdProcessed[_from][id] = true;
+        }
+
         super.safeBatchTransferFrom(_from, _to, _ids, _amounts, _data);
+
+        // Reset processed status after the transfer is completed
+        for (uint256 i = 0; i < _ids.length; i++) {
+            uint256 id = _ids[i];
+            tokenIdProcessed[_from][id] = false;
+        }
     }
 
-
-    function balanceOfBatchOneAccount(address account, uint256[] memory ids) public view virtual returns (uint256[] memory) {
+    function balanceOfBatchOneAccount(
+        address account,
+        uint256[] memory ids
+    ) public view virtual returns (uint256[] memory) {
         uint256[] memory batchBalances = new uint256[](ids.length);
 
         for (uint256 i = 0; i < ids.length; ++i) {
@@ -57,12 +87,42 @@ contract Mock1155Soulbound is ERC1155Burnable, ERCSoulbound, ReentrancyGuard {
         return batchBalances;
     }
 
-    function burn(address to, uint256 tokenId, uint256 amount) public virtual override soulboundCheck(to, address(0), tokenId, amount, balanceOf(to, tokenId)) syncSoulbound(to, address(0), tokenId, amount, balanceOf(to, tokenId)) {
+    function burn(
+        address to,
+        uint256 tokenId,
+        uint256 amount
+    ) public virtual override soulboundCheckAndSync(to, address(0), tokenId, amount, balanceOf(to, tokenId)) {
         ERC1155Burnable.burn(to, tokenId, amount);
     }
 
-    function burnBatch(address to, uint256[] memory tokenIds, uint256[] memory amounts) public virtual override soulboundCheckBatch(to, address(0), tokenIds, amounts, balanceOfBatchOneAccount(to, tokenIds)) syncBatchSoulbound(to, address(0), tokenIds, amounts, balanceOfBatchOneAccount(to, tokenIds)) {
+    function burnBatch(
+        address to,
+        uint256[] memory tokenIds,
+        uint256[] memory amounts
+    )
+        public
+        virtual
+        override
+        nonReentrant
+        soulboundCheckAndSyncBatch(to, address(0), tokenIds, amounts, balanceOfBatchOneAccount(to, tokenIds))
+    {
+        for (uint256 i = 0; i < tokenIds.length; i++) {
+            uint256 id = tokenIds[i];
+
+            if (tokenIdProcessed[to][id]) {
+                revert("ERC1155: duplicate ID");
+            }
+
+            tokenIdProcessed[to][id] = true;
+        }
+
         ERC1155Burnable.burnBatch(to, tokenIds, amounts);
+
+        // Reset processed status after the transfer is completed
+        for (uint256 i = 0; i < tokenIds.length; i++) {
+            uint256 id = tokenIds[i];
+            tokenIdProcessed[to][id] = false;
+        }
     }
 
     function supportsInterface(bytes4 interfaceId) public view override(ERC1155) returns (bool) {

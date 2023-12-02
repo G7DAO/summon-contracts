@@ -2,8 +2,11 @@
 pragma solidity 0.8.17;
 
 import "forge-std/Test.sol";
-import "../contracts/Soulbound1155.sol";
-import "../contracts/mocks/MockERC1155Receiver.sol";
+import { ECDSA } from "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
+
+import { Soulbound1155 } from "../contracts/Soulbound1155.sol";
+import { MockERC1155Receiver } from "../contracts/mocks/MockERC1155Receiver.sol";
+import { LibSoulbound1155 } from "../contracts/libraries/LibSoulbound1155.sol";
 
 contract Soulbound1155Test is Test {
     Soulbound1155 public soulbound1155;
@@ -26,8 +29,10 @@ contract Soulbound1155Test is Test {
 
     uint256 nonce;
     bytes signature;
+    bytes public encodedItem;
     uint256 nonce2;
     bytes signature2;
+    bytes public encodedItem2;
 
     function getWallet(string memory walletLabel) public returns (Wallet memory) {
         (address addr, uint256 privateKey) = makeAddrAndKey(walletLabel);
@@ -35,16 +40,25 @@ contract Soulbound1155Test is Test {
         return wallet;
     }
 
-    function generateSignature(address wallet, string memory signerLabel) public returns (uint256, bytes memory) {
+    function generateSignature(
+        address wallet,
+        bytes memory encodedItem,
+        string memory signerLabel
+    ) public returns (uint256, bytes memory) {
         Wallet memory signerWallet = getWallet(signerLabel);
 
-        uint256 _nonce = uint256(keccak256(abi.encodePacked(block.timestamp, block.difficulty, signerWallet.addr))) % 50;
+        uint256 _nonce = uint256(keccak256(abi.encodePacked(block.timestamp, block.difficulty, signerWallet.addr))) %
+            50;
 
-        bytes32 message = keccak256(abi.encodePacked(wallet, _nonce));
+        bytes32 message = keccak256(abi.encodePacked(wallet, encodedItem, _nonce));
         bytes32 hash = ECDSA.toEthSignedMessageHash(message);
 
         (uint8 v, bytes32 r, bytes32 s) = vm.sign(signerWallet.privateKey, hash);
         return (_nonce, abi.encodePacked(r, s, v));
+    }
+
+    function encode(uint256 itemId) public pure returns (bytes memory) {
+        return (abi.encode(itemId));
     }
 
     function setUp() public {
@@ -53,12 +67,24 @@ contract Soulbound1155Test is Test {
         playerWallet3 = getWallet(player3Label);
         minterWallet = getWallet(minterLabel);
 
-        soulbound1155 = new Soulbound1155("Test1155", "T1155", "MISSING_BASE_URL", "MISSING_CONTRACT_URL", 1, false, minterWallet.addr, 250);
+        soulbound1155 = new Soulbound1155(
+            "Test1155",
+            "T1155",
+            "MISSING_BASE_URL",
+            "MISSING_CONTRACT_URL",
+            1,
+            false,
+            minterWallet.addr,
+            250
+        );
 
-        soulbound1155.setSigner(minterWallet.addr);
+        soulbound1155.addWhitelistSigner(minterWallet.addr);
 
-        (nonce, signature) = generateSignature(playerWallet.addr, minterLabel);
-        (nonce2, signature2) = generateSignature(playerWallet2.addr, minterLabel);
+        encodedItem = encode(1);
+        encodedItem2 = encode(2);
+
+        (nonce, signature) = generateSignature(playerWallet.addr, encodedItem, minterLabel);
+        (nonce2, signature2) = generateSignature(playerWallet2.addr, encodedItem2, minterLabel);
 
         mockERC1155Receiver = new MockERC1155Receiver();
     }
@@ -68,20 +94,24 @@ contract Soulbound1155Test is Test {
         soulbound1155.pause();
         assertEq(soulbound1155.paused(), true);
 
-        vm.expectRevert("Token not exist");
+        vm.expectRevert("TokenNotExist");
         vm.prank(playerWallet.addr);
-        soulbound1155.mint(1, 1, true, nonce, signature);
+
+        soulbound1155.mint(1, encodedItem, 1, true, nonce, signature);
 
         soulbound1155.unpause();
-        soulbound1155.addNewToken(1);
+
+        LibSoulbound1155.TokenCreate memory _token = LibSoulbound1155.TokenCreate({ tokenId: 1, tokenUri: "" });
+        soulbound1155.addNewToken(_token);
         assertEq(soulbound1155.paused(), false);
 
         vm.prank(playerWallet.addr);
-        soulbound1155.mint(1, 1, true, nonce, signature);
+        soulbound1155.mint(1, encodedItem, 1, true, nonce, signature);
     }
 
     function testPauseUnpause() public {
-        soulbound1155.addNewToken(1);
+        LibSoulbound1155.TokenCreate memory _token = LibSoulbound1155.TokenCreate({ tokenId: 1, tokenUri: "" });
+        soulbound1155.addNewToken(_token);
         soulbound1155.pause();
         vm.expectRevert("Pausable: paused");
         soulbound1155.adminMint(address(this), 1, 1, true);
@@ -94,27 +124,33 @@ contract Soulbound1155Test is Test {
     // testVerifySignature
     function testInvalidSignature() public {
         vm.prank(playerWallet.addr);
-        vm.expectRevert("Invalid signature");
-        soulbound1155.mint(1, 1, true, nonce, signature2);
+        vm.expectRevert("InvalidSignature");
+        soulbound1155.mint(1, encodedItem, 1, true, nonce, signature2);
     }
 
     function testReuseSignatureMint() public {
-        soulbound1155.addNewToken(1);
+        LibSoulbound1155.TokenCreate memory _token = LibSoulbound1155.TokenCreate({ tokenId: 1, tokenUri: "" });
+        soulbound1155.addNewToken(_token);
         vm.prank(playerWallet.addr);
-        soulbound1155.mint(1, 1, true, nonce, signature);
-        assertEq(soulbound1155.usedSignatures(signature), true);
+        soulbound1155.mint(1, encodedItem, 1, true, nonce, signature);
+
         vm.prank(playerWallet.addr);
-        vm.expectRevert("Signature already used");
-        soulbound1155.mint(1, 1, true, nonce, signature);
+        vm.expectRevert("AlreadyUsedSignature");
+        soulbound1155.mint(1, encodedItem, 1, true, nonce, signature);
     }
 
     function testMintShouldPass() public {
-        soulbound1155.addNewToken(1);
+        LibSoulbound1155.TokenCreate memory _token = LibSoulbound1155.TokenCreate({ tokenId: 1, tokenUri: "" });
+        LibSoulbound1155.TokenCreate memory _token2 = LibSoulbound1155.TokenCreate({ tokenId: 2, tokenUri: "" });
+        soulbound1155.addNewToken(_token);
+        soulbound1155.addNewToken(_token2);
 
         vm.prank(playerWallet.addr);
-        soulbound1155.mint(1, 1, true, nonce, signature);
+        soulbound1155.mint(1, encodedItem, 1, true, nonce, signature);
 
-        vm.expectRevert("ERCSoulbound: The amount of soulbounded tokens is more than the amount of tokens to be transferred");
+        vm.expectRevert(
+            "ERCSoulbound: The amount of soulbounded tokens is more than the amount of tokens to be transferred"
+        );
         vm.prank(playerWallet.addr);
         soulbound1155.safeTransferFrom(playerWallet.addr, minterWallet.addr, 1, 1, "");
 
@@ -123,40 +159,43 @@ contract Soulbound1155Test is Test {
         soulbound1155.safeTransferFrom(playerWallet.addr, minterWallet.addr, 1, 0, "");
 
         vm.prank(playerWallet2.addr);
-        soulbound1155.mint(1, 1, false, nonce2, signature2);
+        soulbound1155.mint(2, encodedItem2, 1, false, nonce2, signature2);
 
         vm.prank(playerWallet2.addr);
-        soulbound1155.safeTransferFrom(playerWallet2.addr, minterWallet.addr, 1, 1, "");
+        soulbound1155.safeTransferFrom(playerWallet2.addr, minterWallet.addr, 2, 1, "");
 
         assertEq(soulbound1155.balanceOf(playerWallet.addr, 1), 1);
-        assertEq(soulbound1155.balanceOf(playerWallet2.addr, 1), 0);
-        assertEq(soulbound1155.balanceOf(minterWallet.addr, 1), 1);
+        assertEq(soulbound1155.balanceOf(playerWallet2.addr, 2), 0);
+        assertEq(soulbound1155.balanceOf(minterWallet.addr, 2), 1);
     }
 
     function testMintMoreThanLimit() public {
-        soulbound1155.addNewToken(1);
-        vm.expectRevert("Exceed max mint");
+        LibSoulbound1155.TokenCreate memory _token = LibSoulbound1155.TokenCreate({ tokenId: 1, tokenUri: "" });
+        soulbound1155.addNewToken(_token);
+        vm.expectRevert("ExceedMaxMint");
         vm.prank(playerWallet.addr);
-        soulbound1155.mint(1, 2, true, nonce, signature);
+        soulbound1155.mint(1, encodedItem, 2, true, nonce, signature);
     }
 
     function testMintAlreadyMinted() public {
-        soulbound1155.addNewToken(1);
+        LibSoulbound1155.TokenCreate memory _token = LibSoulbound1155.TokenCreate({ tokenId: 1, tokenUri: "" });
+        soulbound1155.addNewToken(_token);
         vm.prank(playerWallet.addr);
-        soulbound1155.mint(1, 1, true, nonce, signature);
+        soulbound1155.mint(1, encodedItem, 1, true, nonce, signature);
 
         skip(3600); // so nonce is different
-        (uint256 newNonce, bytes memory newSignature) = generateSignature(playerWallet.addr, minterLabel);
 
-        vm.expectRevert("Already minted");
+        (uint256 newNonce, bytes memory newSignature) = generateSignature(playerWallet.addr, encodedItem, minterLabel);
+
+        vm.expectRevert("AlreadyMinted");
         vm.prank(playerWallet.addr);
-        soulbound1155.mint(1, 1, true, newNonce, newSignature);
+        soulbound1155.mint(1, encodedItem, 1, true, newNonce, newSignature);
     }
 
     function testMintInvalidTokenId() public {
-        vm.expectRevert("Token not exist");
+        vm.expectRevert("TokenNotExist");
         vm.prank(playerWallet.addr);
-        soulbound1155.mint(30, 1, true, nonce, signature);
+        soulbound1155.mint(30, encodedItem, 1, true, nonce, signature);
     }
 
     function testAdminMintNotMinterRole() public {
@@ -168,7 +207,8 @@ contract Soulbound1155Test is Test {
     }
 
     function testAdminMint() public {
-        soulbound1155.addNewToken(1);
+        LibSoulbound1155.TokenCreate memory _token = LibSoulbound1155.TokenCreate({ tokenId: 1, tokenUri: "" });
+        soulbound1155.addNewToken(_token);
         soulbound1155.adminMint(playerWallet.addr, 1, 1, true);
     }
 
@@ -189,8 +229,11 @@ contract Soulbound1155Test is Test {
     }
 
     function testAdminMintBatch() public {
-        soulbound1155.addNewToken(111);
-        soulbound1155.addNewToken(222);
+        LibSoulbound1155.TokenCreate memory _token111 = LibSoulbound1155.TokenCreate({ tokenId: 111, tokenUri: "" });
+        LibSoulbound1155.TokenCreate memory _token222 = LibSoulbound1155.TokenCreate({ tokenId: 222, tokenUri: "" });
+        soulbound1155.addNewToken(_token111);
+        soulbound1155.addNewToken(_token222);
+
         uint256[] memory tokenIds = new uint256[](2);
         tokenIds[0] = 111;
         tokenIds[1] = 222;
@@ -203,10 +246,11 @@ contract Soulbound1155Test is Test {
     }
 
     function testBurnNotOwnerShouldFail() public {
-        soulbound1155.addNewToken(1);
+        LibSoulbound1155.TokenCreate memory _token = LibSoulbound1155.TokenCreate({ tokenId: 1, tokenUri: "" });
+        soulbound1155.addNewToken(_token);
 
         vm.prank(playerWallet.addr);
-        soulbound1155.mint(1, 1, false, nonce, signature);
+        soulbound1155.mint(1, encodedItem, 1, false, nonce, signature);
         assertEq(soulbound1155.balanceOf(playerWallet.addr, 1), 1);
 
         vm.expectRevert("ERC1155: caller is not token owner or approved");
@@ -215,33 +259,40 @@ contract Soulbound1155Test is Test {
     }
 
     function testBurn() public {
-        soulbound1155.addNewToken(1);
+        LibSoulbound1155.TokenCreate memory _token = LibSoulbound1155.TokenCreate({ tokenId: 1, tokenUri: "" });
+        LibSoulbound1155.TokenCreate memory _token2 = LibSoulbound1155.TokenCreate({ tokenId: 2, tokenUri: "" });
+        soulbound1155.addNewToken(_token);
+        soulbound1155.addNewToken(_token2);
 
         vm.prank(playerWallet.addr);
-        soulbound1155.mint(1, 1, true, nonce, signature);
+        soulbound1155.mint(1, encodedItem, 1, true, nonce, signature);
         assertEq(soulbound1155.balanceOf(playerWallet.addr, 1), 1);
 
-        vm.expectRevert("ERCSoulbound: The amount of soulbounded tokens is more than the amount of tokens to be transferred");
+        vm.expectRevert(
+            "ERCSoulbound: The amount of soulbounded tokens is more than the amount of tokens to be transferred"
+        );
         vm.prank(playerWallet.addr);
         soulbound1155.safeTransferFrom(playerWallet.addr, minterWallet.addr, 1, 1, "");
 
-        vm.expectRevert("ERCSoulbound: The amount of soulbounded tokens is more than the amount of tokens to be transferred");
+        vm.expectRevert(
+            "ERCSoulbound: The amount of soulbounded tokens is more than the amount of tokens to be transferred"
+        );
         vm.prank(playerWallet.addr);
         soulbound1155.burn(playerWallet.addr, 1, 1);
 
         vm.prank(playerWallet2.addr);
-        soulbound1155.mint(1, 1, false, nonce2, signature2);
+        soulbound1155.mint(2, encodedItem2, 1, false, nonce2, signature2);
 
         vm.prank(playerWallet2.addr);
-        soulbound1155.safeTransferFrom(playerWallet2.addr, playerWallet3.addr, 1, 1, "");
+        soulbound1155.safeTransferFrom(playerWallet2.addr, playerWallet3.addr, 2, 1, "");
 
-        assertEq(soulbound1155.balanceOf(playerWallet2.addr, 1), 0);
-        assertEq(soulbound1155.balanceOf(playerWallet3.addr, 1), 1);
+        assertEq(soulbound1155.balanceOf(playerWallet2.addr, 2), 0);
+        assertEq(soulbound1155.balanceOf(playerWallet3.addr, 2), 1);
 
         vm.prank(playerWallet3.addr);
-        soulbound1155.burn(playerWallet3.addr, 1, 1);
+        soulbound1155.burn(playerWallet3.addr, 2, 1);
 
-        assertEq(soulbound1155.balanceOf(playerWallet3.addr, 1), 0);
+        assertEq(soulbound1155.balanceOf(playerWallet3.addr, 2), 0);
     }
 
     function testBurnBatchNotOwnerShouldFail() public {
@@ -255,9 +306,12 @@ contract Soulbound1155Test is Test {
         _amount1[1] = 1;
         _amount1[2] = 1;
 
-        soulbound1155.addNewToken(1);
-        soulbound1155.addNewToken(2);
-        soulbound1155.addNewToken(3);
+        LibSoulbound1155.TokenCreate memory _token = LibSoulbound1155.TokenCreate({ tokenId: 1, tokenUri: "" });
+        LibSoulbound1155.TokenCreate memory _token2 = LibSoulbound1155.TokenCreate({ tokenId: 2, tokenUri: "" });
+        LibSoulbound1155.TokenCreate memory _token3 = LibSoulbound1155.TokenCreate({ tokenId: 3, tokenUri: "" });
+        soulbound1155.addNewToken(_token);
+        soulbound1155.addNewToken(_token2);
+        soulbound1155.addNewToken(_token3);
 
         soulbound1155.adminMintBatch(playerWallet.addr, _itemIds1, _amount1, false);
         assertEq(soulbound1155.balanceOf(playerWallet.addr, 1), 1);
@@ -283,21 +337,31 @@ contract Soulbound1155Test is Test {
         _amount1[1] = 1;
         _amount1[2] = 1;
 
-        soulbound1155.addNewToken(1);
-        soulbound1155.addNewToken(2);
-        soulbound1155.addNewToken(3);
-        soulbound1155.addNewToken(4);
-        soulbound1155.addNewToken(5);
-        soulbound1155.addNewToken(6);
+        LibSoulbound1155.TokenCreate memory _token = LibSoulbound1155.TokenCreate({ tokenId: 1, tokenUri: "" });
+        LibSoulbound1155.TokenCreate memory _token2 = LibSoulbound1155.TokenCreate({ tokenId: 2, tokenUri: "" });
+        LibSoulbound1155.TokenCreate memory _token3 = LibSoulbound1155.TokenCreate({ tokenId: 3, tokenUri: "" });
+        LibSoulbound1155.TokenCreate memory _token4 = LibSoulbound1155.TokenCreate({ tokenId: 4, tokenUri: "" });
+        LibSoulbound1155.TokenCreate memory _token5 = LibSoulbound1155.TokenCreate({ tokenId: 5, tokenUri: "" });
+        LibSoulbound1155.TokenCreate memory _token6 = LibSoulbound1155.TokenCreate({ tokenId: 6, tokenUri: "" });
+        soulbound1155.addNewToken(_token);
+        soulbound1155.addNewToken(_token2);
+        soulbound1155.addNewToken(_token3);
+        soulbound1155.addNewToken(_token4);
+        soulbound1155.addNewToken(_token5);
+        soulbound1155.addNewToken(_token6);
 
         soulbound1155.adminMintBatch(playerWallet.addr, _itemIds1, _amount1, true);
         assertEq(soulbound1155.balanceOf(playerWallet.addr, 1), 1);
 
-        vm.expectRevert("ERCSoulbound: The amount of soulbounded tokens is more than the amount of tokens to be transferred");
+        vm.expectRevert(
+            "ERCSoulbound: The amount of soulbounded tokens is more than the amount of tokens to be transferred"
+        );
         vm.prank(playerWallet.addr);
         soulbound1155.safeTransferFrom(playerWallet.addr, minterWallet.addr, 1, 1, "");
 
-        vm.expectRevert("ERCSoulbound: The amount of soulbounded tokens is more than the amount of tokens to be transferred");
+        vm.expectRevert(
+            "ERCSoulbound: The amount of soulbounded tokens is more than the amount of tokens to be transferred"
+        );
         vm.prank(playerWallet.addr);
         soulbound1155.burnBatch(playerWallet.addr, _itemIds1, _amount1);
 
@@ -320,18 +384,19 @@ contract Soulbound1155Test is Test {
     }
 
     function testTokenURIIfTokenIdNotExist() public {
-        vm.expectRevert("Token not exist");
+        vm.expectRevert("TokenNotExist");
         soulbound1155.uri(1);
     }
 
     function testTokenURIIfTokenIdExist() public {
-        soulbound1155.addNewToken(1);
+        LibSoulbound1155.TokenCreate memory _token = LibSoulbound1155.TokenCreate({ tokenId: 1, tokenUri: "" });
+        soulbound1155.addNewToken(_token);
 
-        assertEq(soulbound1155.uri(1), "MISSING_BASE_URL1");
+        assertEq(soulbound1155.uri(1), "MISSING_BASE_URL/1");
     }
 
     function testUpdateTokenURIFailNotManagerRole() public {
-        string memory newBaseURI = "https://something-new.com/";
+        string memory newBaseURI = "https://something-new.com";
 
         vm.expectRevert(
             "AccessControl: account 0x44e97af4418b7a17aabd8090bea0a471a366305c is missing role 0x241ecf16d79d0f8dbfb92cbc07fe17840425976cf0667f022fe9877caa831b08"
@@ -341,20 +406,22 @@ contract Soulbound1155Test is Test {
     }
 
     function testUpdateTokenURIPass() public {
-        string memory newBaseURI = "https://something-new.com/";
+        string memory newBaseURI = "https://something-new.com";
 
-        soulbound1155.addNewToken(1);
+        LibSoulbound1155.TokenCreate memory _token = LibSoulbound1155.TokenCreate({ tokenId: 1, tokenUri: "" });
+        soulbound1155.addNewToken(_token);
 
-        assertEq(soulbound1155.uri(1), "MISSING_BASE_URL1");
+        assertEq(soulbound1155.uri(1), "MISSING_BASE_URL/1");
         soulbound1155.updateBaseUri(newBaseURI);
         assertEq(soulbound1155.uri(1), "https://something-new.com/1");
     }
 
     function testNonSoulboundTokenTransfer() public {
-        soulbound1155.addNewToken(1);
+        LibSoulbound1155.TokenCreate memory _token = LibSoulbound1155.TokenCreate({ tokenId: 1, tokenUri: "" });
+        soulbound1155.addNewToken(_token);
 
         vm.prank(playerWallet.addr);
-        soulbound1155.mint(1, 1, false, nonce, signature);
+        soulbound1155.mint(1, encodedItem, 1, false, nonce, signature);
 
         vm.prank(playerWallet.addr);
         soulbound1155.safeTransferFrom(playerWallet.addr, minterWallet.addr, 1, 1, "");
@@ -364,12 +431,15 @@ contract Soulbound1155Test is Test {
     }
 
     function testSoulboundTokenNotTransfer() public {
-        soulbound1155.addNewToken(1);
+        LibSoulbound1155.TokenCreate memory _token = LibSoulbound1155.TokenCreate({ tokenId: 1, tokenUri: "" });
+        soulbound1155.addNewToken(_token);
 
         vm.prank(playerWallet.addr);
-        soulbound1155.mint(1, 1, true, nonce, signature);
+        soulbound1155.mint(1, encodedItem, 1, true, nonce, signature);
 
-        vm.expectRevert("ERCSoulbound: The amount of soulbounded tokens is more than the amount of tokens to be transferred");
+        vm.expectRevert(
+            "ERCSoulbound: The amount of soulbounded tokens is more than the amount of tokens to be transferred"
+        );
         vm.prank(playerWallet.addr);
         soulbound1155.safeTransferFrom(playerWallet.addr, minterWallet.addr, 1, 1, "");
 
@@ -379,12 +449,15 @@ contract Soulbound1155Test is Test {
     }
 
     function testSoulboundTokenTransferOnlyWhitelistAddresses() public {
-        soulbound1155.addNewToken(1);
+        LibSoulbound1155.TokenCreate memory _token = LibSoulbound1155.TokenCreate({ tokenId: 1, tokenUri: "" });
+        soulbound1155.addNewToken(_token);
 
         vm.prank(playerWallet.addr);
-        soulbound1155.mint(1, 1, true, nonce, signature);
+        soulbound1155.mint(1, encodedItem, 1, true, nonce, signature);
 
-        vm.expectRevert("ERCSoulbound: The amount of soulbounded tokens is more than the amount of tokens to be transferred");
+        vm.expectRevert(
+            "ERCSoulbound: The amount of soulbounded tokens is more than the amount of tokens to be transferred"
+        );
         vm.prank(playerWallet.addr);
         soulbound1155.safeTransferFrom(playerWallet.addr, minterWallet.addr, 1, 1, "");
 
@@ -398,7 +471,9 @@ contract Soulbound1155Test is Test {
 
         soulbound1155.updateWhitelistAddress(playerWallet3.addr, false);
 
-        vm.expectRevert("ERCSoulbound: The amount of soulbounded tokens is more than the amount of tokens to be transferred");
+        vm.expectRevert(
+            "ERCSoulbound: The amount of soulbounded tokens is more than the amount of tokens to be transferred"
+        );
         vm.prank(playerWallet.addr);
         soulbound1155.safeTransferFrom(playerWallet.addr, playerWallet3.addr, 1, 1, "");
     }
