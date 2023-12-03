@@ -114,7 +114,7 @@ contract ItemBound is
         return true;
     }
 
-    function decodeData(bytes calldata _data) public view returns (uint256[] memory) {
+    function decodeData(bytes calldata _data) public view onlyRole(DEFAULT_ADMIN_ROLE) returns (uint256[] memory) {
         return _decodeData(_data);
     }
 
