@@ -46,6 +46,7 @@ import {
 
 import { ERCSoulboundUpgradeable } from "./ERCSoulboundUpgradeable.sol";
 import { ERCWhitelistSignatureUpgradeable } from "./ERCWhitelistSignatureUpgradeable.sol";
+import { ItemTierManagerUpgradeable } from "./ItemTierManagerUpgradeable.sol";
 import { LibItems } from "../libraries/LibItems.sol";
 
 contract ItemBoundV1 is
@@ -57,7 +58,8 @@ contract ItemBoundV1 is
     ERCWhitelistSignatureUpgradeable,
     AccessControlUpgradeable,
     PausableUpgradeable,
-    ReentrancyGuardUpgradeable
+    ReentrancyGuardUpgradeable,
+    ItemTierManagerUpgradeable
 {
     event ContractURIChanged(string indexed uri);
 
@@ -77,7 +79,7 @@ contract ItemBoundV1 is
     mapping(uint256 => bool) private tokenExists;
     mapping(uint256 => string) public tokenUris; // tokenId => tokenUri
     mapping(uint256 => bool) public isTokenMintPaused; // tokenId => bool - default is false
-    mapping(LibItems.Tier => mapping(uint256 => uint256[])) public itemPerTierPerLevel; // tier => level => itemId[]
+    mapping(uint256 => mapping(uint256 => uint256[])) public itemPerTierPerLevel; // tier => level => itemId[]
 
     uint256[] public itemIds;
 
@@ -152,9 +154,10 @@ contract ItemBoundV1 is
     ) public initializer {
         __ERC1155_init("");
         __ReentrancyGuard_init();
+        __AccessControl_init();
         __ERCSoulboundUpgradable_init();
         __ERCWhitelistSignatureUpgradeable_init();
-        __AccessControl_init();
+        __ItemTierManagerUpgradeableUpgradeable_init();
 
         _grantRole(DEFAULT_ADMIN_ROLE, msg.sender);
         _grantRole(MINTER_ROLE, msg.sender);
@@ -185,6 +188,11 @@ contract ItemBoundV1 is
         }
         if (bytes(_token.tokenUri).length > 0) {
             tokenUris[_token.tokenId] = _token.tokenUri;
+        }
+
+        // check if tier exists
+        if (!isTierExist(_token.tier)) {
+            revert("TierNotExist");
         }
 
         tokenExists[_token.tokenId] = true;
@@ -228,7 +236,7 @@ contract ItemBoundV1 is
         return currentMaxLevel;
     }
 
-    function getItemsPerTierPerLevel(LibItems.Tier _tier, uint256 _level) public view returns (uint256[] memory) {
+    function getItemsPerTierPerLevel(uint256 _tier, uint256 _level) public view returns (uint256[] memory) {
         return itemPerTierPerLevel[_tier][_level];
     }
 
