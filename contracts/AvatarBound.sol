@@ -27,20 +27,29 @@ pragma solidity 0.8.17;
  *                          ...
  */
 
-import "@openzeppelin/contracts/token/ERC721/extensions/ERC721URIStorage.sol";
-import "@openzeppelin/contracts/token/ERC721/extensions/ERC721Enumerable.sol";
-import "@openzeppelin/contracts/token/ERC721/IERC721.sol";
-import "@openzeppelin/contracts/access/AccessControl.sol";
-import "@openzeppelin/contracts/security/Pausable.sol";
-import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
-import "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
+import { ERC721 } from "@openzeppelin/contracts/token/ERC721/ERC721.sol";
+import { ERC721URIStorage } from "@openzeppelin/contracts/token/ERC721/extensions/ERC721URIStorage.sol";
+import { ERC721Enumerable } from "@openzeppelin/contracts/token/ERC721/extensions/ERC721Enumerable.sol";
+import { IERC721 } from "@openzeppelin/contracts/token/ERC721/IERC721.sol";
+import { AccessControl } from "@openzeppelin/contracts/access/AccessControl.sol";
+import { Pausable } from "@openzeppelin/contracts/security/Pausable.sol";
+import { ReentrancyGuard } from "@openzeppelin/contracts/security/ReentrancyGuard.sol";
+import { ECDSA } from "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
 
 import { ERCSoulbound } from "./ERCSoulbound.sol";
 import { ERCWhitelistSignature } from "./ERCWhitelistSignature.sol";
 import { IItemBound } from "./interfaces/IItemBound.sol";
 import { IOpenMint } from "./interfaces/IOpenMint.sol";
 
-contract AvatarBound is ERC721URIStorage, ERC721Enumerable, AccessControl, ERCSoulbound, ERCWhitelistSignature, Pausable, ReentrancyGuard {
+contract AvatarBound is
+    ERC721URIStorage,
+    ERC721Enumerable,
+    AccessControl,
+    ERCSoulbound,
+    ERCWhitelistSignature,
+    Pausable,
+    ReentrancyGuard
+{
     bytes32 public constant MINTER_ROLE = keccak256("MINTER_ROLE");
     bytes32 public constant URI_SETTER_ROLE = keccak256("URI_SETTER_ROLE");
     bytes32 public constant PAUSER_ROLE = keccak256("PAUSER_ROLE");
@@ -53,11 +62,17 @@ contract AvatarBound is ERC721URIStorage, ERC721Enumerable, AccessControl, ERCSo
     string public revealURI;
     address public gatingNFTAddress;
     address public itemsNFTAddress;
-    bool private mintNftGatingEnabled;
-    bool private mintNftWithoutGatingEnabled;
-    bool private mintRandomItemEnabled;
-    bool private mintSpecialItemEnabled;
-    bool private mintDefaultItemEnabled;
+    bool public mintNftGatingEnabled;
+    bool public mintNftWithoutGatingEnabled;
+    bool public mintRandomItemEnabled;
+    bool public mintSpecialItemEnabled;
+    bool public mintDefaultItemEnabled;
+    bool public revealNftGatingEnabled;
+
+    struct BaseSkinResponse {
+        uint256 baseSkinId;
+        string tokenUri;
+    }
 
     event BaseURIChanged(string indexed uri, address admin);
     event ContractURIChanged(string indexed uri, address admin);
@@ -71,6 +86,7 @@ contract AvatarBound is ERC721URIStorage, ERC721Enumerable, AccessControl, ERCSo
     event MintRandomItemEnabledChanged(bool enabled, address admin);
     event MintSpecialItemEnabledChanged(bool enabled, address admin);
     event MintDefaultItemEnabledChanged(bool enabled, address admin);
+    event EnabledRevealNftGatingEnabledChanged(bool enabled, address admin);
     event RandomItemsMintsChanged(uint256 indexed newMints, address admin);
     event SpecialItemIdChanged(uint indexed newId, address admin);
     event DefaultItemIdChanged(uint indexed newId, address admin);
@@ -89,14 +105,20 @@ contract AvatarBound is ERC721URIStorage, ERC721Enumerable, AccessControl, ERCSo
         string memory _symbol,
         string memory _baseTokenURI,
         string memory _contractURI,
+        string memory _revealURI,
         address developerAdmin,
         address _gatingNFTAddress,
         address _itemsNFTAddress,
         bool _mintNftGatingEnabled,
         bool _mintNftWithoutGatingEnabled,
-        bool _mintRandomItemEnabled
+        bool _mintRandomItemEnabled,
+        bool _mintSpecialItemEnabled
     ) ERC721(_name, _symbol) {
         _grantRole(DEFAULT_ADMIN_ROLE, developerAdmin);
+        _grantRole(MINTER_ROLE, developerAdmin);
+        _grantRole(PAUSER_ROLE, developerAdmin);
+        _addWhitelistSigner(developerAdmin);
+
         baseTokenURI = _baseTokenURI;
         contractURI = _contractURI;
         gatingNFTAddress = _gatingNFTAddress;
@@ -104,6 +126,10 @@ contract AvatarBound is ERC721URIStorage, ERC721Enumerable, AccessControl, ERCSo
         mintNftGatingEnabled = _mintNftGatingEnabled;
         mintNftWithoutGatingEnabled = _mintNftWithoutGatingEnabled;
         mintRandomItemEnabled = _mintRandomItemEnabled;
+        mintSpecialItemEnabled = _mintSpecialItemEnabled;
+        mintDefaultItemEnabled = true;
+        revealNftGatingEnabled = true;
+        revealURI = _revealURI;
     }
 
     function mint(address to, uint256 baseSkinId) private {
@@ -125,9 +151,15 @@ contract AvatarBound is ERC721URIStorage, ERC721Enumerable, AccessControl, ERCSo
     ) public nonReentrant whenNotPaused {
         require(mintNftGatingEnabled, "NFT gating mint is not enabled");
         require(_verifySignature(_msgSender(), nonce, data, signature), "Invalid signature");
-        require(IOpenMint(gatingNFTAddress).ownerOf(nftGatingId) == _msgSender(), "Sender does not own the required NFT");
+        require(
+            IOpenMint(gatingNFTAddress).ownerOf(nftGatingId) == _msgSender(),
+            "Sender does not own the required NFT"
+        );
         mint(_msgSender(), baseSkinId);
-        revealNFTGatingToken(nftGatingId);
+
+        if (revealNftGatingEnabled) {
+            revealNFTGatingToken(nftGatingId);
+        }
 
         if (mintRandomItemEnabled) {
             mintRandomItem(_msgSender(), data);
@@ -138,7 +170,12 @@ contract AvatarBound is ERC721URIStorage, ERC721Enumerable, AccessControl, ERCSo
         }
     }
 
-    function mintAvatar(uint256 baseSkinId, uint256 nonce, bytes calldata data, bytes calldata signature) public nonReentrant whenNotPaused {
+    function mintAvatar(
+        uint256 baseSkinId,
+        uint256 nonce,
+        bytes calldata data,
+        bytes calldata signature
+    ) public nonReentrant whenNotPaused {
         require(mintNftWithoutGatingEnabled, "Minting without nft gating is not enabled");
         require(_verifySignature(_msgSender(), nonce, data, signature), "Invalid signature");
         mint(_msgSender(), baseSkinId);
@@ -156,14 +193,17 @@ contract AvatarBound is ERC721URIStorage, ERC721Enumerable, AccessControl, ERCSo
         mint(to, baseSkinId);
     }
 
-    function batchMint(address[] calldata addresses, uint256[] calldata baseSkinIds) public onlyRole(MINTER_ROLE) whenNotPaused {
+    function batchMint(
+        address[] calldata addresses,
+        uint256[] calldata baseSkinIds
+    ) public onlyRole(MINTER_ROLE) whenNotPaused {
         require(addresses.length == baseSkinIds.length, "Addresses and URIs length mismatch");
         for (uint256 i = 0; i < baseSkinIds.length; i++) {
             mint(addresses[i], baseSkinIds[i]);
         }
     }
 
-    function revealNFTGatingToken(uint256 tokenId) public onlyRole(MINTER_ROLE) whenNotPaused {
+    function revealNFTGatingToken(uint256 tokenId) private whenNotPaused {
         IOpenMint(gatingNFTAddress).reveal(tokenId, revealURI);
         emit NFTRevealed(tokenId, _msgSender(), gatingNFTAddress);
     }
@@ -182,7 +222,12 @@ contract AvatarBound is ERC721URIStorage, ERC721Enumerable, AccessControl, ERCSo
         emit RandomItemMinted(to, data, itemsNFTAddress);
     }
 
-    function adminVerifySignature(address to, uint256 nonce, bytes calldata data, bytes calldata signature) public onlyRole(DEFAULT_ADMIN_ROLE) returns (bool) {
+    function adminVerifySignature(
+        address to,
+        uint256 nonce,
+        bytes calldata data,
+        bytes calldata signature
+    ) public onlyRole(DEFAULT_ADMIN_ROLE) returns (bool) {
         return _verifySignature(to, nonce, data, signature);
     }
 
@@ -207,12 +252,24 @@ contract AvatarBound is ERC721URIStorage, ERC721Enumerable, AccessControl, ERCSo
         return baseTokenURI;
     }
 
-    function getAllBaseSkins() public view returns (string[] memory) {
-        string[] memory skins = new string[](_baseSkinCounter);
+    function getAllBaseSkins() public view returns (BaseSkinResponse[] memory) {
+        BaseSkinResponse[] memory allBaseSkins = new BaseSkinResponse[](_baseSkinCounter);
         for (uint256 i = 0; i < _baseSkinCounter; i++) {
-            skins[i] = baseSkins[i];
+            BaseSkinResponse memory avatarBaseSkinResponse = BaseSkinResponse({
+                baseSkinId: i,
+                tokenUri: baseSkins[i]
+            });
+            allBaseSkins[i] = avatarBaseSkinResponse;
         }
-        return skins;
+        return allBaseSkins;
+    }
+
+    function getSpecialId() public view onlyRole(DEFAULT_ADMIN_ROLE) returns (uint256) {
+        return _specialItemId;
+    }
+
+    function getDefaultItem() public view onlyRole(DEFAULT_ADMIN_ROLE) returns (uint256) {
+        return defaultItemId;
     }
 
     function setContractURI(string memory _contractURI) public onlyRole(DEFAULT_ADMIN_ROLE) {
@@ -298,6 +355,12 @@ contract AvatarBound is ERC721URIStorage, ERC721Enumerable, AccessControl, ERCSo
         emit MintNftWithoutGatingEnabledChanged(_mintNftWithoutGatingEnabled, _msgSender());
     }
 
+    function setRevealNftGatingEnabled(bool _revealNftGatingEnabled) public onlyRole(DEFAULT_ADMIN_ROLE) {
+        require(_revealNftGatingEnabled != revealNftGatingEnabled, "NFT without gating already set");
+        revealNftGatingEnabled = _revealNftGatingEnabled;
+        emit EnabledRevealNftGatingEnabledChanged(_revealNftGatingEnabled, _msgSender());
+    }
+
     function _beforeTokenTransfer(
         address from,
         address to,
@@ -305,6 +368,19 @@ contract AvatarBound is ERC721URIStorage, ERC721Enumerable, AccessControl, ERCSo
         uint256 batch
     ) internal override(ERC721, ERC721Enumerable) soulboundAddressCheck(from) {
         super._beforeTokenTransfer(from, to, tokenId, batch);
+    }
+
+    function safeTransferFrom(address from, address to, uint256 tokenId) public override(IERC721, ERC721) nonReentrant {
+        super.safeTransferFrom(from, to, tokenId, "");
+    }
+
+    function safeTransferFrom(
+        address from,
+        address to,
+        uint256 tokenId,
+        bytes memory data
+    ) public override(IERC721, ERC721) nonReentrant {
+        super._safeTransfer(from, to, tokenId, data);
     }
 
     function _burn(uint256 tokenId) internal override(ERC721, ERC721URIStorage) {}

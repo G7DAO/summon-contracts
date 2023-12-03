@@ -1,10 +1,9 @@
-// SPDX-License-Identifier: UNLICENSED
-///@notice This contract is for mock for WETH token.
+// SPDX-License-Identifier: MIT
 pragma solidity 0.8.17;
 
 /**
- * Author: Max <max@game7.io>(https://github.com/vasinl124)
- * Co-Authors: Omar <omar@game7.io>(https://github.com/ogarciarevett)
+ * Author: Omar <omar@game7.io>(https://github.com/ogarciarevett)
+ * Co-Authors: Max <max@game7.io>(https://github.com/vasinl124)
  */
 
 /**                        .;c;.
@@ -28,27 +27,37 @@ pragma solidity 0.8.17;
  *                          ...
  */
 
-import { ERC1155 } from "@openzeppelin/contracts/token/ERC1155/ERC1155.sol";
-import { ERC1155Burnable } from "@openzeppelin/contracts/token/ERC1155/extensions/ERC1155Burnable.sol";
-import { AccessControl } from "@openzeppelin/contracts/access/AccessControl.sol";
-import { Pausable } from "@openzeppelin/contracts/security/Pausable.sol";
-import { Strings } from "@openzeppelin/contracts/utils/Strings.sol";
-import { ERC2981 } from "@openzeppelin/contracts/token/common/ERC2981.sol";
-import { ECDSA } from "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
-import { ReentrancyGuard } from "@openzeppelin/contracts/security/ReentrancyGuard.sol";
+import { Initializable } from "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
+import { ERC1155Upgradeable } from "@openzeppelin/contracts-upgradeable/token/ERC1155/ERC1155Upgradeable.sol";
+import {
+    ERC1155BurnableUpgradeable
+} from "@openzeppelin/contracts-upgradeable/token/ERC1155/extensions/ERC1155BurnableUpgradeable.sol";
+import {
+    ERC1155SupplyUpgradeable
+} from "@openzeppelin/contracts-upgradeable/token/ERC1155/extensions/ERC1155SupplyUpgradeable.sol";
+import { AccessControlUpgradeable } from "@openzeppelin/contracts-upgradeable/access/AccessControlUpgradeable.sol";
+import { PausableUpgradeable } from "@openzeppelin/contracts-upgradeable/security/PausableUpgradeable.sol";
+import { StringsUpgradeable } from "@openzeppelin/contracts-upgradeable/utils/StringsUpgradeable.sol";
+import { ERC2981Upgradeable } from "@openzeppelin/contracts-upgradeable/token/common/ERC2981Upgradeable.sol";
+import { ECDSAUpgradeable } from "@openzeppelin/contracts-upgradeable/utils/cryptography/ECDSAUpgradeable.sol";
+import {
+    ReentrancyGuardUpgradeable
+} from "@openzeppelin/contracts-upgradeable/security/ReentrancyGuardUpgradeable.sol";
 
-import { ERCSoulbound } from "./ERCSoulbound.sol";
-import { ERCWhitelistSignature } from "./ERCWhitelistSignature.sol";
-import { LibSoulbound1155 } from "./libraries/LibSoulbound1155.sol";
+import { ERCSoulboundUpgradeable } from "./ERCSoulboundUpgradeable.sol";
+import { ERCWhitelistSignatureUpgradeable } from "./ERCWhitelistSignatureUpgradeable.sol";
+import { LibItems } from "../libraries/LibItems.sol";
 
-contract Soulbound1155 is
-    ERC1155Burnable,
-    ERCSoulbound,
-    ERC2981,
-    ERCWhitelistSignature,
-    AccessControl,
-    Pausable,
-    ReentrancyGuard
+contract ItemBoundV1 is
+    Initializable,
+    ERC1155BurnableUpgradeable,
+    ERC1155SupplyUpgradeable,
+    ERCSoulboundUpgradeable,
+    ERC2981Upgradeable,
+    ERCWhitelistSignatureUpgradeable,
+    AccessControlUpgradeable,
+    PausableUpgradeable,
+    ReentrancyGuardUpgradeable
 {
     event ContractURIChanged(string indexed uri);
 
@@ -59,49 +68,31 @@ contract Soulbound1155 is
     string private baseURI;
     string public name;
     string public symbol;
-    using Strings for uint256;
+    using StringsUpgradeable for uint256;
+
+    uint256 public currentMaxLevel;
 
     uint256 public MAX_PER_MINT;
 
-    mapping(uint256 => bool) public tokenExists;
+    mapping(uint256 => bool) private tokenExists;
     mapping(uint256 => string) public tokenUris; // tokenId => tokenUri
     mapping(uint256 => bool) public isTokenMintPaused; // tokenId => bool - default is false
-    mapping(uint256 => mapping(address => bool)) public isMinted; // tokenId => address => bool
+    mapping(LibItems.Tier => mapping(uint256 => uint256[])) public itemPerTierPerLevel; // tier => level => itemId[]
 
     uint256[] public itemIds;
 
     mapping(address => mapping(uint256 => bool)) private tokenIdProcessed;
 
-    modifier canMint(
-        address to,
-        uint256 tokenId,
-        uint256 amount
-    ) {
-        isTokenExist(tokenId);
-        isTokenMintPausedCheck(tokenId);
-        isTokenAlreadyMinted(to, tokenId);
-        isExceedMaxMint(amount);
-        _;
-    }
-
-    modifier canMintBatch(
-        address to,
-        uint256[] memory tokenIds,
-        uint256[] memory amounts
-    ) {
-        for (uint256 i = 0; i < tokenIds.length; i++) {
-            isTokenExist(tokenIds[i]);
-            isTokenMintPausedCheck(tokenIds[i]);
-            isTokenAlreadyMinted(to, tokenIds[i]);
-            isExceedMaxMint(amounts[i]);
+    modifier maxPerMintCheck(uint256 amount) {
+        if (amount > MAX_PER_MINT) {
+            revert("ExceedMaxMint");
         }
-
         _;
     }
 
-    function getAllItems(address _owner) public view returns (LibSoulbound1155.TokenReturn[] memory) {
+    function getAllItems(address _owner) public view returns (LibItems.TokenReturn[] memory) {
         uint256 totalTokens = itemIds.length;
-        LibSoulbound1155.TokenReturn[] memory tokenReturns = new LibSoulbound1155.TokenReturn[](totalTokens);
+        LibItems.TokenReturn[] memory tokenReturns = new LibItems.TokenReturn[](totalTokens);
 
         uint index;
         for (uint i = 0; i < totalTokens; i++) {
@@ -109,7 +100,7 @@ contract Soulbound1155 is
             uint256 amount = balanceOf(_owner, tokenId);
 
             if (amount > 0) {
-                LibSoulbound1155.TokenReturn memory tokenReturn = LibSoulbound1155.TokenReturn({
+                LibItems.TokenReturn memory tokenReturn = LibItems.TokenReturn({
                     tokenId: tokenId,
                     tokenUri: uri(tokenId),
                     amount: amount
@@ -120,7 +111,7 @@ contract Soulbound1155 is
         }
 
         // truncate the array
-        LibSoulbound1155.TokenReturn[] memory returnsTruncated = new LibSoulbound1155.TokenReturn[](index);
+        LibItems.TokenReturn[] memory returnsTruncated = new LibItems.TokenReturn[](index);
         for (uint i = 0; i < index; i++) {
             returnsTruncated[i] = tokenReturns[i];
         }
@@ -132,32 +123,24 @@ contract Soulbound1155 is
         if (!tokenExists[_tokenId]) {
             revert("TokenNotExist");
         }
+        return true;
     }
 
-    function isTokenAlreadyMinted(address _wallet, uint256 _tokenId) public view returns (bool) {
-        if (isMinted[_tokenId][_wallet]) {
-            revert("AlreadyMinted");
-        }
+    function decodeData(bytes calldata _data) public view onlyRole(DEFAULT_ADMIN_ROLE) returns (uint256[] memory) {
+        return _decodeData(_data);
     }
 
-    function isExceedMaxMint(uint256 amount) public view returns (bool) {
-        if (amount > MAX_PER_MINT) {
-            revert("ExceedMaxMint");
-        }
+    function _decodeData(bytes calldata _data) private view returns (uint256[] memory) {
+        uint256[] memory itemIds = abi.decode(_data, (uint256[]));
+        return itemIds;
     }
 
-    function isTokenMintPausedCheck(uint256 _tokenId) public view returns (bool) {
-        if (isTokenMintPaused[_tokenId]) {
-            revert("TokenMintPaused");
-        }
+    /// @custom:oz-upgrades-unsafe-allow constructor
+    constructor() {
+        _disableInitializers();
     }
 
-    function _decodeData(bytes calldata _data) private view returns (uint256) {
-        uint256 itemId = abi.decode(_data, (uint256));
-        return itemId;
-    }
-
-    constructor(
+    function initialize(
         string memory _name,
         string memory _symbol,
         string memory _initBaseURI,
@@ -166,7 +149,13 @@ contract Soulbound1155 is
         bool _isPaused,
         address _devWallet,
         uint96 _royalty
-    ) ERC1155(_initBaseURI) {
+    ) public initializer {
+        __ERC1155_init("");
+        __ReentrancyGuard_init();
+        __ERCSoulboundUpgradable_init();
+        __ERCWhitelistSignatureUpgradeable_init();
+        __AccessControl_init();
+
         _grantRole(DEFAULT_ADMIN_ROLE, msg.sender);
         _grantRole(MINTER_ROLE, msg.sender);
         _grantRole(MANAGER_ROLE, msg.sender);
@@ -190,19 +179,26 @@ contract Soulbound1155 is
         _unpause();
     }
 
-    function addNewToken(LibSoulbound1155.TokenCreate calldata _token) public onlyRole(MANAGER_ROLE) {
+    function addNewToken(LibItems.TokenCreate calldata _token) public onlyRole(MANAGER_ROLE) {
         if (tokenExists[_token.tokenId]) {
             revert("TokenAlreadyExist");
         }
-
         if (bytes(_token.tokenUri).length > 0) {
             tokenUris[_token.tokenId] = _token.tokenUri;
         }
 
         tokenExists[_token.tokenId] = true;
+
+        // keep track of itemId
+        itemPerTierPerLevel[_token.tier][_token.level].push(_token.tokenId);
+        itemIds.push(_token.tokenId);
+
+        if (_token.level > currentMaxLevel) {
+            currentMaxLevel = _token.level;
+        }
     }
 
-    function addNewTokens(LibSoulbound1155.TokenCreate[] calldata _tokens) external onlyRole(MANAGER_ROLE) {
+    function addNewTokens(LibItems.TokenCreate[] calldata _tokens) external onlyRole(MANAGER_ROLE) {
         for (uint256 i = 0; i < _tokens.length; i++) {
             addNewToken(_tokens[i]);
         }
@@ -212,67 +208,90 @@ contract Soulbound1155 is
         tokenUris[_tokenId] = _tokenUri;
     }
 
+    function batchUpdateTokenUri(
+        uint256[] calldata _tokenIds,
+        string[] calldata _tokenUris
+    ) public onlyRole(MANAGER_ROLE) {
+        if (_tokenIds.length != _tokenUris.length) {
+            revert("InvalidInput");
+        }
+        for (uint256 i = 0; i < _tokenIds.length; i++) {
+            updateTokenUri(_tokenIds[i], _tokenUris[i]);
+        }
+    }
+
     function updateTokenMintPaused(uint256 _tokenId, bool _isTokenMintPaused) public onlyRole(MANAGER_ROLE) {
         isTokenMintPaused[_tokenId] = _isTokenMintPaused;
     }
 
-    function __mint(address to, uint256 id, uint256 amount, bool soulbound) private {
-        isMinted[id][to] = true;
-        if (soulbound) {
-            _soulbound(to, id, amount);
-        }
-        _mint(to, id, amount, "");
+    function getCurrentMaxLevel() public view returns (uint256) {
+        return currentMaxLevel;
     }
 
-    function __mintBatch(address to, uint256[] memory ids, uint256[] memory amounts, bool soulbound) private {
-        for (uint256 i = 0; i < ids.length; i++) {
-            isMinted[ids[i]][to] = true;
-        }
-
-        if (soulbound) {
-            _soulboundBatch(to, ids, amounts);
-        }
-
-        _mintBatch(to, ids, amounts, "");
+    function getItemsPerTierPerLevel(LibItems.Tier _tier, uint256 _level) public view returns (uint256[] memory) {
+        return itemPerTierPerLevel[_tier][_level];
     }
 
-    // optional soulbound minting
+    function _mintBatch(address to, uint256[] memory _tokenIds, uint256 amount, bool soulbound) private {
+        for (uint256 i = 0; i < _tokenIds.length; i++) {
+            uint256 _id = _tokenIds[i];
+            isTokenExist(_id);
+            if (isTokenMintPaused[_id]) {
+                revert("TokenMintPaused");
+            }
+
+            if (soulbound) {
+                _soulbound(to, _id, amount);
+            }
+
+            _mint(to, _id, amount, "");
+        }
+    }
+
     function mint(
-        uint256 id,
         bytes calldata data,
         uint256 amount,
         bool soulbound,
         uint256 nonce,
         bytes calldata signature
-    )
-        external
-        nonReentrant
-        signatureCheck(_msgSender(), nonce, data, signature)
-        canMint(_msgSender(), id, amount)
-        whenNotPaused
-    {
-        if (id != _decodeData(data)) {
-            revert("InvalidData");
-        }
-        __mint(_msgSender(), id, amount, soulbound);
+    ) external nonReentrant signatureCheck(_msgSender(), nonce, data, signature) maxPerMintCheck(amount) whenNotPaused {
+        uint256[] memory _tokenIds = _decodeData(data);
+        _mintBatch(_msgSender(), _tokenIds, amount, soulbound);
     }
 
-    function adminMint(
+    function adminMint(address to, bytes calldata data, bool soulbound) external onlyRole(MINTER_ROLE) whenNotPaused {
+        uint256[] memory _tokenIds = _decodeData(data);
+        _mintBatch(to, _tokenIds, 1, soulbound);
+    }
+
+    function adminMintId(
         address to,
         uint256 id,
         uint256 amount,
         bool soulbound
-    ) external onlyRole(MINTER_ROLE) canMint(to, id, amount) whenNotPaused {
-        __mint(to, id, amount, soulbound);
+    ) external onlyRole(MINTER_ROLE) whenNotPaused {
+        isTokenExist(id);
+
+        if (isTokenMintPaused[id]) {
+            revert("TokenMintPaused");
+        }
+
+        if (soulbound) {
+            _soulbound(to, id, amount);
+        }
+
+        _mint(to, id, amount, "");
     }
 
-    function adminMintBatch(
+    function _beforeTokenTransfer(
+        address operator,
+        address from,
         address to,
         uint256[] memory ids,
         uint256[] memory amounts,
-        bool soulbound
-    ) public onlyRole(MINTER_ROLE) canMintBatch(to, ids, amounts) whenNotPaused {
-        __mintBatch(to, ids, amounts, soulbound);
+        bytes memory data
+    ) internal virtual override(ERC1155Upgradeable, ERC1155SupplyUpgradeable) {
+        super._beforeTokenTransfer(operator, from, to, ids, amounts, data);
     }
 
     function safeTransferFrom(
@@ -340,7 +359,7 @@ contract Soulbound1155 is
         nonReentrant
         soulboundCheckAndSync(to, address(0), tokenId, amount, balanceOf(to, tokenId))
     {
-        ERC1155Burnable.burn(to, tokenId, amount);
+        ERC1155BurnableUpgradeable.burn(to, tokenId, amount);
     }
 
     function burnBatch(
@@ -364,7 +383,7 @@ contract Soulbound1155 is
             tokenIdProcessed[to][id] = true;
         }
 
-        ERC1155Burnable.burnBatch(to, tokenIds, amounts);
+        ERC1155BurnableUpgradeable.burnBatch(to, tokenIds, amounts);
 
         // Reset processed status after the transfer is completed
         for (uint256 i = 0; i < tokenIds.length; i++) {
@@ -375,7 +394,7 @@ contract Soulbound1155 is
 
     function supportsInterface(
         bytes4 interfaceId
-    ) public view override(ERC1155, ERC2981, AccessControl) returns (bool) {
+    ) public view override(ERC1155Upgradeable, ERC2981Upgradeable, AccessControlUpgradeable) returns (bool) {
         return super.supportsInterface(interfaceId);
     }
 

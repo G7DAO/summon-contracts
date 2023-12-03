@@ -27,12 +27,9 @@ pragma solidity 0.8.17;
  *                          ...
  */
 
-import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
+import { Initializable } from "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
 
 contract ERCSoulboundUpgradeable is Initializable {
-    // Reserved storage space to allow for layout changes in the future.
-    uint256[50] private __gap;
-
     mapping(uint256 => bool) internal _soulboundTokens; // low gas usage
     mapping(address => bool) internal _soulboundAddresses; // mid gas usage
     mapping(address => mapping(uint256 => uint256)) internal _soulbounds; // high gas usage
@@ -42,8 +39,6 @@ contract ERCSoulboundUpgradeable is Initializable {
     event SoulboundAddress(address indexed to);
     event Soulbound(address indexed to, uint256 indexed tokenId, uint256 amount);
     event SoulboundBatch(address indexed to, uint256[] indexed tokenIds, uint256[] indexed amounts);
-
-    function __ERCSoulboundUpgradable_init() internal onlyInitializing {}
 
     modifier soulboundTokenCheck(uint256 tokenId) {
         require(!_soulboundTokens[tokenId], "ERCSoulbound: This token is soulbounded");
@@ -55,57 +50,33 @@ contract ERCSoulboundUpgradeable is Initializable {
         _;
     }
 
-    modifier soulboundCheck(
+    modifier soulboundCheckAndSync(
         address from,
         address to,
         uint256 tokenId,
-        uint256 amount
+        uint256 amount,
+        uint256 totalAmount
     ) {
-        _checkMultipleAmounts(from, to, tokenId, amount);
+        _checkMultipleAmounts(from, to, tokenId, amount, totalAmount);
+        _syncSoulbound(from, to, tokenId, amount, totalAmount);
         _;
     }
 
-    modifier soulboundCheckBatch(
+    modifier soulboundCheckAndSyncBatch(
         address from,
         address to,
         uint256[] memory tokenIds,
-        uint256[] memory amount
+        uint256[] memory amounts,
+        uint256[] memory totalAmounts
     ) {
-        require(tokenIds.length == amount.length, "ERCSoulbound: tokenIds and amounts length mismatch");
+        require(tokenIds.length == amounts.length, "ERCSoulbound: tokenIds and amounts length mismatch");
+        require(amounts.length == totalAmounts.length, "ERCSoulbound: tokenIds and amounts length mismatch");
 
         for (uint256 i = 0; i < tokenIds.length; i++) {
-            _checkMultipleAmounts(from, to, tokenIds[i], amount[i]);
+            _checkMultipleAmounts(from, to, tokenIds[i], amounts[i], totalAmounts[i]);
+            _syncSoulbound(from, to, tokenIds[i], amounts[i], totalAmounts[i]);
         }
         _;
-    }
-
-    modifier syncSoulboundToken(uint256 tokenId) {
-        _;
-        _soulboundTokens[tokenId] = true;
-    }
-
-    modifier syncSoulbound(
-        address from,
-        uint256 tokenId,
-        uint256 amount
-    ) {
-        _;
-        if (_soulbounds[from][tokenId] > 0) {
-            _soulbounds[from][tokenId] -= amount;
-        }
-    }
-
-    modifier syncBatchSoulbound(
-        address from,
-        uint256[] memory tokenIds,
-        uint256[] memory amounts
-    ) {
-        _;
-        for (uint256 i = 0; i < tokenIds.length; i++) {
-            if (_soulbounds[from][tokenIds[i]] > 0) {
-                _soulbounds[from][tokenIds[i]] -= amounts[i];
-            }
-        }
     }
 
     modifier revertOperation() {
@@ -113,25 +84,45 @@ contract ERCSoulboundUpgradeable is Initializable {
         _;
     }
 
+    function __ERCSoulboundUpgradable_init() internal onlyInitializing {}
+
     function _updateWhitelistAddress(address _address, bool _isWhitelisted) internal {
         whitelistAddresses[_address] = _isWhitelisted;
     }
 
-    function _checkMultipleAmounts(address from, address to, uint256 tokenId, uint256 amount) private view {
+    function _checkMultipleAmounts(
+        address from,
+        address to,
+        uint256 tokenId,
+        uint256 amount,
+        uint256 totalAmount
+    ) private view {
         require(from != address(0), "ERCSoulbound: can't be zero address");
         require(amount > 0, "ERCSoulbound: can't be zero amount");
-
+        require(amount <= totalAmount, "ERCSoulbound: can't transfer more than you have");
         // check if from or to whitelist addresses let it through
         if (whitelistAddresses[from] || whitelistAddresses[to]) {
             return;
         }
 
-        if (_soulbounds[from][tokenId] > amount) {
-            revert("ERCSoulbound: The amount of soulbounded tokens is more than the amount of tokens to be transferred");
+        if (totalAmount - _soulbounds[from][tokenId] < amount) {
+            revert(
+                "ERCSoulbound: The amount of soulbounded tokens is more than the amount of tokens to be transferred"
+            );
         }
+    }
 
-        if (_soulbounds[from][tokenId] == amount) {
-            revert("ERCSoulbound: The amount of soulbounded tokens is more than the amount of tokens to be transferred");
+    function _syncSoulbound(address from, address to, uint256 tokenId, uint256 amount, uint256 totalAmount) private {
+        if (_soulbounds[from][tokenId] > 0) {
+            uint256 nonSoulboundAmount = totalAmount - _soulbounds[from][tokenId];
+
+            if (nonSoulboundAmount < amount) {
+                uint256 soulboundDiffAmount = amount - nonSoulboundAmount;
+                _soulbounds[from][tokenId] -= soulboundDiffAmount;
+                if (to != address(0)) {
+                    _soulbounds[to][tokenId] += soulboundDiffAmount;
+                }
+            }
         }
     }
 
@@ -166,7 +157,7 @@ contract ERCSoulboundUpgradeable is Initializable {
     function _soulboundBatch(address to, uint256[] memory tokenIds, uint256[] memory amounts) internal virtual {
         require(tokenIds.length == amounts.length, "ERCSoulbound: tokenIds and amounts length mismatch");
         for (uint256 i = 0; i < tokenIds.length; i++) {
-            _soulbounds[to][tokenIds[i]] = amounts[i];
+            _soulbounds[to][tokenIds[i]] += amounts[i];
         }
         emit SoulboundBatch(to, tokenIds, amounts);
     }
@@ -187,7 +178,7 @@ contract ERCSoulboundUpgradeable is Initializable {
     }
 
     /**
-     * @dev Returns if a `tokenId` is soulBound
+     * @dev Returns if a `tokenId` is soulbound
      *
      */
     function isSoulboundToken(uint256 tokenId) external view virtual returns (bool) {
@@ -195,7 +186,7 @@ contract ERCSoulboundUpgradeable is Initializable {
     }
 
     /**
-     * @dev Returns if a `tokenId` is soulBound
+     * @dev Returns if a `tokenId` is soulbound
      *
      */
     function soulboundBalance(address to, uint256 tokenId) external view virtual returns (uint256) {
@@ -203,10 +194,13 @@ contract ERCSoulboundUpgradeable is Initializable {
     }
 
     /**
-     * @dev Returns if a `address` is soulBound
+     * @dev Returns if a `address` is soulbound
      *
      */
     function isSoulboundAddress(address to) public view virtual returns (bool) {
         return _soulboundAddresses[to];
     }
+
+    // Reserved storage space to allow for layout changes in the future.
+    uint256[46] private __gap;
 }

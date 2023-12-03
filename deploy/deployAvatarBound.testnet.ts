@@ -1,5 +1,4 @@
 import fs from 'fs';
-import { exec } from 'node:child_process';
 import path from 'path';
 
 import { AvatarBoundArgs } from '@constants/constructor-args';
@@ -27,15 +26,15 @@ const {
 } = AvatarBoundArgs.TESTNET;
 
 const PRIVATE_KEY = process.env.PRIVATE_KEY || '';
-const CONTRACT_NAME = 'AvatarBoundV1';
+const CONTRACT_NAME = 'AvatarBound';
 const CONTRACT_TYPE = 'Avatar';
 
-const ABI_PATH = 'artifacts/contracts/upgradeables/AvatarBoundV1.sol/AvatarBoundV1.json';
+const ABI_PATH = 'artifacts/contracts/AvatarBound.sol/AvatarBound.json';
 
 if (!PRIVATE_KEY) throw '⛔️ Private key not detected! Add it to the .env file!';
 
 export default async function (hre: HardhatRuntimeEnvironment) {
-    log(`Running deploy script for the ${CONTRACT_NAME} Proxy featuring ZkSync`);
+    log(`Running deploy script for the ${CONTRACT_NAME} ZkSync`);
 
     const wallet = getWallet(PRIVATE_KEY);
 
@@ -65,7 +64,7 @@ export default async function (hre: HardhatRuntimeEnvironment) {
     const deployments: DeploymentMap = {};
 
     for (const tenant of tenants) {
-        const achievoContract = await hre.zkUpgrades.deployProxy(deployer.zkWallet as any, artifact, [
+        const achievoContract = await deployer.deploy(artifact, [
             name,
             symbol,
             baseURI,
@@ -74,17 +73,34 @@ export default async function (hre: HardhatRuntimeEnvironment) {
             wallet.address,
             gatingNftAddress,
             itemsNftAddress,
+            mintNftGatingEnabled,
             mintNFtWithoutGatingEnabled,
             mintRandomItemEnabled,
-            mintNftGatingEnabled,
             mintSpecialItemEnabled,
         ]);
 
         // Show the contract info.
         const contractAddress = achievoContract.target;
-        log(
-            `${CONTRACT_TYPE}(${artifact.contractName}) for ${tenant} was deployed to https://goerli.explorer.zksync.io/address/${contractAddress}#contract`
-        );
+        log(`${CONTRACT_TYPE}(${artifact.contractName}) for ${tenant} was deployed to https://goerli.explorer.zksync.io/address/${contractAddress}#contract`);
+
+        await hre.run('verify:verify', {
+            address: contractAddress,
+            contract: `contracts/${CONTRACT_NAME}.sol:${CONTRACT_NAME}`,
+            constructorArguments: [
+                name,
+                symbol,
+                baseURI,
+                contractURI,
+                revealURI,
+                wallet.address,
+                gatingNftAddress,
+                itemsNftAddress,
+                mintNFtWithoutGatingEnabled,
+                mintRandomItemEnabled,
+                mintNftGatingEnabled,
+                mintSpecialItemEnabled,
+            ],
+        });
 
         deployments[tenant] = {
             dbPayload: {
@@ -95,30 +111,7 @@ export default async function (hre: HardhatRuntimeEnvironment) {
             explorerUrl: `https://goerli.explorer.zksync.io/address/${contractAddress}#contract`,
         };
 
-        log(
-            `Verification must be done by console command: npx hardhat verify --network zkSyncTestnet ${contractAddress} --config zkSync.config.ts`
-        );
-
-        log(
-            `Deployed ${CONTRACT_TYPE}(${artifact.contractName}) for ${tenant} to :\n ${blockExplorerBaseUrl}/address/${contractAddress}#contract`
-        );
-
-        if (process.env.AUTO_VERIFY === 'true') {
-            await new Promise((resolve, reject) => {
-                exec(
-                    `npx hardhat verify --network zkSyncTestnet ${contractAddress} --config zkSync.config.ts`,
-                    (error, stdout, stderr) => {
-                        if (error) {
-                            console.warn(error);
-                            reject(error);
-                        }
-                        resolve(stdout ? stdout : stderr);
-                    }
-                );
-            });
-
-            log(`${CONTRACT_TYPE}(${artifact.contractName}) for ${tenant} verified!`);
-        }
+        log(`Verification must be done by console command: npx hardhat verify --network zkSyncTestnet ${contractAddress} --config zkSync.config.ts`);
     }
 
     // Define the path to the file

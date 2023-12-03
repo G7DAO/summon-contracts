@@ -48,7 +48,7 @@ contract ERCSoulbound {
         _;
     }
 
-    modifier soulboundCheck(
+    modifier soulboundCheckAndSync(
         address from,
         address to,
         uint256 tokenId,
@@ -56,10 +56,11 @@ contract ERCSoulbound {
         uint256 totalAmount
     ) {
         _checkMultipleAmounts(from, to, tokenId, amount, totalAmount);
+        _syncSoulbound(from, to, tokenId, amount, totalAmount);
         _;
     }
 
-    modifier soulboundCheckBatch(
+    modifier soulboundCheckAndSyncBatch(
         address from,
         address to,
         uint256[] memory tokenIds,
@@ -67,60 +68,13 @@ contract ERCSoulbound {
         uint256[] memory totalAmounts
     ) {
         require(tokenIds.length == amounts.length, "ERCSoulbound: tokenIds and amounts length mismatch");
+        require(amounts.length == totalAmounts.length, "ERCSoulbound: tokenIds and amounts length mismatch");
 
         for (uint256 i = 0; i < tokenIds.length; i++) {
             _checkMultipleAmounts(from, to, tokenIds[i], amounts[i], totalAmounts[i]);
+            _syncSoulbound(from, to, tokenIds[i], amounts[i], totalAmounts[i]);
         }
         _;
-    }
-
-    modifier syncSoulboundToken(uint256 tokenId) {
-        _;
-        _soulboundTokens[tokenId] = true;
-    }
-
-    modifier syncSoulbound(
-        address from,
-        address to,
-        uint256 tokenId,
-        uint256 amount,
-        uint256 totalAmount
-    ) {
-        _;
-        if (_soulbounds[from][tokenId] > 0) {
-            uint256 nonSoulboundAmount = totalAmount - _soulbounds[from][tokenId];
-
-            if (nonSoulboundAmount < amount) {
-                uint256 soulboundDiffAmount = amount - nonSoulboundAmount;
-                _soulbounds[from][tokenId] -= soulboundDiffAmount;
-                if (to != address(0)) {
-                    _soulbounds[to][tokenId] += soulboundDiffAmount;
-                }
-            }
-        }
-    }
-
-    modifier syncBatchSoulbound(
-        address from,
-        address to,
-        uint256[] memory tokenIds,
-        uint256[] memory amounts,
-        uint256[] memory totalAmounts
-    ) {
-        _;
-        for (uint256 i = 0; i < tokenIds.length; i++) {
-            if (_soulbounds[from][tokenIds[i]] > 0) {
-                uint256 nonSoulboundAmount = totalAmounts[i] - _soulbounds[from][tokenIds[i]];
-
-                if (nonSoulboundAmount < amounts[i]) {
-                    uint256 soulboundDiffAmount = amounts[i] - nonSoulboundAmount;
-                    _soulbounds[from][tokenIds[i]] -= soulboundDiffAmount;
-                    if (to != address(0)) {
-                        _soulbounds[to][tokenIds[i]] += soulboundDiffAmount;
-                    }
-                }
-            }
-        }
     }
 
     modifier revertOperation() {
@@ -132,7 +86,13 @@ contract ERCSoulbound {
         whitelistAddresses[_address] = _isWhitelisted;
     }
 
-    function _checkMultipleAmounts(address from, address to, uint256 tokenId, uint256 amount, uint256 totalAmount) private view {
+    function _checkMultipleAmounts(
+        address from,
+        address to,
+        uint256 tokenId,
+        uint256 amount,
+        uint256 totalAmount
+    ) private view {
         require(from != address(0), "ERCSoulbound: can't be zero address");
         require(amount > 0, "ERCSoulbound: can't be zero amount");
         require(amount <= totalAmount, "ERCSoulbound: can't transfer more than you have");
@@ -141,9 +101,24 @@ contract ERCSoulbound {
             return;
         }
 
-
         if (totalAmount - _soulbounds[from][tokenId] < amount) {
-            revert("ERCSoulbound: The amount of soulbounded tokens is more than the amount of tokens to be transferred");
+            revert(
+                "ERCSoulbound: The amount of soulbounded tokens is more than the amount of tokens to be transferred"
+            );
+        }
+    }
+
+    function _syncSoulbound(address from, address to, uint256 tokenId, uint256 amount, uint256 totalAmount) private {
+        if (_soulbounds[from][tokenId] > 0) {
+            uint256 nonSoulboundAmount = totalAmount - _soulbounds[from][tokenId];
+
+            if (nonSoulboundAmount < amount) {
+                uint256 soulboundDiffAmount = amount - nonSoulboundAmount;
+                _soulbounds[from][tokenId] -= soulboundDiffAmount;
+                if (to != address(0)) {
+                    _soulbounds[to][tokenId] += soulboundDiffAmount;
+                }
+            }
         }
     }
 

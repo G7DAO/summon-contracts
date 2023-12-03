@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: UNLICENSED
 ///@notice This contract is for mock for WETH token.
-pragma solidity ^0.8.17;
+pragma solidity 0.8.17;
 
 /**                        .;c;.
  *                      'lkXWWWXk:.
@@ -23,22 +23,30 @@ pragma solidity ^0.8.17;
  *                          ...
  */
 
-import "@openzeppelin/contracts/token/ERC1155/extensions/ERC1155Burnable.sol";
-import "@openzeppelin/contracts/token/ERC1155/extensions/ERC1155Supply.sol";
-import "@openzeppelin/contracts/access/AccessControl.sol";
-import "@openzeppelin/contracts/security/Pausable.sol";
-import "@openzeppelin/contracts/utils/Strings.sol";
-import "@openzeppelin/contracts/token/common/ERC2981.sol";
-import "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
-import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
+import { ERC1155 } from "@openzeppelin/contracts/token/ERC1155/ERC1155.sol";
+import { ERC1155Burnable } from "@openzeppelin/contracts/token/ERC1155/extensions/ERC1155Burnable.sol";
+import { ERC1155Supply } from "@openzeppelin/contracts/token/ERC1155/extensions/ERC1155Supply.sol";
+import { AccessControl } from "@openzeppelin/contracts/access/AccessControl.sol";
+import { Pausable } from "@openzeppelin/contracts/security/Pausable.sol";
+import { Strings } from "@openzeppelin/contracts/utils/Strings.sol";
+import { ERC2981 } from "@openzeppelin/contracts/token/common/ERC2981.sol";
+import { ECDSA } from "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
+import { ReentrancyGuard } from "@openzeppelin/contracts/security/ReentrancyGuard.sol";
 
-import "./ERCSoulbound.sol";
-import "./ERCWhitelistSignature.sol";
-import "./libraries/LibItems.sol";
+import { ERCSoulbound } from "./ERCSoulbound.sol";
+import { ERCWhitelistSignature } from "./ERCWhitelistSignature.sol";
+import { LibItems } from "./libraries/LibItems.sol";
 
-contract ItemBound is ERC1155Burnable, ERC1155Supply, ERCSoulbound, ERC2981, ERCWhitelistSignature, AccessControl, Pausable, ReentrancyGuard {
-    event SignerAdded(address signer);
-    event SignerRemoved(address signer);
+contract ItemBound is
+    ERC1155Burnable,
+    ERC1155Supply,
+    ERCSoulbound,
+    ERC2981,
+    ERCWhitelistSignature,
+    AccessControl,
+    Pausable,
+    ReentrancyGuard
+{
     event ContractURIChanged(string indexed uri);
 
     bytes32 public constant MINTER_ROLE = keccak256("MINTER_ROLE");
@@ -54,23 +62,14 @@ contract ItemBound is ERC1155Burnable, ERC1155Supply, ERCSoulbound, ERC2981, ERC
 
     uint256 public MAX_PER_MINT;
 
-    mapping(uint256 => bool) public tokenExists;
+    mapping(uint256 => bool) private tokenExists;
     mapping(uint256 => string) public tokenUris; // tokenId => tokenUri
     mapping(uint256 => bool) public isTokenMintPaused; // tokenId => bool - default is false
     mapping(LibItems.Tier => mapping(uint256 => uint256[])) public itemPerTierPerLevel; // tier => level => itemId[]
 
     uint256[] public itemIds;
 
-    modifier signatureCheck(
-        uint256 nonce,
-        bytes calldata data,
-        bytes calldata signature
-    ) {
-        if (!_verifySignature(_msgSender(), nonce, data, signature)) {
-            revert("InvalidSignature");
-        }
-        _;
-    }
+    mapping(address => mapping(uint256 => bool)) private tokenIdProcessed;
 
     modifier maxPerMintCheck(uint256 amount) {
         if (amount > MAX_PER_MINT) {
@@ -78,7 +77,7 @@ contract ItemBound is ERC1155Burnable, ERC1155Supply, ERCSoulbound, ERC2981, ERC
         }
         _;
     }
-    
+
     function getAllItems(address _owner) public view returns (LibItems.TokenReturn[] memory) {
         uint256 totalTokens = itemIds.length;
         LibItems.TokenReturn[] memory tokenReturns = new LibItems.TokenReturn[](totalTokens);
@@ -89,13 +88,11 @@ contract ItemBound is ERC1155Burnable, ERC1155Supply, ERCSoulbound, ERC2981, ERC
             uint256 amount = balanceOf(_owner, tokenId);
 
             if (amount > 0) {
-                LibItems.TokenReturn memory tokenReturn = LibItems.TokenReturn(
-                    {
-                        tokenId: tokenId,
-                        tokenUri: uri(tokenId),
-                        amount: amount
-                    }
-                );  
+                LibItems.TokenReturn memory tokenReturn = LibItems.TokenReturn({
+                    tokenId: tokenId,
+                    tokenUri: uri(tokenId),
+                    amount: amount
+                });
                 tokenReturns[index] = tokenReturn;
                 index++;
             }
@@ -114,10 +111,15 @@ contract ItemBound is ERC1155Burnable, ERC1155Supply, ERCSoulbound, ERC2981, ERC
         if (!tokenExists[_tokenId]) {
             revert("TokenNotExist");
         }
+        return true;
+    }
+
+    function decodeData(bytes calldata _data) public view onlyRole(DEFAULT_ADMIN_ROLE) returns (uint256[] memory) {
+        return _decodeData(_data);
     }
 
     function _decodeData(bytes calldata _data) private view returns (uint256[] memory) {
-        (uint256[] memory itemIds) = abi.decode(_data, (uint256[]));
+        uint256[] memory itemIds = abi.decode(_data, (uint256[]));
         return itemIds;
     }
 
@@ -183,6 +185,18 @@ contract ItemBound is ERC1155Burnable, ERC1155Supply, ERCSoulbound, ERC2981, ERC
         tokenUris[_tokenId] = _tokenUri;
     }
 
+    function batchUpdateTokenUri(
+        uint256[] calldata _tokenIds,
+        string[] calldata _tokenUris
+    ) public onlyRole(MANAGER_ROLE) {
+        if (_tokenIds.length != _tokenUris.length) {
+            revert("InvalidInput");
+        }
+        for (uint256 i = 0; i < _tokenIds.length; i++) {
+            updateTokenUri(_tokenIds[i], _tokenUris[i]);
+        }
+    }
+
     function updateTokenMintPaused(uint256 _tokenId, bool _isTokenMintPaused) public onlyRole(MANAGER_ROLE) {
         isTokenMintPaused[_tokenId] = _isTokenMintPaused;
     }
@@ -217,21 +231,22 @@ contract ItemBound is ERC1155Burnable, ERC1155Supply, ERCSoulbound, ERC2981, ERC
         bool soulbound,
         uint256 nonce,
         bytes calldata signature
-    ) external nonReentrant signatureCheck(nonce, data, signature) maxPerMintCheck(amount) whenNotPaused {
+    ) external nonReentrant signatureCheck(_msgSender(), nonce, data, signature) maxPerMintCheck(amount) whenNotPaused {
         uint256[] memory _tokenIds = _decodeData(data);
         _mintBatch(_msgSender(), _tokenIds, amount, soulbound);
     }
 
-    function adminMint(
-        address to,
-        bytes calldata data,
-        bool soulbound
-    ) external onlyRole(MINTER_ROLE) whenNotPaused {
+    function adminMint(address to, bytes calldata data, bool soulbound) external onlyRole(MINTER_ROLE) whenNotPaused {
         uint256[] memory _tokenIds = _decodeData(data);
         _mintBatch(to, _tokenIds, 1, soulbound);
     }
 
-    function adminMintId(address to, uint256 id, uint256 amount, bool soulbound) external onlyRole(MINTER_ROLE) whenNotPaused {
+    function adminMintId(
+        address to,
+        uint256 id,
+        uint256 amount,
+        bool soulbound
+    ) external onlyRole(MINTER_ROLE) whenNotPaused {
         isTokenExist(id);
 
         if (isTokenMintPaused[id]) {
@@ -262,7 +277,7 @@ contract ItemBound is ERC1155Burnable, ERC1155Supply, ERCSoulbound, ERC2981, ERC
         uint256 _id,
         uint256 _amount,
         bytes memory _data
-    ) public virtual override soulboundCheck(_from, _to, _id, _amount, balanceOf(_from, _id)) syncSoulbound(_from, _to, _id, _amount, balanceOf(_from, _id)) {
+    ) public virtual override soulboundCheckAndSync(_from, _to, _id, _amount, balanceOf(_from, _id)) {
         super.safeTransferFrom(_from, _to, _id, _amount, _data);
     }
 
@@ -272,11 +287,35 @@ contract ItemBound is ERC1155Burnable, ERC1155Supply, ERCSoulbound, ERC2981, ERC
         uint256[] memory _ids,
         uint256[] memory _amounts,
         bytes memory _data
-    ) public virtual override soulboundCheckBatch(_from, _to, _ids, _amounts, balanceOfBatchOneAccount(_from, _ids)) syncBatchSoulbound(_from, _to, _ids, _amounts, balanceOfBatchOneAccount(_from, _ids)) {
+    )
+        public
+        virtual
+        override
+        soulboundCheckAndSyncBatch(_from, _to, _ids, _amounts, balanceOfBatchOneAccount(_from, _ids))
+    {
+        for (uint256 i = 0; i < _ids.length; i++) {
+            uint256 id = _ids[i];
+
+            if (tokenIdProcessed[_from][id]) {
+                revert("ERC1155: duplicate ID");
+            }
+
+            tokenIdProcessed[_from][id] = true;
+        }
+
         super.safeBatchTransferFrom(_from, _to, _ids, _amounts, _data);
+
+        // Reset processed status after the transfer is completed
+        for (uint256 i = 0; i < _ids.length; i++) {
+            uint256 id = _ids[i];
+            tokenIdProcessed[_from][id] = false;
+        }
     }
 
-    function balanceOfBatchOneAccount(address account, uint256[] memory ids) public view virtual returns (uint256[] memory) {
+    function balanceOfBatchOneAccount(
+        address account,
+        uint256[] memory ids
+    ) public view virtual returns (uint256[] memory) {
         uint256[] memory batchBalances = new uint256[](ids.length);
 
         for (uint256 i = 0; i < ids.length; ++i) {
@@ -286,15 +325,53 @@ contract ItemBound is ERC1155Burnable, ERC1155Supply, ERCSoulbound, ERC2981, ERC
         return batchBalances;
     }
 
-    function burn(address to, uint256 tokenId, uint256 amount) public nonReentrant virtual override soulboundCheck(to, address(0), tokenId, amount, balanceOf(to, tokenId)) syncSoulbound(to, address(0), tokenId, amount, balanceOf(to, tokenId)) {
+    function burn(
+        address to,
+        uint256 tokenId,
+        uint256 amount
+    )
+        public
+        virtual
+        override
+        nonReentrant
+        soulboundCheckAndSync(to, address(0), tokenId, amount, balanceOf(to, tokenId))
+    {
         ERC1155Burnable.burn(to, tokenId, amount);
     }
 
-    function burnBatch(address to, uint256[] memory tokenIds, uint256[] memory amounts) public nonReentrant virtual override soulboundCheckBatch(to, address(0), tokenIds, amounts, balanceOfBatchOneAccount(to, tokenIds)) syncBatchSoulbound(to, address(0), tokenIds, amounts, balanceOfBatchOneAccount(to, tokenIds)) {
+    function burnBatch(
+        address to,
+        uint256[] memory tokenIds,
+        uint256[] memory amounts
+    )
+        public
+        virtual
+        override
+        nonReentrant
+        soulboundCheckAndSyncBatch(to, address(0), tokenIds, amounts, balanceOfBatchOneAccount(to, tokenIds))
+    {
+        for (uint256 i = 0; i < tokenIds.length; i++) {
+            uint256 id = tokenIds[i];
+
+            if (tokenIdProcessed[to][id]) {
+                revert("ERC1155: duplicate ID");
+            }
+
+            tokenIdProcessed[to][id] = true;
+        }
+
         ERC1155Burnable.burnBatch(to, tokenIds, amounts);
+
+        // Reset processed status after the transfer is completed
+        for (uint256 i = 0; i < tokenIds.length; i++) {
+            uint256 id = tokenIds[i];
+            tokenIdProcessed[to][id] = false;
+        }
     }
 
-    function supportsInterface(bytes4 interfaceId) public view override(ERC1155, ERC2981, AccessControl) returns (bool) {
+    function supportsInterface(
+        bytes4 interfaceId
+    ) public view override(ERC1155, ERC2981, AccessControl) returns (bool) {
         return super.supportsInterface(interfaceId);
     }
 
@@ -324,7 +401,12 @@ contract ItemBound is ERC1155Burnable, ERC1155Supply, ERCSoulbound, ERC2981, ERC
         emit ContractURIChanged(_contractURI);
     }
 
-    function adminVerifySignature(address to, uint256 nonce, bytes calldata data, bytes calldata signature) public onlyRole(DEFAULT_ADMIN_ROLE) returns (bool) {
+    function adminVerifySignature(
+        address to,
+        uint256 nonce,
+        bytes calldata data,
+        bytes calldata signature
+    ) public onlyRole(DEFAULT_ADMIN_ROLE) returns (bool) {
         return _verifySignature(to, nonce, data, signature);
     }
 
