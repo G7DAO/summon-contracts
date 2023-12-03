@@ -1,6 +1,6 @@
 {
     "name": "achievo-contracts",
-    "version": "0.10.2",
+    "version": "0.11.2",
     "description": "Smart contracts for achievo.xyz",
     "scripts": {
         "localChain": "hardhat --config hardhat.config.ts node",
