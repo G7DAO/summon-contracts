@@ -264,6 +264,14 @@ contract AvatarBound is
         return allBaseSkins;
     }
 
+    function getSpecialId() public view onlyRole(DEFAULT_ADMIN_ROLE) returns (uint256) {
+        return _specialItemId;
+    }
+
+    function getDefaultItem() public view onlyRole(DEFAULT_ADMIN_ROLE) returns (uint256) {
+        return defaultItemId;
+    }
+
     function setContractURI(string memory _contractURI) public onlyRole(DEFAULT_ADMIN_ROLE) {
         contractURI = _contractURI;
         emit ContractURIChanged(_contractURI, _msgSender());
