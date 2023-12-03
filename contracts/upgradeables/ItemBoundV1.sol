@@ -123,6 +123,11 @@ contract ItemBoundV1 is
         if (!tokenExists[_tokenId]) {
             revert("TokenNotExist");
         }
+        return true;
+    }
+
+    function decodeData(bytes calldata _data) public view onlyRole(DEFAULT_ADMIN_ROLE) returns (uint256[] memory) {
+        return _decodeData(_data);
     }
 
     function _decodeData(bytes calldata _data) private view returns (uint256[] memory) {
