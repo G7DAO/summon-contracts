@@ -9,6 +9,7 @@
         "accounts": "hardhat --config hardhat.config.ts accounts",
         "generate": "hardhat --config hardhat.config.ts generate",
         "compile:zkSync": "hardhat --config zkSync.config.ts compile --network zkSyncTestnet",
+        "deploy:ZkSync:testnet": "pnpm compile:zkSync && hardhat --config zkSync.config.ts deploy --network zkSyncTestnet --chain zkSyncTestnet",
         "upgradeAvatarBound:ZkSync:testnet": "pnpm compile:zkSync && hardhat run deploy/upgrades/upgradeAvatarBound.testnet.ts --config zkSync.config.ts --network zkSyncTestnet",
         "deployLevelsOnChain:ZkSync": "pnpm compile:zkSync && hardhat --config zkSync.config.ts deploy-zksync --network zkSyncTestnet --script deployLevelsBound.ts",
         "deployNftGating:ZkSync:testnet": "pnpm compile:zkSync && hardhat --config zkSync.config.ts deploy-zksync --network zkSyncTestnet --script deployNFTGating.testnet.ts",
