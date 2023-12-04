@@ -64,23 +64,11 @@ contract AvatarBoundTest is Test {
         return (_seed % 10) + 1; // 1 - 10
     }
 
-    function generateRandomTier() internal returns (LibItems.Tier) {
+    function generateRandomTier() internal returns (uint256) {
         _seed = uint256(keccak256(abi.encodePacked(blockhash(block.number - 1), _seed)));
         uint256 random = _seed % 5; // 0 - 4
 
-        if (random == 0) {
-            return LibItems.Tier.COMMON;
-        } else if (random == 1) {
-            return LibItems.Tier.UNCOMMON;
-        } else if (random == 2) {
-            return LibItems.Tier.RARE;
-        } else if (random == 3) {
-            return LibItems.Tier.LEGENDARY;
-        } else if (random == 4) {
-            return LibItems.Tier.MYTHICAL;
-        } else {
-            return LibItems.Tier.COMMON;
-        }
+        return random;
     }
 
     function encode(uint256[] memory itemIds) public pure returns (bytes memory) {
@@ -108,7 +96,7 @@ contract AvatarBoundTest is Test {
         for (uint256 i = 0; i < 10; i++) {
             uint256 _tokenId = generateRandomItemId(); // totally random
             uint256 _level = generateRandomLevel(); // level 1-10
-            LibItems.Tier _tier = generateRandomTier(); // tier 0-4
+            uint256 _tier = generateRandomTier(); // tier 0-4
 
             LibItems.TokenCreate memory _token = LibItems.TokenCreate({
                 tokenId: _tokenId,
@@ -125,7 +113,7 @@ contract AvatarBoundTest is Test {
         LibItems.TokenCreate memory defaultItem = LibItems.TokenCreate({
             tokenId: defaultItemId,
             level: 1,
-            tier: LibItems.Tier.COMMON,
+            tier: 1,
             tokenUri: ""
         });
 
@@ -134,7 +122,7 @@ contract AvatarBoundTest is Test {
         LibItems.TokenCreate memory specialItem = LibItems.TokenCreate({
             tokenId: specialItemId,
             level: 1,
-            tier: LibItems.Tier.UNCOMMON,
+            tier: 2,
             tokenUri: ""
         });
 

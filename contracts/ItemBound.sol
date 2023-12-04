@@ -36,6 +36,7 @@ import { ReentrancyGuard } from "@openzeppelin/contracts/security/ReentrancyGuar
 import { ERCSoulbound } from "./ERCSoulbound.sol";
 import { ERCWhitelistSignature } from "./ERCWhitelistSignature.sol";
 import { LibItems } from "./libraries/LibItems.sol";
+import { ItemTierManager } from "./ItemTierManager.sol";
 
 contract ItemBound is
     ERC1155Burnable,
@@ -45,7 +46,8 @@ contract ItemBound is
     ERCWhitelistSignature,
     AccessControl,
     Pausable,
-    ReentrancyGuard
+    ReentrancyGuard,
+    ItemTierManager
 {
     event ContractURIChanged(string indexed uri);
 
@@ -65,7 +67,7 @@ contract ItemBound is
     mapping(uint256 => bool) private tokenExists;
     mapping(uint256 => string) public tokenUris; // tokenId => tokenUri
     mapping(uint256 => bool) public isTokenMintPaused; // tokenId => bool - default is false
-    mapping(LibItems.Tier => mapping(uint256 => uint256[])) public itemPerTierPerLevel; // tier => level => itemId[]
+    mapping(uint256 => mapping(uint256 => uint256[])) public itemPerTierPerLevel; // tierId => level => itemId[]
 
     uint256[] public itemIds;
 
@@ -164,6 +166,11 @@ contract ItemBound is
             tokenUris[_token.tokenId] = _token.tokenUri;
         }
 
+        // check if tier exists
+        if (!isTierExist(_token.tier)) {
+            revert("TierNotExist");
+        }
+
         tokenExists[_token.tokenId] = true;
 
         // keep track of itemId
@@ -205,7 +212,7 @@ contract ItemBound is
         return currentMaxLevel;
     }
 
-    function getItemsPerTierPerLevel(LibItems.Tier _tier, uint256 _level) public view returns (uint256[] memory) {
+    function getItemsPerTierPerLevel(uint256 _tier, uint256 _level) public view returns (uint256[] memory) {
         return itemPerTierPerLevel[_tier][_level];
     }
 
@@ -416,5 +423,21 @@ contract ItemBound is
 
     function removeWhitelistSigner(address signer) external onlyRole(DEFAULT_ADMIN_ROLE) {
         _removeWhitelistSigner(signer);
+    }
+
+    function addTier(LibItems.Tier memory _tier) external onlyRole(DEFAULT_ADMIN_ROLE) {
+        _addTier(_tier);
+    }
+
+    function addTiers(LibItems.Tier[] memory _tiers) external onlyRole(DEFAULT_ADMIN_ROLE) {
+        _addTiers(_tiers);
+    }
+
+    function removeTier(uint256 _tierId) external onlyRole(DEFAULT_ADMIN_ROLE) {
+        _removeTier(_tierId);
+    }
+
+    function removeTiers(uint256[] memory _tierIds) external onlyRole(DEFAULT_ADMIN_ROLE) {
+        _removeTiers(_tierIds);
     }
 }
