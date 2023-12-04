@@ -72,14 +72,11 @@ contract ItemBoundV1 is
     string public symbol;
     using StringsUpgradeable for uint256;
 
-    uint256 public currentMaxLevel;
-
     uint256 public MAX_PER_MINT;
 
     mapping(uint256 => bool) private tokenExists;
     mapping(uint256 => string) public tokenUris; // tokenId => tokenUri
     mapping(uint256 => bool) public isTokenMintPaused; // tokenId => bool - default is false
-    mapping(uint256 => mapping(uint256 => uint256[])) public itemPerTierPerLevel; // tier => level => itemId[]
 
     uint256[] public itemIds;
 
@@ -183,27 +180,13 @@ contract ItemBoundV1 is
     }
 
     function addNewToken(LibItems.TokenCreate calldata _token) public onlyRole(MANAGER_ROLE) {
-        if (tokenExists[_token.tokenId]) {
-            revert("TokenAlreadyExist");
-        }
         if (bytes(_token.tokenUri).length > 0) {
             tokenUris[_token.tokenId] = _token.tokenUri;
         }
 
-        // check if tier exists
-        if (!isTierExist(_token.tier)) {
-            revert("TierNotExist");
-        }
-
         tokenExists[_token.tokenId] = true;
 
-        // keep track of itemId
-        itemPerTierPerLevel[_token.tier][_token.level].push(_token.tokenId);
         itemIds.push(_token.tokenId);
-
-        if (_token.level > currentMaxLevel) {
-            currentMaxLevel = _token.level;
-        }
     }
 
     function addNewTokens(LibItems.TokenCreate[] calldata _tokens) external onlyRole(MANAGER_ROLE) {
@@ -230,14 +213,6 @@ contract ItemBoundV1 is
 
     function updateTokenMintPaused(uint256 _tokenId, bool _isTokenMintPaused) public onlyRole(MANAGER_ROLE) {
         isTokenMintPaused[_tokenId] = _isTokenMintPaused;
-    }
-
-    function getCurrentMaxLevel() public view returns (uint256) {
-        return currentMaxLevel;
-    }
-
-    function getItemsPerTierPerLevel(uint256 _tier, uint256 _level) public view returns (uint256[] memory) {
-        return itemPerTierPerLevel[_tier][_level];
     }
 
     function _mintBatch(address to, uint256[] memory _tokenIds, uint256 amount, bool soulbound) private {
