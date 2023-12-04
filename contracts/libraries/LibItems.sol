@@ -20,3 +20,14 @@ library LibItems {
         uint256 amount;
     }
 }
+
+library TestLibItems {
+    enum Tier {
+        NONE,
+        COMMON,
+        UNCOMMON,
+        RARE,
+        LEGENDARY,
+        MYTHICAL
+    }
+}

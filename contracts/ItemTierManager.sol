@@ -27,24 +27,16 @@ pragma solidity 0.8.17;
  *                          ...
  */
 
-import "@openzeppelin/contracts/access/AccessControl.sol";
-
-import { IItemBound } from "./interfaces/IItemBound.sol";
 import { LibItems } from "./libraries/LibItems.sol";
 import "forge-std/Test.sol";
 
-contract ItemTierManager is AccessControl {
+contract ItemTierManager {
     event TierAdded(uint256 tierId, string tierName);
     event TierRemoved(uint256 tierId, string tierName);
-
-    bytes32 private constant MANAGER_ROLE = keccak256("MANAGER_ROLE");
 
     mapping(uint256 => LibItems.Tier) public tiers; // tierId => tier
 
     constructor() {
-        _grantRole(DEFAULT_ADMIN_ROLE, msg.sender);
-        _grantRole(MANAGER_ROLE, msg.sender);
-
         LibItems.Tier[] memory _tiers = new LibItems.Tier[](6);
         _tiers[0] = LibItems.Tier({ tierId: 0, tierName: "NONE" });
         _tiers[1] = LibItems.Tier({ tierId: 1, tierName: "COMMON" });
@@ -53,29 +45,29 @@ contract ItemTierManager is AccessControl {
         _tiers[4] = LibItems.Tier({ tierId: 4, tierName: "LEGENDARY" });
         _tiers[5] = LibItems.Tier({ tierId: 5, tierName: "MYTHICAL" });
 
-        addTiers(_tiers);
+        _addTiers(_tiers);
     }
 
-    function addTier(LibItems.Tier memory _tier) public onlyRole(MANAGER_ROLE) {
+    function _addTier(LibItems.Tier memory _tier) internal {
         tiers[_tier.tierId] = _tier;
         emit TierAdded(_tier.tierId, _tier.tierName);
     }
 
-    function addTiers(LibItems.Tier[] memory _tiers) public onlyRole(MANAGER_ROLE) {
+    function _addTiers(LibItems.Tier[] memory _tiers) internal {
         for (uint256 i = 0; i < _tiers.length; i++) {
-            addTier(_tiers[i]);
+            _addTier(_tiers[i]);
         }
     }
 
-    function removeTier(uint256 _tierId) public onlyRole(MANAGER_ROLE) {
+    function _removeTier(uint256 _tierId) internal {
         LibItems.Tier memory _tier = tiers[_tierId];
         delete tiers[_tierId];
         emit TierRemoved(_tier.tierId, _tier.tierName);
     }
 
-    function removeTiers(uint256[] memory _tierIds) public onlyRole(MANAGER_ROLE) {
+    function _removeTiers(uint256[] memory _tierIds) internal {
         for (uint256 i = 0; i < _tierIds.length; i++) {
-            removeTier(_tierIds[i]);
+            _removeTier(_tierIds[i]);
         }
     }
 

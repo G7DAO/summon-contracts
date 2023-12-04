@@ -8,7 +8,7 @@ import { ECDSA } from "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
 
 import { ItemBound } from "../contracts/ItemBound.sol";
 import { MockERC1155Receiver } from "../contracts/mocks/MockERC1155Receiver.sol";
-import { LibItems } from "../contracts/libraries/LibItems.sol";
+import { LibItems, TestLibItems } from "../contracts/libraries/LibItems.sol";
 
 contract ItemBoundTest is StdCheats, Test {
     using Strings for uint256;
@@ -81,11 +81,23 @@ contract ItemBoundTest is StdCheats, Test {
         return (_seed % 10) + 1; // 1 - 10
     }
 
-    function generateRandomTier() internal returns (uint256) {
+    function generateRandomTier() internal returns (TestLibItems.Tier) {
         uint256 _seed = uint256(keccak256(abi.encodePacked(blockhash(block.number - 1), _seed)));
         uint256 random = _seed % 5; // 0 - 4
 
-        return random;
+        if (random == 0) {
+            return TestLibItems.Tier.COMMON;
+        } else if (random == 1) {
+            return TestLibItems.Tier.UNCOMMON;
+        } else if (random == 2) {
+            return TestLibItems.Tier.RARE;
+        } else if (random == 3) {
+            return TestLibItems.Tier.LEGENDARY;
+        } else if (random == 4) {
+            return TestLibItems.Tier.MYTHICAL;
+        } else {
+            return TestLibItems.Tier.COMMON;
+        }
     }
 
     function encode(uint256[] memory itemIds) public pure returns (bytes memory) {
@@ -116,12 +128,12 @@ contract ItemBoundTest is StdCheats, Test {
         for (uint256 i = 0; i < 1300; i++) {
             uint256 _tokenId = generateRandomItemId(); // totally random
             uint256 _level = generateRandomLevel(); // level 1-10
-            uint256 _tier = generateRandomTier(); // tier 0-4
+            TestLibItems.Tier _tier = generateRandomTier(); // tier 0-4
 
             LibItems.TokenCreate memory _token = LibItems.TokenCreate({
                 tokenId: _tokenId,
                 level: _level,
-                tier: _tier,
+                tier: uint256(_tier),
                 tokenUri: string(abi.encodePacked("https://something.com", "/", _tokenId.toString()))
             });
 
@@ -161,7 +173,7 @@ contract ItemBoundTest is StdCheats, Test {
         LibItems.TokenCreate memory _token = LibItems.TokenCreate({
             tokenId: _tokenId,
             level: 1,
-            tier: 3,
+            tier: uint256(TestLibItems.Tier.RARE),
             tokenUri: string(abi.encodePacked("https://something222.com", "/", _tokenId.toString()))
         });
 
@@ -175,7 +187,7 @@ contract ItemBoundTest is StdCheats, Test {
         LibItems.TokenCreate memory _token = LibItems.TokenCreate({
             tokenId: _tokenId,
             level: 1,
-            tier: 3,
+            tier: uint256(TestLibItems.Tier.RARE),
             tokenUri: string(abi.encodePacked("https://something222.com", "/", _tokenId.toString()))
         });
 
@@ -192,12 +204,12 @@ contract ItemBoundTest is StdCheats, Test {
         for (uint256 i = 0; i < 3; i++) {
             uint256 _tokenId = generateRandomItemId(); // totally random
             uint256 _level = generateRandomLevel(); // level 1-10
-            uint256 _tier = generateRandomTier(); // tier 0-4
+            TestLibItems.Tier _tier = generateRandomTier(); // tier 0-4
 
             LibItems.TokenCreate memory _token = LibItems.TokenCreate({
                 tokenId: _tokenId,
                 level: _level,
-                tier: _tier,
+                tier: uint256(_tier),
                 tokenUri: string(abi.encodePacked("https://something.com", "/", _tokenId.toString()))
             });
 
@@ -214,14 +226,14 @@ contract ItemBoundTest is StdCheats, Test {
         LibItems.TokenCreate memory _token1 = LibItems.TokenCreate({
             tokenId: _tokenId1,
             level: 11,
-            tier: 2,
+            tier: uint256(TestLibItems.Tier.UNCOMMON),
             tokenUri: ""
         });
 
         LibItems.TokenCreate memory _token2 = LibItems.TokenCreate({
             tokenId: _tokenId2,
             level: 12,
-            tier: 2,
+            tier: uint256(TestLibItems.Tier.UNCOMMON),
             tokenUri: ""
         });
 
@@ -233,19 +245,19 @@ contract ItemBoundTest is StdCheats, Test {
     }
 
     function testGetItemsPerTierPerLevel() public {
-        uint256[] memory itemsBefore = itemBound.getItemsPerTierPerLevel(1, 1);
+        uint256[] memory itemsBefore = itemBound.getItemsPerTierPerLevel(uint256(TestLibItems.Tier.COMMON), 1);
 
         uint256 _tokenId1 = generateRandomItemId(); // totally random
         LibItems.TokenCreate memory _token1 = LibItems.TokenCreate({
             tokenId: _tokenId1,
             level: 1,
-            tier: 1,
+            tier: uint256(TestLibItems.Tier.COMMON),
             tokenUri: ""
         });
 
         itemBound.addNewToken(_token1);
 
-        uint256[] memory itemsAfter = itemBound.getItemsPerTierPerLevel(1, 1);
+        uint256[] memory itemsAfter = itemBound.getItemsPerTierPerLevel(uint256(TestLibItems.Tier.COMMON), 1);
         assertEq(itemsAfter.length, itemsBefore.length + 1);
     }
 
@@ -562,12 +574,12 @@ contract ItemBoundTest is StdCheats, Test {
     function testTokenURIIfTokenIdExistNOSpeficTokenURIFallbackToBaseURI() public {
         uint256 _tokenId = generateRandomItemId(); // totally random
         uint256 _level = generateRandomLevel(); // level 1-10
-        uint256 _tier = generateRandomTier(); // tier 0-4
+        TestLibItems.Tier _tier = generateRandomTier(); // tier 0-4
 
         LibItems.TokenCreate memory _token = LibItems.TokenCreate({
             tokenId: _tokenId,
             level: _level,
-            tier: _tier,
+            tier: uint256(_tier),
             tokenUri: ""
         });
 
@@ -579,12 +591,12 @@ contract ItemBoundTest is StdCheats, Test {
     function testTokenURIIfTokenIdExistWithSpeficTokenURI() public {
         uint256 _tokenId = generateRandomItemId(); // totally random
         uint256 _level = generateRandomLevel(); // level 1-10
-        uint256 _tier = generateRandomTier(); // tier 0-4
+        TestLibItems.Tier _tier = generateRandomTier(); // tier 0-4
 
         LibItems.TokenCreate memory _token = LibItems.TokenCreate({
             tokenId: _tokenId,
             level: _level,
-            tier: _tier,
+            tier: uint256(_tier),
             tokenUri: "ipfs://specific-token-uri.com"
         });
 
@@ -606,12 +618,12 @@ contract ItemBoundTest is StdCheats, Test {
     function testUpdateTokenBaseURIPass() public {
         uint256 _tokenId = generateRandomItemId(); // totally random
         uint256 _level = generateRandomLevel(); // level 1-10
-        uint256 _tier = generateRandomTier(); // tier 0-4
+        TestLibItems.Tier _tier = generateRandomTier(); // tier 0-4
 
         LibItems.TokenCreate memory _token = LibItems.TokenCreate({
             tokenId: _tokenId,
             level: _level,
-            tier: _tier,
+            tier: uint256(_tier),
             tokenUri: ""
         });
 
@@ -640,12 +652,12 @@ contract ItemBoundTest is StdCheats, Test {
     function testUpdateTokenURIPass() public {
         uint256 _tokenId = generateRandomItemId(); // totally random
         uint256 _level = generateRandomLevel(); // level 1-10
-        uint256 _tier = generateRandomTier(); // tier 0-4
+        TestLibItems.Tier _tier = generateRandomTier(); // tier 0-4
 
         LibItems.TokenCreate memory _token = LibItems.TokenCreate({
             tokenId: _tokenId,
             level: _level,
-            tier: _tier,
+            tier: uint256(_tier),
             tokenUri: ""
         });
 

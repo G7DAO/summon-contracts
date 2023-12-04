@@ -47,6 +47,10 @@ interface IItemBound {
 
     function burnBatch(address to, uint256[] memory tokenIds, uint256[] memory amounts) external;
 
+    function supportsInterface(bytes4 interfaceId) external view returns (bool);
+
+    function uri(uint256 tokenId) external view returns (string memory);
+
     function updateBaseUri(string memory _baseURI) external;
 
     function setRoyaltyInfo(address receiver, uint96 feeBasisPoints) external;
