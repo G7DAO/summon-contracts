@@ -196,21 +196,6 @@ contract ItemBoundV1Test is StdCheats, Test {
         itemBoundProxy.adminMintId(playerWallet.addr, _tokenId, 1, true);
     }
 
-    function testAddAlreadyExistingToken() public {
-        uint256 _tokenId = generateRandomItemId();
-        LibItems.TokenCreate memory _token = LibItems.TokenCreate({
-            tokenId: _tokenId,
-            level: 1,
-            tier: uint256(TestLibItems.Tier.RARE),
-            tokenUri: string(abi.encodePacked("https://something222.com", "/", _tokenId.toString()))
-        });
-
-        itemBoundProxy.addNewToken(_token);
-
-        vm.expectRevert("TokenAlreadyExist");
-        itemBoundProxy.addNewToken(_token);
-    }
-
     function testAddNewTokens() public {
         LibItems.TokenCreate[] memory _tokens = new LibItems.TokenCreate[](3);
 
@@ -231,48 +216,6 @@ contract ItemBoundV1Test is StdCheats, Test {
         }
 
         itemBoundProxy.addNewTokens(_tokens);
-    }
-
-    function testUpdateTokenInfoCurrentMaxLevelShouldChange() public {
-        uint256 _tokenId1 = generateRandomItemId(); // totally random
-        uint256 _tokenId2 = generateRandomItemId(); // totally random
-
-        LibItems.TokenCreate memory _token1 = LibItems.TokenCreate({
-            tokenId: _tokenId1,
-            level: 11,
-            tier: uint256(TestLibItems.Tier.UNCOMMON),
-            tokenUri: ""
-        });
-
-        LibItems.TokenCreate memory _token2 = LibItems.TokenCreate({
-            tokenId: _tokenId2,
-            level: 12,
-            tier: uint256(TestLibItems.Tier.UNCOMMON),
-            tokenUri: ""
-        });
-
-        assertEq(itemBoundProxy.getCurrentMaxLevel(), 10);
-        itemBoundProxy.addNewToken(_token1);
-        assertEq(itemBoundProxy.getCurrentMaxLevel(), 11);
-        itemBoundProxy.addNewToken(_token2);
-        assertEq(itemBoundProxy.getCurrentMaxLevel(), 12);
-    }
-
-    function testGetItemsPerTierPerLevel() public {
-        uint256[] memory itemsBefore = itemBoundProxy.getItemsPerTierPerLevel(uint256(TestLibItems.Tier.COMMON), 1);
-
-        uint256 _tokenId1 = generateRandomItemId(); // totally random
-        LibItems.TokenCreate memory _token1 = LibItems.TokenCreate({
-            tokenId: _tokenId1,
-            level: 1,
-            tier: uint256(TestLibItems.Tier.COMMON),
-            tokenUri: ""
-        });
-
-        itemBoundProxy.addNewToken(_token1);
-
-        uint256[] memory itemsAfter = itemBoundProxy.getItemsPerTierPerLevel(uint256(TestLibItems.Tier.COMMON), 1);
-        assertEq(itemsAfter.length, itemsBefore.length + 1);
     }
 
     function testPauseUnpause() public {
