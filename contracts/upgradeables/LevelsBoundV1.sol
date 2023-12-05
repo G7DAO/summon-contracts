@@ -62,6 +62,8 @@ contract LevelsBoundV1 is
     }
 
     function initialize(
+        string memory _name,
+        string memory _symbol,
         address developerAdmin,
         bool _mintRandomItemEnabled,
         address _itemsNFTAddress

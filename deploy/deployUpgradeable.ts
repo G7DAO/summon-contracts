@@ -30,7 +30,7 @@ export default async function (
     const blockExplorerBaseUrl = NetworkExplorer[networkNameKey as keyof typeof NetworkExplorer];
 
     log('=====================================================');
-    log(`[DEPLOYING] deploying ${contract.contractName} contract for ${tenant} on ${networkName}`);
+    log(`[DEPLOYING] deploying ${contract.contractName} contract for [[${tenant}]] on ${networkName}`);
     log('=====================================================');
 
     const { name, ...rest } = constructorArgs;

@@ -140,3 +140,8 @@ export const LevelsBoundArgs = {
         itemsNFTAddress: 'CONTRACT_ItemBound',
     },
 };
+
+export const LevelsBoundV1Args = {
+    ...LevelsBoundArgs,
+    itemsNFTAddress: 'CONTRACT_ItemBoundV1',
+};

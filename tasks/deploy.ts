@@ -73,7 +73,6 @@ const deployOne = async (hre: HardhatRuntimeEnvironment, contract, tenant) => {
         tenant
     );
 
-    console.log('constructorArgs---->>>', constructorArgs);
     const abiPath = `${hre.network.zksync ? ABI_PATH_ZK : ABI_PATH}${contract?.upgradable ? 'upgradeables/' : ''}${
         contract.contractName
     }.sol/${contract.contractName}.json`;
@@ -170,13 +169,16 @@ task('deploy', 'Deploys Smart contracts')
         for (const tenant of contract.tenants) {
             log('=====================================================');
             log('=====================================================');
-            log(`[STARTING] Deploy ${contractName} contract on ${chain} for ${tenant}`);
+            log(`[STARTING] Deploy ${contractName} contract on ${chain} for [[${tenant}]]`);
             log(`Contracts to deploy: ${contractsToDeploy.length}`);
             for (const contract of contractsToDeploy) {
                 log(`contract: ${contract}`);
             }
             log('=====================================================');
             log('=====================================================');
+            log('\n');
+            log('\n');
+            log('\n');
             log('\n');
 
             const deployments = [];
@@ -190,7 +192,7 @@ task('deploy', 'Deploys Smart contracts')
             }
 
             log('=====================================================');
-            log(`[DONE] ${contractName} contract deployment on ${chain} for ${tenant} is DONE!`);
+            log(`[DONE] ${contractName} contract deployment on ${chain} for [[${tenant}]] is DONE!`);
             log('=====================================================');
             log('\n');
 

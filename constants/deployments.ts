@@ -20,7 +20,7 @@ export const CONTRACTS = [
         tenants: [TENANT.Game7, TENANT.ZkSync],
         verify: true,
         upgradable: true,
-        // dependencies: ['ItemBoundV1', 'LevelsBoundV1'],
+        dependencies: ['ItemBoundV1', 'LevelsBoundV1'],
     },
     {
         contractName: 'ItemBound',
@@ -63,7 +63,18 @@ export const CONTRACTS = [
         tenants: [TENANT.Game7, TENANT.ZkSync],
         verify: true,
         upgradable: false,
-        // dependencies: ['ItemBound', 'AvatarBound'],
+        dependencies: ['ItemBound', 'AvatarBound'],
+        functionCalls: [],
+    },
+    {
+        contractName: 'LevelsBoundV1',
+        type: CONTRACT_TYPE.Levels,
+        chain: NetworkName.ZkSyncTestnet,
+        networkType: NETWORK_TYPE.TESTNET,
+        tenants: [TENANT.Game7, TENANT.ZkSync],
+        verify: true,
+        upgradable: true,
+        dependencies: ['ItemBoundV1', 'AvatarBoundV1'],
         functionCalls: [],
     },
 ];
