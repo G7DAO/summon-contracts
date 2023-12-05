@@ -4,3 +4,6 @@ export interface DeploymentMap {
         explorerUrl: string;
     };
 }
+
+export type Tenant = 'Game7' | 'zkSync';
+export type ContractType = 'Avatar' | 'Items' | 'Levels';
