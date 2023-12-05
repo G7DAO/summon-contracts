@@ -60,6 +60,8 @@ export const ItemBoundArgs: Soulbound1155Args = {
     },
 };
 
+export const ItemBoundV1Args: Soulbound1155Args = ItemBoundArgs;
+
 export const NFTGatingArgs = {
     MAINNET: {
         name: 'Achievo NFT Gating Admin Access',
@@ -79,7 +81,7 @@ export const NFTGatingArgs = {
 
 export const AvatarBoundArgs = {
     MAINNET: {
-        name: 'AvatarBoundV1',
+        name: 'AvatarBound',
         symbol: 'AVB',
         // TODO: change this for the final gateway
         baseURI: 'https://summon.mypinata.cloud/ipfs',
@@ -97,7 +99,7 @@ export const AvatarBoundArgs = {
         mintSpecialItemEnabled: true,
     },
     TESTNET: {
-        name: 'AvatarBoundV1',
+        name: 'AvatarBound',
         symbol: 'AVB',
         baseURI: 'https://summon.mypinata.cloud/ipfs',
         contractURI: 'https://summon.mypinata.cloud/ipfs/{contractURIHASH}',
@@ -112,3 +114,5 @@ export const AvatarBoundArgs = {
         mintSpecialItemEnabled: true,
     },
 };
+
+export const AvatarBoundV1Args = AvatarBoundArgs;

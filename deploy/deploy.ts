@@ -33,10 +33,6 @@ export default async function (
     log(`Running deploy script for the ${contract.contractName} for ${tenant} on ${networkName}`);
     log('=====================================================');
 
-    // Read the file content
-    const abiContent = fs.readFileSync(path.resolve(abiPath), 'utf8');
-    const { abi: contractAbi } = JSON.parse(abiContent);
-
     const { name, ...rest } = constructorArgs;
     const restArgs = Object.values(rest);
 
@@ -57,6 +53,10 @@ export default async function (
         });
     }
 
+    // Read the file content
+    const abiContent = fs.readFileSync(path.resolve(abiPath), 'utf8');
+    const { abi: contractAbi } = JSON.parse(abiContent);
+
     const deploymentPayload = {
         contractAbi,
         contractAddress,
@@ -74,9 +74,11 @@ export default async function (
         explorerUrl: `${blockExplorerBaseUrl}/address/${contractAddress}#contract`,
     };
 
+    log(`*****************************************************`);
     log(
         `Deployed ${contract.type}(${artifact.contractName}) for ${tenant} to :\n ${blockExplorerBaseUrl}/address/${contractAddress}#contract`
     );
+    log(`*****************************************************`);
 
     return deploymentPayload;
 }

@@ -11,6 +11,17 @@ export const CONTRACTS = [
         functionCalls: [{ contractName: 'AvatarBound', functionName: 'setAvatarContract', args: ['avatarAddress'] }],
     },
     {
+        contractName: 'AvatarBoundV1',
+        type: 'Avatar',
+        chain: 'zkSyncTestnet',
+        networkType: 'TESTNET',
+        tenants: ['game7', 'zkSync'],
+        verify: true,
+        upgradable: true,
+        dependencies: ['ItemBoundV1'],
+        functionCalls: [{ contractName: 'AvatarBound', functionName: 'setAvatarContract', args: ['avatarAddress'] }],
+    },
+    {
         contractName: 'ItemBound',
         type: 'Items',
         chain: 'zkSyncTestnet',
@@ -30,7 +41,7 @@ export const CONTRACTS = [
         tenants: ['game7', 'zkSync'],
         verify: true,
         upgradable: true,
-        dependencies: ['AvatarBound'],
+        dependencies: ['AvatarBoundV1'],
         functionCalls: [{ contractName: 'ItemBoundV1', functionName: 'setAvatarContract', args: ['avatarAddress'] }],
     },
     {
