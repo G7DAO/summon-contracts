@@ -32,7 +32,7 @@ export const SoulboundBadgesArgs: Soulbound1155Args = {
         maxPerMint: 1,
         isPaused: true,
         devWallet: 'DEPLOYER_WALLET',
-        royalty: 250n,
+        royalty: 0n,
     },
     TESTNET: {
         name: 'MyBadges',
@@ -42,7 +42,7 @@ export const SoulboundBadgesArgs: Soulbound1155Args = {
         maxPerMint: 1,
         isPaused: false,
         devWallet: 'DEPLOYER_WALLET',
-        royalty: 250n,
+        royalty: 0n,
     },
 };
 
@@ -55,7 +55,7 @@ export const ItemBoundArgs: Soulbound1155Args = {
         maxPerMint: 1,
         isPaused: false,
         devWallet: 'DEPLOYER_WALLET',
-        royalty: 250n,
+        royalty: 0n,
     },
     TESTNET: {
         name: 'MyItems',
@@ -65,7 +65,7 @@ export const ItemBoundArgs: Soulbound1155Args = {
         maxPerMint: 1,
         isPaused: false,
         devWallet: 'DEPLOYER_WALLET',
-        royalty: 250n,
+        royalty: 0n,
     },
 };
 

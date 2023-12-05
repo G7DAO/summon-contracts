@@ -15,7 +15,7 @@ import getWallet from 'deploy/getWallet';
 
 const ABI_PATH_ZK = 'artifacts-zk/contracts/';
 const ABI_PATH = 'artifacts/contracts/';
-const GAME7_TMP_DIR = '.game7';
+const TMP_DIR = '.achievo';
 
 const PRIVATE_KEY = process.env.PRIVATE_KEY || '';
 const wallet = getWallet(PRIVATE_KEY);
@@ -33,7 +33,9 @@ export async function populateConstructorArgs(constructorArgs: Record<string, st
             const _isAlreadyDeployed = isAlreadyDeployed(contract, tenant);
 
             const filePathDeploymentLatest = path.resolve(
-                `.game7/${contract.upgradable ? 'upgradeables/' : ''}deployments-${contract.type}-${tenant}-latest.json`
+                `.achievo/${contract.upgradable ? 'upgradeables/' : ''}deployments-${
+                    contract.type
+                }-${tenant}-latest.json`
             );
 
             let deploymentPayload;
@@ -80,7 +82,7 @@ const deployOne = async (hre: HardhatRuntimeEnvironment, contract, tenant) => {
     const _isAlreadyDeployed = isAlreadyDeployed(contract, tenant);
 
     const filePathDeploymentLatest = path.resolve(
-        `.game7/${contract.upgradable ? 'upgradeables/' : ''}deployments-${contract.type}-${tenant}-latest.json`
+        `.achievo/${contract.upgradable ? 'upgradeables/' : ''}deployments-${contract.type}-${tenant}-latest.json`
     );
 
     let deploymentPayload;
@@ -109,22 +111,22 @@ const deployOne = async (hre: HardhatRuntimeEnvironment, contract, tenant) => {
 };
 
 const createDefaultFolders = () => {
-    if (!fs.existsSync(`${GAME7_TMP_DIR}`)) {
-        fs.mkdirSync(`${GAME7_TMP_DIR}`);
+    if (!fs.existsSync(`${TMP_DIR}`)) {
+        fs.mkdirSync(`${TMP_DIR}`);
     }
-    if (!fs.existsSync(`${GAME7_TMP_DIR}/checksums`)) {
-        fs.mkdirSync(`${GAME7_TMP_DIR}/checksums`);
+    if (!fs.existsSync(`${TMP_DIR}/checksums`)) {
+        fs.mkdirSync(`${TMP_DIR}/checksums`);
     }
-    if (!fs.existsSync(`${GAME7_TMP_DIR}/upgradeables`)) {
-        fs.mkdirSync(`${GAME7_TMP_DIR}/upgradeables`);
-    }
-
-    if (!fs.existsSync(`${GAME7_TMP_DIR}/deployments`)) {
-        fs.mkdirSync(`${GAME7_TMP_DIR}/deployments`);
+    if (!fs.existsSync(`${TMP_DIR}/upgradeables`)) {
+        fs.mkdirSync(`${TMP_DIR}/upgradeables`);
     }
 
-    if (!fs.existsSync(`${GAME7_TMP_DIR}/deployments/upgradeables`)) {
-        fs.mkdirSync(`${GAME7_TMP_DIR}/deployments/upgradeables`);
+    if (!fs.existsSync(`${TMP_DIR}/deployments`)) {
+        fs.mkdirSync(`${TMP_DIR}/deployments`);
+    }
+
+    if (!fs.existsSync(`${TMP_DIR}/deployments/upgradeables`)) {
+        fs.mkdirSync(`${TMP_DIR}/deployments/upgradeables`);
     }
 };
 
@@ -201,7 +203,7 @@ task('deploy', 'Deploys Smart contracts')
                 // await submitContractToDB(deployments);
                 // // Define the path to the file
                 // const filePath = path.resolve(
-                //     `.game7/deployments/${contract.upgradable ? 'upgradeables/' : ''}deployments-${
+                //     `.achievo/deployments/${contract.upgradable ? 'upgradeables/' : ''}deployments-${
                 //         deployment.type
                 //     }-${tenant}-${Date.now()}.json`
                 // );
@@ -212,6 +214,10 @@ task('deploy', 'Deploys Smart contracts')
                 // log(`Deployments saved to ${filePath}`);
             }
 
-            // TODO * call functions at the end...
+            // TODO * call contract functions at the end...
+            // setDefaultItemId
+            // setSpecialItemId
+            // grantRole
+            // grantRole
         }
     });
