@@ -46,7 +46,6 @@ import {
 
 import { ERCSoulboundUpgradeable } from "./ERCSoulboundUpgradeable.sol";
 import { ERCWhitelistSignatureUpgradeable } from "./ERCWhitelistSignatureUpgradeable.sol";
-import { ItemTierManagerUpgradeable } from "./ItemTierManagerUpgradeable.sol";
 import { LibItems } from "../libraries/LibItems.sol";
 
 contract ItemBoundV1 is
@@ -58,8 +57,7 @@ contract ItemBoundV1 is
     ERCWhitelistSignatureUpgradeable,
     AccessControlUpgradeable,
     PausableUpgradeable,
-    ReentrancyGuardUpgradeable,
-    ItemTierManagerUpgradeable
+    ReentrancyGuardUpgradeable
 {
     event ContractURIChanged(string indexed uri);
 
@@ -87,6 +85,45 @@ contract ItemBoundV1 is
             revert("ExceedMaxMint");
         }
         _;
+    }
+
+    function initialize(
+        string memory _name,
+        string memory _symbol,
+        string memory _initBaseURI,
+        string memory _contractURI,
+        uint256 _maxPerMint,
+        bool _isPaused,
+        address _devWallet,
+        uint96 _royalty
+    ) public initializer {
+        __ERC1155_init("");
+        __ReentrancyGuard_init();
+        __AccessControl_init();
+        __ERCSoulboundUpgradable_init();
+        __ERCWhitelistSignatureUpgradeable_init();
+
+        _grantRole(DEFAULT_ADMIN_ROLE, msg.sender);
+        _grantRole(MINTER_ROLE, msg.sender);
+        _grantRole(MANAGER_ROLE, msg.sender);
+        _addWhitelistSigner(msg.sender);
+
+        _setDefaultRoyalty(_devWallet, _royalty);
+        name = _name;
+        symbol = _symbol;
+        baseURI = _initBaseURI;
+        contractURI = _contractURI;
+        MAX_PER_MINT = _maxPerMint;
+
+        if (_isPaused) _pause();
+    }
+
+    function pause() external onlyRole(MANAGER_ROLE) {
+        _pause();
+    }
+
+    function unpause() external onlyRole(MANAGER_ROLE) {
+        _unpause();
     }
 
     function getAllItems(address _owner) public view returns (LibItems.TokenReturn[] memory) {
@@ -137,46 +174,6 @@ contract ItemBoundV1 is
     /// @custom:oz-upgrades-unsafe-allow constructor
     constructor() {
         _disableInitializers();
-    }
-
-    function initialize(
-        string memory _name,
-        string memory _symbol,
-        string memory _initBaseURI,
-        string memory _contractURI,
-        uint256 _maxPerMint,
-        bool _isPaused,
-        address _devWallet,
-        uint96 _royalty
-    ) public initializer {
-        __ERC1155_init("");
-        __ReentrancyGuard_init();
-        __AccessControl_init();
-        __ERCSoulboundUpgradable_init();
-        __ERCWhitelistSignatureUpgradeable_init();
-        __ItemTierManagerUpgradeableUpgradeable_init();
-
-        _grantRole(DEFAULT_ADMIN_ROLE, msg.sender);
-        _grantRole(MINTER_ROLE, msg.sender);
-        _grantRole(MANAGER_ROLE, msg.sender);
-        _addWhitelistSigner(msg.sender);
-
-        _setDefaultRoyalty(_devWallet, _royalty);
-        name = _name;
-        symbol = _symbol;
-        baseURI = _initBaseURI;
-        contractURI = _contractURI;
-        MAX_PER_MINT = _maxPerMint;
-
-        if (_isPaused) _pause();
-    }
-
-    function pause() external onlyRole(MANAGER_ROLE) {
-        _pause();
-    }
-
-    function unpause() external onlyRole(MANAGER_ROLE) {
-        _unpause();
     }
 
     function addNewToken(LibItems.TokenCreate calldata _token) public onlyRole(MANAGER_ROLE) {
@@ -422,21 +419,5 @@ contract ItemBoundV1 is
 
     function removeWhitelistSigner(address signer) external onlyRole(DEFAULT_ADMIN_ROLE) {
         _removeWhitelistSigner(signer);
-    }
-
-    function addTier(LibItems.Tier memory _tier) external onlyRole(DEFAULT_ADMIN_ROLE) {
-        _addTier(_tier);
-    }
-
-    function addTiers(LibItems.Tier[] memory _tiers) external onlyRole(DEFAULT_ADMIN_ROLE) {
-        _addTiers(_tiers);
-    }
-
-    function removeTier(uint256 _tierId) external onlyRole(DEFAULT_ADMIN_ROLE) {
-        _removeTier(_tierId);
-    }
-
-    function removeTiers(uint256[] memory _tierIds) external onlyRole(DEFAULT_ADMIN_ROLE) {
-        _removeTiers(_tierIds);
     }
 }
