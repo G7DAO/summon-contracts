@@ -31,7 +31,7 @@ export const SoulboundBadgesArgs: Soulbound1155Args = {
         contractURI: 'https://summon.mypinata.cloud/ipfs/{contractURIHASH}',
         maxPerMint: 1,
         isPaused: true,
-        devWallet: '0xA10648F8618A526Bd0Acb08a1b9f413BC44Fcb4B',
+        devWallet: 'DEPLOYER_WALLET',
         royalty: 250n,
     },
     TESTNET: {
@@ -41,7 +41,7 @@ export const SoulboundBadgesArgs: Soulbound1155Args = {
         contractURI: 'https://summon.mypinata.cloud/ipfs/{contractURIHASH}',
         maxPerMint: 1,
         isPaused: false,
-        devWallet: '0xA10648F8618A526Bd0Acb08a1b9f413BC44Fcb4B',
+        devWallet: 'DEPLOYER_WALLET',
         royalty: 250n,
     },
 };
@@ -54,7 +54,7 @@ export const ItemBoundArgs: Soulbound1155Args = {
         contractURI: 'https://summon.mypinata.cloud/ipfs/{contractURIHASH}',
         maxPerMint: 1,
         isPaused: false,
-        devWallet: '0xA10648F8618A526Bd0Acb08a1b9f413BC44Fcb4B',
+        devWallet: 'DEPLOYER_WALLET',
         royalty: 250n,
     },
     TESTNET: {
@@ -64,7 +64,7 @@ export const ItemBoundArgs: Soulbound1155Args = {
         contractURI: 'https://summon.mypinata.cloud/ipfs/{contractURIHASH}',
         maxPerMint: 1,
         isPaused: false,
-        devWallet: '0xA10648F8618A526Bd0Acb08a1b9f413BC44Fcb4B',
+        devWallet: 'DEPLOYER_WALLET',
         royalty: 250n,
     },
 };
@@ -97,7 +97,6 @@ export const AvatarBoundArgs = {
         // TODO: change this for the final gateway
         contractURI: 'https://apricot-persistent-duck-562.mypinata.cloud/{contractURIHASH}',
         revealURI: 'FILL_ME',
-        // TODO: devWallet
         devWallet: 'DEPLOYER_WALLET',
         gatingNftAddress: '0xcc1eBf6Dbb9fF24A745D1cc7F6DC3eeDa5f9fa71',
         // TODO: change this for the final address
@@ -113,7 +112,6 @@ export const AvatarBoundArgs = {
         baseURI: 'https://summon.mypinata.cloud/ipfs',
         contractURI: 'https://summon.mypinata.cloud/ipfs/{contractURIHASH}',
         revealURI: 'QmZnvSyeKRQxWwcofVmq41BNCtHbBmomk8Ny8mtGRTjtzS',
-        // TODO: devWallet
         devWallet: 'DEPLOYER_WALLET',
         gatingNftAddress: '0xcc1eBf6Dbb9fF24A745D1cc7F6DC3eeDa5f9fa71',
         itemsNftAddress: '0x613D384640769016985Ed4467aDcbb7D8e63f506',
@@ -128,14 +126,17 @@ export const AvatarBoundV1Args = AvatarBoundArgs;
 
 export const LevelsBoundArgs = {
     MAINNET: {
-        // TODO: devWallet
+        name: 'LevelsBound',
+        symbol: 'LVL',
         developerAdmin: 'DEPLOYER_WALLET',
         mintRandomItemEnabled: true,
-        itemsNFTAddress: 'CONTRACT_ITEMBOUND',
+        itemsNFTAddress: 'CONTRACT_ItemBound',
     },
     TESTNET: {
-        developerAdmin: '0xA10648F8618A526Bd0Acb08a1b9f413BC44Fcb4B',
+        name: 'LevelsBound',
+        symbol: 'LVL',
+        developerAdmin: 'DEPLOYER_WALLET',
         mintRandomItemEnabled: true,
-        itemsNFTAddress: 'CONTRACT_ITEMBOUND',
+        itemsNFTAddress: 'CONTRACT_ItemBound',
     },
 };

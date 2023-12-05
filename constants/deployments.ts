@@ -10,7 +10,7 @@ export const CONTRACTS = [
         tenants: [TENANT.Game7, TENANT.ZkSync],
         verify: true,
         upgradable: false,
-        dependencies: ['ItemBound'],
+        dependencies: ['ItemBound', 'LevelsBound'],
     },
     {
         contractName: 'AvatarBoundV1',
@@ -63,7 +63,7 @@ export const CONTRACTS = [
         tenants: [TENANT.Game7, TENANT.ZkSync],
         verify: true,
         upgradable: false,
-        dependencies: ['ItemBound', 'AvatarBound'],
+        // dependencies: ['ItemBound', 'AvatarBound'],
         functionCalls: [],
     },
 ];
