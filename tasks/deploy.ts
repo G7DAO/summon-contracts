@@ -1,6 +1,5 @@
 import fs from 'fs';
 import path from 'path';
-import crypto from 'crypto';
 
 import { task, types } from 'hardhat/config';
 
@@ -17,9 +16,7 @@ const ABI_PATH_ZK = 'artifacts-zk/contracts/';
 const ABI_PATH = 'artifacts/contracts/';
 const GAME7_TMP_DIR = '.game7';
 
-const deployEach = async (hre, contract, chain, tenant) => {
-    let deployments = [];
-
+const deployOne = async (hre: HardhatRuntimeEnvironment, contract, tenant) => {
     // then deploy the contract
     const constructorArgs = ConstructorArgs[`${contract.contractName}Args`][`${contract?.networkType}`];
     const abiPath = `${hre.network.zksync ? ABI_PATH_ZK : ABI_PATH}${contract?.upgradable ? 'upgradeables/' : ''}${
@@ -39,8 +36,6 @@ const deployEach = async (hre, contract, chain, tenant) => {
         const deploymentPayloadContent = fs.readFileSync(filePathDeploymentLatest, 'utf8');
         deploymentPayload = JSON.parse(deploymentPayloadContent);
         console.log('Existing deploymentPayload:', deploymentPayload);
-
-        deployments.push(deploymentPayload);
     } else {
         if (contract.upgradable) {
             deploymentPayload = await deployUpgradeable(hre, contract, constructorArgs, abiPath, tenant);
@@ -50,8 +45,6 @@ const deployEach = async (hre, contract, chain, tenant) => {
 
         writeChecksumToFile(contract.contractName, tenant);
 
-        deployments.push(deploymentPayload);
-
         // Convert deployments to JSON
         const deploymentsJson = JSON.stringify(deploymentPayload, null, 2);
         // Write to the file
@@ -59,19 +52,7 @@ const deployEach = async (hre, contract, chain, tenant) => {
         log(`Deployments saved to ${filePathDeploymentLatest}`);
     }
 
-    if (contract.dependencies.length > 0) {
-        // deploy dependencies first
-        for (const dependency of contract.dependencies) {
-            const _contract = CONTRACTS.find((d) => d.contractName === dependency && d.chain === chain);
-
-            if (!isAlreadyDeployed(_contract, tenant)) {
-                const _deployments = await deployEach(hre, _contract, chain, tenant);
-                deployments = [...deployments, ..._deployments];
-            }
-        }
-    }
-
-    return deployments;
+    return deploymentPayload;
 };
 
 const createDefaultFolders = () => {
@@ -94,6 +75,24 @@ const createDefaultFolders = () => {
     }
 };
 
+const getDependencies = (contractName: string) => {
+    const dependencies = new Set([contractName]);
+
+    function collect(contractName) {
+        const contract = CONTRACTS.find((c) => c.contractName === contractName);
+        contract.dependencies?.forEach((dep) => {
+            if (!dependencies.has(dep)) {
+                dependencies.add(dep);
+                collect(dep);
+            }
+        });
+    }
+
+    collect(contractName);
+
+    return [...dependencies];
+};
+
 task('deploy', 'Deploys Smart contracts')
     .addParam('contractname', 'Contract Name you want to deploy', undefined, types.string)
     .addParam('chain', 'Chain you want to deploy to, e.g., zkSyncTest, mainnet, etc', undefined, types.string)
@@ -112,19 +111,34 @@ task('deploy', 'Deploys Smart contracts')
             throw new Error(`Contract ${contractName} not found on ${chain}`);
         }
 
-        // loop through the contracts and deploy them per tenant
+        const contractsToDeploy = getDependencies(contract.contractName);
+
         for (const tenant of contract.tenants) {
             log('=====================================================');
-            log(`[STARTING] Deploy script for the ${contractName} on ${chain} for ${tenant}`);
+            log('=====================================================');
+            log(`[STARTING] Deploy ${contractName} contract on ${chain} for ${tenant}`);
+            log(`Contracts to deploy: ${contractsToDeploy.length}`);
+            for (const contract of contractsToDeploy) {
+                log(`contract: ${contract}`);
+            }
+            log('=====================================================');
             log('=====================================================');
             log('\n');
-            log(`[DEPLOYING] Dependencies for ${contractName} on ${chain} for ${tenant}`);
 
-            const deployments = await deployEach(hre, contract, chain, tenant);
+            const deployments = [];
+
+            for (const contractName of contractsToDeploy) {
+                const contract = CONTRACTS.find((d) => d.contractName === contractName && d.chain === chain);
+                log(`[PREPPING] Get ready to deploy ${contractName} contract on ${chain} for ${tenant}`);
+
+                const deployment = await deployOne(hre, contract, tenant);
+                deployments.push(deployment);
+            }
 
             log('=====================================================');
-            log(`[DONE] Deploy script for the ${contractName} on ${chain} for ${tenant}`);
+            log(`[DONE] ${contractName} contract deployment on ${chain} for ${tenant} is DONE!`);
             log('=====================================================');
+            log('\n');
 
             // write deployment payload per tenant
             for (const deployment of deployments) {
