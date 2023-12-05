@@ -155,6 +155,35 @@ contract ItemBoundV1 is
         return returnsTruncated;
     }
 
+    function getAllItemsAdmin(
+        address _owner
+    ) public view onlyRole(DEFAULT_ADMIN_ROLE) returns (LibItems.TokenReturn[] memory) {
+        uint256 totalTokens = itemIds.length;
+        LibItems.TokenReturn[] memory tokenReturns = new LibItems.TokenReturn[](totalTokens);
+
+        uint index;
+        for (uint i = 0; i < totalTokens; i++) {
+            uint256 tokenId = itemIds[i];
+            uint256 amount = balanceOf(_owner, tokenId);
+
+            LibItems.TokenReturn memory tokenReturn = LibItems.TokenReturn({
+                tokenId: tokenId,
+                tokenUri: uri(tokenId),
+                amount: amount
+            });
+            tokenReturns[index] = tokenReturn;
+            index++;
+        }
+
+        // truncate the array
+        LibItems.TokenReturn[] memory returnsTruncated = new LibItems.TokenReturn[](index);
+        for (uint i = 0; i < index; i++) {
+            returnsTruncated[i] = tokenReturns[i];
+        }
+
+        return returnsTruncated;
+    }
+
     function isTokenExist(uint256 _tokenId) public view returns (bool) {
         if (!tokenExists[_tokenId]) {
             revert("TokenNotExist");

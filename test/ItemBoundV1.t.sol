@@ -146,8 +146,6 @@ contract ItemBoundV1Test is StdCheats, Test {
 
             LibItems.TokenCreate memory _token = LibItems.TokenCreate({
                 tokenId: _tokenId,
-                level: _level,
-                tier: uint256(_tier),
                 tokenUri: string(abi.encodePacked("https://something.com", "/", _tokenId.toString()))
             });
 
@@ -186,8 +184,6 @@ contract ItemBoundV1Test is StdCheats, Test {
 
         LibItems.TokenCreate memory _token = LibItems.TokenCreate({
             tokenId: _tokenId,
-            level: 1,
-            tier: uint256(TestLibItems.Tier.RARE),
             tokenUri: string(abi.encodePacked("https://something222.com", "/", _tokenId.toString()))
         });
 
@@ -207,8 +203,6 @@ contract ItemBoundV1Test is StdCheats, Test {
 
             LibItems.TokenCreate memory _token = LibItems.TokenCreate({
                 tokenId: _tokenId,
-                level: _level,
-                tier: uint256(_tier),
                 tokenUri: string(abi.encodePacked("https://something.com", "/", _tokenId.toString()))
             });
 
@@ -533,12 +527,7 @@ contract ItemBoundV1Test is StdCheats, Test {
         uint256 _level = generateRandomLevel(); // level 1-10
         TestLibItems.Tier _tier = generateRandomTier(); // tier 0-4
 
-        LibItems.TokenCreate memory _token = LibItems.TokenCreate({
-            tokenId: _tokenId,
-            level: _level,
-            tier: uint256(_tier),
-            tokenUri: ""
-        });
+        LibItems.TokenCreate memory _token = LibItems.TokenCreate({ tokenId: _tokenId, tokenUri: "" });
 
         itemBoundProxy.addNewToken(_token);
 
@@ -552,8 +541,6 @@ contract ItemBoundV1Test is StdCheats, Test {
 
         LibItems.TokenCreate memory _token = LibItems.TokenCreate({
             tokenId: _tokenId,
-            level: _level,
-            tier: uint256(_tier),
             tokenUri: "ipfs://specific-token-uri.com"
         });
 
@@ -577,12 +564,7 @@ contract ItemBoundV1Test is StdCheats, Test {
         uint256 _level = generateRandomLevel(); // level 1-10
         TestLibItems.Tier _tier = generateRandomTier(); // tier 0-4
 
-        LibItems.TokenCreate memory _token = LibItems.TokenCreate({
-            tokenId: _tokenId,
-            level: _level,
-            tier: uint256(_tier),
-            tokenUri: ""
-        });
+        LibItems.TokenCreate memory _token = LibItems.TokenCreate({ tokenId: _tokenId, tokenUri: "" });
 
         itemBoundProxy.addNewToken(_token);
 
@@ -611,12 +593,7 @@ contract ItemBoundV1Test is StdCheats, Test {
         uint256 _level = generateRandomLevel(); // level 1-10
         TestLibItems.Tier _tier = generateRandomTier(); // tier 0-4
 
-        LibItems.TokenCreate memory _token = LibItems.TokenCreate({
-            tokenId: _tokenId,
-            level: _level,
-            tier: uint256(_tier),
-            tokenUri: ""
-        });
+        LibItems.TokenCreate memory _token = LibItems.TokenCreate({ tokenId: _tokenId, tokenUri: "" });
 
         itemBoundProxy.addNewToken(_token);
 
@@ -742,5 +719,41 @@ contract ItemBoundV1Test is StdCheats, Test {
 
         LibItems.TokenReturn[] memory allTokensInfo3 = itemBoundProxy.getAllItems(minterWallet.addr);
         assertEq(allTokensInfo3.length, 1);
+    }
+
+    function testgetAllItemsAdmin() public {
+        bytes memory encodedItemsAll = encode(_tokenIds);
+        itemBoundProxy.adminMint(playerWallet.addr, encodedItemsAll, false);
+
+        string memory newTokenUri = "https://something-new.com/232";
+        itemBoundProxy.updateTokenUri(_tokenIds[23], newTokenUri);
+        assertEq(itemBoundProxy.uri(_tokenIds[23]), "https://something-new.com/232");
+
+        LibItems.TokenReturn[] memory allTokensInfo = itemBoundProxy.getAllItemsAdmin(playerWallet.addr);
+        assertEq(allTokensInfo.length, 1300);
+
+        vm.prank(playerWallet.addr);
+        itemBoundProxy.safeTransferFrom(playerWallet.addr, minterWallet.addr, _tokenIds[24], 1, "");
+
+        LibItems.TokenReturn[] memory allTokensInfo2 = itemBoundProxy.getAllItemsAdmin(playerWallet.addr);
+        assertEq(allTokensInfo2.length, 1300);
+
+        for (uint256 i = 0; i < allTokensInfo.length; i++) {
+            assertEq(allTokensInfo[i].tokenId, _tokenIds[i]);
+
+            if (i == 23) {
+                assertEq(allTokensInfo[i].tokenUri, newTokenUri);
+                assertEq(allTokensInfo[i].amount, 1);
+            } else {
+                assertEq(allTokensInfo[i].amount, 1);
+                assertEq(
+                    allTokensInfo[i].tokenUri,
+                    string(abi.encodePacked("https://something.com", "/", _tokenIds[i].toString()))
+                );
+            }
+        }
+
+        LibItems.TokenReturn[] memory allTokensInfo3 = itemBoundProxy.getAllItemsAdmin(minterWallet.addr);
+        assertEq(allTokensInfo3.length, 1300);
     }
 }

@@ -100,8 +100,6 @@ contract AvatarBoundTest is Test {
 
             LibItems.TokenCreate memory _token = LibItems.TokenCreate({
                 tokenId: _tokenId,
-                level: _level,
-                tier: _tier,
                 tokenUri: string(abi.encodePacked("https://something.com", "/", _tokenId.toString()))
             });
 
@@ -110,21 +108,11 @@ contract AvatarBoundTest is Test {
             _tokenItemsIds.push(_tokenId);
         }
 
-        LibItems.TokenCreate memory defaultItem = LibItems.TokenCreate({
-            tokenId: defaultItemId,
-            level: 1,
-            tier: 1,
-            tokenUri: ""
-        });
+        LibItems.TokenCreate memory defaultItem = LibItems.TokenCreate({ tokenId: defaultItemId, tokenUri: "" });
 
         _tokens.push(defaultItem);
 
-        LibItems.TokenCreate memory specialItem = LibItems.TokenCreate({
-            tokenId: specialItemId,
-            level: 1,
-            tier: 2,
-            tokenUri: ""
-        });
+        LibItems.TokenCreate memory specialItem = LibItems.TokenCreate({ tokenId: specialItemId, tokenUri: "" });
 
         _tokens.push(specialItem);
 
