@@ -66,7 +66,7 @@ describe('MockSoulbound', function () {
             mockSoul1155Bound
                 .connect(playerAccount)
                 .safeTransferFrom(playerAccount.address, minterAccount.address, 1, 0, ethers.toUtf8Bytes(''))
-        ).to.be.revertedWith("ERC721Soulbound: can't be zero amount");
+        ).to.be.revertedWith("ERC1155Soulbound: can't be zero amount");
         const tx2 = await mockSoul1155Bound.mint(playerAccount.address, 1, 5, false);
         await tx2.wait();
         const transferTrx = await mockSoul1155Bound
