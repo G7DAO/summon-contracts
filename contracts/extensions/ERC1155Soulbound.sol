@@ -55,7 +55,6 @@ contract ERC1155Soulbound {
         uint256[] memory amounts,
         uint256[] memory totalAmounts
     ) {
-        require(tokenIds.length == amounts.length, "ERC1155Soulbound: tokenIds and amounts length mismatch");
         require(amounts.length == totalAmounts.length, "ERC1155Soulbound: tokenIds and amounts length mismatch");
 
         for (uint256 i = 0; i < tokenIds.length; i++) {
@@ -97,9 +96,7 @@ contract ERC1155Soulbound {
         uint256 amount,
         uint256 totalAmount
     ) private view {
-        require(from != address(0), "ERC1155Soulbound: can't be zero address");
         require(amount > 0, "ERC1155Soulbound: can't be zero amount");
-        require(amount <= totalAmount, "ERC1155Soulbound: can't transfer more than you have");
         // check if from or to whitelist addresses let it through
         if (whitelistAddresses[from] || whitelistAddresses[to]) {
             return;
