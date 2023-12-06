@@ -13,12 +13,12 @@ export const CONTRACTS = [
         dependencies: ['ItemBound', 'LevelsBound'],
         functionCalls: [
             {
-                contractNae: 'AvatarBound',
+                contractName: 'AvatarBound',
                 functionName: 'setDefaultItemId',
                 args: [10001],
             },
             {
-                contractNae: 'AvatarBound',
+                contractName: 'AvatarBound',
                 functionName: 'setSpecialItemId',
                 args: [10002],
             },
@@ -35,12 +35,12 @@ export const CONTRACTS = [
         dependencies: ['ItemBoundV1', 'LevelsBoundV1'],
         functionCalls: [
             {
-                contractNae: 'AvatarBound',
+                contractName: 'AvatarBound',
                 functionName: 'setDefaultItemId',
                 args: [10001],
             },
             {
-                contractNae: 'AvatarBound',
+                contractName: 'AvatarBound',
                 functionName: 'setSpecialItemId',
                 args: [10002],
             },
@@ -56,8 +56,8 @@ export const CONTRACTS = [
         upgradable: false,
         dependencies: ['AvatarBound', 'LevelsBound'],
         functionCalls: [
-            { contractName: 'ItemBound', functionName: 'setAvatarContract', args: ['CONTRACT_AvatarBound'] },
-            { contractName: 'ItemBound', functionName: 'setAvatarContract', args: ['CONTRACT_LevelsBound'] },
+            { contractName: 'ItemBound', functionName: 'grantRole', args: ['MINTER_ROLE', 'CONTRACT_AvatarBound'] },
+            { contractName: 'ItemBound', functionName: 'grantRole', args: ['MINTER_ROLE', 'CONTRACT_LevelsBound'] },
         ],
     },
     {
@@ -70,8 +70,16 @@ export const CONTRACTS = [
         upgradable: true,
         dependencies: ['AvatarBoundV1'],
         functionCalls: [
-            { contractName: 'ItemBound', functionName: 'setAvatarContract', args: ['CONTRACT_AvatarBound'] },
-            { contractName: 'ItemBound', functionName: 'setAvatarContract', args: ['CONTRACT_LevelsBound'] },
+            {
+                contractName: 'ItemBound',
+                functionName: 'grantRole',
+                args: ['MINTER_ROLE', 'CONTRACT_AvatarBound'],
+            },
+            {
+                contractName: 'ItemBound',
+                functionName: 'grantRole',
+                args: ['MINTER_ROLE', 'CONTRACT_LevelsBound'],
+            },
         ],
     },
     {
