@@ -64,23 +64,11 @@ contract AvatarBoundTest is Test {
         return (_seed % 10) + 1; // 1 - 10
     }
 
-    function generateRandomTier() internal returns (LibItems.Tier) {
+    function generateRandomTier() internal returns (uint256) {
         _seed = uint256(keccak256(abi.encodePacked(blockhash(block.number - 1), _seed)));
         uint256 random = _seed % 5; // 0 - 4
 
-        if (random == 0) {
-            return LibItems.Tier.COMMON;
-        } else if (random == 1) {
-            return LibItems.Tier.UNCOMMON;
-        } else if (random == 2) {
-            return LibItems.Tier.RARE;
-        } else if (random == 3) {
-            return LibItems.Tier.LEGENDARY;
-        } else if (random == 4) {
-            return LibItems.Tier.MYTHICAL;
-        } else {
-            return LibItems.Tier.COMMON;
-        }
+        return random;
     }
 
     function encode(uint256[] memory itemIds) public pure returns (bytes memory) {
@@ -108,12 +96,10 @@ contract AvatarBoundTest is Test {
         for (uint256 i = 0; i < 10; i++) {
             uint256 _tokenId = generateRandomItemId(); // totally random
             uint256 _level = generateRandomLevel(); // level 1-10
-            LibItems.Tier _tier = generateRandomTier(); // tier 0-4
+            uint256 _tier = generateRandomTier(); // tier 0-4
 
             LibItems.TokenCreate memory _token = LibItems.TokenCreate({
                 tokenId: _tokenId,
-                level: _level,
-                tier: _tier,
                 tokenUri: string(abi.encodePacked("https://something.com", "/", _tokenId.toString()))
             });
 
@@ -122,21 +108,11 @@ contract AvatarBoundTest is Test {
             _tokenItemsIds.push(_tokenId);
         }
 
-        LibItems.TokenCreate memory defaultItem = LibItems.TokenCreate({
-            tokenId: defaultItemId,
-            level: 1,
-            tier: LibItems.Tier.COMMON,
-            tokenUri: ""
-        });
+        LibItems.TokenCreate memory defaultItem = LibItems.TokenCreate({ tokenId: defaultItemId, tokenUri: "" });
 
         _tokens.push(defaultItem);
 
-        LibItems.TokenCreate memory specialItem = LibItems.TokenCreate({
-            tokenId: specialItemId,
-            level: 1,
-            tier: LibItems.Tier.UNCOMMON,
-            tokenUri: ""
-        });
+        LibItems.TokenCreate memory specialItem = LibItems.TokenCreate({ tokenId: specialItemId, tokenUri: "" });
 
         _tokens.push(specialItem);
 
@@ -288,7 +264,7 @@ contract AvatarBoundTest is Test {
         avatarBound.adminMint(address(playerWallet.addr), 1);
 
         vm.startPrank(playerWallet.addr);
-        vm.expectRevert("ERCSoulbound: Operation denied, soulbounded");
+        vm.expectRevert("ERC721Soulbound: Operation denied, soulbounded");
         avatarBound.transferFrom(address(playerWallet.addr), address(this), 0);
         vm.stopPrank();
     }

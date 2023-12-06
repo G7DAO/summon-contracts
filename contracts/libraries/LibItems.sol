@@ -2,6 +2,24 @@
 pragma solidity 0.8.17;
 
 library LibItems {
+    struct Tier {
+        uint256 tierId;
+        string tierName;
+    }
+
+    struct TokenCreate {
+        uint256 tokenId;
+        string tokenUri;
+    }
+
+    struct TokenReturn {
+        uint256 tokenId;
+        string tokenUri;
+        uint256 amount;
+    }
+}
+
+library TestLibItems {
     enum Tier {
         NONE,
         COMMON,
@@ -9,18 +27,5 @@ library LibItems {
         RARE,
         LEGENDARY,
         MYTHICAL
-    }
-
-    struct TokenCreate {
-        uint256 tokenId;
-        string tokenUri;
-        LibItems.Tier tier;
-        uint256 level;
-    }
-
-    struct TokenReturn {
-        uint256 tokenId;
-        string tokenUri;
-        uint256 amount;
     }
 }

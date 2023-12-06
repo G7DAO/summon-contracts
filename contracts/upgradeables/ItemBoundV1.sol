@@ -2,8 +2,8 @@
 pragma solidity 0.8.17;
 
 /**
- * Author: Omar <omar@game7.io>(https://github.com/ogarciarevett)
- * Co-Authors: Max <max@game7.io>(https://github.com/vasinl124)
+ * Author: Max <max@game7.io>(https://github.com/vasinl124)
+ * Co-Authors: Omar <omar@game7.io>(https://github.com/ogarciarevett)
  */
 
 /**                        .;c;.
@@ -44,7 +44,7 @@ import {
     ReentrancyGuardUpgradeable
 } from "@openzeppelin/contracts-upgradeable/security/ReentrancyGuardUpgradeable.sol";
 
-import { ERCSoulboundUpgradeable } from "./ERCSoulboundUpgradeable.sol";
+import { ERC1155SoulboundUpgradeable } from "../extensions/upgradeables/ERC1155SoulboundUpgradeable.sol";
 import { ERCWhitelistSignatureUpgradeable } from "./ERCWhitelistSignatureUpgradeable.sol";
 import { LibItems } from "../libraries/LibItems.sol";
 
@@ -52,7 +52,7 @@ contract ItemBoundV1 is
     Initializable,
     ERC1155BurnableUpgradeable,
     ERC1155SupplyUpgradeable,
-    ERCSoulboundUpgradeable,
+    ERC1155SoulboundUpgradeable,
     ERC2981Upgradeable,
     ERCWhitelistSignatureUpgradeable,
     AccessControlUpgradeable,
@@ -70,14 +70,11 @@ contract ItemBoundV1 is
     string public symbol;
     using StringsUpgradeable for uint256;
 
-    uint256 public currentMaxLevel;
-
     uint256 public MAX_PER_MINT;
 
     mapping(uint256 => bool) private tokenExists;
     mapping(uint256 => string) public tokenUris; // tokenId => tokenUri
     mapping(uint256 => bool) public isTokenMintPaused; // tokenId => bool - default is false
-    mapping(LibItems.Tier => mapping(uint256 => uint256[])) public itemPerTierPerLevel; // tier => level => itemId[]
 
     uint256[] public itemIds;
 
@@ -88,6 +85,42 @@ contract ItemBoundV1 is
             revert("ExceedMaxMint");
         }
         _;
+    }
+
+    /// @custom:oz-upgrades-unsafe-allow constructor
+    constructor() {
+        _disableInitializers();
+    }
+
+    function initialize(
+        string memory _name,
+        string memory _symbol,
+        string memory _initBaseURI,
+        string memory _contractURI,
+        uint256 _maxPerMint,
+        bool _isPaused,
+        address _devWallet,
+        uint96 _royalty
+    ) public initializer {
+        __ERC1155_init("");
+        __ReentrancyGuard_init();
+        __AccessControl_init();
+        __ERC1155SoulboundUpgradable_init();
+        __ERCWhitelistSignatureUpgradeable_init();
+
+        _grantRole(DEFAULT_ADMIN_ROLE, msg.sender);
+        _grantRole(MINTER_ROLE, msg.sender);
+        _grantRole(MANAGER_ROLE, msg.sender);
+        _addWhitelistSigner(msg.sender);
+
+        _setDefaultRoyalty(_devWallet, _royalty);
+        name = _name;
+        symbol = _symbol;
+        baseURI = _initBaseURI;
+        contractURI = _contractURI;
+        MAX_PER_MINT = _maxPerMint;
+
+        if (_isPaused) _pause();
     }
 
     function getAllItems(address _owner) public view returns (LibItems.TokenReturn[] memory) {
@@ -119,6 +152,35 @@ contract ItemBoundV1 is
         return returnsTruncated;
     }
 
+    function getAllItemsAdmin(
+        address _owner
+    ) public view onlyRole(DEFAULT_ADMIN_ROLE) returns (LibItems.TokenReturn[] memory) {
+        uint256 totalTokens = itemIds.length;
+        LibItems.TokenReturn[] memory tokenReturns = new LibItems.TokenReturn[](totalTokens);
+
+        uint index;
+        for (uint i = 0; i < totalTokens; i++) {
+            uint256 tokenId = itemIds[i];
+            uint256 amount = balanceOf(_owner, tokenId);
+
+            LibItems.TokenReturn memory tokenReturn = LibItems.TokenReturn({
+                tokenId: tokenId,
+                tokenUri: uri(tokenId),
+                amount: amount
+            });
+            tokenReturns[index] = tokenReturn;
+            index++;
+        }
+
+        // truncate the array
+        LibItems.TokenReturn[] memory returnsTruncated = new LibItems.TokenReturn[](index);
+        for (uint i = 0; i < index; i++) {
+            returnsTruncated[i] = tokenReturns[i];
+        }
+
+        return returnsTruncated;
+    }
+
     function isTokenExist(uint256 _tokenId) public view returns (bool) {
         if (!tokenExists[_tokenId]) {
             revert("TokenNotExist");
@@ -135,42 +197,6 @@ contract ItemBoundV1 is
         return itemIds;
     }
 
-    /// @custom:oz-upgrades-unsafe-allow constructor
-    constructor() {
-        _disableInitializers();
-    }
-
-    function initialize(
-        string memory _name,
-        string memory _symbol,
-        string memory _initBaseURI,
-        string memory _contractURI,
-        uint256 _maxPerMint,
-        bool _isPaused,
-        address _devWallet,
-        uint96 _royalty
-    ) public initializer {
-        __ERC1155_init("");
-        __ReentrancyGuard_init();
-        __ERCSoulboundUpgradable_init();
-        __ERCWhitelistSignatureUpgradeable_init();
-        __AccessControl_init();
-
-        _grantRole(DEFAULT_ADMIN_ROLE, msg.sender);
-        _grantRole(MINTER_ROLE, msg.sender);
-        _grantRole(MANAGER_ROLE, msg.sender);
-        _addWhitelistSigner(msg.sender);
-
-        _setDefaultRoyalty(_devWallet, _royalty);
-        name = _name;
-        symbol = _symbol;
-        baseURI = _initBaseURI;
-        contractURI = _contractURI;
-        MAX_PER_MINT = _maxPerMint;
-
-        if (_isPaused) _pause();
-    }
-
     function pause() external onlyRole(MANAGER_ROLE) {
         _pause();
     }
@@ -180,22 +206,13 @@ contract ItemBoundV1 is
     }
 
     function addNewToken(LibItems.TokenCreate calldata _token) public onlyRole(MANAGER_ROLE) {
-        if (tokenExists[_token.tokenId]) {
-            revert("TokenAlreadyExist");
-        }
         if (bytes(_token.tokenUri).length > 0) {
             tokenUris[_token.tokenId] = _token.tokenUri;
         }
 
         tokenExists[_token.tokenId] = true;
 
-        // keep track of itemId
-        itemPerTierPerLevel[_token.tier][_token.level].push(_token.tokenId);
         itemIds.push(_token.tokenId);
-
-        if (_token.level > currentMaxLevel) {
-            currentMaxLevel = _token.level;
-        }
     }
 
     function addNewTokens(LibItems.TokenCreate[] calldata _tokens) external onlyRole(MANAGER_ROLE) {
@@ -222,14 +239,6 @@ contract ItemBoundV1 is
 
     function updateTokenMintPaused(uint256 _tokenId, bool _isTokenMintPaused) public onlyRole(MANAGER_ROLE) {
         isTokenMintPaused[_tokenId] = _isTokenMintPaused;
-    }
-
-    function getCurrentMaxLevel() public view returns (uint256) {
-        return currentMaxLevel;
-    }
-
-    function getItemsPerTierPerLevel(LibItems.Tier _tier, uint256 _level) public view returns (uint256[] memory) {
-        return itemPerTierPerLevel[_tier][_level];
     }
 
     function _mintBatch(address to, uint256[] memory _tokenIds, uint256 amount, bool soulbound) private {

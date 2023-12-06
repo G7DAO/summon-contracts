@@ -5,15 +5,17 @@ pragma solidity 0.8.17;
 import "../libraries/LibItems.sol";
 
 interface IItemBound {
-    event SignerAdded(address indexed signer);
-
-    event SignerRemoved(address indexed signer);
-
     event ContractURIChanged(string indexed uri);
 
     function getAllItems(address _owner) external view returns (LibItems.TokenReturn[] memory);
 
     function isTokenExist(uint256 _tokenId) external view returns (bool);
+
+    function decodeData(bytes calldata _data) external view returns (uint256[] memory);
+
+    function pause() external;
+
+    function unpause() external;
 
     function addNewToken(LibItems.TokenCreate calldata _token) external;
 
@@ -21,11 +23,9 @@ interface IItemBound {
 
     function updateTokenUri(uint256 _tokenId, string calldata _tokenUri) external;
 
+    function batchUpdateTokenUri(uint256[] calldata _tokenIds, string[] calldata _tokenUris) external;
+
     function updateTokenMintPaused(uint256 _tokenId, bool _isTokenMintPaused) external;
-
-    function getCurrentMaxLevel() external view returns (uint256);
-
-    function getItemsPerTierPerLevel(LibItems.Tier _tier, uint256 _level) external view returns (uint256[] memory);
 
     function mint(
         bytes calldata data,
@@ -38,16 +38,6 @@ interface IItemBound {
     function adminMint(address to, bytes calldata data, bool soulbound) external;
 
     function adminMintId(address to, uint256 id, uint256 amount, bool soulbound) external;
-
-    function safeTransferFrom(address _from, address _to, uint256 _id, uint256 _amount, bytes memory _data) external;
-
-    function safeBatchTransferFrom(
-        address _from,
-        address _to,
-        uint256[] memory _ids,
-        uint256[] memory _amounts,
-        bytes memory _data
-    ) external;
 
     function burn(address to, uint256 tokenId, uint256 amount) external;
 
@@ -70,7 +60,7 @@ interface IItemBound {
         uint256 nonce,
         bytes calldata data,
         bytes calldata signature
-    ) external view returns (bool);
+    ) external returns (bool);
 
     function addWhitelistSigner(address _signer) external;
 

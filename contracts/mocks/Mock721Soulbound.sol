@@ -22,10 +22,10 @@ pragma solidity 0.8.17;
  *                          ...
  */
 
-import "../ERCSoulbound.sol";
-import "@openzeppelin/contracts/token/ERC721/ERC721.sol";
+import { ERC721 } from "@openzeppelin/contracts/token/ERC721/ERC721.sol";
+import { ERC721Soulbound } from "../extensions/ERC721Soulbound.sol";
 
-contract Mock721Soulbound is ERC721, ERCSoulbound {
+contract Mock721Soulbound is ERC721, ERC721Soulbound {
     uint256 private _tokenIdCounter;
 
     constructor() ERC721("Mock721SoulboundToken", "M721SBT") {}
@@ -36,7 +36,12 @@ contract Mock721Soulbound is ERC721, ERCSoulbound {
         _soulboundToken(tokenId);
     }
 
-    function _beforeTokenTransfer(address from, address to, uint256 tokenId, uint256 batch) internal override(ERC721) soulboundTokenCheck(tokenId) {
+    function _beforeTokenTransfer(
+        address from,
+        address to,
+        uint256 tokenId,
+        uint256 batch
+    ) internal override(ERC721) soulboundTokenCheck(tokenId) {
         super._beforeTokenTransfer(from, to, tokenId, batch);
     }
 
