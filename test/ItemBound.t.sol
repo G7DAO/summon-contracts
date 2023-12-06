@@ -679,13 +679,15 @@ contract ItemBoundTest is StdCheats, Test {
         itemBound.updateTokenUri(_tokenIds[23], newTokenUri);
         assertEq(itemBound.uri(_tokenIds[23]), "https://something-new.com/232");
 
-        LibItems.TokenReturn[] memory allTokensInfo = itemBound.getAllItems(playerWallet.addr);
+        vm.prank(playerWallet.addr);
+        LibItems.TokenReturn[] memory allTokensInfo = itemBound.getAllItems();
         assertEq(allTokensInfo.length, 1300);
 
         vm.prank(playerWallet.addr);
         itemBound.safeTransferFrom(playerWallet.addr, minterWallet.addr, _tokenIds[24], 1, "");
 
-        LibItems.TokenReturn[] memory allTokensInfo2 = itemBound.getAllItems(playerWallet.addr);
+        vm.prank(playerWallet.addr);
+        LibItems.TokenReturn[] memory allTokensInfo2 = itemBound.getAllItems();
         assertEq(allTokensInfo2.length, 1299);
 
         for (uint256 i = 0; i < allTokensInfo.length; i++) {
@@ -703,7 +705,8 @@ contract ItemBoundTest is StdCheats, Test {
             }
         }
 
-        LibItems.TokenReturn[] memory allTokensInfo3 = itemBound.getAllItems(minterWallet.addr);
+        vm.prank(minterWallet.addr);
+        LibItems.TokenReturn[] memory allTokensInfo3 = itemBound.getAllItems();
         assertEq(allTokensInfo3.length, 1);
     }
 

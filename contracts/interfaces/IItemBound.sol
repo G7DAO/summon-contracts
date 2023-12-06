@@ -7,7 +7,9 @@ import "../libraries/LibItems.sol";
 interface IItemBound {
     event ContractURIChanged(string indexed uri);
 
-    function getAllItems(address _owner) external view returns (LibItems.TokenReturn[] memory);
+    function getAllItems() external view returns (LibItems.TokenReturn[] memory);
+
+    function getAllItemsAdmin(address _owner) external view returns (LibItems.TokenReturn[] memory);
 
     function isTokenExist(uint256 _tokenId) external view returns (bool);
 

@@ -123,14 +123,14 @@ contract ItemBoundV1 is
         if (_isPaused) _pause();
     }
 
-    function getAllItems(address _owner) public view returns (LibItems.TokenReturn[] memory) {
+    function getAllItems() public view returns (LibItems.TokenReturn[] memory) {
         uint256 totalTokens = itemIds.length;
         LibItems.TokenReturn[] memory tokenReturns = new LibItems.TokenReturn[](totalTokens);
 
         uint index;
         for (uint i = 0; i < totalTokens; i++) {
             uint256 tokenId = itemIds[i];
-            uint256 amount = balanceOf(_owner, tokenId);
+            uint256 amount = balanceOf(_msgSender(), tokenId);
 
             if (amount > 0) {
                 LibItems.TokenReturn memory tokenReturn = LibItems.TokenReturn({
