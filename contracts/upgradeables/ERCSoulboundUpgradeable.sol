@@ -86,6 +86,30 @@ contract ERCSoulboundUpgradeable is Initializable {
 
     function __ERCSoulboundUpgradable_init() internal onlyInitializing {}
 
+    /**
+     * @dev Returns if a `tokenId` is soulbound
+     *
+     */
+    function isSoulboundToken(uint256 tokenId) external view virtual returns (bool) {
+        return _soulboundTokens[tokenId];
+    }
+
+    /**
+     * @dev Returns if a `tokenId` is soulbound
+     *
+     */
+    function soulboundBalance(address to, uint256 tokenId) external view virtual returns (uint256) {
+        return _soulbounds[to][tokenId];
+    }
+
+    /**
+     * @dev Returns if a `address` is soulbound
+     *
+     */
+    function isSoulboundAddress(address to) public view virtual returns (bool) {
+        return _soulboundAddresses[to];
+    }
+
     function _updateWhitelistAddress(address _address, bool _isWhitelisted) internal {
         whitelistAddresses[_address] = _isWhitelisted;
     }
@@ -175,30 +199,6 @@ contract ERCSoulboundUpgradeable is Initializable {
         require(to != address(0), "ERCSoulbound: Bound to the zero address not allowed");
         _soulboundAddresses[to] = true;
         emit SoulboundAddress(to);
-    }
-
-    /**
-     * @dev Returns if a `tokenId` is soulbound
-     *
-     */
-    function isSoulboundToken(uint256 tokenId) external view virtual returns (bool) {
-        return _soulboundTokens[tokenId];
-    }
-
-    /**
-     * @dev Returns if a `tokenId` is soulbound
-     *
-     */
-    function soulboundBalance(address to, uint256 tokenId) external view virtual returns (uint256) {
-        return _soulbounds[to][tokenId];
-    }
-
-    /**
-     * @dev Returns if a `address` is soulbound
-     *
-     */
-    function isSoulboundAddress(address to) public view virtual returns (bool) {
-        return _soulboundAddresses[to];
     }
 
     // Reserved storage space to allow for layout changes in the future.

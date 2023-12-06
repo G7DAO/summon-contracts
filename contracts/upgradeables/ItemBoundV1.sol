@@ -87,6 +87,11 @@ contract ItemBoundV1 is
         _;
     }
 
+    /// @custom:oz-upgrades-unsafe-allow constructor
+    constructor() {
+        _disableInitializers();
+    }
+
     function initialize(
         string memory _name,
         string memory _symbol,
@@ -116,14 +121,6 @@ contract ItemBoundV1 is
         MAX_PER_MINT = _maxPerMint;
 
         if (_isPaused) _pause();
-    }
-
-    function pause() external onlyRole(MANAGER_ROLE) {
-        _pause();
-    }
-
-    function unpause() external onlyRole(MANAGER_ROLE) {
-        _unpause();
     }
 
     function getAllItems(address _owner) public view returns (LibItems.TokenReturn[] memory) {
@@ -200,9 +197,12 @@ contract ItemBoundV1 is
         return itemIds;
     }
 
-    /// @custom:oz-upgrades-unsafe-allow constructor
-    constructor() {
-        _disableInitializers();
+    function pause() external onlyRole(MANAGER_ROLE) {
+        _pause();
+    }
+
+    function unpause() external onlyRole(MANAGER_ROLE) {
+        _unpause();
     }
 
     function addNewToken(LibItems.TokenCreate calldata _token) public onlyRole(MANAGER_ROLE) {

@@ -48,11 +48,6 @@ contract AvatarBoundV1 is
     ERCSoulboundUpgradeable,
     ERCWhitelistSignatureUpgradeable
 {
-    /// @custom:oz-upgrades-unsafe-allow constructor
-    constructor() {
-        _disableInitializers();
-    }
-
     bytes32 public constant MINTER_ROLE = keccak256("MINTER_ROLE");
     bytes32 public constant URI_SETTER_ROLE = keccak256("URI_SETTER_ROLE");
     bytes32 public constant PAUSER_ROLE = keccak256("PAUSER_ROLE");
@@ -102,6 +97,11 @@ contract AvatarBoundV1 is
     event AvatarMinted(uint indexed tokenId, address to, string baseSkinUri);
 
     mapping(uint256 => string) public baseSkins;
+
+    /// @custom:oz-upgrades-unsafe-allow constructor
+    constructor() {
+        _disableInitializers();
+    }
 
     function initialize(
         string memory _name,
@@ -215,12 +215,12 @@ contract AvatarBoundV1 is
         }
     }
 
-    function revealNFTGatingToken(uint256 tokenId) private whenNotPaused {
+    function revealNFTGatingToken(uint256 tokenId) private {
         IOpenMint(gatingNFTAddress).reveal(tokenId, revealURI);
         emit NFTRevealed(tokenId, _msgSender(), gatingNFTAddress);
     }
 
-    function mintItem(address to, uint256 itemId) private whenNotPaused {
+    function mintItem(address to, uint256 itemId) private {
         IItemBound(itemsNFTAddress).adminMintId(to, itemId, 1, true);
         if (itemId == _specialItemId) {
             emit SpecialItemMinted(itemId, to, itemsNFTAddress);
@@ -229,7 +229,7 @@ contract AvatarBoundV1 is
         }
     }
 
-    function mintRandomItem(address to, bytes calldata data) private whenNotPaused {
+    function mintRandomItem(address to, bytes calldata data) private {
         IItemBound(itemsNFTAddress).adminMint(to, data, false);
         emit RandomItemMinted(to, data, itemsNFTAddress);
     }
@@ -389,11 +389,20 @@ contract AvatarBoundV1 is
         super._beforeTokenTransfer(from, to, tokenId, batch);
     }
 
+    function transferFrom(
+        address from,
+        address to,
+        uint256 tokenId
+    ) public override(IERC721Upgradeable, ERC721Upgradeable) {
+        revert("You can't transfer this token");
+    }
+
     function safeTransferFrom(
         address from,
         address to,
         uint256 tokenId
     ) public override(IERC721Upgradeable, ERC721Upgradeable) nonReentrant {
+        revert("You can't transfer this token");
         super.safeTransferFrom(from, to, tokenId, "");
     }
 
@@ -403,6 +412,7 @@ contract AvatarBoundV1 is
         uint256 tokenId,
         bytes memory data
     ) public override(IERC721Upgradeable, ERC721Upgradeable) nonReentrant {
+        revert("You can't transfer this token");
         super._safeTransfer(from, to, tokenId, data);
     }
 

@@ -1,5 +1,4 @@
 // SPDX-License-Identifier: UNLICENSED
-///@notice This contract is for mock for WETH token.
 pragma solidity 0.8.17;
 
 /**
@@ -80,6 +79,31 @@ contract ItemBound is
         _;
     }
 
+    constructor(
+        string memory _name,
+        string memory _symbol,
+        string memory _initBaseURI,
+        string memory _contractURI,
+        uint256 _maxPerMint,
+        bool _isPaused,
+        address _devWallet,
+        uint96 _royalty
+    ) ERC1155(_initBaseURI) {
+        _grantRole(DEFAULT_ADMIN_ROLE, msg.sender);
+        _grantRole(MINTER_ROLE, msg.sender);
+        _grantRole(MANAGER_ROLE, msg.sender);
+        _addWhitelistSigner(msg.sender);
+
+        _setDefaultRoyalty(_devWallet, _royalty);
+        name = _name;
+        symbol = _symbol;
+        baseURI = _initBaseURI;
+        contractURI = _contractURI;
+        MAX_PER_MINT = _maxPerMint;
+
+        if (_isPaused) _pause();
+    }
+
     function getAllItems(address _owner) public view returns (LibItems.TokenReturn[] memory) {
         uint256 totalTokens = itemIds.length;
         LibItems.TokenReturn[] memory tokenReturns = new LibItems.TokenReturn[](totalTokens);
@@ -152,31 +176,6 @@ contract ItemBound is
     function _decodeData(bytes calldata _data) private view returns (uint256[] memory) {
         uint256[] memory itemIds = abi.decode(_data, (uint256[]));
         return itemIds;
-    }
-
-    constructor(
-        string memory _name,
-        string memory _symbol,
-        string memory _initBaseURI,
-        string memory _contractURI,
-        uint256 _maxPerMint,
-        bool _isPaused,
-        address _devWallet,
-        uint96 _royalty
-    ) ERC1155(_initBaseURI) {
-        _grantRole(DEFAULT_ADMIN_ROLE, msg.sender);
-        _grantRole(MINTER_ROLE, msg.sender);
-        _grantRole(MANAGER_ROLE, msg.sender);
-        _addWhitelistSigner(msg.sender);
-
-        _setDefaultRoyalty(_devWallet, _royalty);
-        name = _name;
-        symbol = _symbol;
-        baseURI = _initBaseURI;
-        contractURI = _contractURI;
-        MAX_PER_MINT = _maxPerMint;
-
-        if (_isPaused) _pause();
     }
 
     function pause() external onlyRole(MANAGER_ROLE) {
