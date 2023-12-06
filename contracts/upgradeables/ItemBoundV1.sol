@@ -206,6 +206,10 @@ contract ItemBoundV1 is
     }
 
     function addNewToken(LibItems.TokenCreate calldata _token) public onlyRole(MANAGER_ROLE) {
+        if (tokenExists[_token.tokenId]) {
+            revert("TokenAlreadyExist");
+        }
+
         if (bytes(_token.tokenUri).length > 0) {
             tokenUris[_token.tokenId] = _token.tokenUri;
         }
