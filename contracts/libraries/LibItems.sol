@@ -10,8 +10,6 @@ library LibItems {
     struct TokenCreate {
         uint256 tokenId;
         string tokenUri;
-        uint256 tier;
-        uint256 level;
     }
 
     struct TokenReturn {

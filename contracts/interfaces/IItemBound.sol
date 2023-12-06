@@ -27,10 +27,6 @@ interface IItemBound {
 
     function updateTokenMintPaused(uint256 _tokenId, bool _isTokenMintPaused) external;
 
-    function getCurrentMaxLevel() external view returns (uint256);
-
-    function getItemsPerTierPerLevel(uint256 _tier, uint256 _level) external view returns (uint256[] memory);
-
     function mint(
         bytes calldata data,
         uint256 amount,
