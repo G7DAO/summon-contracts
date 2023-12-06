@@ -60,7 +60,7 @@ describe('MockSoulbound', function () {
                 .connect(playerAccount)
                 .safeTransferFrom(playerAccount.address, minterAccount.address, 1, 1, ethers.toUtf8Bytes(''))
         ).to.be.revertedWith(
-            'ERC721Soulbound: The amount of soulbounded tokens is more than the amount of tokens to be transferred'
+            'ERC1155Soulbound: The amount of soulbounded tokens is more than the amount of tokens to be transferred'
         );
         await expect(
             mockSoul1155Bound
