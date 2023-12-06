@@ -12,6 +12,7 @@ import { submitContractDeploymentsToDB, executeFunctionCallBatch } from '@helper
 import deploy from '../deploy/deploy';
 import deployUpgradeable from '../deploy/deployUpgradeable';
 import getWallet from 'deploy/getWallet';
+import { HardhatRuntimeEnvironment } from 'hardhat/types';
 
 const ABI_PATH_ZK = 'artifacts-zk/contracts/';
 const ABI_PATH = 'artifacts/contracts/';
@@ -21,8 +22,8 @@ const PRIVATE_KEY = process.env.PRIVATE_KEY || '';
 const wallet = getWallet(PRIVATE_KEY);
 
 export async function populateParam(
+    hre: HardhatRuntimeEnvironment,
     param: string | number | boolean,
-    constructorArgs: Record<string, string>,
     tenant?: string
 ): Promise<string> {
     let value = param;
@@ -52,6 +53,16 @@ export async function populateParam(
             const deploymentPayloadContent = fs.readFileSync(filePathDeploymentLatest, 'utf8');
             deploymentPayload = JSON.parse(deploymentPayloadContent);
         } else {
+            const abiPath = `${hre.network.zksync ? ABI_PATH_ZK : ABI_PATH}${
+                contract?.upgradable ? 'upgradeables/' : ''
+            }${contract.contractName}.sol/${contract.contractName}.json`;
+
+            const constructorArgs = await populateConstructorArgs(
+                hre,
+                ConstructorArgs[`${contract.contractName}Args`][`${contract?.networkType}`],
+                tenant
+            );
+
             if (contract.upgradable) {
                 deploymentPayload = await deployUpgradeable(hre, contract, constructorArgs, abiPath, tenant);
             } else {
@@ -73,17 +84,16 @@ export async function populateParam(
     return value;
 }
 
-export async function populateConstructorArgs(constructorArgs: Record<string, string>, tenant?: string) {
+export async function populateConstructorArgs(hre, constructorArgs: Record<string, string>, tenant?: string) {
     for (const key in constructorArgs) {
-        constructorArgs[key] = await populateParam(key, constructorArgs, tenant);
+        constructorArgs[key] = await populateParam(hre, constructorArgs[key], tenant);
     }
-
     return constructorArgs;
 }
 
 const deployOne = async (hre: HardhatRuntimeEnvironment, contract, tenant) => {
-    // then deploy the contract
     const constructorArgs = await populateConstructorArgs(
+        hre,
         ConstructorArgs[`${contract.contractName}Args`][`${contract?.networkType}`],
         tenant
     );

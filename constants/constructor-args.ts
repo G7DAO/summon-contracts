@@ -142,6 +142,12 @@ export const LevelsBoundArgs = {
 };
 
 export const LevelsBoundV1Args = {
-    ...LevelsBoundArgs,
-    itemsNFTAddress: 'CONTRACT_ItemBoundV1',
+    MAINNET: {
+        ...LevelsBoundArgs.MAINNET,
+        itemsNFTAddress: 'CONTRACT_ItemBoundV1',
+    },
+    TESTNET: {
+        ...LevelsBoundArgs.TESTNET,
+        itemsNFTAddress: 'CONTRACT_ItemBoundV1',
+    },
 };

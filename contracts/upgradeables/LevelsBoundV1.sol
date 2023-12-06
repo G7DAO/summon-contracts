@@ -48,6 +48,8 @@ contract LevelsBoundV1 is
     mapping(address => uint256) public playerLevel;
     bytes32 public constant MINTER_ROLE = keccak256("MINTER_ROLE");
 
+    string public name;
+    string public symbol;
     address public itemsNFTAddress;
     bool private mintRandomItemEnabled;
 
@@ -77,6 +79,8 @@ contract LevelsBoundV1 is
         _grantRole(DEFAULT_ADMIN_ROLE, developerAdmin);
         _setupRole(MINTER_ROLE, developerAdmin);
         _addWhitelistSigner(msg.sender);
+        name = _name;
+        symbol = _symbol;
         mintRandomItemEnabled = _mintRandomItemEnabled;
         itemsNFTAddress = _itemsNFTAddress;
     }
