@@ -27,7 +27,7 @@ const {
 
 const PRIVATE_KEY = process.env.PRIVATE_KEY || '';
 const CONTRACT_NAME = 'AvatarBound';
-const CONTRACT_TYPE = 'Avatar';
+const CONTRACT_TYPE = 'Avatars';
 
 const ABI_PATH = 'artifacts/contracts/AvatarBound.sol/AvatarBound.json';
 
@@ -81,7 +81,9 @@ export default async function (hre: HardhatRuntimeEnvironment) {
 
         // Show the contract info.
         const contractAddress = achievoContract.target;
-        log(`${CONTRACT_TYPE}(${artifact.contractName}) for ${tenant} was deployed to https://goerli.explorer.zksync.io/address/${contractAddress}#contract`);
+        log(
+            `${CONTRACT_TYPE}(${artifact.contractName}) for ${tenant} was deployed to https://goerli.explorer.zksync.io/address/${contractAddress}#contract`
+        );
 
         await hre.run('verify:verify', {
             address: contractAddress,
@@ -111,7 +113,9 @@ export default async function (hre: HardhatRuntimeEnvironment) {
             explorerUrl: `https://goerli.explorer.zksync.io/address/${contractAddress}#contract`,
         };
 
-        log(`Verification must be done by console command: npx hardhat verify --network zkSyncTestnet ${contractAddress} --config zkSync.config.ts`);
+        log(
+            `Verification must be done by console command: npx hardhat verify --network zkSyncTestnet ${contractAddress} --config zkSync.config.ts`
+        );
     }
 
     // Define the path to the file
