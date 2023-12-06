@@ -264,7 +264,7 @@ contract AvatarBoundTest is Test {
         avatarBound.adminMint(address(playerWallet.addr), 1);
 
         vm.startPrank(playerWallet.addr);
-        vm.expectRevert("ERCSoulbound: Operation denied, soulbounded");
+        vm.expectRevert("ERC721Soulbound: Operation denied, soulbounded");
         avatarBound.transferFrom(address(playerWallet.addr), address(this), 0);
         vm.stopPrank();
     }

@@ -37,14 +37,14 @@ import { ERC2981 } from "@openzeppelin/contracts/token/common/ERC2981.sol";
 import { ECDSA } from "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
 import { ReentrancyGuard } from "@openzeppelin/contracts/security/ReentrancyGuard.sol";
 
-import { ERCSoulbound } from "./ERCSoulbound.sol";
+import { ERC1155Soulbound } from "./extensions/ERC1155Soulbound.sol";
 import { ERCWhitelistSignature } from "./ERCWhitelistSignature.sol";
 import { LibItems } from "./libraries/LibItems.sol";
 
 contract ItemBound is
     ERC1155Burnable,
     ERC1155Supply,
-    ERCSoulbound,
+    ERC1155Soulbound,
     ERC2981,
     ERCWhitelistSignature,
     AccessControl,

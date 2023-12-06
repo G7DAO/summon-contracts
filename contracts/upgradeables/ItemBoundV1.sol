@@ -44,7 +44,7 @@ import {
     ReentrancyGuardUpgradeable
 } from "@openzeppelin/contracts-upgradeable/security/ReentrancyGuardUpgradeable.sol";
 
-import { ERCSoulboundUpgradeable } from "./ERCSoulboundUpgradeable.sol";
+import { ERC1155SoulboundUpgradeable } from "../extensions/upgradeables/ERC1155SoulboundUpgradeable.sol";
 import { ERCWhitelistSignatureUpgradeable } from "./ERCWhitelistSignatureUpgradeable.sol";
 import { LibItems } from "../libraries/LibItems.sol";
 
@@ -52,7 +52,7 @@ contract ItemBoundV1 is
     Initializable,
     ERC1155BurnableUpgradeable,
     ERC1155SupplyUpgradeable,
-    ERCSoulboundUpgradeable,
+    ERC1155SoulboundUpgradeable,
     ERC2981Upgradeable,
     ERCWhitelistSignatureUpgradeable,
     AccessControlUpgradeable,
@@ -105,7 +105,7 @@ contract ItemBoundV1 is
         __ERC1155_init("");
         __ReentrancyGuard_init();
         __AccessControl_init();
-        __ERCSoulboundUpgradable_init();
+        __ERC1155SoulboundUpgradable_init();
         __ERCWhitelistSignatureUpgradeable_init();
 
         _grantRole(DEFAULT_ADMIN_ROLE, msg.sender);

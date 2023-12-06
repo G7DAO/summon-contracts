@@ -36,7 +36,7 @@ import { Pausable } from "@openzeppelin/contracts/security/Pausable.sol";
 import { ReentrancyGuard } from "@openzeppelin/contracts/security/ReentrancyGuard.sol";
 import { ECDSA } from "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
 
-import { ERCSoulbound } from "./ERCSoulbound.sol";
+import { ERC721Soulbound } from "./extensions/ERC721Soulbound.sol";
 import { ERCWhitelistSignature } from "./ERCWhitelistSignature.sol";
 import { IItemBound } from "./interfaces/IItemBound.sol";
 import { IOpenMint } from "./interfaces/IOpenMint.sol";
@@ -45,7 +45,7 @@ contract AvatarBound is
     ERC721URIStorage,
     ERC721Enumerable,
     AccessControl,
-    ERCSoulbound,
+    ERC721Soulbound,
     ERCWhitelistSignature,
     Pausable,
     ReentrancyGuard
@@ -370,7 +370,7 @@ contract AvatarBound is
         super._beforeTokenTransfer(from, to, tokenId, batch);
     }
 
-    function transferFrom(address from, address to, uint256 tokenId) public override(IERC721, ERC721) {
+    function transferFrom(address from, address to, uint256 tokenId) public override(IERC721, ERC721) nonReentrant {
         revert("You can't transfer this token");
     }
 

@@ -2,12 +2,13 @@
 ///@notice This contract is for mock for 1155Soulbound token.
 pragma solidity 0.8.17;
 
-import "@openzeppelin/contracts/token/ERC1155/extensions/ERC1155Burnable.sol";
-import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
+import { ERC1155 } from "@openzeppelin/contracts/token/ERC1155/ERC1155.sol";
+import { ERC1155Burnable } from "@openzeppelin/contracts/token/ERC1155/extensions/ERC1155Burnable.sol";
+import { ReentrancyGuard } from "@openzeppelin/contracts/security/ReentrancyGuard.sol";
 
-import "../ERCSoulbound.sol";
+import { ERC1155Soulbound } from "../extensions/ERC1155Soulbound.sol";
 
-contract Mock1155Soulbound is ERC1155Burnable, ERCSoulbound, ReentrancyGuard {
+contract Mock1155Soulbound is ERC1155Burnable, ERC1155Soulbound, ReentrancyGuard {
     mapping(address => mapping(uint256 => bool)) private tokenIdProcessed;
 
     constructor() ERC1155("lol://lol/{id}") {}

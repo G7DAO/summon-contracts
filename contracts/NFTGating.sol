@@ -35,18 +35,15 @@ import "@openzeppelin/contracts/access/AccessControl.sol";
 import "@openzeppelin/contracts/security/Pausable.sol";
 import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
 import "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
-import { ERCSoulbound } from "./ERCSoulbound.sol";
+import { ERC721Soulbound } from "./extensions/ERC721Soulbound.sol";
 import { IItemBound } from "./interfaces/IItemBound.sol";
-import "./ERCSoulbound.sol";
 
-
-contract NFTGating is ERC721URIStorage, ERC721Enumerable, AccessControl, ERCSoulbound, Pausable, ReentrancyGuard {
+contract NFTGating is ERC721URIStorage, ERC721Enumerable, AccessControl, ERC721Soulbound, Pausable, ReentrancyGuard {
     uint256 private _tokenIdCounter;
     bytes32 public constant MINTER_ROLE = keccak256("MINTER_ROLE");
     string public baseTokenURI;
     string private adminTokenURI;
     string private superAdminTokenURI;
-
 
     constructor(
         string memory _name,
@@ -66,7 +63,7 @@ contract NFTGating is ERC721URIStorage, ERC721Enumerable, AccessControl, ERCSoul
     function mint(address to, bool superAdmin) public onlyRole(MINTER_ROLE) {
         uint256 tokenId = _tokenIdCounter++;
         _safeMint(to, tokenId);
-        if(superAdmin) {
+        if (superAdmin) {
             _setTokenURI(tokenId, superAdminTokenURI);
         } else {
             _setTokenURI(tokenId, adminTokenURI);
@@ -97,7 +94,9 @@ contract NFTGating is ERC721URIStorage, ERC721Enumerable, AccessControl, ERCSoul
         return super.tokenURI(tokenId);
     }
 
-    function supportsInterface(bytes4 interfaceId) public view override(ERC721URIStorage, ERC721Enumerable, AccessControl) returns (bool) {
+    function supportsInterface(
+        bytes4 interfaceId
+    ) public view override(ERC721URIStorage, ERC721Enumerable, AccessControl) returns (bool) {
         return super.supportsInterface(interfaceId);
     }
 }
