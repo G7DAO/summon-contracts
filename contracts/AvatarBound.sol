@@ -36,7 +36,7 @@ import { Pausable } from "@openzeppelin/contracts/security/Pausable.sol";
 import { ReentrancyGuard } from "@openzeppelin/contracts/security/ReentrancyGuard.sol";
 import { ECDSA } from "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
 
-import { ERCSoulbound } from "./ERCSoulbound.sol";
+import { ERC721Soulbound } from "./extensions/ERC721Soulbound.sol";
 import { ERCWhitelistSignature } from "./ERCWhitelistSignature.sol";
 import { IItemBound } from "./interfaces/IItemBound.sol";
 import { IOpenMint } from "./interfaces/IOpenMint.sol";
@@ -45,7 +45,7 @@ contract AvatarBound is
     ERC721URIStorage,
     ERC721Enumerable,
     AccessControl,
-    ERCSoulbound,
+    ERC721Soulbound,
     ERCWhitelistSignature,
     Pausable,
     ReentrancyGuard
@@ -203,12 +203,12 @@ contract AvatarBound is
         }
     }
 
-    function revealNFTGatingToken(uint256 tokenId) private whenNotPaused {
+    function revealNFTGatingToken(uint256 tokenId) private {
         IOpenMint(gatingNFTAddress).reveal(tokenId, revealURI);
         emit NFTRevealed(tokenId, _msgSender(), gatingNFTAddress);
     }
 
-    function mintItem(address to, uint256 itemId) private whenNotPaused {
+    function mintItem(address to, uint256 itemId) private {
         IItemBound(itemsNFTAddress).adminMintId(to, itemId, 1, true);
         if (itemId == _specialItemId) {
             emit SpecialItemMinted(itemId, to, itemsNFTAddress);
@@ -217,7 +217,7 @@ contract AvatarBound is
         }
     }
 
-    function mintRandomItem(address to, bytes calldata data) private whenNotPaused {
+    function mintRandomItem(address to, bytes calldata data) private {
         IItemBound(itemsNFTAddress).adminMint(to, data, false);
         emit RandomItemMinted(to, data, itemsNFTAddress);
     }
@@ -370,7 +370,12 @@ contract AvatarBound is
         super._beforeTokenTransfer(from, to, tokenId, batch);
     }
 
+    function transferFrom(address from, address to, uint256 tokenId) public override(IERC721, ERC721) nonReentrant {
+        revert("You can't transfer this token");
+    }
+
     function safeTransferFrom(address from, address to, uint256 tokenId) public override(IERC721, ERC721) nonReentrant {
+        revert("You can't transfer this token");
         super.safeTransferFrom(from, to, tokenId, "");
     }
 
@@ -380,6 +385,7 @@ contract AvatarBound is
         uint256 tokenId,
         bytes memory data
     ) public override(IERC721, ERC721) nonReentrant {
+        revert("You can't transfer this token");
         super._safeTransfer(from, to, tokenId, data);
     }
 

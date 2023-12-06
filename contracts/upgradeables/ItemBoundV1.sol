@@ -44,7 +44,7 @@ import {
     ReentrancyGuardUpgradeable
 } from "@openzeppelin/contracts-upgradeable/security/ReentrancyGuardUpgradeable.sol";
 
-import { ERCSoulboundUpgradeable } from "./ERCSoulboundUpgradeable.sol";
+import { ERC1155SoulboundUpgradeable } from "../extensions/upgradeables/ERC1155SoulboundUpgradeable.sol";
 import { ERCWhitelistSignatureUpgradeable } from "./ERCWhitelistSignatureUpgradeable.sol";
 import { LibItems } from "../libraries/LibItems.sol";
 
@@ -52,7 +52,7 @@ contract ItemBoundV1 is
     Initializable,
     ERC1155BurnableUpgradeable,
     ERC1155SupplyUpgradeable,
-    ERCSoulboundUpgradeable,
+    ERC1155SoulboundUpgradeable,
     ERC2981Upgradeable,
     ERCWhitelistSignatureUpgradeable,
     AccessControlUpgradeable,
@@ -87,6 +87,11 @@ contract ItemBoundV1 is
         _;
     }
 
+    /// @custom:oz-upgrades-unsafe-allow constructor
+    constructor() {
+        _disableInitializers();
+    }
+
     function initialize(
         string memory _name,
         string memory _symbol,
@@ -100,7 +105,7 @@ contract ItemBoundV1 is
         __ERC1155_init("");
         __ReentrancyGuard_init();
         __AccessControl_init();
-        __ERCSoulboundUpgradable_init();
+        __ERC1155SoulboundUpgradable_init();
         __ERCWhitelistSignatureUpgradeable_init();
 
         _grantRole(DEFAULT_ADMIN_ROLE, msg.sender);
@@ -116,14 +121,6 @@ contract ItemBoundV1 is
         MAX_PER_MINT = _maxPerMint;
 
         if (_isPaused) _pause();
-    }
-
-    function pause() external onlyRole(MANAGER_ROLE) {
-        _pause();
-    }
-
-    function unpause() external onlyRole(MANAGER_ROLE) {
-        _unpause();
     }
 
     function getAllItems(address _owner) public view returns (LibItems.TokenReturn[] memory) {
@@ -200,9 +197,12 @@ contract ItemBoundV1 is
         return itemIds;
     }
 
-    /// @custom:oz-upgrades-unsafe-allow constructor
-    constructor() {
-        _disableInitializers();
+    function pause() external onlyRole(MANAGER_ROLE) {
+        _pause();
+    }
+
+    function unpause() external onlyRole(MANAGER_ROLE) {
+        _unpause();
     }
 
     function addNewToken(LibItems.TokenCreate calldata _token) public onlyRole(MANAGER_ROLE) {
