@@ -6,4 +6,4 @@ export interface DeploymentMap {
 }
 
 export type Tenant = 'Game7' | 'zkSync';
-export type ContractType = 'Avatar' | 'Items' | 'Levels';
+export type ContractType = 'Avatars' | 'Items' | 'Levels';

@@ -4,7 +4,7 @@ export enum TENANT {
 }
 
 export enum CONTRACT_TYPE {
-    Avatar = 'Avatar',
+    Avatars = 'Avatars',
     Items = 'Items',
     Levels = 'Levels',
 }

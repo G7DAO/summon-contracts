@@ -4,7 +4,7 @@ import { NETWORK_TYPE, NetworkName } from './network';
 export const CONTRACTS = [
     {
         contractName: 'AvatarBound',
-        type: CONTRACT_TYPE.Avatar,
+        type: CONTRACT_TYPE.Avatars,
         chain: NetworkName.ZkSyncTestnet,
         networkType: NETWORK_TYPE.TESTNET,
         tenants: [TENANT.ZkSync],
@@ -26,7 +26,7 @@ export const CONTRACTS = [
     },
     {
         contractName: 'AvatarBoundV1',
-        type: CONTRACT_TYPE.Avatar,
+        type: CONTRACT_TYPE.Avatars,
         chain: NetworkName.ZkSyncTestnet,
         networkType: NETWORK_TYPE.TESTNET,
         tenants: [TENANT.ZkSync],
