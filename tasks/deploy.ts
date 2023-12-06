@@ -267,9 +267,6 @@ task('deploy', 'Deploys Smart contracts')
                         tenant,
                         deployment.contractAddress
                     );
-
-                    console.log('_call->', _call);
-                    console.log('========');
                     calls.push(_call);
                 }
             }
