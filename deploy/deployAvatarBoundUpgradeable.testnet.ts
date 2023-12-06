@@ -28,7 +28,7 @@ const {
 
 const PRIVATE_KEY = process.env.PRIVATE_KEY || '';
 const CONTRACT_NAME = 'AvatarBoundV1';
-const CONTRACT_TYPE = 'Avatar';
+const CONTRACT_TYPE = 'Avatars';
 
 const ABI_PATH = 'artifacts/contracts/upgradeables/AvatarBoundV1.sol/AvatarBoundV1.json';
 
