@@ -13,6 +13,7 @@
         "deployLevelsOnChain:ZkSync": "pnpm compile:zkSync && hardhat --config zkSync.config.ts deploy-zksync --network zkSyncTestnet --script deployLevelsBound.ts",
         "deployNftGating:ZkSync:testnet": "pnpm compile:zkSync && hardhat --config zkSync.config.ts deploy-zksync --network zkSyncTestnet --script deployNFTGating.testnet.ts",
         "deployItemsBound:ZkSync:testnet": "pnpm compile:zkSync && hardhat --config zkSync.config.ts deploy-zksync --network zkSyncTestnet --script deployItemsBound.testnet.ts",
+        "deployERC20Paymaster:ZkSync:testnet": "pnpm compile:zkSync && hardhat --config zkSync.config.ts deploy-zksync --network zkSyncTestnet --script deployERC20Paymaster.testnet.ts",
         "deployItemsBoundUpgradeable:ZkSync:testnet": "pnpm compile:zkSync && hardhat --config zkSync.config.ts deploy-zksync --network zkSyncTestnet --script deployItemsBoundUpgradeable.testnet.ts",
         "deployAvatarBoundUpgradeable:ZkSync:testnet": "pnpm compile:zkSync && hardhat --config zkSync.config.ts deploy-zksync --network zkSyncTestnet --script deployAvatarBoundUpgradeable.testnet.ts",
         "deployAvatarBound:ZkSync:testnet": "pnpm compile:zkSync && hardhat --config zkSync.config.ts deploy-zksync --network zkSyncTestnet --script deployAvatarBound.testnet.ts",
