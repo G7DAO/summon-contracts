@@ -133,6 +133,8 @@ contract AvatarBound is
     }
 
     function mint(address to, uint256 baseSkinId) private {
+        require(balanceOf(to) == 0, "Already has an Avatar");
+
         require(!isSoulboundAddress(to), "Address has already minted an Avatar");
         require(bytes(baseSkins[baseSkinId]).length > 0, "Base Skin not found on-chain");
         uint256 tokenId = _tokenIdCounter++;
@@ -149,7 +151,6 @@ contract AvatarBound is
         bytes calldata data,
         bytes calldata signature
     ) public nonReentrant whenNotPaused {
-        require(balanceOf(_msgSender()) == 0, "Sender already has an Avatar");
         require(mintNftGatingEnabled, "NFT gating mint is not enabled");
         require(_verifySignature(_msgSender(), nonce, data, signature), "Invalid signature");
         require(
@@ -177,7 +178,6 @@ contract AvatarBound is
         bytes calldata data,
         bytes calldata signature
     ) public nonReentrant whenNotPaused {
-        require(balanceOf(_msgSender()) == 0, "Sender already has an Avatar");
         require(mintNftWithoutGatingEnabled, "Minting without nft gating is not enabled");
         require(_verifySignature(_msgSender(), nonce, data, signature), "Invalid signature");
         mint(_msgSender(), baseSkinId);
