@@ -194,15 +194,35 @@ contract ItemBound is
         tokenExists[_token.tokenId] = true;
 
         itemIds.push(_token.tokenId);
-
-        if (_token.receiver != address(0)) {
-            _setTokenRoyalty(_token.tokenId, _token.receiver, uint96(_token.feeBasisPoints));
-        }
     }
 
     function addNewTokens(LibItems.TokenCreate[] calldata _tokens) external onlyRole(MANAGER_ROLE) {
         for (uint256 i = 0; i < _tokens.length; i++) {
             addNewToken(_tokens[i]);
+        }
+    }
+
+    function addNewTokenWithRoyalty(LibItems.TokenCreateWithRoyalty calldata _token) public onlyRole(MANAGER_ROLE) {
+        if (_token.receiver == address(0)) {
+            revert("ReceiverAddressZero");
+        }
+
+        if (bytes(_token.tokenUri).length > 0) {
+            tokenUris[_token.tokenId] = _token.tokenUri;
+        }
+
+        tokenExists[_token.tokenId] = true;
+
+        itemIds.push(_token.tokenId);
+
+        _setTokenRoyalty(_token.tokenId, _token.receiver, uint96(_token.feeBasisPoints));
+    }
+
+    function addNewTokensWithRoyalty(
+        LibItems.TokenCreateWithRoyalty[] calldata _tokens
+    ) external onlyRole(MANAGER_ROLE) {
+        for (uint256 i = 0; i < _tokens.length; i++) {
+            addNewTokenWithRoyalty(_tokens[i]);
         }
     }
 
@@ -415,6 +435,10 @@ contract ItemBound is
         uint256 feeBasisPoints
     ) external onlyRole(MANAGER_ROLE) {
         _setTokenRoyalty(tokenId, receiver, uint96(feeBasisPoints));
+    }
+
+    function resetTokenRoyalty(uint256 tokenId) external onlyRole(MANAGER_ROLE) {
+        _resetTokenRoyalty(tokenId);
     }
 
     function updateWhitelistAddress(address _address, bool _isWhitelisted) external onlyRole(MANAGER_ROLE) {

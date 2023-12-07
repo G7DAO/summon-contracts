@@ -146,9 +146,7 @@ contract ItemBoundV1Test is StdCheats, Test {
 
             LibItems.TokenCreate memory _token = LibItems.TokenCreate({
                 tokenId: _tokenId,
-                tokenUri: string(abi.encodePacked("https://something.com", "/", _tokenId.toString())),
-                receiver: minterWallet.addr,
-                feeBasisPoints: 250
+                tokenUri: string(abi.encodePacked("https://something.com", "/", _tokenId.toString()))
             });
 
             _tokens.push(_token);
@@ -186,9 +184,7 @@ contract ItemBoundV1Test is StdCheats, Test {
 
         LibItems.TokenCreate memory _token = LibItems.TokenCreate({
             tokenId: _tokenId,
-            tokenUri: string(abi.encodePacked("https://something222.com", "/", _tokenId.toString())),
-            receiver: minterWallet.addr,
-            feeBasisPoints: 250
+            tokenUri: string(abi.encodePacked("https://something222.com", "/", _tokenId.toString()))
         });
 
         itemBoundProxy.addNewToken(_token);
@@ -207,9 +203,7 @@ contract ItemBoundV1Test is StdCheats, Test {
 
             LibItems.TokenCreate memory _token = LibItems.TokenCreate({
                 tokenId: _tokenId,
-                tokenUri: string(abi.encodePacked("https://something.com", "/", _tokenId.toString())),
-                receiver: minterWallet.addr,
-                feeBasisPoints: 250
+                tokenUri: string(abi.encodePacked("https://something.com", "/", _tokenId.toString()))
             });
 
             _tokens[i] = _token;
@@ -533,12 +527,7 @@ contract ItemBoundV1Test is StdCheats, Test {
         uint256 _level = generateRandomLevel(); // level 1-10
         TestLibItems.Tier _tier = generateRandomTier(); // tier 0-4
 
-        LibItems.TokenCreate memory _token = LibItems.TokenCreate({
-            tokenId: _tokenId,
-            tokenUri: "",
-            receiver: minterWallet.addr,
-            feeBasisPoints: 250
-        });
+        LibItems.TokenCreate memory _token = LibItems.TokenCreate({ tokenId: _tokenId, tokenUri: "" });
 
         itemBoundProxy.addNewToken(_token);
 
@@ -552,9 +541,7 @@ contract ItemBoundV1Test is StdCheats, Test {
 
         LibItems.TokenCreate memory _token = LibItems.TokenCreate({
             tokenId: _tokenId,
-            tokenUri: "ipfs://specific-token-uri.com",
-            receiver: minterWallet.addr,
-            feeBasisPoints: 250
+            tokenUri: "ipfs://specific-token-uri.com"
         });
 
         itemBoundProxy.addNewToken(_token);
@@ -577,12 +564,7 @@ contract ItemBoundV1Test is StdCheats, Test {
         uint256 _level = generateRandomLevel(); // level 1-10
         TestLibItems.Tier _tier = generateRandomTier(); // tier 0-4
 
-        LibItems.TokenCreate memory _token = LibItems.TokenCreate({
-            tokenId: _tokenId,
-            tokenUri: "",
-            receiver: minterWallet.addr,
-            feeBasisPoints: 250
-        });
+        LibItems.TokenCreate memory _token = LibItems.TokenCreate({ tokenId: _tokenId, tokenUri: "" });
 
         itemBoundProxy.addNewToken(_token);
 
@@ -611,12 +593,7 @@ contract ItemBoundV1Test is StdCheats, Test {
         uint256 _level = generateRandomLevel(); // level 1-10
         TestLibItems.Tier _tier = generateRandomTier(); // tier 0-4
 
-        LibItems.TokenCreate memory _token = LibItems.TokenCreate({
-            tokenId: _tokenId,
-            tokenUri: "",
-            receiver: minterWallet.addr,
-            feeBasisPoints: 250
-        });
+        LibItems.TokenCreate memory _token = LibItems.TokenCreate({ tokenId: _tokenId, tokenUri: "" });
 
         itemBoundProxy.addNewToken(_token);
 
