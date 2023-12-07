@@ -133,16 +133,10 @@ const deployOne = async (hre: HardhatRuntimeEnvironment, contract, tenant) => {
     return deploymentPayload;
 };
 
-const prepFunctionOne = async (
-    call,
-    constructorArgs: Record<string, string>,
-    tenant?: string,
-    contractAddress: string
-) => {
-    //
+const prepFunctionOne = async (hre, call, tenant?: string, contractAddress: string) => {
     const populatedArgs = [];
     for (const arg of call.args) {
-        populatedArgs.push(await populateParam(arg, constructorArgs, tenant));
+        populatedArgs.push(await populateParam(hre, arg, tenant));
     }
 
     return {
@@ -245,8 +239,13 @@ task('deploy', 'Deploys Smart contracts')
             // submit to db
             try {
                 await submitContractDeploymentsToDB(deployments, tenant);
+                log('*******************************************');
+                log('*** Deployments submitted to db ***');
+                log('*******************************************');
             } catch (error) {
-                console.error(error.message);
+                log('*******************************************');
+                log('***', error.message, '***');
+                log('*******************************************');
             }
 
             const calls = [];
@@ -261,7 +260,7 @@ task('deploy', 'Deploys Smart contracts')
                 // Convert deployments to JSON
                 const deploymentsJson = JSON.stringify(deployment, null, 2);
                 // Write to the file
-                // fs.writeFileSync(filePath, deploymentsJson);
+                fs.writeFileSync(filePath, deploymentsJson);
 
                 log(`Deployments saved to ${filePath}`);
 
@@ -271,12 +270,7 @@ task('deploy', 'Deploys Smart contracts')
                 }
 
                 for (const call of deployedContract?.functionCalls) {
-                    const _call = await prepFunctionOne(
-                        call,
-                        ConstructorArgs[`${deployedContract.contractName}Args`][`${deployedContract?.networkType}`],
-                        tenant,
-                        deployment.contractAddress
-                    );
+                    const _call = await prepFunctionOne(hre, call, tenant, deployment.contractAddress);
                     calls.push(_call);
                 }
             }

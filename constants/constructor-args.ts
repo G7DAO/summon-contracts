@@ -17,7 +17,7 @@ export interface ConstructorArgs {
     maxPerMint: number;
     isPaused: boolean;
     devWallet: string;
-    royalty: bigint;
+    royalty: number;
 }
 export interface Soulbound1155Args {
     MAINNET: ConstructorArgs;
@@ -32,7 +32,7 @@ export const SoulboundBadgesArgs: Soulbound1155Args = {
         maxPerMint: 1,
         isPaused: true,
         devWallet: 'DEPLOYER_WALLET',
-        royalty: 250n,
+        royalty: 250,
     },
     TESTNET: {
         name: 'MyBadges',
@@ -42,7 +42,7 @@ export const SoulboundBadgesArgs: Soulbound1155Args = {
         maxPerMint: 1,
         isPaused: false,
         devWallet: 'DEPLOYER_WALLET',
-        royalty: 250n,
+        royalty: 250,
     },
 };
 
@@ -55,7 +55,7 @@ export const ItemBoundArgs: Soulbound1155Args = {
         maxPerMint: 1,
         isPaused: false,
         devWallet: 'DEPLOYER_WALLET',
-        royalty: 250n,
+        royalty: 250,
     },
     TESTNET: {
         name: 'MyItems',
@@ -65,7 +65,7 @@ export const ItemBoundArgs: Soulbound1155Args = {
         maxPerMint: 1,
         isPaused: false,
         devWallet: 'DEPLOYER_WALLET',
-        royalty: 250n,
+        royalty: 250,
     },
 };
 

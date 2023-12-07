@@ -73,12 +73,12 @@ export const CONTRACTS = [
             {
                 contractName: 'ItemBoundV1',
                 functionName: 'grantRole',
-                args: ['MINTER_ROLE', 'CONTRACT_AvatarBound'],
+                args: ['MINTER_ROLE', 'CONTRACT_AvatarV1Bound'],
             },
             {
                 contractName: 'ItemBoundV1',
                 functionName: 'grantRole',
-                args: ['MINTER_ROLE', 'CONTRACT_LevelsBound'],
+                args: ['MINTER_ROLE', 'CONTRACT_LevelsV1Bound'],
             },
         ],
     },
