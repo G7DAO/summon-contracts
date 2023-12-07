@@ -48,7 +48,7 @@ import { ERC1155SoulboundUpgradeable } from "../extensions/upgradeables/ERC1155S
 import { ERCWhitelistSignatureUpgradeable } from "./ERCWhitelistSignatureUpgradeable.sol";
 import { LibItems } from "../libraries/LibItems.sol";
 
-contract ItemBoundV1 is
+contract ItemBoundV2 is
     Initializable,
     ERC1155BurnableUpgradeable,
     ERC1155SupplyUpgradeable,
