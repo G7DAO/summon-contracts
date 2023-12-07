@@ -13,6 +13,7 @@ import deploy from '../deploy/deploy';
 import deployUpgradeable from '../deploy/deployUpgradeable';
 import getWallet from 'deploy/getWallet';
 import { HardhatRuntimeEnvironment } from 'hardhat/types';
+import { Deployment, FunctionCall } from 'types/deployment-type';
 
 const ABI_PATH_ZK = 'artifacts-zk/contracts/';
 const ABI_PATH = 'artifacts/contracts/';
@@ -25,7 +26,7 @@ export async function populateParam(
     hre: HardhatRuntimeEnvironment,
     param: string | number | boolean,
     tenant?: string
-): Promise<string> {
+): Promise<string | number | boolean> {
     let value = param;
 
     if (param === 'DEPLOYER_WALLET') {
@@ -84,14 +85,18 @@ export async function populateParam(
     return value;
 }
 
-export async function populateConstructorArgs(hre, constructorArgs: Record<string, string>, tenant?: string) {
+export async function populateConstructorArgs(
+    hre: HardhatRuntimeEnvironment,
+    constructorArgs: Record<string, string | number | boolean>,
+    tenant: string
+) {
     for (const key in constructorArgs) {
         constructorArgs[key] = await populateParam(hre, constructorArgs[key], tenant);
     }
     return constructorArgs;
 }
 
-const deployOne = async (hre: HardhatRuntimeEnvironment, contract, tenant) => {
+const deployOne = async (hre: HardhatRuntimeEnvironment, contract, tenant: string): Promise<Deployment> => {
     const constructorArgs = await populateConstructorArgs(
         hre,
         ConstructorArgs[`${contract.contractName}Args`][`${contract?.networkType}`],
@@ -108,7 +113,7 @@ const deployOne = async (hre: HardhatRuntimeEnvironment, contract, tenant) => {
         `.achievo/${contract.upgradable ? 'upgradeables/' : ''}deployments-${contract.type}-${tenant}-latest.json`
     );
 
-    let deploymentPayload;
+    let deploymentPayload: Deployment;
     if (_isAlreadyDeployed) {
         log('SKIPPED: Already deployed, using existing deploymentPayload');
 
@@ -121,7 +126,7 @@ const deployOne = async (hre: HardhatRuntimeEnvironment, contract, tenant) => {
             deploymentPayload = await deploy(hre, contract, constructorArgs, abiPath, tenant);
         }
 
-        writeChecksumToFile(contract.contractName, tenant);
+        writeChecksumToFile(contract.contractName as string, tenant);
 
         // Convert deployments to JSON
         const deploymentsJson = JSON.stringify(deploymentPayload, null, 2);
@@ -133,7 +138,12 @@ const deployOne = async (hre: HardhatRuntimeEnvironment, contract, tenant) => {
     return deploymentPayload;
 };
 
-const prepFunctionOne = async (hre, call, tenant?: string, contractAddress: string) => {
+const prepFunctionOne = async (
+    hre: HardhatRuntimeEnvironment,
+    call: FunctionCall,
+    tenant: string,
+    contractAddress: string
+) => {
     const populatedArgs = [];
     for (const arg of call.args) {
         populatedArgs.push(await populateParam(hre, arg, tenant));
@@ -171,14 +181,16 @@ const createDefaultFolders = () => {
 const getDependencies = (contractName: string) => {
     const dependencies = new Set([contractName]);
 
-    function collect(contractName) {
+    function collect(contractName: string) {
         const contract = CONTRACTS.find((c) => c.contractName === contractName);
-        contract.dependencies?.forEach((dep) => {
-            if (!dependencies.has(dep)) {
-                dependencies.add(dep);
-                collect(dep);
-            }
-        });
+        if (contract) {
+            contract.dependencies?.forEach((dep) => {
+                if (!dependencies.has(dep)) {
+                    dependencies.add(dep);
+                    collect(dep);
+                }
+            });
+        }
     }
 
     collect(contractName);
@@ -221,7 +233,7 @@ task('deploy', 'Deploys Smart contracts')
             log('\n');
             log('\n');
 
-            const deployments = [];
+            const deployments: Deployment[] = [];
 
             for (const contractName of contractsToDeploy) {
                 const contract = CONTRACTS.find((d) => d.contractName === contractName && d.chain === chain);
@@ -242,7 +254,7 @@ task('deploy', 'Deploys Smart contracts')
                 log('*******************************************');
                 log('*** Deployments submitted to db ***');
                 log('*******************************************');
-            } catch (error) {
+            } catch (error: any) {
                 log('*******************************************');
                 log('***', error.message, '***');
                 log('*******************************************');
@@ -270,12 +282,12 @@ task('deploy', 'Deploys Smart contracts')
                 }
 
                 for (const call of deployedContract?.functionCalls) {
-                    const _call = await prepFunctionOne(hre, call, tenant, deployment.contractAddress);
+                    const _call = await prepFunctionOne(hre, call as FunctionCall, tenant, deployment.contractAddress);
                     calls.push(_call);
                 }
             }
 
             // execute function calls
-            await executeFunctionCallBatch(calls, tenant);
+            // await executeFunctionCallBatch(calls, tenant);
         }
     });

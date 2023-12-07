@@ -1,3 +1,26 @@
+export interface Deployment {
+    contractAbi: any;
+    contractAddress: string;
+    type: string;
+    active: boolean;
+    networkName: string;
+    chainId: number;
+    rpcUrl: string;
+    currency: string;
+    blockExplorerBaseUrl: string;
+    privateKey: string;
+    publicKey: string;
+    paymasterAddresses: string[];
+    fakeContractAddress: string;
+    explorerUrl: string;
+}
+
+export interface FunctionCall {
+    contractName: string;
+    functionName: string;
+    args: (string | number | boolean)[];
+    contractAddress: string;
+}
 export interface DeploymentMap {
     [key: string]: {
         dbPayload: object;
