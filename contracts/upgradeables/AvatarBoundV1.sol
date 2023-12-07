@@ -145,6 +145,7 @@ contract AvatarBoundV1 is
     }
 
     function mint(address to, uint256 baseSkinId) private {
+        require(balanceOf(to) == 0, "Already has an Avatar");
         require(!isSoulboundAddress(to), "Address has already minted an Avatar");
         require(bytes(baseSkins[baseSkinId]).length > 0, "Base Skin not found on-chain");
         uint256 tokenId = _tokenIdCounter++;
@@ -202,6 +203,7 @@ contract AvatarBoundV1 is
     }
 
     function adminMint(address to, uint256 baseSkinId) public onlyRole(MINTER_ROLE) whenNotPaused {
+        require(balanceOf(to) == 0, "Address already has an Avatar");
         mint(to, baseSkinId);
     }
 
