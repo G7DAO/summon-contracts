@@ -135,7 +135,7 @@ contract ItemBound is
 
     function getAllItemsAdmin(
         address _owner
-    ) public view onlyRole(DEFAULT_ADMIN_ROLE) returns (LibItems.TokenReturn[] memory) {
+    ) public view onlyRole(MINTER_ROLE) returns (LibItems.TokenReturn[] memory) {
         uint256 totalTokens = itemIds.length;
         LibItems.TokenReturn[] memory tokenReturns = new LibItems.TokenReturn[](totalTokens);
 
