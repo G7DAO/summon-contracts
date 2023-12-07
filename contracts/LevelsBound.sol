@@ -38,6 +38,8 @@ contract LevelsBound is ERC1155, Ownable, ReentrancyGuard, ERCWhitelistSignature
     mapping(address => uint256) public playerLevel;
     bytes32 public constant MINTER_ROLE = keccak256("MINTER_ROLE");
 
+    string public name;
+    string public symbol;
     address public itemsNFTAddress;
     bool private mintRandomItemEnabled;
 
@@ -46,10 +48,19 @@ contract LevelsBound is ERC1155, Ownable, ReentrancyGuard, ERCWhitelistSignature
     event LevelUp(uint256 newLevel, address account);
     event LevelReseted(uint256 newLevel, address account);
 
-    constructor(address developerAdmin, bool _mintRandomItemEnabled, address _itemsNFTAddress) ERC1155("") {
+    constructor(
+        string memory _name,
+        string memory _symbol,
+        address developerAdmin,
+        bool _mintRandomItemEnabled,
+        address _itemsNFTAddress
+    ) ERC1155("") {
         _grantRole(DEFAULT_ADMIN_ROLE, developerAdmin);
         _setupRole(MINTER_ROLE, developerAdmin);
-        _addWhitelistSigner(msg.sender);
+        _addWhitelistSigner(developerAdmin);
+
+        name = _name;
+        symbol = _symbol;
         mintRandomItemEnabled = _mintRandomItemEnabled;
         itemsNFTAddress = _itemsNFTAddress;
     }
@@ -77,7 +88,13 @@ contract LevelsBound is ERC1155, Ownable, ReentrancyGuard, ERCWhitelistSignature
         emit RandomItemMinted(to, data, itemsNFTAddress);
     }
 
-    function levelUp(address account, uint256 newLevel, uint256 nonce, bytes calldata data, bytes calldata signature) public nonReentrant {
+    function levelUp(
+        address account,
+        uint256 newLevel,
+        uint256 nonce,
+        bytes calldata data,
+        bytes calldata signature
+    ) public nonReentrant {
         require(newLevel > 0, "New level must be greater than 0");
         require(_verifySignature(_msgSender(), nonce, data, signature), "Invalid signature");
         require(playerLevel[account] != 0, "Player already has this level token");
@@ -124,12 +141,24 @@ contract LevelsBound is ERC1155, Ownable, ReentrancyGuard, ERCWhitelistSignature
         _burnBatch(msg.sender, tokenIds, amounts);
     }
 
-    function safeTransferFrom(address _from, address _to, uint256 _id, uint256 _amount, bytes memory _data) public virtual override {
+    function safeTransferFrom(
+        address _from,
+        address _to,
+        uint256 _id,
+        uint256 _amount,
+        bytes memory _data
+    ) public virtual override {
         revert("You can't transfer this token");
         super.safeTransferFrom(_from, _to, _id, _amount, _data);
     }
 
-    function safeBatchTransferFrom(address _from, address _to, uint256[] memory _ids, uint256[] memory _amounts, bytes memory _data) public virtual override {
+    function safeBatchTransferFrom(
+        address _from,
+        address _to,
+        uint256[] memory _ids,
+        uint256[] memory _amounts,
+        bytes memory _data
+    ) public virtual override {
         revert("You can't transfer this token");
         super.safeBatchTransferFrom(_from, _to, _ids, _amounts, _data);
     }

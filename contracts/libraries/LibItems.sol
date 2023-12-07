@@ -12,6 +12,13 @@ library LibItems {
         string tokenUri;
     }
 
+    struct TokenCreateWithRoyalty {
+        uint256 tokenId;
+        string tokenUri;
+        address receiver;
+        uint256 feeBasisPoints;
+    }
+
     struct TokenReturn {
         uint256 tokenId;
         string tokenUri;

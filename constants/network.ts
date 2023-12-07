@@ -4,6 +4,11 @@ dotenv.config();
 
 const { WEB3_INFURA_API_KEY } = process.env;
 
+export enum NETWORK_TYPE {
+    MAINNET = 'MAINNET',
+    TESTNET = 'TESTNET',
+}
+
 export enum ChainId {
     Ganache = 1337,
     Polygon = 137,

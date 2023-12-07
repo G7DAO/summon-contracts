@@ -32,7 +32,8 @@
         "scripts",
         "constants",
         "helpers",
-        "./typechain-types"
+        "./typechain-types",
+        "tasks"
     ],
     "exclude": ["**/node_modules"],
     "ts-node": {

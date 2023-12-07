@@ -1,4 +1,14 @@
-type Tenant = 'Game7' | 'zkSync';
+export enum TENANT {
+    Game7 = 'Game7',
+    ZkSync = 'zkSync',
+}
+
+export enum CONTRACT_TYPE {
+    Avatars = 'Avatars',
+    Items = 'Items',
+    Levels = 'Levels',
+}
+
 export interface ConstructorArgs {
     name: string;
     symbol: string;
@@ -7,8 +17,7 @@ export interface ConstructorArgs {
     maxPerMint: number;
     isPaused: boolean;
     devWallet: string;
-    royalty: bigint;
-    tenants: Tenant[];
+    royalty: number;
 }
 export interface Soulbound1155Args {
     MAINNET: ConstructorArgs;
@@ -22,9 +31,8 @@ export const SoulboundBadgesArgs: Soulbound1155Args = {
         contractURI: 'https://summon.mypinata.cloud/ipfs/{contractURIHASH}',
         maxPerMint: 1,
         isPaused: true,
-        devWallet: '0xA10648F8618A526Bd0Acb08a1b9f413BC44Fcb4B',
-        royalty: 250n,
-        tenants: ['Game7', 'zkSync'],
+        devWallet: 'DEPLOYER_WALLET',
+        royalty: 250,
     },
     TESTNET: {
         name: 'MyBadges',
@@ -33,23 +41,21 @@ export const SoulboundBadgesArgs: Soulbound1155Args = {
         contractURI: 'https://summon.mypinata.cloud/ipfs/{contractURIHASH}',
         maxPerMint: 1,
         isPaused: false,
-        devWallet: '0xA10648F8618A526Bd0Acb08a1b9f413BC44Fcb4B',
-        royalty: 250n,
-        tenants: ['Game7', 'zkSync'],
+        devWallet: 'DEPLOYER_WALLET',
+        royalty: 250,
     },
 };
 
-export const ItemsBoundArgs: Soulbound1155Args = {
+export const ItemBoundArgs: Soulbound1155Args = {
     MAINNET: {
-        name: 'ItemsBound',
+        name: 'ItemBound',
         symbol: 'ISB',
         baseURI: 'https://summon.mypinata.cloud/ipfs',
         contractURI: 'https://summon.mypinata.cloud/ipfs/{contractURIHASH}',
         maxPerMint: 1,
         isPaused: false,
-        devWallet: '0xA10648F8618A526Bd0Acb08a1b9f413BC44Fcb4B',
-        royalty: 250n,
-        tenants: ['Game7', 'zkSync'],
+        devWallet: 'DEPLOYER_WALLET',
+        royalty: 250,
     },
     TESTNET: {
         name: 'MyItems',
@@ -58,11 +64,12 @@ export const ItemsBoundArgs: Soulbound1155Args = {
         contractURI: 'https://summon.mypinata.cloud/ipfs/{contractURIHASH}',
         maxPerMint: 1,
         isPaused: false,
-        devWallet: '0xA10648F8618A526Bd0Acb08a1b9f413BC44Fcb4B',
-        royalty: 250n,
-        tenants: ['Game7', 'zkSync'],
+        devWallet: 'DEPLOYER_WALLET',
+        royalty: 250,
     },
 };
+
+export const ItemBoundV1Args: Soulbound1155Args = ItemBoundArgs;
 
 export const NFTGatingArgs = {
     MAINNET: {
@@ -71,7 +78,6 @@ export const NFTGatingArgs = {
         baseURI: 'https://summon.mypinata.cloud/ipfs/',
         adminTokenURI: 'QmYXxrc4vQgfoRtUhdBCbSbxpeJJs2eEtcgiuXvzxdWfJD',
         superAdminTokenURI: 'Qmay3Db9KFTwoQJ2nB6vTxuHfDX5CQgxmy97NKvcN45B6F',
-        tenants: ['zkSync'],
     },
     TESTNET: {
         name: 'Achievo NFT Gating Admin Access',
@@ -79,42 +85,69 @@ export const NFTGatingArgs = {
         baseURI: 'https://summon.mypinata.cloud/ipfs/',
         adminTokenURI: 'QmYXxrc4vQgfoRtUhdBCbSbxpeJJs2eEtcgiuXvzxdWfJD',
         superAdminTokenURI: 'Qmay3Db9KFTwoQJ2nB6vTxuHfDX5CQgxmy97NKvcN45B6F',
-        tenants: ['zkSync'],
     },
 };
 
 export const AvatarBoundArgs = {
     MAINNET: {
-        name: 'AvatarBoundV1',
+        name: 'AvatarBound',
         symbol: 'AVB',
         // TODO: change this for the final gateway
         baseURI: 'https://summon.mypinata.cloud/ipfs',
         // TODO: change this for the final gateway
         contractURI: 'https://apricot-persistent-duck-562.mypinata.cloud/{contractURIHASH}',
-        gatingNftAddress: '0xcc1eBf6Dbb9fF24A745D1cc7F6DC3eeDa5f9fa71',
         revealURI: 'FILL_ME',
+        devWallet: 'DEPLOYER_WALLET',
+        gatingNftAddress: '0xcc1eBf6Dbb9fF24A745D1cc7F6DC3eeDa5f9fa71',
         // TODO: change this for the final address
         itemsNftAddress: 'FILL_ME',
         mintNftGatingEnabled: true,
         mintNFtWithoutGatingEnabled: true,
         mintRandomItemEnabled: true,
         mintSpecialItemEnabled: true,
-        blockExplorerBaseUrl: 'https://explorer.zksync.io',
-        tenants: ['zkSync'],
     },
     TESTNET: {
-        name: 'AvatarBoundV1',
+        name: 'AvatarBound',
         symbol: 'AVB',
         baseURI: 'https://summon.mypinata.cloud/ipfs',
         contractURI: 'https://summon.mypinata.cloud/ipfs/{contractURIHASH}',
+        revealURI: 'QmZnvSyeKRQxWwcofVmq41BNCtHbBmomk8Ny8mtGRTjtzS',
+        devWallet: 'DEPLOYER_WALLET',
         gatingNftAddress: '0xcc1eBf6Dbb9fF24A745D1cc7F6DC3eeDa5f9fa71',
         itemsNftAddress: '0x613D384640769016985Ed4467aDcbb7D8e63f506',
-        revealURI: 'QmZnvSyeKRQxWwcofVmq41BNCtHbBmomk8Ny8mtGRTjtzS',
         mintNftGatingEnabled: true,
         mintNFtWithoutGatingEnabled: true,
         mintRandomItemEnabled: true,
         mintSpecialItemEnabled: true,
-        blockExplorerBaseUrl: 'https://goerli.explorer.zksync.io',
-        tenants: ['zkSync'],
+    },
+};
+
+export const AvatarBoundV1Args = AvatarBoundArgs;
+
+export const LevelsBoundArgs = {
+    MAINNET: {
+        name: 'LevelsBound',
+        symbol: 'LVL',
+        developerAdmin: 'DEPLOYER_WALLET',
+        mintRandomItemEnabled: true,
+        itemsNFTAddress: 'CONTRACT_ItemBound',
+    },
+    TESTNET: {
+        name: 'LevelsBound',
+        symbol: 'LVL',
+        developerAdmin: 'DEPLOYER_WALLET',
+        mintRandomItemEnabled: true,
+        itemsNFTAddress: 'CONTRACT_ItemBound',
+    },
+};
+
+export const LevelsBoundV1Args = {
+    MAINNET: {
+        ...LevelsBoundArgs.MAINNET,
+        itemsNFTAddress: 'CONTRACT_ItemBoundV1',
+    },
+    TESTNET: {
+        ...LevelsBoundArgs.TESTNET,
+        itemsNFTAddress: 'CONTRACT_ItemBoundV1',
     },
 };

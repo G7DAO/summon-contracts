@@ -8,14 +8,13 @@ import '@typechain/hardhat';
 import 'tsconfig-paths/register';
 import '@openzeppelin/hardhat-upgrades';
 import { log } from '@helpers/logger';
+import './tasks';
 
 import { ChainId } from './constants';
 dotenv.config();
 log(`Using Default Hardhat config`);
 
 const { PRIVATE_KEY, DEPLOYER_PRIVATE_KEY, REPORT_GAS, ETHSCAN_API_KEY } = process.env;
-
-const USE_PAYMASTER = process.env.USE_PAYMASTER === 'true';
 
 if (!PRIVATE_KEY) {
     throw new Error('The private key is required');
