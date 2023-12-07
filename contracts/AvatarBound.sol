@@ -149,6 +149,7 @@ contract AvatarBound is
         bytes calldata data,
         bytes calldata signature
     ) public nonReentrant whenNotPaused {
+        require(balanceOf(_msgSender()) == 0, "Sender already has an Avatar");
         require(mintNftGatingEnabled, "NFT gating mint is not enabled");
         require(_verifySignature(_msgSender(), nonce, data, signature), "Invalid signature");
         require(
@@ -176,6 +177,7 @@ contract AvatarBound is
         bytes calldata data,
         bytes calldata signature
     ) public nonReentrant whenNotPaused {
+        require(balanceOf(_msgSender()) == 0, "Sender already has an Avatar");
         require(mintNftWithoutGatingEnabled, "Minting without nft gating is not enabled");
         require(_verifySignature(_msgSender(), nonce, data, signature), "Invalid signature");
         mint(_msgSender(), baseSkinId);
@@ -190,6 +192,7 @@ contract AvatarBound is
     }
 
     function adminMint(address to, uint256 baseSkinId) public onlyRole(MINTER_ROLE) whenNotPaused {
+        require(balanceOf(to) == 0, "Sender already has an Avatar");
         mint(to, baseSkinId);
     }
 
@@ -372,6 +375,7 @@ contract AvatarBound is
 
     function transferFrom(address from, address to, uint256 tokenId) public override(IERC721, ERC721) nonReentrant {
         revert("You can't transfer this token");
+        super.transferFrom(from, to, tokenId);
     }
 
     function safeTransferFrom(address from, address to, uint256 tokenId) public override(IERC721, ERC721) nonReentrant {

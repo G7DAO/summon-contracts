@@ -36,16 +36,18 @@ import {
 import { AccessControlUpgradeable } from "@openzeppelin/contracts-upgradeable/access/AccessControlUpgradeable.sol";
 import { ERCWhitelistSignatureUpgradeable } from "./ERCWhitelistSignatureUpgradeable.sol";
 import { IItemBound } from "../interfaces/IItemBound.sol";
+import { ERC1155SoulboundUpgradeable } from "../extensions/upgradeables/ERC1155SoulboundUpgradeable.sol";
 
 contract LevelsBoundV1 is
     Initializable,
     ERC1155Upgradeable,
+    ERC1155SoulboundUpgradeable,
     OwnableUpgradeable,
     ReentrancyGuardUpgradeable,
     ERCWhitelistSignatureUpgradeable,
     AccessControlUpgradeable
 {
-    mapping(address => uint256) public playerLevel;
+    mapping(address => uint256) private currentPlayerLevel;
     bytes32 public constant MINTER_ROLE = keccak256("MINTER_ROLE");
 
     string public name;
@@ -56,7 +58,6 @@ contract LevelsBoundV1 is
     event RandomItemMinted(address to, bytes data, address itemsNFTAddress);
     event MintRandomItemEnabledChanged(bool enabled, address admin);
     event LevelUp(uint256 newLevel, address account);
-    event LevelReseted(uint256 newLevel, address account);
 
     /// @custom:oz-upgrades-unsafe-allow constructor
     constructor() {
@@ -86,21 +87,13 @@ contract LevelsBoundV1 is
     }
 
     function mintLevel(address account, uint256 level, bytes calldata data) private {
+        _soulbound(account, level, 1);
         _mint(account, level, 1, "");
-        playerLevel[account] = level;
+        currentPlayerLevel[account] = level;
         if (mintRandomItemEnabled) {
             mintRandomItem(account, data);
         }
         emit LevelUp(level, account);
-    }
-
-    function adminMintLevel(address account, uint256 newLevel) public onlyRole(MINTER_ROLE) {
-        require(newLevel > 0, "Level must be greater than 0");
-        require(playerLevel[account] < newLevel, "Is not possible to do lvl down");
-        require(playerLevel[account] != 0, "Player already has this level token");
-        _mint(account, newLevel, 1, "");
-        playerLevel[account] = newLevel;
-        emit LevelUp(newLevel, account);
     }
 
     function mintRandomItem(address to, bytes calldata data) private {
@@ -108,40 +101,29 @@ contract LevelsBoundV1 is
         emit RandomItemMinted(to, data, itemsNFTAddress);
     }
 
-    function levelUp(
-        address account,
-        uint256 newLevel,
-        uint256 nonce,
-        bytes calldata data,
-        bytes calldata signature
-    ) public nonReentrant {
-        require(newLevel > 0, "New level must be greater than 0");
+    function levelUp(uint256 nonce, bytes calldata data, bytes calldata signature) public nonReentrant {
         require(_verifySignature(_msgSender(), nonce, data, signature), "Invalid signature");
-        require(playerLevel[account] != 0, "Player already has this level token");
+        uint currentLevel = currentPlayerLevel[_msgSender()];
+        uint nextLevel = currentLevel + 1;
 
-        if (newLevel == 1) {
-            mintLevel(account, newLevel, data);
+        if (nextLevel == 1) {
+            mintLevel(_msgSender(), 1, data);
             return;
         }
-
-        uint oldLevel = newLevel - 1;
-        require(balanceOf(account, oldLevel) == 1, "Player does not have the previous level token");
-        require(playerLevel[account] < newLevel, "Is not possible to do lvl down");
-
-        burnLevel(account, oldLevel);
-        mintLevel(account, newLevel, data);
+        mintLevel(_msgSender(), nextLevel, data);
+        burnLevel(_msgSender(), currentLevel);
     }
 
     function burnLevel(address account, uint256 tokenId) private nonReentrant {
         _burn(account, tokenId, 1);
     }
 
-    function getAccountLevel(address account) public view onlyRole(DEFAULT_ADMIN_ROLE) returns (uint256) {
-        return playerLevel[account];
+    function adminGetAccountLevel(address account) public view onlyRole(DEFAULT_ADMIN_ROLE) returns (uint256) {
+        return currentPlayerLevel[account];
     }
 
     function getMyLevel() public view returns (uint256) {
-        return playerLevel[msg.sender];
+        return currentPlayerLevel[_msgSender()];
     }
 
     function setMintRandomItemEnabled(bool _mintRandomItemEnabled) public onlyRole(DEFAULT_ADMIN_ROLE) {
@@ -151,9 +133,8 @@ contract LevelsBoundV1 is
     }
 
     function burn(uint256 tokenId, uint256 amount) public nonReentrant {
+        revert("You can't burn this token");
         _burn(msg.sender, tokenId, amount);
-        playerLevel[msg.sender] = 0;
-        emit LevelReseted(tokenId, msg.sender);
     }
 
     function burnBatch(uint256[] memory tokenIds, uint256[] memory amounts) public nonReentrant {
@@ -167,7 +148,7 @@ contract LevelsBoundV1 is
         uint256 _id,
         uint256 _amount,
         bytes memory _data
-    ) public virtual override {
+    ) public virtual override nonReentrant {
         revert("You can't transfer this token");
         super.safeTransferFrom(_from, _to, _id, _amount, _data);
     }
@@ -178,7 +159,7 @@ contract LevelsBoundV1 is
         uint256[] memory _ids,
         uint256[] memory _amounts,
         bytes memory _data
-    ) public virtual override {
+    ) public virtual override nonReentrant {
         revert("You can't transfer this token");
         super.safeBatchTransferFrom(_from, _to, _ids, _amounts, _data);
     }

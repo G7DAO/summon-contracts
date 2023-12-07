@@ -161,6 +161,7 @@ contract AvatarBoundV1 is
         bytes calldata data,
         bytes calldata signature
     ) public nonReentrant whenNotPaused {
+        require(balanceOf(_msgSender()) == 0, "Sender already has an Avatar");
         require(mintNftGatingEnabled, "NFT gating mint is not enabled");
         require(_verifySignature(_msgSender(), nonce, data, signature), "Invalid signature");
         require(
@@ -188,6 +189,7 @@ contract AvatarBoundV1 is
         bytes calldata data,
         bytes calldata signature
     ) public nonReentrant whenNotPaused {
+        require(balanceOf(_msgSender()) == 0, "Sender already has an Avatar");
         require(mintNftWithoutGatingEnabled, "Minting without nft gating is not enabled");
         require(_verifySignature(_msgSender(), nonce, data, signature), "Invalid signature");
         mint(_msgSender(), baseSkinId);
@@ -202,6 +204,7 @@ contract AvatarBoundV1 is
     }
 
     function adminMint(address to, uint256 baseSkinId) public onlyRole(MINTER_ROLE) whenNotPaused {
+        require(balanceOf(to) == 0, "Address already has an Avatar");
         mint(to, baseSkinId);
     }
 
