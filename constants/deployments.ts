@@ -35,12 +35,12 @@ export const CONTRACTS = [
         dependencies: ['ItemBoundV1', 'LevelsBoundV1'],
         functionCalls: [
             {
-                contractName: 'AvatarBound',
+                contractName: 'AvatarBoundV1',
                 functionName: 'setDefaultItemId',
                 args: [10001],
             },
             {
-                contractName: 'AvatarBound',
+                contractName: 'AvatarBoundV1',
                 functionName: 'setSpecialItemId',
                 args: [10002],
             },
@@ -71,12 +71,12 @@ export const CONTRACTS = [
         dependencies: ['AvatarBoundV1'],
         functionCalls: [
             {
-                contractName: 'ItemBound',
+                contractName: 'ItemBoundV1',
                 functionName: 'grantRole',
                 args: ['MINTER_ROLE', 'CONTRACT_AvatarBound'],
             },
             {
-                contractName: 'ItemBound',
+                contractName: 'ItemBoundV1',
                 functionName: 'grantRole',
                 args: ['MINTER_ROLE', 'CONTRACT_LevelsBound'],
             },
