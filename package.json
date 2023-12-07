@@ -13,6 +13,7 @@
         "deployAvatarBound:ZkSync:testnet": "pnpm compile:zkSync && hardhat --config zkSync.config.ts deploy --network zkSyncTestnet --chain zkSyncTestnet --contractname AvatarBound",
         "deployAvatarBoundUpgradeable:ZkSync:testnet": "pnpm compile:zkSync && hardhat --config zkSync.config.ts deploy --network zkSyncTestnet --chain zkSyncTestnet --contractname AvatarBoundV1",
         "upgradeAvatarBound:ZkSync:testnet": "pnpm compile:zkSync && hardhat run deploy/upgrades/upgradeAvatarBound.testnet.ts --config zkSync.config.ts --network zkSyncTestnet",
+        "upgradeItemBound:ZkSync:testnet": "pnpm compile:zkSync && hardhat run deploy/upgrades/upgradeItemBound.testnet.ts --config zkSync.config.ts --network zkSyncTestnet",
         "deployItemsBound:ZkSync:testnet": "pnpm compile:zkSync && hardhat --config zkSync.config.ts deploy --network zkSyncTestnet --chain zkSyncTestnet --contractname ItemBound",
         "deployItemsBoundUpgradeable:ZkSync:testnet": "pnpm compile:zkSync && hardhat --config zkSync.config.ts deploy --network zkSyncTestnet --chain zkSyncTestnet --contractname ItemBoundV1",
         "deployLevelsOnChain:ZkSync:testnet": "pnpm compile:zkSync && hardhat --config zkSync.config.ts deploy --network zkSyncTestnet --chain zkSyncTestnet --contractname LevelsBound",
