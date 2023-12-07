@@ -10,6 +10,8 @@ library LibItems {
     struct TokenCreate {
         uint256 tokenId;
         string tokenUri;
+        address receiver;
+        uint256 feeBasisPoints;
     }
 
     struct TokenReturn {

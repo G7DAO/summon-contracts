@@ -194,6 +194,10 @@ contract ItemBound is
         tokenExists[_token.tokenId] = true;
 
         itemIds.push(_token.tokenId);
+
+        if (_token.receiver != address(0)) {
+            _setTokenRoyalty(_token.tokenId, _token.receiver, uint96(_token.feeBasisPoints));
+        }
     }
 
     function addNewTokens(LibItems.TokenCreate[] calldata _tokens) external onlyRole(MANAGER_ROLE) {
@@ -403,6 +407,14 @@ contract ItemBound is
 
     function setRoyaltyInfo(address receiver, uint96 feeBasisPoints) external onlyRole(MANAGER_ROLE) {
         _setDefaultRoyalty(receiver, feeBasisPoints);
+    }
+
+    function setTokenRoyalty(
+        uint256 tokenId,
+        address receiver,
+        uint256 feeBasisPoints
+    ) external onlyRole(MANAGER_ROLE) {
+        _setTokenRoyalty(tokenId, receiver, uint96(feeBasisPoints));
     }
 
     function updateWhitelistAddress(address _address, bool _isWhitelisted) external onlyRole(MANAGER_ROLE) {
