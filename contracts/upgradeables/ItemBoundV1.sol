@@ -107,9 +107,7 @@ contract ItemBoundV1 is
         __ERC1155SoulboundUpgradable_init();
         __ERCWhitelistSignatureUpgradeable_init();
 
-        if (devWallet == address(0)) {
-            revert("AddressIsZero");
-        }
+        require(devWallet != address(0), "AddressIsZero");
 
         _grantRole(DEFAULT_ADMIN_ROLE, devWallet);
         _grantRole(MINTER_ROLE, devWallet);

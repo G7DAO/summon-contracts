@@ -88,9 +88,7 @@ contract ItemBound is
         bool _isPaused,
         address devWallet
     ) ERC1155(_initBaseURI) {
-        if (devWallet == address(0)) {
-            revert("AddressIsZero");
-        }
+        require(devWallet != address(0), "AddressIsZero");
 
         _grantRole(DEFAULT_ADMIN_ROLE, devWallet);
         _grantRole(MINTER_ROLE, devWallet);
