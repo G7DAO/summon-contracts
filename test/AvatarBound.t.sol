@@ -132,8 +132,7 @@ contract AvatarBoundTest is Test {
             "MISSING_CONTRACT_URL",
             1,
             false,
-            minterWallet.addr,
-            250
+            address(this)
         );
         capsuleNft = new OpenMint("https://summon.mypinata.cloud/ipfs/");
 
