@@ -17,7 +17,7 @@ export interface ConstructorArgs {
     maxPerMint: number;
     isPaused: boolean;
     devWallet: string;
-    royalty: number;
+    royalty?: number;
 }
 export interface Soulbound1155Args {
     MAINNET: ConstructorArgs;
@@ -55,7 +55,6 @@ export const ItemBoundArgs: Soulbound1155Args = {
         maxPerMint: 1,
         isPaused: false,
         devWallet: 'DEPLOYER_WALLET',
-        royalty: 250,
     },
     TESTNET: {
         name: 'MyItems',
@@ -65,7 +64,6 @@ export const ItemBoundArgs: Soulbound1155Args = {
         maxPerMint: 1,
         isPaused: false,
         devWallet: 'DEPLOYER_WALLET',
-        royalty: 250,
     },
 };
 
@@ -99,8 +97,7 @@ export const AvatarBoundArgs = {
         revealURI: 'FILL_ME',
         devWallet: 'DEPLOYER_WALLET',
         gatingNftAddress: '0xcc1eBf6Dbb9fF24A745D1cc7F6DC3eeDa5f9fa71',
-        // TODO: change this for the final address
-        itemsNftAddress: 'FILL_ME',
+        itemsNftAddress: 'CONTRACT_ItemBound',
         mintNftGatingEnabled: true,
         mintNFtWithoutGatingEnabled: true,
         mintRandomItemEnabled: true,
@@ -114,7 +111,7 @@ export const AvatarBoundArgs = {
         revealURI: 'QmZnvSyeKRQxWwcofVmq41BNCtHbBmomk8Ny8mtGRTjtzS',
         devWallet: 'DEPLOYER_WALLET',
         gatingNftAddress: '0xcc1eBf6Dbb9fF24A745D1cc7F6DC3eeDa5f9fa71',
-        itemsNftAddress: '0x613D384640769016985Ed4467aDcbb7D8e63f506',
+        itemsNftAddress: 'CONTRACT_ItemBound',
         mintNftGatingEnabled: true,
         mintNFtWithoutGatingEnabled: true,
         mintRandomItemEnabled: true,

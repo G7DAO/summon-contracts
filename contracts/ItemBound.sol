@@ -86,15 +86,15 @@ contract ItemBound is
         string memory _contractURI,
         uint256 _maxPerMint,
         bool _isPaused,
-        address _devWallet,
-        uint96 _royalty
+        address devWallet
     ) ERC1155(_initBaseURI) {
-        _grantRole(DEFAULT_ADMIN_ROLE, msg.sender);
-        _grantRole(MINTER_ROLE, msg.sender);
-        _grantRole(MANAGER_ROLE, msg.sender);
-        _addWhitelistSigner(msg.sender);
+        require(devWallet != address(0), "AddressIsZero");
 
-        _setDefaultRoyalty(_devWallet, _royalty);
+        _grantRole(DEFAULT_ADMIN_ROLE, devWallet);
+        _grantRole(MINTER_ROLE, devWallet);
+        _grantRole(MANAGER_ROLE, devWallet);
+        _addWhitelistSigner(devWallet);
+
         name = _name;
         symbol = _symbol;
         baseURI = _initBaseURI;
