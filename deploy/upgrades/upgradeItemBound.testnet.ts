@@ -5,11 +5,15 @@ import { log } from '@helpers/logger';
 
 const PRIVATE_KEY = process.env.PRIVATE_KEY || '';
 
-const PROXY_ADDRESS = '0x1364840337396EE0D4CA2d38A24612Be539bc7B2';
+const PROXY_ADDRESS = '0xbF26f57D85f5b0376627752e6dF79648b1937Aa0';
 
 if (!PRIVATE_KEY) throw '⛔️ Private key not detected! Add it to the .env file!';
 
+// TODO: change me
 const VERSION = 'V2';
+
+// TODO: change me
+const CONTRACT_NAME = 'ItemBound';
 
 async function main() {
     const wallet = getWallet(PRIVATE_KEY);
@@ -17,11 +21,11 @@ async function main() {
     // Create deployer object and load the artifact of the contract you want to deploy.
     const deployer = new Deployer(hre, wallet);
 
-    const AvatarBoundNewVersion = await deployer.loadArtifact(`AvatarBound${VERSION}`);
+    const newVersionArtifact = await deployer.loadArtifact(`${CONTRACT_NAME}${VERSION}`);
 
-    await hre.zkUpgrades.upgradeProxy(deployer.zkWallet, PROXY_ADDRESS, AvatarBoundNewVersion);
+    await hre.zkUpgrades.upgradeProxy(deployer.zkWallet, PROXY_ADDRESS, newVersionArtifact);
 
-    log(`AvatarBound upgraded to =>  AvatarBound${VERSION}`);
+    log(`${CONTRACT_NAME}${VERSION} upgraded to =>  ${CONTRACT_NAME}${VERSION}`);
 }
 
 main().catch((error) => {

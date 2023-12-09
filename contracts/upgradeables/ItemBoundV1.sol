@@ -99,8 +99,7 @@ contract ItemBoundV1 is
         string memory _contractURI,
         uint256 _maxPerMint,
         bool _isPaused,
-        address _devWallet,
-        uint96 _royalty
+        address devWallet
     ) public initializer {
         __ERC1155_init("");
         __ReentrancyGuard_init();
@@ -108,12 +107,13 @@ contract ItemBoundV1 is
         __ERC1155SoulboundUpgradable_init();
         __ERCWhitelistSignatureUpgradeable_init();
 
-        _grantRole(DEFAULT_ADMIN_ROLE, msg.sender);
-        _grantRole(MINTER_ROLE, msg.sender);
-        _grantRole(MANAGER_ROLE, msg.sender);
-        _addWhitelistSigner(msg.sender);
+        require(devWallet != address(0), "AddressIsZero");
 
-        _setDefaultRoyalty(_devWallet, _royalty);
+        _grantRole(DEFAULT_ADMIN_ROLE, devWallet);
+        _grantRole(MINTER_ROLE, devWallet);
+        _grantRole(MANAGER_ROLE, devWallet);
+        _addWhitelistSigner(devWallet);
+
         name = _name;
         symbol = _symbol;
         baseURI = _initBaseURI;
@@ -123,14 +123,14 @@ contract ItemBoundV1 is
         if (_isPaused) _pause();
     }
 
-    function getAllItems(address _owner) public view returns (LibItems.TokenReturn[] memory) {
+    function getAllItems() public view returns (LibItems.TokenReturn[] memory) {
         uint256 totalTokens = itemIds.length;
         LibItems.TokenReturn[] memory tokenReturns = new LibItems.TokenReturn[](totalTokens);
 
         uint index;
         for (uint i = 0; i < totalTokens; i++) {
             uint256 tokenId = itemIds[i];
-            uint256 amount = balanceOf(_owner, tokenId);
+            uint256 amount = balanceOf(_msgSender(), tokenId);
 
             if (amount > 0) {
                 LibItems.TokenReturn memory tokenReturn = LibItems.TokenReturn({
@@ -154,7 +154,7 @@ contract ItemBoundV1 is
 
     function getAllItemsAdmin(
         address _owner
-    ) public view onlyRole(DEFAULT_ADMIN_ROLE) returns (LibItems.TokenReturn[] memory) {
+    ) public view onlyRole(MINTER_ROLE) returns (LibItems.TokenReturn[] memory) {
         uint256 totalTokens = itemIds.length;
         LibItems.TokenReturn[] memory tokenReturns = new LibItems.TokenReturn[](totalTokens);
 
@@ -218,6 +218,30 @@ contract ItemBoundV1 is
     function addNewTokens(LibItems.TokenCreate[] calldata _tokens) external onlyRole(MANAGER_ROLE) {
         for (uint256 i = 0; i < _tokens.length; i++) {
             addNewToken(_tokens[i]);
+        }
+    }
+
+    function addNewTokenWithRoyalty(LibItems.TokenCreateWithRoyalty calldata _token) public onlyRole(MANAGER_ROLE) {
+        if (_token.receiver == address(0)) {
+            revert("ReceiverAddressZero");
+        }
+
+        if (bytes(_token.tokenUri).length > 0) {
+            tokenUris[_token.tokenId] = _token.tokenUri;
+        }
+
+        tokenExists[_token.tokenId] = true;
+
+        itemIds.push(_token.tokenId);
+
+        _setTokenRoyalty(_token.tokenId, _token.receiver, uint96(_token.feeBasisPoints));
+    }
+
+    function addNewTokensWithRoyalty(
+        LibItems.TokenCreateWithRoyalty[] calldata _tokens
+    ) external onlyRole(MANAGER_ROLE) {
+        for (uint256 i = 0; i < _tokens.length; i++) {
+            addNewTokenWithRoyalty(_tokens[i]);
         }
     }
 
@@ -422,6 +446,14 @@ contract ItemBoundV1 is
 
     function setRoyaltyInfo(address receiver, uint96 feeBasisPoints) external onlyRole(MANAGER_ROLE) {
         _setDefaultRoyalty(receiver, feeBasisPoints);
+    }
+
+    function setTokenRoyalty(uint256 tokenId, address receiver, uint96 feeBasisPoints) external onlyRole(MANAGER_ROLE) {
+        _setTokenRoyalty(tokenId, receiver, uint96(feeBasisPoints));
+    }
+
+    function resetTokenRoyalty(uint256 tokenId) external onlyRole(MANAGER_ROLE) {
+        _resetTokenRoyalty(tokenId);
     }
 
     function updateWhitelistAddress(address _address, bool _isWhitelisted) external onlyRole(MANAGER_ROLE) {

@@ -120,8 +120,7 @@ contract ItemBoundV1Test is StdCheats, Test {
             "MISSING_CONTRACT_URL",
             1,
             false,
-            minterWallet.addr,
-            250
+            address(this)
         );
 
         return ItemBoundV1(address(proxy));
@@ -663,23 +662,58 @@ contract ItemBoundV1Test is StdCheats, Test {
 
         (address receiver, uint256 royaltyAmount) = itemBoundProxy.royaltyInfo(1, mintPrice);
 
-        assertEq(receiver, minterWallet.addr);
-        assertEq(royaltyAmount, expectedRoyalty);
+        assertEq(receiver, address(0));
+        assertEq(royaltyAmount, 0);
     }
 
-    function testUpdateTokenRoyalty() public {
+    function testSetTokenRoyaltyAndReset() public {
         uint256 mintPrice = 1 ether;
-        uint256 expectedRoyalty = (mintPrice * 250) / 10000;
+        uint256 tokenId = 1;
 
-        (address receiver, uint256 royaltyAmount) = itemBoundProxy.royaltyInfo(1, mintPrice);
+        (address receiver, uint256 royaltyAmount) = itemBoundProxy.royaltyInfo(tokenId, mintPrice);
 
-        assertEq(receiver, minterWallet.addr);
-        assertEq(royaltyAmount, expectedRoyalty);
+        assertEq(receiver, address(0));
+        assertEq(royaltyAmount, 0);
 
         uint256 expectedRoyaltyAfter = (mintPrice * 300) / 10000;
-        itemBoundProxy.setRoyaltyInfo(playerWallet.addr, 300);
+        itemBoundProxy.setTokenRoyalty(tokenId, playerWallet.addr, 300);
 
-        (address receiverAfter, uint256 royaltyAmountAfter) = itemBoundProxy.royaltyInfo(1, mintPrice);
+        (address receiverAfter, uint256 royaltyAmountAfter) = itemBoundProxy.royaltyInfo(tokenId, mintPrice);
+
+        assertEq(receiverAfter, playerWallet.addr);
+        assertEq(royaltyAmountAfter, expectedRoyaltyAfter);
+
+        itemBoundProxy.resetTokenRoyalty(tokenId);
+
+        (address receiverAfterReset, uint256 royaltyAmountAfterReset) = itemBoundProxy.royaltyInfo(tokenId, mintPrice);
+        assertEq(receiverAfterReset, address(0));
+        assertEq(royaltyAmountAfterReset, 0);
+    }
+
+    function testSetTokenRoyaltyShouldFailNotManagerRole() public {
+        uint256 tokenId = 1;
+
+        vm.prank(minterWallet.addr);
+        vm.expectRevert(
+            "AccessControl: account 0x030f6a4c5baa7350405fa8122cf458070abd1b59 is missing role 0x241ecf16d79d0f8dbfb92cbc07fe17840425976cf0667f022fe9877caa831b08"
+        );
+        itemBoundProxy.setTokenRoyalty(tokenId, playerWallet.addr, 300);
+
+        vm.prank(playerWallet.addr);
+        vm.expectRevert(
+            "AccessControl: account 0x44e97af4418b7a17aabd8090bea0a471a366305c is missing role 0x241ecf16d79d0f8dbfb92cbc07fe17840425976cf0667f022fe9877caa831b08"
+        );
+        itemBoundProxy.setTokenRoyalty(tokenId, playerWallet.addr, 300);
+
+        itemBoundProxy.grantRole(itemBoundProxy.MANAGER_ROLE(), playerWallet.addr);
+
+        vm.prank(playerWallet.addr);
+        itemBoundProxy.setTokenRoyalty(tokenId, playerWallet.addr, 300);
+
+        uint256 mintPrice = 1 ether;
+        uint256 expectedRoyaltyAfter = (mintPrice * 300) / 10000;
+
+        (address receiverAfter, uint256 royaltyAmountAfter) = itemBoundProxy.royaltyInfo(tokenId, mintPrice);
 
         assertEq(receiverAfter, playerWallet.addr);
         assertEq(royaltyAmountAfter, expectedRoyaltyAfter);
@@ -693,13 +727,15 @@ contract ItemBoundV1Test is StdCheats, Test {
         itemBoundProxy.updateTokenUri(_tokenIds[23], newTokenUri);
         assertEq(itemBoundProxy.uri(_tokenIds[23]), "https://something-new.com/232");
 
-        LibItems.TokenReturn[] memory allTokensInfo = itemBoundProxy.getAllItems(playerWallet.addr);
+        vm.prank(playerWallet.addr);
+        LibItems.TokenReturn[] memory allTokensInfo = itemBoundProxy.getAllItems();
         assertEq(allTokensInfo.length, 1300);
 
         vm.prank(playerWallet.addr);
         itemBoundProxy.safeTransferFrom(playerWallet.addr, minterWallet.addr, _tokenIds[24], 1, "");
 
-        LibItems.TokenReturn[] memory allTokensInfo2 = itemBoundProxy.getAllItems(playerWallet.addr);
+        vm.prank(playerWallet.addr);
+        LibItems.TokenReturn[] memory allTokensInfo2 = itemBoundProxy.getAllItems();
         assertEq(allTokensInfo2.length, 1299);
 
         for (uint256 i = 0; i < allTokensInfo.length; i++) {
@@ -717,7 +753,8 @@ contract ItemBoundV1Test is StdCheats, Test {
             }
         }
 
-        LibItems.TokenReturn[] memory allTokensInfo3 = itemBoundProxy.getAllItems(minterWallet.addr);
+        vm.prank(minterWallet.addr);
+        LibItems.TokenReturn[] memory allTokensInfo3 = itemBoundProxy.getAllItems();
         assertEq(allTokensInfo3.length, 1);
     }
 
