@@ -73,6 +73,7 @@ export default async function (
         contractAbi,
         contractAddress,
         type: contract.type,
+        networkType: contract.networkType,
         active: false,
         networkName,
         chainId,

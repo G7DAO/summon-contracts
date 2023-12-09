@@ -1,7 +1,10 @@
+import { NETWORK_TYPE } from '@constants/network';
+
 export interface Deployment {
     contractAbi: any;
     contractAddress: string;
     type: string;
+    networkType: NETWORK_TYPE;
     active: boolean;
     networkName: string;
     chainId: number;

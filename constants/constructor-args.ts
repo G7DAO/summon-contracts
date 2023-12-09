@@ -48,7 +48,7 @@ export const SoulboundBadgesArgs: Soulbound1155Args = {
 
 export const ItemBoundArgs: Soulbound1155Args = {
     MAINNET: {
-        name: 'ItemBound',
+        name: 'Item',
         symbol: 'ISB',
         baseURI: 'https://summon.mypinata.cloud/ipfs',
         contractURI: 'https://summon.mypinata.cloud/ipfs/{contractURIHASH}',
