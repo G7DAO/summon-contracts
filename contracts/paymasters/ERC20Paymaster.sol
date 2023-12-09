@@ -22,6 +22,7 @@ error AllowanceTooLow(uint256 requiredAllowance);
 
 contract ERC20Paymaster is IPaymaster, Pausable, AccessControl {
     bytes32 public constant MANAGER_ROLE = keccak256("MANAGER_ROLE");
+    bytes32 public constant PAUSER_ROLE = keccak256("MANAGER_ROLE");
 
     address public allowedERC20Token;
     bytes32 public USDCPriceId;
@@ -98,7 +99,7 @@ contract ERC20Paymaster is IPaymaster, Pausable, AccessControl {
         bytes32,
         bytes32,
         Transaction calldata _transaction
-    ) external payable onlyBootloader returns (bytes4 magic, bytes memory context) {
+    ) external payable onlyBootloader whenNotPaused returns (bytes4 magic, bytes memory context) {
         // By default we consider the transaction as accepted.
         magic = PAYMASTER_VALIDATION_SUCCESS_MAGIC;
         require(_transaction.paymasterInput.length >= 4, "The standard paymaster input must be at least 4 bytes long");
@@ -184,6 +185,14 @@ contract ERC20Paymaster is IPaymaster, Pausable, AccessControl {
         uint256 _maxRefundedGas
     ) external payable onlyBootloader whenNotPaused {
         // Refunds are not supported yet.
+    }
+
+    function pause() public onlyRole(PAUSER_ROLE) {
+        _pause();
+    }
+
+    function unpause() public onlyRole(PAUSER_ROLE) {
+        _unpause();
     }
 
     function withdrawETH(address payable _to) external onlyRole(MANAGER_ROLE) {
