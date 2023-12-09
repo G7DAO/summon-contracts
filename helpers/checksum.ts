@@ -2,6 +2,9 @@ import fs from 'fs';
 import crypto from 'crypto';
 import glob from 'glob';
 import path from 'path';
+import { ACHIEVO_TMP_DIR } from '@constants/deployments';
+
+const CHECKSUM_PATH = `${ACHIEVO_TMP_DIR}/checksums`;
 
 export function generateChecksum(str: string) {
     return crypto.createHash('md5').update(str, 'utf8').digest('hex');
@@ -24,7 +27,7 @@ export function generateChecksumFromFile(contractName: string): string {
 }
 
 export function writeChecksumToFile(contractName: string, tenant: string) {
-    const filePath = path.resolve(`.achievo/checksums/checksum-${contractName}-${tenant}`);
+    const filePath = path.resolve(`${CHECKSUM_PATH}/checksum-${contractName}-${tenant}`);
     const checksum = generateChecksumFromFile(contractName);
     // Write to the file
     fs.writeFileSync(filePath, checksum);
@@ -32,7 +35,7 @@ export function writeChecksumToFile(contractName: string, tenant: string) {
 }
 
 export function readChecksumFromFile(contractName: string, tenant: string): string | undefined {
-    const filePath = path.resolve(`.achievo/checksums/checksum-${contractName}-${tenant}`);
+    const filePath = path.resolve(`${CHECKSUM_PATH}/checksum-${contractName}-${tenant}`);
     if (!fs.existsSync(filePath)) {
         console.log('checksum not found');
         return undefined;
@@ -52,7 +55,9 @@ export function isAlreadyDeployed(contract: any, tenant: string): boolean {
     let _isAlreadyDeployed = checksum === previousChecksum;
 
     const filePathDeploymentLatest = path.resolve(
-        `.achievo/${contract.upgradable ? 'upgradeables/' : ''}deployments-${contract.type}-${tenant}-latest.json`
+        `${ACHIEVO_TMP_DIR}/${contract.chain}/${contract.upgradable ? 'upgradeables/' : ''}deployments-${
+            contract.type
+        }-${tenant}-latest.json`
     );
 
     if (!fs.existsSync(filePathDeploymentLatest)) {

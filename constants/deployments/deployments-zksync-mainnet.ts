@@ -71,19 +71,19 @@ export const ZKSYNC_MAINNET_CONTRACTS = [
         tenants: [TENANT.ZkSync],
         verify: true,
         upgradable: true,
-        // dependencies: ['AvatarBoundV1'],
-        // functionCalls: [
-        //     {
-        //         contractName: 'ItemBoundV1',
-        //         functionName: 'grantRole',
-        //         args: ['MINTER_ROLE', 'CONTRACT_AvatarBoundV1'],
-        //     },
-        //     {
-        //         contractName: 'ItemBoundV1',
-        //         functionName: 'grantRole',
-        //         args: ['MINTER_ROLE', 'CONTRACT_LevelsBoundV1'],
-        //     },
-        // ],
+        dependencies: ['AvatarBoundV1'],
+        functionCalls: [
+            {
+                contractName: 'ItemBoundV1',
+                functionName: 'grantRole',
+                args: ['MINTER_ROLE', 'CONTRACT_AvatarBoundV1'],
+            },
+            {
+                contractName: 'ItemBoundV1',
+                functionName: 'grantRole',
+                args: ['MINTER_ROLE', 'CONTRACT_LevelsBoundV1'],
+            },
+        ],
     },
     {
         contractName: 'LevelsBound',
