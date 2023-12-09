@@ -250,6 +250,9 @@ task('deploy', 'Deploys Smart contracts')
 
             // submit to db
             try {
+                log('*******************************************');
+                log('[SUBMITTING] Deployments to db');
+                log('*******************************************');
                 await submitContractDeploymentsToDB(deployments, tenant);
                 log('*******************************************');
                 log('*** Deployments submitted to db ***');

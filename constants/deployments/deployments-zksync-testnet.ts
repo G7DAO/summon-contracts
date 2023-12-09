@@ -1,12 +1,15 @@
-import { TENANT, CONTRACT_TYPE } from './constructor-args';
-import { NETWORK_TYPE, NetworkName } from './network';
+import { TENANT, CONTRACT_TYPE } from '../constructor-args';
+import { NETWORK_TYPE, NetworkName } from '../network';
 
-export const CONTRACTS = [
+const chain = NetworkName.ZkSyncTestnet;
+const networkType = NETWORK_TYPE.TESTNET;
+
+export const ZKSYNC_TESTNET_CONTRACTS = [
     {
         contractName: 'AvatarBound',
         type: CONTRACT_TYPE.Avatars,
-        chain: NetworkName.ZkSyncTestnet,
-        networkType: NETWORK_TYPE.TESTNET,
+        chain,
+        networkType,
         tenants: [TENANT.ZkSync],
         verify: true,
         upgradable: false,
@@ -27,8 +30,8 @@ export const CONTRACTS = [
     {
         contractName: 'AvatarBoundV1',
         type: CONTRACT_TYPE.Avatars,
-        chain: NetworkName.ZkSyncTestnet,
-        networkType: NETWORK_TYPE.TESTNET,
+        chain,
+        networkType,
         tenants: [TENANT.ZkSync],
         verify: true,
         upgradable: true,
@@ -49,8 +52,8 @@ export const CONTRACTS = [
     {
         contractName: 'ItemBound',
         type: CONTRACT_TYPE.Items,
-        chain: NetworkName.ZkSyncTestnet,
-        networkType: NETWORK_TYPE.TESTNET,
+        chain,
+        networkType,
         tenants: [TENANT.ZkSync],
         verify: true,
         upgradable: false,
@@ -63,30 +66,30 @@ export const CONTRACTS = [
     {
         contractName: 'ItemBoundV1',
         type: CONTRACT_TYPE.Items,
-        chain: NetworkName.ZkSyncTestnet,
-        networkType: NETWORK_TYPE.TESTNET,
+        chain,
+        networkType,
         tenants: [TENANT.ZkSync],
         verify: true,
         upgradable: true,
-        dependencies: ['AvatarBoundV1'],
-        functionCalls: [
-            {
-                contractName: 'ItemBoundV1',
-                functionName: 'grantRole',
-                args: ['MINTER_ROLE', 'CONTRACT_AvatarV1Bound'],
-            },
-            {
-                contractName: 'ItemBoundV1',
-                functionName: 'grantRole',
-                args: ['MINTER_ROLE', 'CONTRACT_LevelsV1Bound'],
-            },
-        ],
+        // dependencies: ['AvatarBoundV1'],
+        // functionCalls: [
+        //     {
+        //         contractName: 'ItemBoundV1',
+        //         functionName: 'grantRole',
+        //         args: ['MINTER_ROLE', 'CONTRACT_AvatarV1Bound'],
+        //     },
+        //     {
+        //         contractName: 'ItemBoundV1',
+        //         functionName: 'grantRole',
+        //         args: ['MINTER_ROLE', 'CONTRACT_LevelsV1Bound'],
+        //     },
+        // ],
     },
     {
         contractName: 'LevelsBound',
         type: CONTRACT_TYPE.Levels,
-        chain: NetworkName.ZkSyncTestnet,
-        networkType: NETWORK_TYPE.TESTNET,
+        chain,
+        networkType,
         tenants: [TENANT.ZkSync],
         verify: true,
         upgradable: false,
@@ -95,8 +98,8 @@ export const CONTRACTS = [
     {
         contractName: 'LevelsBoundV1',
         type: CONTRACT_TYPE.Levels,
-        chain: NetworkName.ZkSyncTestnet,
-        networkType: NETWORK_TYPE.TESTNET,
+        chain,
+        networkType,
         tenants: [TENANT.ZkSync],
         verify: true,
         upgradable: true,
