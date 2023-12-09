@@ -73,6 +73,7 @@ export default async function (
         paymasterAddresses: [],
         fakeContractAddress: '',
         explorerUrl: `${blockExplorerBaseUrl}/address/${contractAddress}#contract`,
+        upgradable: false,
     };
 
     log(`*****************************************************`);

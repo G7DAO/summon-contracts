@@ -16,6 +16,7 @@ export interface Deployment {
     paymasterAddresses: string[];
     fakeContractAddress: string;
     explorerUrl: string;
+    upgradable: boolean;
 }
 
 export interface FunctionCall {
