@@ -77,7 +77,7 @@ contract GasLessOpenMintPaymasterETH is IPaymaster, AccessControl, Pausable {
         // Refunds are not supported yet.
     }
 
-    function withdraw(address payable _to) external onlyOwner {
+    function withdraw(address payable _to) external onlyRole(MANAGER_ROLE) {
         // send paymaster funds to the owner
         uint256 balance = address(this).balance;
         (bool success, ) = _to.call{ value: balance }("");

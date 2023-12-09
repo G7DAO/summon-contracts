@@ -50,17 +50,20 @@ contract ERC20Paymaster is IPaymaster, Pausable, AccessControl {
         _setupRole(MANAGER_ROLE, msg.sender);
     }
 
-    function setPriceFeeds(bytes32 _USDCPriceId, bytes32 _ETHPriceId) public onlyOwner whenNotPaused {
+    function setPriceFeeds(
+        bytes32 _USDCPriceId,
+        bytes32 _ETHPriceId
+    ) public onlyRole(DEFAULT_ADMIN_ROLE) whenNotPaused {
         USDCPriceId = _USDCPriceId;
         ETHPriceId = _ETHPriceId;
     }
 
-    function setUsePyth(bool _usePyth) public onlyOwner whenNotPaused {
+    function setUsePyth(bool _usePyth) public onlyRole(DEFAULT_ADMIN_ROLE) whenNotPaused {
         require(_usePyth != USE_PYTH, "No change");
         USE_PYTH = _usePyth;
     }
 
-    function setPythNetworkCheckAge(uint _pythNetworkCheckAge) public onlyOwner whenNotPaused {
+    function setPythNetworkCheckAge(uint _pythNetworkCheckAge) public onlyRole(DEFAULT_ADMIN_ROLE) whenNotPaused {
         require(_pythNetworkCheckAge > 0, "pythNetworkCheckAge must be greater than 0");
         require(_pythNetworkCheckAge != pythNetworkCheckAge, "No change");
         pythNetworkCheckAge = _pythNetworkCheckAge;
