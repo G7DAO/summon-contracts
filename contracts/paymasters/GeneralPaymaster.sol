@@ -1,7 +1,6 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.17;
 
-import "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
 import {
     ExecutionResult,
     PAYMASTER_VALIDATION_SUCCESS_MAGIC,
@@ -12,12 +11,22 @@ import {
     TransactionHelper,
     Transaction
 } from "@matterlabs/zksync-contracts/l2/system-contracts/libraries/TransactionHelper.sol";
-import "@openzeppelin/contracts/access/Ownable.sol";
+import { AccessControl } from "@openzeppelin/contracts/access/AccessControl.sol";
+
 import "@openzeppelin/contracts/security/Pausable.sol";
 import "@matterlabs/zksync-contracts/l2/system-contracts/Constants.sol";
 
-contract GasLessOpenMintPaymasterETH is IPaymaster, Ownable, Pausable {
+contract GasLessOpenMintPaymasterETH is IPaymaster, AccessControl, Pausable {
+    bytes32 public constant MANAGER_ROLE = keccak256("MANAGER_ROLE");
+    bytes32 public constant PAUSER_ROLE = keccak256("MANAGER_ROLE");
+
     event PaymasterPayment(address indexed from, uint256 amount);
+
+    constructor() {
+        _setupRole(DEFAULT_ADMIN_ROLE, msg.sender);
+        _setupRole(MANAGER_ROLE, msg.sender);
+        _setupRole(PAUSER_ROLE, msg.sender);
+    }
 
     modifier onlyBootloader() {
         require(msg.sender == BOOTLOADER_FORMAL_ADDRESS, "Only bootloader can call this method");
@@ -49,6 +58,14 @@ contract GasLessOpenMintPaymasterETH is IPaymaster, Ownable, Pausable {
         }
     }
 
+    function pause() public onlyRole(PAUSER_ROLE) {
+        _pause();
+    }
+
+    function unpause() public onlyRole(PAUSER_ROLE) {
+        _unpause();
+    }
+
     function postTransaction(
         bytes calldata _context,
         Transaction calldata _transaction,
@@ -60,7 +77,7 @@ contract GasLessOpenMintPaymasterETH is IPaymaster, Ownable, Pausable {
         // Refunds are not supported yet.
     }
 
-    function withdraw(address payable _to) external onlyOwner {
+    function withdraw(address payable _to) external onlyRole(MANAGER_ROLE) {
         // send paymaster funds to the owner
         uint256 balance = address(this).balance;
         (bool success, ) = _to.call{ value: balance }("");

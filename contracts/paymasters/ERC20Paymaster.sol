@@ -12,7 +12,7 @@ import {
     TransactionHelper,
     Transaction
 } from "@matterlabs/zksync-contracts/l2/system-contracts/libraries/TransactionHelper.sol";
-import "@openzeppelin/contracts/access/Ownable.sol";
+import { AccessControl } from "@openzeppelin/contracts/access/AccessControl.sol";
 import "@openzeppelin/contracts/security/Pausable.sol";
 import "@matterlabs/zksync-contracts/l2/system-contracts/Constants.sol";
 import "@pythnetwork/pyth-sdk-solidity/PythStructs.sol";
@@ -20,7 +20,10 @@ import "@pythnetwork/pyth-sdk-solidity/IPyth.sol";
 
 error AllowanceTooLow(uint256 requiredAllowance);
 
-contract ERC20Paymaster is IPaymaster, Ownable, Pausable {
+contract ERC20Paymaster is IPaymaster, Pausable, AccessControl {
+    bytes32 public constant MANAGER_ROLE = keccak256("MANAGER_ROLE");
+    bytes32 public constant PAUSER_ROLE = keccak256("MANAGER_ROLE");
+
     address public allowedERC20Token;
     bytes32 public USDCPriceId;
     bytes32 public ETHPriceId;
@@ -43,19 +46,24 @@ contract ERC20Paymaster is IPaymaster, Ownable, Pausable {
         USDCPriceId = _USDCPriceId;
         ETHPriceId = _ETHPriceId;
         pyth = IPyth(_pythOracle);
+        _setupRole(DEFAULT_ADMIN_ROLE, msg.sender);
+        _setupRole(MANAGER_ROLE, msg.sender);
     }
 
-    function setPriceFeeds(bytes32 _USDCPriceId, bytes32 _ETHPriceId) public onlyOwner whenNotPaused {
+    function setPriceFeeds(
+        bytes32 _USDCPriceId,
+        bytes32 _ETHPriceId
+    ) public onlyRole(DEFAULT_ADMIN_ROLE) whenNotPaused {
         USDCPriceId = _USDCPriceId;
         ETHPriceId = _ETHPriceId;
     }
 
-    function setUsePyth(bool _usePyth) public onlyOwner whenNotPaused {
+    function setUsePyth(bool _usePyth) public onlyRole(DEFAULT_ADMIN_ROLE) whenNotPaused {
         require(_usePyth != USE_PYTH, "No change");
         USE_PYTH = _usePyth;
     }
 
-    function setPythNetworkCheckAge(uint _pythNetworkCheckAge) public onlyOwner whenNotPaused {
+    function setPythNetworkCheckAge(uint _pythNetworkCheckAge) public onlyRole(DEFAULT_ADMIN_ROLE) whenNotPaused {
         require(_pythNetworkCheckAge > 0, "pythNetworkCheckAge must be greater than 0");
         require(_pythNetworkCheckAge != pythNetworkCheckAge, "No change");
         pythNetworkCheckAge = _pythNetworkCheckAge;
@@ -94,7 +102,7 @@ contract ERC20Paymaster is IPaymaster, Ownable, Pausable {
         bytes32,
         bytes32,
         Transaction calldata _transaction
-    ) external payable onlyBootloader returns (bytes4 magic, bytes memory context) {
+    ) external payable onlyBootloader whenNotPaused returns (bytes4 magic, bytes memory context) {
         // By default we consider the transaction as accepted.
         magic = PAYMASTER_VALIDATION_SUCCESS_MAGIC;
         require(_transaction.paymasterInput.length >= 4, "The standard paymaster input must be at least 4 bytes long");
@@ -182,11 +190,27 @@ contract ERC20Paymaster is IPaymaster, Ownable, Pausable {
         // Refunds are not supported yet.
     }
 
-    function withdraw(address payable _to) external onlyOwner {
+    function pause() public onlyRole(PAUSER_ROLE) {
+        _pause();
+    }
+
+    function unpause() public onlyRole(PAUSER_ROLE) {
+        _unpause();
+    }
+
+    function withdrawETH(address payable _to) external onlyRole(MANAGER_ROLE) {
         // send paymaster funds to the owner
         uint256 balance = address(this).balance;
         (bool success, ) = _to.call{ value: balance }("");
         require(success, "Failed to withdraw funds from paymaster.");
+    }
+
+    function withDrawERC20(address _to, uint256 _amount) external onlyRole(MANAGER_ROLE) {
+        // send paymaster funds to the owner
+        IERC20 token = IERC20(allowedERC20Token);
+        uint256 balance = token.balanceOf(address(this));
+        require(balance >= _amount, "Not enough funds");
+        token.transfer(_to, _amount);
     }
 
     receive() external payable {}
