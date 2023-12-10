@@ -9,6 +9,7 @@ import hardhatConfig from '../../hardhat.config';
 import zkSyncConfig from '../../zkSync.config';
 import { deployContract, fundAccount, setupDeployer } from '../../helpers/zkUtils';
 import { Deployer } from '@matterlabs/hardhat-zksync-deploy';
+import { getFunctionSignature } from '../../scripts/libraries/selectors';
 dotenv.config();
 
 // load wallet private key from env file
@@ -39,8 +40,6 @@ describe('ERC20Paymaster', function () {
             innerInput: new Uint8Array(),
         });
 
-        log(`Minting 1 erc721 for empty wallet via paymaster...`);
-
         const mintTrx = await mockERC721Soulbound.connect(user).mint(user.address, {
             customData: {
                 gasPerPubdata: utils.DEFAULT_GAS_PER_PUBDATA_LIMIT,
@@ -49,7 +48,6 @@ describe('ERC20Paymaster', function () {
         });
 
         await mintTrx.wait();
-        log('paymaster params:', paymasterParams);
     }
 
     beforeEach(async function () {
@@ -59,13 +57,28 @@ describe('ERC20Paymaster', function () {
         [provider, minterAccount, deployer] = setupDeployer(deployUrl, PRIVATE_KEY);
 
         const emptyWallet = Wallet.createRandom();
-        log(`Empty wallet's address: ${emptyWallet.address}`);
 
         playerAccount = new Wallet(emptyWallet.privateKey, provider);
 
         token = await deployContract(deployer, 'MockUSDC', ['MyUSDC', 'mUSDC', 18]);
+        await token.waitForDeployment();
+
         mockERC721Soulbound = await deployContract(deployer, 'Mock721Soulbound', []);
-        paymaster = await deployContract(deployer, 'ERC20Paymaster', [await token.getAddress(), USDC_PRICE_ID, ETH_PRICE_ID, PYTH_ORACLE_ADDRESS]);
+        await mockERC721Soulbound.waitForDeployment();
+
+        paymaster = await deployContract(deployer, 'ERC20Paymaster', [
+            await token.getAddress(),
+            USDC_PRICE_ID,
+            ETH_PRICE_ID,
+            PYTH_ORACLE_ADDRESS,
+        ]);
+
+        await paymaster.waitForDeployment();
+
+        log(`Empty wallet's address: ${emptyWallet.address}`);
+        log('Token deployed', await token.getAddress());
+        log('mockERC721Soulbound deployed', await mockERC721Soulbound.getAddress());
+        log('paymaster deployed', await paymaster.getAddress());
 
         // fund paymaster
         await fundAccount(minterAccount, await paymaster.getAddress(), '3');
@@ -82,15 +95,14 @@ describe('ERC20Paymaster', function () {
 
         const initialPaymasterBalance = await provider.getBalance(paymasterAddress);
 
+        const addRecipientTx = await paymaster.addRecipient(await mockERC721Soulbound.getAddress());
+        await addRecipientTx.wait();
+
         await executeMintTransaction(playerAccount);
 
         const finalETHBalance = await provider.getBalance(playerAccount);
         const finalUserTokenBalance = await token.balanceOf(playerAccount.address);
         const finalPaymasterBalance = await provider.getBalance(paymasterAddress);
-
-        console.log('finalETHBalance ETH balance:', finalETHBalance.toString());
-        console.log('finalUserTokenBalance ETH balance:', finalUserTokenBalance.toString());
-        console.log('finalPaymasterBalance ETH balance:', finalPaymasterBalance.toString());
 
         expect(await mockERC721Soulbound.balanceOf(playerAccount.address)).to.equal(1);
         expect(initialPaymasterBalance > finalPaymasterBalance).to.be.true;
@@ -101,7 +113,7 @@ describe('ERC20Paymaster', function () {
     it('should allow owner to withdraw all funds', async function () {
         const paymasterAddress = await paymaster.getAddress();
 
-        const tx = await paymaster.connect(minterAccount).withdraw(playerAccount.address);
+        const tx = await paymaster.connect(minterAccount).withdrawETH(playerAccount.address);
         await tx.wait();
 
         const finalContractBalance = await provider.getBalance(paymasterAddress);
@@ -109,11 +121,41 @@ describe('ERC20Paymaster', function () {
         expect(finalContractBalance).to.eql(BigInt(0));
     });
 
+    it('should allow owner to withdraw all erc20 funds', async function () {
+        const paymasterAddress = await paymaster.getAddress();
+
+        const success = await token.mint(playerAccount.address, BigInt(3));
+        await success.wait();
+
+        const managerInitialTokenBalance = await token.balanceOf(minterAccount.address);
+        const addRecipientTx = await paymaster.addRecipient(await mockERC721Soulbound.getAddress());
+        await addRecipientTx.wait();
+
+        // +1n ERC20 to the paymaster
+        await executeMintTransaction(playerAccount);
+        // +1n ERC20 to the paymaster
+        await executeMintTransaction(playerAccount);
+
+        const paymasterERC20AfterTrx = await token.balanceOf(paymasterAddress);
+
+        log('initialPaymasterERC20Balance', paymasterERC20AfterTrx.toString());
+
+        const tx = await paymaster.connect(minterAccount).withdrawERC20(minterAccount.address, 1n);
+        await tx.wait();
+        const paymasterAfterWithdrawERC20Balance = await token.balanceOf(paymasterAddress);
+
+        const finalManagerTokenBalance = await token.balanceOf(minterAccount.address);
+        expect(paymasterERC20AfterTrx).to.greaterThan(0n);
+        expect(finalManagerTokenBalance).to.eql(1n);
+        expect(managerInitialTokenBalance).to.eql(0n);
+        expect(paymasterAfterWithdrawERC20Balance).to.eql(1n);
+    });
+
     it('should prevent non-owners from withdrawing funds', async function () {
         try {
-            await paymaster.connect(playerAccount).withdraw(minterAccount.address);
+            await paymaster.connect(playerAccount).withdrawETH(minterAccount.address);
         } catch (e) {
-            expect(e.message).to.include('Ownable: caller is not the owner');
+            expect(e.message).to.include('AccessControl: a..');
         }
     });
 });

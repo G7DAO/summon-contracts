@@ -2,13 +2,14 @@ import { Contract, Wallet, Provider } from 'zksync2-js';
 import { Deployer } from '@matterlabs/hardhat-zksync-deploy';
 import * as hre from 'hardhat';
 import * as ethers from 'ethers';
+import { log } from '@helpers/logger';
 
 async function deployContract(deployer: Deployer, contract: string, params: any[]): Promise<Contract> {
     const artifact = await deployer.loadArtifact(contract);
 
     const deploymentFee = await deployer.estimateDeployFee(artifact, params);
     const parsedFee = ethers.formatEther(deploymentFee.toString());
-    console.log(`${contract} deployment is estimated to cost ${parsedFee} ETH`);
+    log(`${contract} deployment is estimated to cost ${parsedFee} ETH`);
 
     return await deployer.deploy(artifact, params);
 }
@@ -22,7 +23,7 @@ async function fundAccount(wallet: Wallet, address: string, amount: string) {
         })
     ).wait();
 
-    console.log(`Account ${address} funded with ${amount}`);
+    log(`Address ${address} funded with ${amount}`);
 }
 
 function setupDeployer(url: string, privateKey: string): [Provider, Wallet, Deployer] {
