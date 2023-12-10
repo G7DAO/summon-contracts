@@ -1,6 +1,6 @@
 // get function selectors from ABI
 
-import { Contract } from 'ethers';
+import { Contract, dataSlice, keccak256, toUtf8Bytes } from 'ethers';
 
 export enum FacetCutAction {
     Add,
@@ -18,6 +18,12 @@ export function getSelectors(contract: Contract): string[] {
     }, []);
 
     return selectors;
+}
+
+export function getFunctionSignature(functionABI: string): string {
+    const functionHash = keccak256(toUtf8Bytes(functionABI));
+
+    return dataSlice(functionHash, 0, 4);
 }
 
 export function getSelectorsFacet(contract: Contract) {
