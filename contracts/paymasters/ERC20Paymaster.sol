@@ -17,7 +17,6 @@ import "@openzeppelin/contracts/security/Pausable.sol";
 import "@matterlabs/zksync-contracts/l2/system-contracts/Constants.sol";
 import "@pythnetwork/pyth-sdk-solidity/PythStructs.sol";
 import "@pythnetwork/pyth-sdk-solidity/IPyth.sol";
-import "hardhat/console.sol";
 
 error AllowanceTooLow(uint256 requiredAllowance);
 
@@ -110,7 +109,6 @@ contract ERC20Paymaster is IPaymaster, Pausable, AccessControl {
         address recipient = address(uint160(_transaction.to));
 
         require(allowedRecipients[recipient], "Invalid recipient");
-
 
         // By default we consider the transaction as accepted.
         magic = PAYMASTER_VALIDATION_SUCCESS_MAGIC;
@@ -231,7 +229,6 @@ contract ERC20Paymaster is IPaymaster, Pausable, AccessControl {
         require(balance >= _amount, "Not enough funds");
         token.transfer(_to, _amount);
     }
-
 
     receive() external payable {}
 }
