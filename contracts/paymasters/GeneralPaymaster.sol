@@ -20,6 +20,8 @@ contract GasLessOpenMintPaymasterETH is IPaymaster, AccessControl, Pausable {
     bytes32 public constant MANAGER_ROLE = keccak256("MANAGER_ROLE");
     bytes32 public constant PAUSER_ROLE = keccak256("MANAGER_ROLE");
 
+    mapping(address => bool) public allowedRecipients;
+
     event PaymasterPayment(address indexed from, uint256 amount);
 
     constructor() {
@@ -39,6 +41,10 @@ contract GasLessOpenMintPaymasterETH is IPaymaster, AccessControl, Pausable {
         bytes32,
         Transaction calldata _transaction
     ) external payable onlyBootloader whenNotPaused returns (bytes4 magic, bytes memory context) {
+
+        address recipient = address(uint160(_transaction.to));
+        require(allowedRecipients[recipient], "Invalid recipient");
+
         // By default we consider the transaction as accepted.
         magic = PAYMASTER_VALIDATION_SUCCESS_MAGIC;
         require(_transaction.paymasterInput.length >= 4, "The standard paymaster input must be at least 4 bytes long");
@@ -82,6 +88,16 @@ contract GasLessOpenMintPaymasterETH is IPaymaster, AccessControl, Pausable {
         uint256 balance = address(this).balance;
         (bool success, ) = _to.call{ value: balance }("");
         require(success, "Failed to withdraw funds from paymaster.");
+    }
+
+    function addRecipient(address _recipient) public onlyRole(DEFAULT_ADMIN_ROLE) {
+        require(_recipient != address(0), "NonAddressZero");
+        allowedRecipients[_recipient] = true;
+    }
+
+    function removeRecipient(address _recipient) public onlyRole(DEFAULT_ADMIN_ROLE) {
+        require(_recipient != address(0), "NonAddressZero");
+        allowedRecipients[_recipient] = false;
     }
 
     receive() external payable {}

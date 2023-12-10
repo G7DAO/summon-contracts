@@ -35,7 +35,7 @@ export const ZKSYNC_MAINNET_CONTRACTS = [
         tenants: [TENANT.ZkSync],
         verify: true,
         upgradable: true,
-        dependencies: ['ItemBoundV1', 'LevelsBoundV1'],
+        dependencies: ['OpenMint', 'ItemBoundV1', 'LevelsBoundV1'],
         functionCalls: [
             {
                 contractName: 'AvatarBoundV1',
@@ -71,19 +71,19 @@ export const ZKSYNC_MAINNET_CONTRACTS = [
         tenants: [TENANT.ZkSync],
         verify: true,
         upgradable: true,
-        // dependencies: ['AvatarBoundV1'],
-        // functionCalls: [
-        //     {
-        //         contractName: 'ItemBoundV1',
-        //         functionName: 'grantRole',
-        //         args: ['MINTER_ROLE', 'CONTRACT_AvatarV1Bound'],
-        //     },
-        //     {
-        //         contractName: 'ItemBoundV1',
-        //         functionName: 'grantRole',
-        //         args: ['MINTER_ROLE', 'CONTRACT_LevelsV1Bound'],
-        //     },
-        // ],
+        dependencies: ['AvatarBoundV1'],
+        functionCalls: [
+            {
+                contractName: 'ItemBoundV1',
+                functionName: 'grantRole',
+                args: ['MINTER_ROLE', 'CONTRACT_AvatarBoundV1'],
+            },
+            {
+                contractName: 'ItemBoundV1',
+                functionName: 'grantRole',
+                args: ['MINTER_ROLE', 'CONTRACT_LevelsBoundV1'],
+            },
+        ],
     },
     {
         contractName: 'LevelsBound',
@@ -104,5 +104,22 @@ export const ZKSYNC_MAINNET_CONTRACTS = [
         verify: true,
         upgradable: true,
         dependencies: ['ItemBoundV1', 'AvatarBoundV1'],
+    },
+    {
+        contractName: 'OpenMint',
+        type: CONTRACT_TYPE.OpenMint,
+        chain,
+        networkType,
+        tenants: [TENANT.ZkSync],
+        verify: true,
+        upgradable: false,
+        dependencies: ['AvatarBoundV1'],
+        functionCalls: [
+            {
+                contractName: 'OpenMint',
+                functionName: 'grantRole',
+                args: ['MINTER_ROLE', 'CONTRACT_AvatarBoundV1'],
+            },
+        ],
     },
 ];

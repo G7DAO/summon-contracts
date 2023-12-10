@@ -7,6 +7,7 @@ export enum CONTRACT_TYPE {
     Avatars = 'Avatars',
     Items = 'Items',
     Levels = 'Levels',
+    OpenMint = 'OpenMint',
 }
 
 export interface ConstructorArgs {
@@ -119,7 +120,16 @@ export const AvatarBoundArgs = {
     },
 };
 
-export const AvatarBoundV1Args = AvatarBoundArgs;
+export const AvatarBoundV1Args = {
+    MAINNET: {
+        ...AvatarBoundArgs.MAINNET,
+        itemsNftAddress: 'CONTRACT_ItemBoundV1',
+    },
+    TESTNET: {
+        ...AvatarBoundArgs.TESTNET,
+        itemsNftAddress: 'CONTRACT_ItemBoundV1',
+    },
+};
 
 export const LevelsBoundArgs = {
     MAINNET: {
@@ -146,5 +156,20 @@ export const LevelsBoundV1Args = {
     TESTNET: {
         ...LevelsBoundArgs.TESTNET,
         itemsNFTAddress: 'CONTRACT_ItemBoundV1',
+    },
+};
+
+export const OpenMintArgs = {
+    MAINNET: {
+        name: 'OpenMint-TEST',
+        symbol: 'OM_TEST',
+        baseTokenURI: 'https://achievo.mypinata.cloud/ipfs/',
+        unrevealedURI: 'QmPrH4o5q9uB8DGiFd9oDSuT3TnLiCzsFXT4wXQbpUr6c8',
+    },
+    TESTNET: {
+        name: 'OpenMint-TEST',
+        symbol: 'OM_TEST',
+        baseTokenURI: 'https://achievo.mypinata.cloud/ipfs/',
+        unrevealedURI: 'QmPrH4o5q9uB8DGiFd9oDSuT3TnLiCzsFXT4wXQbpUr6c8',
     },
 };

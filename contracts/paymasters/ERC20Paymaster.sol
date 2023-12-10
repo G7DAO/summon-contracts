@@ -24,6 +24,8 @@ contract ERC20Paymaster is IPaymaster, Pausable, AccessControl {
     bytes32 public constant MANAGER_ROLE = keccak256("MANAGER_ROLE");
     bytes32 public constant PAUSER_ROLE = keccak256("MANAGER_ROLE");
 
+    mapping(address => bool) public allowedRecipients;
+
     address public allowedERC20Token;
     bytes32 public USDCPriceId;
     bytes32 public ETHPriceId;
@@ -37,7 +39,6 @@ contract ERC20Paymaster is IPaymaster, Pausable, AccessControl {
 
     modifier onlyBootloader() {
         require(msg.sender == BOOTLOADER_FORMAL_ADDRESS, "Only bootloader can call this method");
-        // Continue execution if called from the bootloader.
         _;
     }
 
@@ -103,6 +104,12 @@ contract ERC20Paymaster is IPaymaster, Pausable, AccessControl {
         bytes32,
         Transaction calldata _transaction
     ) external payable onlyBootloader whenNotPaused returns (bytes4 magic, bytes memory context) {
+        // check the target and function of the transaction: _transaction
+
+        address recipient = address(uint160(_transaction.to));
+
+        require(allowedRecipients[recipient], "Invalid recipient");
+
         // By default we consider the transaction as accepted.
         magic = PAYMASTER_VALIDATION_SUCCESS_MAGIC;
         require(_transaction.paymasterInput.length >= 4, "The standard paymaster input must be at least 4 bytes long");
@@ -198,6 +205,16 @@ contract ERC20Paymaster is IPaymaster, Pausable, AccessControl {
         _unpause();
     }
 
+    function addRecipient(address _recipient) public onlyRole(DEFAULT_ADMIN_ROLE) {
+        require(_recipient != address(0), "NonAddressZero");
+        allowedRecipients[_recipient] = true;
+    }
+
+    function removeRecipient(address _recipient) public onlyRole(DEFAULT_ADMIN_ROLE) {
+        require(_recipient != address(0), "NonAddressZero");
+        allowedRecipients[_recipient] = false;
+    }
+
     function withdrawETH(address payable _to) external onlyRole(MANAGER_ROLE) {
         // send paymaster funds to the owner
         uint256 balance = address(this).balance;
@@ -205,7 +222,7 @@ contract ERC20Paymaster is IPaymaster, Pausable, AccessControl {
         require(success, "Failed to withdraw funds from paymaster.");
     }
 
-    function withDrawERC20(address _to, uint256 _amount) external onlyRole(MANAGER_ROLE) {
+    function withdrawERC20(address _to, uint256 _amount) external onlyRole(MANAGER_ROLE) {
         // send paymaster funds to the owner
         IERC20 token = IERC20(allowedERC20Token);
         uint256 balance = token.balanceOf(address(this));

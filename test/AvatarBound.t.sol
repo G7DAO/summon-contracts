@@ -134,7 +134,13 @@ contract AvatarBoundTest is Test {
             false,
             address(this)
         );
-        capsuleNft = new OpenMint("https://summon.mypinata.cloud/ipfs/");
+
+        capsuleNft = new OpenMint(
+            "OpenMint-TEST",
+            "OM_TEST",
+            "https://summon.mypinata.cloud/ipfs/",
+            "QmPrH4o5q9uB8DGiFd9oDSuT3TnLiCzsFXT4wXQbpUr6c8"
+        );
 
         encodedItems = setupItems();
 
