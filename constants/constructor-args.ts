@@ -97,7 +97,7 @@ export const AvatarBoundArgs = {
         contractURI: 'https://apricot-persistent-duck-562.mypinata.cloud/{contractURIHASH}',
         revealURI: 'FILL_ME',
         devWallet: 'DEPLOYER_WALLET',
-        gatingNftAddress: '0xcc1eBf6Dbb9fF24A745D1cc7F6DC3eeDa5f9fa71',
+        gatingNftAddress: '0xD07180c423F9B8CF84012aA28cC174F3c433EE29',
         itemsNftAddress: 'CONTRACT_ItemBound',
         mintNftGatingEnabled: true,
         mintNFtWithoutGatingEnabled: true,

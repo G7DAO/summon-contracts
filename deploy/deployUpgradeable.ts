@@ -53,7 +53,7 @@ export default async function (
     if (contract.verify) {
         await new Promise((resolve, reject) => {
             exec(
-                `npx hardhat verify --network zkSyncTestnet ${contractAddress} --config zkSync.config.ts`,
+                `npx hardhat verify --network ${contract.chain} ${contractAddress} --config zkSync.config.ts`,
                 (error, stdout, stderr) => {
                     if (error) {
                         console.warn(error);
