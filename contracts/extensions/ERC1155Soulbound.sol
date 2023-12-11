@@ -28,7 +28,6 @@ pragma solidity 0.8.17;
  */
 
 contract ERC1155Soulbound {
-    mapping(address => bool) internal _soulboundAddresses; // mid gas usage
     mapping(address => mapping(uint256 => uint256)) internal _soulbounds; // high gas usage
     mapping(address => bool) internal whitelistAddresses;
 
@@ -75,14 +74,6 @@ contract ERC1155Soulbound {
      */
     function soulboundBalance(address to, uint256 tokenId) external view virtual returns (uint256) {
         return _soulbounds[to][tokenId];
-    }
-
-    /**
-     * @dev Returns if a `address` is soulbound
-     *
-     */
-    function isSoulboundAddress(address to) public view virtual returns (bool) {
-        return _soulboundAddresses[to];
     }
 
     function _updateWhitelistAddress(address _address, bool _isWhitelisted) internal {
@@ -146,20 +137,5 @@ contract ERC1155Soulbound {
             _soulbounds[to][tokenIds[i]] += amounts[i];
         }
         emit SoulboundBatch(to, tokenIds, amounts);
-    }
-
-    /**
-     * @dev Soulbound `address` to save that address  - Custom use cases
-     *
-     * Emits a {SoulboundAddress} event.
-     *
-     * Requirements:
-     *
-     * - `to` cannot be the zero address.
-     */
-    function _soulboundAddress(address to) internal virtual {
-        require(to != address(0), "ERC1155Soulbound: Bound to the zero address not allowed");
-        _soulboundAddresses[to] = true;
-        emit SoulboundAddress(to);
     }
 }

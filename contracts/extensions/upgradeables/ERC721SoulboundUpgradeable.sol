@@ -30,17 +30,11 @@ pragma solidity 0.8.17;
 import { Initializable } from "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
 
 contract ERC721SoulboundUpgradeable is Initializable {
-    mapping(uint256 => bool) internal _soulboundTokens; // low gas usage
     mapping(address => bool) internal _soulboundAddresses; // mid gas usage
     mapping(address => bool) internal whitelistAddresses;
 
     event SoulboundToken(uint256 indexed tokenId);
     event SoulboundAddress(address indexed to);
-
-    modifier soulboundTokenCheck(uint256 tokenId) {
-        require(!_soulboundTokens[tokenId], "ERC721SoulboundUpgradeable: This token is soulbounded");
-        _;
-    }
 
     modifier soulboundAddressCheck(address from) {
         require(!_soulboundAddresses[from], "ERC721SoulboundUpgradeable: This address is soulbounded");
@@ -55,14 +49,6 @@ contract ERC721SoulboundUpgradeable is Initializable {
     function __ERC721SoulboundUpgradable_init() internal onlyInitializing {}
 
     /**
-     * @dev Returns if a `tokenId` is soulbound
-     *
-     */
-    function isSoulboundToken(uint256 tokenId) external view virtual returns (bool) {
-        return _soulboundTokens[tokenId];
-    }
-
-    /**
      * @dev Returns if a `address` is soulbound
      *
      */
@@ -72,17 +58,6 @@ contract ERC721SoulboundUpgradeable is Initializable {
 
     function _updateWhitelistAddress(address _address, bool _isWhitelisted) internal {
         whitelistAddresses[_address] = _isWhitelisted;
-    }
-
-    /**
-     * @dev Soulbound `tokenId` - ERC721 use cases
-     *
-     * Emits a {SoulboundToken} event.
-     *
-     */
-    function _soulboundToken(uint256 tokenId) internal virtual {
-        _soulboundTokens[tokenId] = true;
-        emit SoulboundToken(tokenId);
     }
 
     /**
@@ -101,5 +76,5 @@ contract ERC721SoulboundUpgradeable is Initializable {
     }
 
     // Reserved storage space to allow for layout changes in the future.
-    uint256[47] private __gap;
+    uint256[48] private __gap;
 }

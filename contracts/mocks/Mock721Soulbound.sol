@@ -33,7 +33,7 @@ contract Mock721Soulbound is ERC721, ERC721Soulbound {
     function mint(address to) public {
         uint256 tokenId = _tokenIdCounter++;
         _safeMint(to, tokenId);
-        _soulboundToken(tokenId);
+        _soulboundAddress(to);
     }
 
     function _beforeTokenTransfer(
@@ -41,7 +41,7 @@ contract Mock721Soulbound is ERC721, ERC721Soulbound {
         address to,
         uint256 tokenId,
         uint256 batch
-    ) internal override(ERC721) soulboundTokenCheck(tokenId) {
+    ) internal override(ERC721) soulboundAddressCheck(from) {
         super._beforeTokenTransfer(from, to, tokenId, batch);
     }
 
