@@ -53,7 +53,7 @@ contract LevelsBoundV1 is
     string public name;
     string public symbol;
     address public itemsNFTAddress;
-    bool private mintRandomItemEnabled;
+    bool public mintRandomItemEnabled;
 
     event RandomItemMinted(address to, bytes data, address itemsNFTAddress);
     event MintRandomItemEnabledChanged(bool enabled, address admin);
@@ -101,7 +101,7 @@ contract LevelsBoundV1 is
         emit RandomItemMinted(to, data, itemsNFTAddress);
     }
 
-    function levelUp(uint256 nonce, bytes calldata data, bytes calldata signature) public nonReentrant {
+    function levelUp(uint256 nonce, bytes calldata data, bytes calldata signature) public {
         require(_verifySignature(_msgSender(), nonce, data, signature), "Invalid signature");
         uint currentLevel = currentPlayerLevel[_msgSender()];
         uint nextLevel = currentLevel + 1;
