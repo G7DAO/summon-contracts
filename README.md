@@ -1,6 +1,6 @@
 # Achievo Contracts
 
-![Version](https://img.shields.io/badge/version-0.9.2-brightgreen)
+![Version](https://img.shields.io/badge/version-0.15.1-brightgreen)
 
 ![Achievo](https://achievo.xyz/hero.png)
 
