@@ -1,10 +1,11 @@
 import { TENANT, CONTRACT_TYPE } from '../constructor-args';
 import { NETWORK_TYPE, NetworkName } from '../network';
+import { DeploymentContract } from '../../types/deployment-type';
 
 const chain = NetworkName.ZkSync;
 const networkType = NETWORK_TYPE.MAINNET;
 
-export const ZKSYNC_MAINNET_CONTRACTS = [
+export const ZKSYNC_MAINNET_CONTRACTS: DeploymentContract[] = [
     {
         contractName: 'AvatarBound',
         type: CONTRACT_TYPE.Avatars,
@@ -121,5 +122,16 @@ export const ZKSYNC_MAINNET_CONTRACTS = [
                 args: ['MINTER_ROLE', 'CONTRACT_AvatarBoundV1'],
             },
         ],
+    },
+    {
+        contractName: 'ERC20Paymaster',
+        type: CONTRACT_TYPE.Paymaster,
+        chain,
+        networkType,
+        tenants: [TENANT.ZkSync],
+        verify: true,
+        upgradable: false,
+        dependencies: ['AvatarBoundV1'],
+        functionCalls: [],
     },
 ];
