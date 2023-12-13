@@ -1,8 +1,10 @@
-import fs from 'fs';
 import crypto from 'crypto';
-import glob from 'glob';
+import fs from 'fs';
 import path from 'path';
+
 import { ACHIEVO_TMP_DIR } from '@constants/deployments';
+import glob from 'glob';
+import { DeploymentContract } from 'types/deployment-type';
 
 const CHECKSUM_PATH = `${ACHIEVO_TMP_DIR}/checksums`;
 
@@ -46,7 +48,7 @@ export function readChecksumFromFile(contractName: string, tenant: string): stri
     return checksum;
 }
 
-export function isAlreadyDeployed(contract: any, tenant: string): boolean {
+export function isAlreadyDeployed(contract: DeploymentContract, tenant: string): boolean {
     const checksum = generateChecksumFromFile(contract.contractName);
     const previousChecksum = readChecksumFromFile(contract.contractName, tenant);
     if (!previousChecksum) {
