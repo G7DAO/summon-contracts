@@ -292,13 +292,7 @@ task('deploy', 'Deploys Smart contracts')
                     console.log(
                         `[CALLING]: ${deployedContract.contractName} on ${deployedContract.chain} for ${tenant} `
                     );
-                    const _call = await prepFunctionOne(
-                        hre,
-                        call as FunctionCall,
-                        // network as string,
-                        tenant,
-                        deployment.contractAddress
-                    );
+                    const _call = await prepFunctionOne(hre, call, tenant, deployment.contractAddress);
                     calls.push(_call);
                 }
             }
