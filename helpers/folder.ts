@@ -1,5 +1,7 @@
-import { ACHIEVO_TMP_DIR } from '@constants/deployments';
 import fs from 'fs';
+import path from 'path';
+
+import { ABI_PATH, ABI_PATH_ZK, ACHIEVO_TMP_DIR } from '@constants/deployments';
 
 export const createDefaultFolders = (chain: string) => {
     if (!chain) {
@@ -32,4 +34,32 @@ export const createDefaultFolders = (chain: string) => {
     if (!fs.existsSync(`${ACHIEVO_TMP_DIR}/deployments/${chain}/upgradeables`)) {
         fs.mkdirSync(`${ACHIEVO_TMP_DIR}/deployments/${chain}/upgradeables`);
     }
+};
+
+export const getFilePath = (folderPath: string, fileName: string): string | null => {
+    const entries = fs.readdirSync(folderPath, { withFileTypes: true });
+
+    for (const entry of entries) {
+        const resolvedPath = path.resolve(folderPath, entry.name);
+
+        if (entry.isDirectory()) {
+            const nestedFilePath = getFilePath(resolvedPath, fileName);
+            if (nestedFilePath) return nestedFilePath;
+        } else if (entry.isFile() && entry.name === fileName) {
+            return resolvedPath;
+        }
+    }
+
+    return null;
+};
+
+export const getABIFilePath = (isZkSync: boolean, contractName: string): string | null => {
+    const folder = isZkSync ? ABI_PATH_ZK : ABI_PATH;
+    const abiPath = getFilePath(folder, `${contractName}.json`);
+
+    if (!abiPath) {
+        throw new Error(`File ${contractName}.json not found`);
+    }
+
+    return path.relative('', abiPath);
 };
