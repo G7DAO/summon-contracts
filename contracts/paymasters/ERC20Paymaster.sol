@@ -222,6 +222,10 @@ contract ERC20Paymaster is IPaymaster, Pausable, AccessControl {
         require(success, "Failed to withdraw funds from paymaster.");
     }
 
+    function updateErc20Allowed(address _erc20USDC) external onlyRole(MANAGER_ROLE) {
+        allowedERC20Token = _erc20USDC;
+    }
+
     function withdrawERC20(address _to, uint256 _amount) external onlyRole(MANAGER_ROLE) {
         // send paymaster funds to the owner
         IERC20 token = IERC20(allowedERC20Token);
