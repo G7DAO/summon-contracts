@@ -11,8 +11,11 @@ import getWallet from './getWallet';
 
 // load wallet private key from env file
 const PRIVATE_KEY = process.env.PRIVATE_KEY || '';
+const ENCRYPTION_KEY = process.env.PRIVATE_KEY || '';
 
 if (!PRIVATE_KEY) throw '⛔️ Private key not detected! Add it to the .env file!';
+
+if (!ENCRYPTION_KEY) throw '⛔️ Encryption key not detected! Add it to the .env file!';
 
 export default async function (
     hre: HardhatRuntimeEnvironment,

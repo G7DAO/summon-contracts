@@ -1,20 +1,19 @@
 import fs from 'fs';
 import path from 'path';
 
-import { task, types } from 'hardhat/config';
-
-import { CONTRACTS, ACHIEVO_TMP_DIR, ABI_PATH_ZK, ABI_PATH } from '@constants/deployments';
 import * as ConstructorArgs from '@constants/constructor-args';
-import { log } from '@helpers/logger';
+import { CONTRACTS, ACHIEVO_TMP_DIR, ABI_PATH_ZK, ABI_PATH } from '@constants/deployments';
 import { isAlreadyDeployed, writeChecksumToFile } from '@helpers/checksum';
 import { submitContractDeploymentsToDB, executeFunctionCallBatch } from '@helpers/contract';
+import { createDefaultFolders } from '@helpers/folder';
+import { log } from '@helpers/logger';
+import getWallet from 'deploy/getWallet';
+import { task, types } from 'hardhat/config';
+import { HardhatRuntimeEnvironment } from 'hardhat/types';
+import { Deployment, DeploymentContract, FunctionCall } from 'types/deployment-type';
 
 import deploy from '../deploy/deploy';
 import deployUpgradeable from '../deploy/deployUpgradeable';
-import getWallet from 'deploy/getWallet';
-import { HardhatRuntimeEnvironment } from 'hardhat/types';
-import { Deployment, FunctionCall } from 'types/deployment-type';
-import { createDefaultFolders } from '@helpers/folder';
 
 const PRIVATE_KEY = process.env.PRIVATE_KEY || '';
 const wallet = getWallet(PRIVATE_KEY);
@@ -22,9 +21,9 @@ const wallet = getWallet(PRIVATE_KEY);
 export async function populateParam(
     hre: HardhatRuntimeEnvironment,
     param: string | number | boolean,
-    chain: string,
     tenant?: string
 ): Promise<string | number | boolean> {
+    const chain = hre.network.name;
     let value = param;
 
     if (param === 'DEPLOYER_WALLET') {
@@ -39,16 +38,21 @@ export async function populateParam(
         const contractName = param.substring('CONTRACT_'.length);
         // Do something with contractName
         const contract = CONTRACTS.find((c) => c.contractName === contractName && c.chain === chain);
-        const _isAlreadyDeployed = isAlreadyDeployed(contract, tenant);
+
+        if (!contract) {
+            throw new Error(`Contract ${contractName} not found`);
+        }
+
+        const goingToDeploy = !isAlreadyDeployed(contract, tenant as string);
 
         const filePathDeploymentLatest = path.resolve(
-            `${ACHIEVO_TMP_DIR}/${contract.chain}/${contract.upgradable ? 'upgradeables/' : ''}deployments-${
-                contract.type
+            `${ACHIEVO_TMP_DIR}/${contract?.chain}/${contract?.upgradable ? 'upgradeables/' : ''}deployments-${
+                contract?.type
             }-${tenant}-latest.json`
         );
 
         let deploymentPayload;
-        if (_isAlreadyDeployed) {
+        if (!goingToDeploy) {
             log(`SKIPPED: ${contract?.contractName} Already deployed, using existing deploymentPayload`);
 
             const deploymentPayloadContent = fs.readFileSync(filePathDeploymentLatest, 'utf8');
@@ -56,21 +60,23 @@ export async function populateParam(
         } else {
             const abiPath = `${hre.network.zksync ? ABI_PATH_ZK : ABI_PATH}${
                 contract?.upgradable ? 'upgradeables/' : ''
-            }${contract.contractName}.sol/${contract.contractName}.json`;
+            }${contract?.contractName}.sol/${contract?.contractName}.json`;
 
             const constructorArgs = await populateConstructorArgs(
                 hre,
+                // @ts-ignore-next-line
                 ConstructorArgs[`${contract.contractName}Args`][`${contract?.networkType}`],
-                tenant
+                tenant as string
             );
 
-            if (contract.upgradable) {
+            if (contract?.upgradable) {
                 deploymentPayload = await deployUpgradeable(hre, contract, constructorArgs, abiPath, tenant);
             } else {
                 deploymentPayload = await deploy(hre, contract, constructorArgs, abiPath, tenant);
             }
 
-            writeChecksumToFile(contract.contractName, tenant);
+            // @ts-ignore-next-line
+            writeChecksumToFile(contract?.contractName, tenant);
 
             // Convert deployments to JSON
             const deploymentsJson = JSON.stringify(deploymentPayload, null, 2);
@@ -88,25 +94,24 @@ export async function populateParam(
 export async function populateConstructorArgs(
     hre: HardhatRuntimeEnvironment,
     constructorArgs: Record<string, string | number | boolean>,
-    chain: string,
     tenant: string
 ) {
     for (const key in constructorArgs) {
-        constructorArgs[key] = await populateParam(hre, constructorArgs[key], chain, tenant);
+        constructorArgs[key] = await populateParam(hre, constructorArgs[key], tenant);
     }
     return constructorArgs;
 }
 
 const deployOne = async (
     hre: HardhatRuntimeEnvironment,
-    contract,
-    chain: string,
-    tenant: string
+    contract: DeploymentContract,
+    tenant: string,
+    force: boolean
 ): Promise<Deployment> => {
     const constructorArgs = await populateConstructorArgs(
         hre,
-        ConstructorArgs[`${contract.contractName}Args`][`${contract?.networkType}`],
-        chain,
+        // @ts-ignore-next-line
+        ConstructorArgs[`${contract.contractName}Args`][`${contract.networkType}`],
         tenant
     );
 
@@ -114,7 +119,10 @@ const deployOne = async (
         contract.contractName
     }.sol/${contract.contractName}.json`;
 
-    const _isAlreadyDeployed = isAlreadyDeployed(contract, tenant);
+    let goingToDeploy = true;
+    if (!force) {
+        goingToDeploy = !isAlreadyDeployed(contract, tenant);
+    }
 
     const filePathDeploymentLatest = path.resolve(
         `${ACHIEVO_TMP_DIR}/${contract.chain}/${contract.upgradable ? 'upgradeables/' : ''}deployments-${
@@ -123,9 +131,9 @@ const deployOne = async (
     );
 
     let deploymentPayload: Deployment;
-    if (_isAlreadyDeployed) {
+    // TODO: this is wrong, this must save the artifact and ask if the bytecode is the same, instead of just the file, tech-debt @max
+    if (!goingToDeploy) {
         log(`SKIPPED: ${contract?.contractName} Already deployed, using existing deploymentPayload`);
-
         const deploymentPayloadContent = fs.readFileSync(filePathDeploymentLatest, 'utf8');
         deploymentPayload = JSON.parse(deploymentPayloadContent);
     } else {
@@ -135,7 +143,7 @@ const deployOne = async (
             deploymentPayload = await deploy(hre, contract, constructorArgs, abiPath, tenant);
         }
 
-        writeChecksumToFile(contract.contractName as string, tenant);
+        writeChecksumToFile(contract.contractName as unknown as string, tenant);
 
         // Convert deployments to JSON
         const deploymentsJson = JSON.stringify(deploymentPayload, null, 2);
@@ -150,13 +158,12 @@ const deployOne = async (
 const prepFunctionOne = async (
     hre: HardhatRuntimeEnvironment,
     call: FunctionCall,
-    chain: string,
     tenant: string,
     contractAddress: string
 ) => {
     const populatedArgs = [];
     for (const arg of call.args) {
-        populatedArgs.push(await populateParam(hre, arg, chain, tenant));
+        populatedArgs.push(await populateParam(hre, arg, tenant));
     }
 
     return {
@@ -164,8 +171,6 @@ const prepFunctionOne = async (
         args: populatedArgs,
         contractAddress,
     };
-
-    // call the function
 };
 
 const getDependencies = (contractName: string, chain: string) => {
@@ -190,27 +195,32 @@ const getDependencies = (contractName: string, chain: string) => {
 
 task('deploy', 'Deploys Smart contracts')
     .addParam('contractname', 'Contract Name you want to deploy', undefined, types.string)
-    .addParam('chain', 'Chain you want to deploy to, e.g., zkSyncTest, mainnet, etc', undefined, types.string)
-    .setAction(async (_args: { contractname: string; chain: string }, hre: HardhatRuntimeEnvironment) => {
-        const { contractname: contractName, chain } = _args;
-        createDefaultFolders(chain); // create default folders
+    .addFlag('force', 'Do you want to force deploy?')
+    .setAction(async (_args: { contractname: string; force: boolean }, hre: HardhatRuntimeEnvironment) => {
+        const { contractname: contractName, force } = _args;
+        const network = hre.network.name;
+        log('args :\n');
+        log(`contractName : ${contractName}\n`);
+        log(`network : ${network}\n`);
+        log(`force : ${force}\n`);
+        createDefaultFolders(network); // create default folders
 
         if (!contractName) {
             throw new Error('Contract name is required');
         }
 
-        const contract = CONTRACTS.find((d) => d.contractName === contractName && d.chain === chain);
+        const contract = CONTRACTS.find((d) => d.contractName === contractName && d.chain === network);
 
         if (!contract) {
-            throw new Error(`Contract ${contractName} not found on ${chain}`);
+            throw new Error(`Contract ${contractName} not found on ${network}`);
         }
 
-        const contractsToDeploy = getDependencies(contract.contractName, chain);
+        const contractsToDeploy = getDependencies(contract.contractName, network);
 
         for (const tenant of contract.tenants) {
             log('=====================================================');
             log('=====================================================');
-            log(`[STARTING] Deploy ${contractName} contract on ${chain} for [[${tenant}]]`);
+            log(`[STARTING] Deploy ${contractName} contract on ${network} for [[${tenant}]]`);
             log(`Contracts to deploy: ${contractsToDeploy.length}`);
             for (const contract of contractsToDeploy) {
                 log(`contract: ${contract}`);
@@ -225,15 +235,17 @@ task('deploy', 'Deploys Smart contracts')
             const deployments: Deployment[] = [];
 
             for (const contractName of contractsToDeploy) {
-                const contract = CONTRACTS.find((d) => d.contractName === contractName && d.chain === chain);
-                log(`[PREPPING] Get ready to deploy ${contractName} contract on ${chain} for ${tenant}`);
+                const contract = CONTRACTS.find(
+                    (d) => d.contractName === contractName && d.chain === network
+                ) as unknown as DeploymentContract;
+                log(`[PREPPING] Get ready to deploy ${contractName} contract on ${network} for ${tenant}`);
 
-                const deployment = await deployOne(hre, contract, chain, tenant);
+                const deployment = await deployOne(hre, contract, tenant, force);
                 deployments.push(deployment);
             }
 
             log('=====================================================');
-            log(`[DONE] ${contractName} contract deployment on ${chain} for [[${tenant}]] is DONE!`);
+            log(`[DONE] ${contractName} contract deployment on ${network} for [[${tenant}]] is DONE!`);
             log('=====================================================');
             log('\n');
 
@@ -269,7 +281,7 @@ task('deploy', 'Deploys Smart contracts')
                 log(`Deployments saved to ${filePath}`);
 
                 const deployedContract = CONTRACTS.find(
-                    (d) => d.type === deployment.type && d.chain === chain && d.upgradable === deployment.upgradable
+                    (d) => d.type === deployment.type && d.chain === network && d.upgradable === deployment.upgradable
                 );
 
                 if (!deployedContract?.functionCalls || deployedContract?.functionCalls?.length === 0) {
@@ -280,13 +292,7 @@ task('deploy', 'Deploys Smart contracts')
                     console.log(
                         `[CALLING]: ${deployedContract.contractName} on ${deployedContract.chain} for ${tenant} `
                     );
-                    const _call = await prepFunctionOne(
-                        hre,
-                        call as FunctionCall,
-                        chain as string,
-                        tenant,
-                        deployment.contractAddress
-                    );
+                    const _call = await prepFunctionOne(hre, call, tenant, deployment.contractAddress);
                     calls.push(_call);
                 }
             }

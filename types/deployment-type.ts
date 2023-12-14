@@ -1,4 +1,5 @@
 import { NETWORK_TYPE } from '@constants/network';
+import { CONTRACT_TYPE, TENANT } from '@constants/constructor-args';
 
 export interface Deployment {
     contractAbi: any;
@@ -19,11 +20,23 @@ export interface Deployment {
     upgradable: boolean;
 }
 
+export interface DeploymentContract {
+    contractName: string;
+    type: CONTRACT_TYPE;
+    chain: string;
+    networkType: NETWORK_TYPE;
+    tenants: TENANT[];
+    verify: boolean;
+    upgradable: boolean;
+    dependencies: string[];
+    functionCalls?: FunctionCall[];
+}
+
 export interface FunctionCall {
     contractName: string;
     functionName: string;
     args: (string | number | boolean)[];
-    contractAddress: string;
+    contractAddress?: string;
 }
 export interface DeploymentMap {
     [key: string]: {
@@ -31,6 +44,3 @@ export interface DeploymentMap {
         explorerUrl: string;
     };
 }
-
-export type Tenant = 'Game7' | 'zkSync';
-export type ContractType = 'Avatars' | 'Items' | 'Levels';

@@ -8,6 +8,7 @@ export enum CONTRACT_TYPE {
     Items = 'Items',
     Levels = 'Levels',
     OpenMint = 'OpenMint',
+    Paymaster = 'Paymaster',
 }
 
 export interface ConstructorArgs {
@@ -29,7 +30,7 @@ export const SoulboundBadgesArgs: Soulbound1155Args = {
         name: 'SoulboundBadges',
         symbol: 'SBB',
         baseURI: 'https://summon.mypinata.cloud/ipfs',
-        contractURI: 'https://summon.mypinata.cloud/ipfs/{contractURIHASH}',
+        contractURI: 'https://summon.mypinata.cloud/ipfs/QmSDbeNWVY2CGUuLHni689L5eSrSG3iZHyTRZJWXX7GpjS',
         maxPerMint: 1,
         isPaused: true,
         devWallet: 'DEPLOYER_WALLET',
@@ -39,7 +40,7 @@ export const SoulboundBadgesArgs: Soulbound1155Args = {
         name: 'MyBadges',
         symbol: 'MSB',
         baseURI: 'https://summon.mypinata.cloud/ipfs',
-        contractURI: 'https://summon.mypinata.cloud/ipfs/{contractURIHASH}',
+        contractURI: 'https://summon.mypinata.cloud/ipfs/QmSDbeNWVY2CGUuLHni689L5eSrSG3iZHyTRZJWXX7GpjS',
         maxPerMint: 1,
         isPaused: false,
         devWallet: 'DEPLOYER_WALLET',
@@ -52,7 +53,7 @@ export const ItemBoundArgs: Soulbound1155Args = {
         name: 'Item',
         symbol: 'ISB',
         baseURI: 'https://summon.mypinata.cloud/ipfs',
-        contractURI: 'https://summon.mypinata.cloud/ipfs/{contractURIHASH}',
+        contractURI: 'https://summon.mypinata.cloud/ipfs/QmSDbeNWVY2CGUuLHni689L5eSrSG3iZHyTRZJWXX7GpjS',
         maxPerMint: 1,
         isPaused: false,
         devWallet: 'DEPLOYER_WALLET',
@@ -61,7 +62,7 @@ export const ItemBoundArgs: Soulbound1155Args = {
         name: 'MyItems',
         symbol: 'MI',
         baseURI: 'https://summon.mypinata.cloud/ipfs',
-        contractURI: 'https://summon.mypinata.cloud/ipfs/{contractURIHASH}',
+        contractURI: 'https://summon.mypinata.cloud/ipfs/QmSDbeNWVY2CGUuLHni689L5eSrSG3iZHyTRZJWXX7GpjS',
         maxPerMint: 1,
         isPaused: false,
         devWallet: 'DEPLOYER_WALLET',
@@ -94,7 +95,8 @@ export const AvatarBoundArgs = {
         // TODO: change this for the final gateway
         baseURI: 'https://summon.mypinata.cloud/ipfs',
         // TODO: change this for the final gateway
-        contractURI: 'https://apricot-persistent-duck-562.mypinata.cloud/{contractURIHASH}',
+        contractURI:
+            'https://apricot-persistent-duck-562.mypinata.cloud/QmSDbeNWVY2CGUuLHni689L5eSrSG3iZHyTRZJWXX7GpjS',
         revealURI: 'FILL_ME',
         devWallet: 'DEPLOYER_WALLET',
         gatingNftAddress: '0xD07180c423F9B8CF84012aA28cC174F3c433EE29',
@@ -108,7 +110,7 @@ export const AvatarBoundArgs = {
         name: 'AvatarBound',
         symbol: 'AVB',
         baseURI: 'https://summon.mypinata.cloud/ipfs',
-        contractURI: 'https://summon.mypinata.cloud/ipfs/{contractURIHASH}',
+        contractURI: 'https://summon.mypinata.cloud/ipfs/QmSDbeNWVY2CGUuLHni689L5eSrSG3iZHyTRZJWXX7GpjS',
         revealURI: 'QmZnvSyeKRQxWwcofVmq41BNCtHbBmomk8Ny8mtGRTjtzS',
         devWallet: 'DEPLOYER_WALLET',
         gatingNftAddress: '0xcc1eBf6Dbb9fF24A745D1cc7F6DC3eeDa5f9fa71',
@@ -171,5 +173,31 @@ export const OpenMintArgs = {
         symbol: 'OM_TEST',
         baseTokenURI: 'https://achievo.mypinata.cloud/ipfs/',
         unrevealedURI: 'QmPrH4o5q9uB8DGiFd9oDSuT3TnLiCzsFXT4wXQbpUr6c8',
+    },
+};
+
+const USDC_PRICE_ID_TESTNET = '0x41f3625971ca2ed2263e78573fe5ce23e13d2558ed3f2e47ab0f84fb9e7ae722';
+const ETH_PRICE_ID_TESTNET = '0xca80ba6dc32e08d06f1aa886011eed1d77c77be9eb761cc10d72b7d0a2fd57a6';
+const PYTH_ORACLE_ADDRESS_TESTNET = '0x8739d5024B5143278E2b15Bd9e7C26f6CEc658F1';
+
+const USDC_PRICE_ID_MAINNET = '0xeaa020c61cc479712813461ce153894a96a6c00b21ed0cfc2798d1f9a9e9c94a';
+const ETH_PRICE_ID_MAINNET = '0xff61491a931112ddf1bd8147cd1b641375f79f5825126d665480874634fd0ace';
+const PYTH_ORACLE_ADDRESS_MAINNET = '0xf087c864AEccFb6A2Bf1Af6A0382B0d0f6c5D834';
+
+const MAINNET_ERC20_USDC = '0x3355df6D4c9C3035724Fd0e3914dE96A5a83aaf4';
+const TESTNET_ERC20_OUSDC = '0x566E28550926619cd25BD030729b78a108851050';
+
+export const ERC20PaymasterArgs = {
+    MAINNET: {
+        erc20Address: MAINNET_ERC20_USDC,
+        usdcPriceId: USDC_PRICE_ID_MAINNET,
+        ethPriceId: ETH_PRICE_ID_MAINNET,
+        pythOracleAddress: PYTH_ORACLE_ADDRESS_MAINNET,
+    },
+    TESTNET: {
+        erc20Address: TESTNET_ERC20_OUSDC,
+        usdcPriceId: USDC_PRICE_ID_TESTNET,
+        ethPriceId: ETH_PRICE_ID_TESTNET,
+        pythOracleAddress: PYTH_ORACLE_ADDRESS_TESTNET,
     },
 };
