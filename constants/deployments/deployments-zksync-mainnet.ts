@@ -132,6 +132,22 @@ export const ZKSYNC_MAINNET_CONTRACTS: DeploymentContract[] = [
         verify: true,
         upgradable: false,
         dependencies: ['AvatarBoundV1'],
-        functionCalls: [],
+        functionCalls: [
+            {
+                contractName: 'ERC20Paymaster',
+                functionName: 'addRecipient',
+                args: ['CONTRACT_AvatarBoundV1'],
+            },
+            {
+                contractName: 'ERC20Paymaster',
+                functionName: 'addRecipient',
+                args: ['CONTRACT_ItemBoundV1'],
+            },
+            {
+                contractName: 'ERC20Paymaster',
+                functionName: 'addRecipient',
+                args: ['CONTRACT_LevelsBoundV1'],
+            },
+        ],
     },
 ];
