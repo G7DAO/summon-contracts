@@ -29,8 +29,8 @@ export const SoulboundBadgesArgs: Soulbound1155Args = {
     MAINNET: {
         name: 'SoulboundBadges',
         symbol: 'SBB',
-        baseURI: 'https://summon.mypinata.cloud/ipfs',
-        contractURI: 'https://summon.mypinata.cloud/ipfs/QmSDbeNWVY2CGUuLHni689L5eSrSG3iZHyTRZJWXX7GpjS',
+        baseURI: 'https://achievo.mypinata.cloud/ipfs',
+        contractURI: 'https://achievo.mypinata.cloud/ipfs/QmSDbeNWVY2CGUuLHni689L5eSrSG3iZHyTRZJWXX7GpjS',
         maxPerMint: 1,
         isPaused: true,
         devWallet: 'DEPLOYER_WALLET',
@@ -39,8 +39,8 @@ export const SoulboundBadgesArgs: Soulbound1155Args = {
     TESTNET: {
         name: 'MyBadges',
         symbol: 'MSB',
-        baseURI: 'https://summon.mypinata.cloud/ipfs',
-        contractURI: 'https://summon.mypinata.cloud/ipfs/QmSDbeNWVY2CGUuLHni689L5eSrSG3iZHyTRZJWXX7GpjS',
+        baseURI: 'https://achievo.mypinata.cloud/ipfs',
+        contractURI: 'https://achievo.mypinata.cloud/ipfs/QmSDbeNWVY2CGUuLHni689L5eSrSG3iZHyTRZJWXX7GpjS',
         maxPerMint: 1,
         isPaused: false,
         devWallet: 'DEPLOYER_WALLET',
@@ -52,8 +52,8 @@ export const ItemBoundArgs: Soulbound1155Args = {
     MAINNET: {
         name: 'Item',
         symbol: 'ISB',
-        baseURI: 'https://summon.mypinata.cloud/ipfs',
-        contractURI: 'https://summon.mypinata.cloud/ipfs/QmSDbeNWVY2CGUuLHni689L5eSrSG3iZHyTRZJWXX7GpjS',
+        baseURI: 'https://achievo.mypinata.cloud/ipfs',
+        contractURI: 'https://achievo.mypinata.cloud/ipfs/QmSDbeNWVY2CGUuLHni689L5eSrSG3iZHyTRZJWXX7GpjS',
         maxPerMint: 1,
         isPaused: false,
         devWallet: 'DEPLOYER_WALLET',
@@ -61,8 +61,8 @@ export const ItemBoundArgs: Soulbound1155Args = {
     TESTNET: {
         name: 'MyItems',
         symbol: 'MI',
-        baseURI: 'https://summon.mypinata.cloud/ipfs',
-        contractURI: 'https://summon.mypinata.cloud/ipfs/QmSDbeNWVY2CGUuLHni689L5eSrSG3iZHyTRZJWXX7GpjS',
+        baseURI: 'https://achievo.mypinata.cloud/ipfs',
+        contractURI: 'https://achievo.mypinata.cloud/ipfs/QmSDbeNWVY2CGUuLHni689L5eSrSG3iZHyTRZJWXX7GpjS',
         maxPerMint: 1,
         isPaused: false,
         devWallet: 'DEPLOYER_WALLET',
@@ -75,14 +75,14 @@ export const NFTGatingArgs = {
     MAINNET: {
         name: 'Achievo NFT Gating Admin Access',
         symbol: 'AchievoAdmin',
-        baseURI: 'https://summon.mypinata.cloud/ipfs/',
+        baseURI: 'https://achievo.mypinata.cloud/ipfs/',
         adminTokenURI: 'QmYXxrc4vQgfoRtUhdBCbSbxpeJJs2eEtcgiuXvzxdWfJD',
         superAdminTokenURI: 'Qmay3Db9KFTwoQJ2nB6vTxuHfDX5CQgxmy97NKvcN45B6F',
     },
     TESTNET: {
         name: 'Achievo NFT Gating Admin Access',
         symbol: 'AchievoAdmin',
-        baseURI: 'https://summon.mypinata.cloud/ipfs/',
+        baseURI: 'https://achievo.mypinata.cloud/ipfs/',
         adminTokenURI: 'QmYXxrc4vQgfoRtUhdBCbSbxpeJJs2eEtcgiuXvzxdWfJD',
         superAdminTokenURI: 'Qmay3Db9KFTwoQJ2nB6vTxuHfDX5CQgxmy97NKvcN45B6F',
     },
@@ -93,7 +93,7 @@ export const AvatarBoundArgs = {
         name: 'AvatarBound',
         symbol: 'AVB',
         // TODO: change this for the final gateway
-        baseURI: 'https://summon.mypinata.cloud/ipfs',
+        baseURI: 'https://achievo.mypinata.cloud/ipfs',
         // TODO: change this for the final gateway
         contractURI:
             'https://apricot-persistent-duck-562.mypinata.cloud/QmSDbeNWVY2CGUuLHni689L5eSrSG3iZHyTRZJWXX7GpjS',
@@ -109,8 +109,8 @@ export const AvatarBoundArgs = {
     TESTNET: {
         name: 'AvatarBound',
         symbol: 'AVB',
-        baseURI: 'https://summon.mypinata.cloud/ipfs',
-        contractURI: 'https://summon.mypinata.cloud/ipfs/QmSDbeNWVY2CGUuLHni689L5eSrSG3iZHyTRZJWXX7GpjS',
+        baseURI: 'https://achievo.mypinata.cloud/ipfs',
+        contractURI: 'https://achievo.mypinata.cloud/ipfs/QmSDbeNWVY2CGUuLHni689L5eSrSG3iZHyTRZJWXX7GpjS',
         revealURI: 'QmZnvSyeKRQxWwcofVmq41BNCtHbBmomk8Ny8mtGRTjtzS',
         devWallet: 'DEPLOYER_WALLET',
         gatingNftAddress: '0xcc1eBf6Dbb9fF24A745D1cc7F6DC3eeDa5f9fa71',
@@ -166,13 +166,13 @@ export const OpenMintArgs = {
         name: 'OpenMint-TEST',
         symbol: 'OM_TEST',
         baseTokenURI: 'https://achievo.mypinata.cloud/ipfs/',
-        unrevealedURI: 'QmPrH4o5q9uB8DGiFd9oDSuT3TnLiCzsFXT4wXQbpUr6c8',
+        unrevealedURI: 'Qmc7c9tNVaaAbTM5RMgdPY7MjPoLDFfPw8BAv3WuBUrebe',
     },
     TESTNET: {
         name: 'OpenMint-TEST',
         symbol: 'OM_TEST',
         baseTokenURI: 'https://achievo.mypinata.cloud/ipfs/',
-        unrevealedURI: 'QmPrH4o5q9uB8DGiFd9oDSuT3TnLiCzsFXT4wXQbpUr6c8',
+        unrevealedURI: 'Qmc7c9tNVaaAbTM5RMgdPY7MjPoLDFfPw8BAv3WuBUrebe',
     },
 };
 
