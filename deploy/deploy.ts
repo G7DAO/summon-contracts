@@ -8,6 +8,7 @@ import { Deployer } from '@matterlabs/hardhat-zksync-deploy';
 import { HardhatRuntimeEnvironment } from 'hardhat/types';
 
 import getWallet from './getWallet';
+import { getFilePath } from '@helpers/folder';
 
 // load wallet private key from env file
 const PRIVATE_KEY = process.env.PRIVATE_KEY || '';
@@ -43,16 +44,30 @@ export default async function (
     const deployer = new Deployer(hre, wallet);
     const artifact = await deployer.loadArtifact(contract.contractName);
 
-    const achievoContract = await deployer.deploy(artifact, [`${name}${tenant}`, ...restArgs]);
+    let achievoContract;
+    if (name) {
+        achievoContract = await deployer.deploy(artifact, [`${name}${tenant}`, ...restArgs]);
+    } else {
+        achievoContract = await deployer.deploy(artifact, restArgs);
+    }
+
     await achievoContract.waitForDeployment();
     // Show the contract info.
     const contractAddress = await achievoContract.getAddress();
 
+    const contractPath = getFilePath('contracts', `${contract.contractName}.sol`);
+
+    if (!contractPath) {
+        throw new Error(`File ${contract.contractName}.sol not found`);
+    }
+
+    const relativeContractPath = path.relative('', contractPath);
+
     if (contract.verify) {
         await hre.run('verify:verify', {
             address: contractAddress,
-            contract: `contracts/${contract.contractName}.sol:${contract.contractName}`,
-            constructorArguments: [`${name}${tenant}`, ...restArgs],
+            contract: `${relativeContractPath}:${contract.contractName}`,
+            constructorArguments: name ? [`${name}${tenant}`, ...restArgs] : restArgs,
         });
     }
 

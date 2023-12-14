@@ -5,7 +5,7 @@ import * as ConstructorArgs from '@constants/constructor-args';
 import { CONTRACTS, ACHIEVO_TMP_DIR, ABI_PATH_ZK, ABI_PATH } from '@constants/deployments';
 import { isAlreadyDeployed, writeChecksumToFile } from '@helpers/checksum';
 import { submitContractDeploymentsToDB, executeFunctionCallBatch } from '@helpers/contract';
-import { createDefaultFolders } from '@helpers/folder';
+import { createDefaultFolders, getABIFilePath } from '@helpers/folder';
 import { log } from '@helpers/logger';
 import getWallet from 'deploy/getWallet';
 import { task, types } from 'hardhat/config';
@@ -58,9 +58,7 @@ export async function populateParam(
             const deploymentPayloadContent = fs.readFileSync(filePathDeploymentLatest, 'utf8');
             deploymentPayload = JSON.parse(deploymentPayloadContent);
         } else {
-            const abiPath = `${hre.network.zksync ? ABI_PATH_ZK : ABI_PATH}${
-                contract?.upgradable ? 'upgradeables/' : ''
-            }${contract?.contractName}.sol/${contract?.contractName}.json`;
+            const abiPath = getABIFilePath(hre.network.zksync, contract.contractName);
 
             const constructorArgs = await populateConstructorArgs(
                 hre,
@@ -115,9 +113,7 @@ const deployOne = async (
         tenant
     );
 
-    const abiPath = `${hre.network.zksync ? ABI_PATH_ZK : ABI_PATH}${contract?.upgradable ? 'upgradeables/' : ''}${
-        contract.contractName
-    }.sol/${contract.contractName}.json`;
+    const abiPath = getABIFilePath(hre.network.zksync, contract.contractName);
 
     let goingToDeploy = true;
     if (!force) {
