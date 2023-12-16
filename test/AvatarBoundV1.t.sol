@@ -274,7 +274,7 @@ contract AvatarBoundV1Test is StdCheats, Test {
 
     function testPauseUnpause() public {
         vm.startPrank(minterWallet.addr);
-        avatarBound.grantRole(avatarBound.PAUSER_ROLE(), address(this));
+        avatarBound.grantRole(avatarBound.MANAGER_ROLE(), address(this));
         avatarBound.grantRole(avatarBound.MINTER_ROLE(), address(this));
         avatarBound.setBaseSkin(1, "ipfs://{hash}/1.glb");
         avatarBound.pause();

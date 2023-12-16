@@ -1,26 +1,20 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.17;
 
-/**                        .;c;.
- *                      'lkXWWWXk:.
- *                    .dXMMMMMMMMWXkc'.
- *               .,..  ,dKNMMMMMMMMMMN0o,.
- *             ,dKNXOo'. .;dKNMMMMMMMMMWN0c.
- *            .kMMMMMWN0o;. .,lkNMMMMMMWKd,
- *            .OMMMMMMMMMN0x:. .'ckXN0o;. ..
- *             :ONMMMMMMMMMMWKxc. .... .:d0d.
- *              .'cxKWMMMMMMMMMWXkl,.  'o0Nk.
- *            .:l,  .:dKWMMMMMMMMMMNOl,. .;,
- *            .OMKl.   .;oOXWMMMMMMMMMN0o;.
- *            .co;.  .;,. .'lOXWMMMMMMMMMWKl.
- *               .:dOXWWKd;.  'ckXWMMMMMMMMk.
- *             .c0WMMMMMMMWKd:.  .:xXWMMMWNo.
- *             ,oONWMMMMMMMMWXOl.  .;okxl'
- *                .,lkXWMMMMMMMMWXO:
- *                    .ckKWMMMMMWKd;
- *                       .:d0X0d:.
- *                          ...
- */
+// MMMMNkc. .,oKWMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMM
+// MWXd,.      .cONMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMM
+// Wx'           .cKMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMM
+// x.              ;KMMMMMMMMMMMMWKxlcclxKWMMMMMMMMWKxlc::::::::ckWMMXd:cOMMMMMMMMKo:oKMMWkccxWMWKdccccccccccccoKMM0l:l0MMMMMMMMMWkc:dXMMMXkoc::::::clxKW
+// '                lNMMMMMMMMMMNd.  ..  .dNMMMMMMNd.  ..........oWMM0'  oWMMMMMMMk. .kMMN:  :XMNl   .''''''''';OMMX:  ,0MMMMMMMWk.  oNMWk'  ........  .o
+// .                :XMMMMMMMMMWd. .o00l. .dWMMMMWx. .o0KKXKKXXXXNMMM0'  oNWWWWWWWk. .kMMN:  :NMNc  .kNNNNNNNNNNWMMM0,  :XMMMMMM0,  cXMMO.  c0KKKKXK0o.
+// , .lkxo.  ;dkx,  oWMMMMMMMMWk.  oNMMNo. .kWMMMWl  ;KMMMMMMMMMMMMMM0'  .',',,,,,.  .kMMN:  :NMNc   ,:;;;;;;dXMMMMMMO.  lNMMMMK:  ;KMMMd. .OMMMMMMMMX;
+// :  :KWX: .xMWx. .kMMMMMMMMM0'  cXMMMMXc  ,0MMMWl  ;KMMMMMMMMMMMMMM0'  .',,'',,,.  .kMMN:  :NMNc   ',,;;,;;oXMMMMMMWx. .dWMMNc  'OMMMMd. .OMMMMMMMMX;
+// l   ,0WO:oXWd.  .OMMMMMMMMK;  ;KMMMMMMK;  :KMMWd. .o0KKXXKKKXXNMMM0'  oNWWWWWWWx. .kMMN:  :XMNc  .kNNNNNNNNWWWMMMMMNo. .dK0l. .xWMMMMO. .c0KKKXXK0o.
+// o    dWMWWMK,   '0MMMMMMMXc  'OMMMMMMMMO'  cNMMNd.  ..........oWMM0'  oWMMMMMMMk. .kMMN:  :XMNl   .,,,,,,,,,:0MMMMMMNo.  ..  'xWMMMMMWx'   .......  .o
+// O'   :XMMMMk.   cXMMMMMMMKo:cOWMMMMMMMMWOc:oKMMMWKxlc::::::::ckWMMXd:cOMMMMMMMMKo:oKMMWkc:xWMWKoc:::::::::::lKMMMMMMMWKdlcclxXWMMMMMMMMXkoc::::::clxKW
+// WO;  'OMMMWl  .oXMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMM
+// MMNx'.dWMMK;.:0WMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMM
+// MMMM0cdNMM0cdNMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMM
 
 /**
  * Authors: Omar Garcia <omar@game7.io>
@@ -146,7 +140,10 @@ contract GameSummary1155 is ERC1155, AccessControl, Pausable, ReentrancyGuard {
         return playerGameData[player][tokenId];
     }
 
-    function getPlayerGamesData(address player, uint256[] calldata tokenIds) public view returns (PlayerGameData[] memory) {
+    function getPlayerGamesData(
+        address player,
+        uint256[] calldata tokenIds
+    ) public view returns (PlayerGameData[] memory) {
         PlayerGameData[] memory playerGamesData = new PlayerGameData[](tokenIds.length);
         for (uint i = 0; i < tokenIds.length; i++) {
             playerGamesData[i] = playerGameData[player][tokenIds[i]];
@@ -182,7 +179,11 @@ contract GameSummary1155 is ERC1155, AccessControl, Pausable, ReentrancyGuard {
         emit PlayerGameSummaryUpdated(player, tokenId, playerData.achievementsMinted);
     }
 
-    function adminUpdatePlayerAchievements(address player, uint256 tokenId, uint256 newAchievements) public onlyRole(DEFAULT_ADMIN_ROLE) whenNotPaused {
+    function adminUpdatePlayerAchievements(
+        address player,
+        uint256 tokenId,
+        uint256 newAchievements
+    ) public onlyRole(DEFAULT_ADMIN_ROLE) whenNotPaused {
         addPlayerAchievements(player, tokenId, newAchievements);
     }
 
@@ -208,11 +209,25 @@ contract GameSummary1155 is ERC1155, AccessControl, Pausable, ReentrancyGuard {
         require(storeId > 0, "StoreId must be greater than 0");
         uint256 tokenId = getTokenId(storeId, gameId);
         require(commonGameSummaries[tokenId].tokenId != tokenId, "CommonGameSummary already exists");
-        commonGameSummaries[tokenId] = GameSummary(tokenId, storeId, gameId, name, onChainURI, externalURI, totalAchievements);
+        commonGameSummaries[tokenId] = GameSummary(
+            tokenId,
+            storeId,
+            gameId,
+            name,
+            onChainURI,
+            externalURI,
+            totalAchievements
+        );
         emit GameSummaryMinted(msg.sender, tokenId, totalAchievements);
     }
 
-    function mintGameSummary(address player, uint256 gameId, uint256 achievementsLength, uint256 storeId, bool soulbound) private {
+    function mintGameSummary(
+        address player,
+        uint256 gameId,
+        uint256 achievementsLength,
+        uint256 storeId,
+        bool soulbound
+    ) private {
         require(storeId > 0, "StoreId must be greater than 0");
         require(gameId > 0, "GameId must be greater than 0");
         uint256 tokenId = getTokenId(storeId, gameId);
@@ -250,7 +265,10 @@ contract GameSummary1155 is ERC1155, AccessControl, Pausable, ReentrancyGuard {
         uint256[] calldata newAchievements
     ) public onlyRole(DEFAULT_ADMIN_ROLE) whenNotPaused {
         require(players.length == tokenIds.length, "The players and tokenIds arrays must have the same length");
-        require(players.length == newAchievements.length, "The players and newAchievements arrays must have the same length");
+        require(
+            players.length == newAchievements.length,
+            "The players and newAchievements arrays must have the same length"
+        );
         for (uint i = 0; i < players.length; i++) {
             addPlayerAchievements(players[i], tokenIds[i], newAchievements[i]);
         }
@@ -263,7 +281,10 @@ contract GameSummary1155 is ERC1155, AccessControl, Pausable, ReentrancyGuard {
         bytes memory signature
     ) public nonReentrant onlyOnceSignature(signature) whenNotPaused {
         require(verifySignature(nonce, signature), "Invalid signature");
-        require(tokenIds.length == newAchievements.length, "The players and newAchievements arrays must have the same length");
+        require(
+            tokenIds.length == newAchievements.length,
+            "The players and newAchievements arrays must have the same length"
+        );
         for (uint i = 0; i < tokenIds.length; i++) {
             addPlayerAchievements(msg.sender, tokenIds[i], newAchievements[i]);
         }
@@ -278,7 +299,10 @@ contract GameSummary1155 is ERC1155, AccessControl, Pausable, ReentrancyGuard {
     ) public onlyRole(MINTER_ROLE) whenNotPaused {
         require(players.length == gameIds.length, "The players and gameIds arrays must have the same length");
         require(players.length == storeIds.length, "The players and storeIds arrays must have the same length");
-        require(players.length == achievementsLength.length, "The players and newAchievements arrays must have the same length");
+        require(
+            players.length == achievementsLength.length,
+            "The players and newAchievements arrays must have the same length"
+        );
         for (uint i = 0; i < players.length; i++) {
             mintGameSummary(players[i], gameIds[i], achievementsLength[i], storeIds[i], soulbounds[i]);
         }
@@ -293,14 +317,23 @@ contract GameSummary1155 is ERC1155, AccessControl, Pausable, ReentrancyGuard {
     ) public whenNotPaused onlyOnceSignature(signature) nonReentrant {
         require(verifySignature(nonce, signature), "Invalid signature");
         require(gameIds.length == storeIds.length, "The gameIds and storeIds arrays must have the same length");
-        require(gameIds.length == newAchievements.length, "The gameIds and newAchievements arrays must have the same length");
+        require(
+            gameIds.length == newAchievements.length,
+            "The gameIds and newAchievements arrays must have the same length"
+        );
 
         for (uint i = 0; i < gameIds.length; i++) {
             mintGameSummary(msg.sender, gameIds[i], newAchievements[i], storeIds[i], true);
         }
     }
 
-    function safeTransferFrom(address _from, address _to, uint256 _id, uint256 _amount, bytes memory _data) public virtual override {
+    function safeTransferFrom(
+        address _from,
+        address _to,
+        uint256 _id,
+        uint256 _amount,
+        bytes memory _data
+    ) public virtual override {
         require(playerGameData[_from][_id].tokenId != 0, "Token doesn't exists");
         require(!playerGameData[_from][_id].soulbounded, "You can't transfer this token");
         PlayerGameData storage playerData = playerGameData[_from][_id];
@@ -313,7 +346,13 @@ contract GameSummary1155 is ERC1155, AccessControl, Pausable, ReentrancyGuard {
         super.safeTransferFrom(_from, _to, _id, _amount, _data);
     }
 
-    function safeBatchTransferFrom(address _from, address _to, uint256[] memory _ids, uint256[] memory _amounts, bytes memory _data) public virtual override {
+    function safeBatchTransferFrom(
+        address _from,
+        address _to,
+        uint256[] memory _ids,
+        uint256[] memory _amounts,
+        bytes memory _data
+    ) public virtual override {
         for (uint i = 0; i < _ids.length; i++) {
             require(playerGameData[_from][_ids[i]].tokenId != 0, "Token doesn't exists");
             require(!playerGameData[_from][_ids[i]].soulbounded, "You can't transfer this token");
