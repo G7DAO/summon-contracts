@@ -63,14 +63,15 @@ export async function populateParam(
             const constructorArgs = await populateConstructorArgs(
                 hre,
                 // @ts-ignore-next-line
+                // eslint-disable-next-line @typescript-eslint/no-unsafe-argument
                 ConstructorArgs[`${contract.contractName}Args`][`${contract?.networkType}`],
                 tenant as string
             );
 
             if (contract?.upgradable) {
-                deploymentPayload = await deployUpgradeable(hre, contract, constructorArgs, abiPath, tenant);
+                deploymentPayload = await deployUpgradeable(hre, contract, constructorArgs, abiPath as string, tenant);
             } else {
-                deploymentPayload = await deploy(hre, contract, constructorArgs, abiPath, tenant);
+                deploymentPayload = await deploy(hre, contract, constructorArgs, abiPath as string, tenant);
             }
 
             // @ts-ignore-next-line
@@ -109,6 +110,7 @@ const deployOne = async (
     const constructorArgs = await populateConstructorArgs(
         hre,
         // @ts-ignore-next-line
+        // eslint-disable-next-line @typescript-eslint/no-unsafe-argument
         ConstructorArgs[`${contract.contractName}Args`][`${contract.networkType}`],
         tenant
     );
@@ -134,9 +136,9 @@ const deployOne = async (
         deploymentPayload = JSON.parse(deploymentPayloadContent);
     } else {
         if (contract.upgradable) {
-            deploymentPayload = await deployUpgradeable(hre, contract, constructorArgs, abiPath, tenant);
+            deploymentPayload = await deployUpgradeable(hre, contract, constructorArgs, abiPath as string, tenant);
         } else {
-            deploymentPayload = await deploy(hre, contract, constructorArgs, abiPath, tenant);
+            deploymentPayload = await deploy(hre, contract, constructorArgs, abiPath as string, tenant);
         }
 
         writeChecksumToFile(contract.contractName as unknown as string, tenant);
@@ -195,10 +197,10 @@ task('deploy', 'Deploys Smart contracts')
     .setAction(async (_args: { contractname: string; force: boolean }, hre: HardhatRuntimeEnvironment) => {
         const { contractname: contractName, force } = _args;
         const network = hre.network.name;
-        log('args :\n');
-        log(`contractName : ${contractName}\n`);
-        log(`network : ${network}\n`);
-        log(`force : ${force}\n`);
+        log('└─ args :\n');
+        log(`   ├─ contractName : ${contractName}\n`);
+        log(`   ├─ network : ${network}\n`);
+        log(`   └─ force : ${force}\n`);
         createDefaultFolders(network); // create default folders
 
         if (!contractName) {

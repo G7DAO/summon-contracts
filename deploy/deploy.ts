@@ -41,7 +41,9 @@ export default async function (
     const restArgs = Object.values(rest);
 
     const wallet = getWallet(PRIVATE_KEY);
+    // TODO: THIS ONLY WORK FOR ZKSYNC ... NEED TO BE FIXED to work in all the EVMS
     const deployer = new Deployer(hre, wallet);
+    // TODO: THIS ONLY WORK FOR ZKSYNC ... NEED TO BE FIXED to work in all the EVMS
     const artifact = await deployer.loadArtifact(contract.contractName);
 
     let achievoContract;
@@ -63,13 +65,14 @@ export default async function (
 
     const relativeContractPath = path.relative('', contractPath);
 
-    if (contract.verify) {
-        await hre.run('verify:verify', {
-            address: contractAddress,
-            contract: `${relativeContractPath}:${contract.contractName}`,
-            constructorArguments: name ? [`${name}${tenant}`, ...restArgs] : restArgs,
-        });
-    }
+    // TODO: enable this after the zkSync verify lib is fixed or check if We have an error
+    // if (contract.verify) {
+    //     await hre.run('verify:verify', {
+    //         address: contractAddress,
+    //         contract: `${relativeContractPath}:${contract.contractName}`,
+    //         constructorArguments: name ? [`${name}${tenant}`, ...restArgs] : restArgs,
+    //     });
+    // }
 
     // Read the file content
     const abiContent = fs.readFileSync(path.resolve(abiPath), 'utf8');
