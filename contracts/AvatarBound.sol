@@ -6,26 +6,20 @@ pragma solidity 0.8.17;
  * Co-Authors: Max <max@game7.io>(https://github.com/vasinl124)
  */
 
-/**                        .;c;.
- *                      'lkXWWWXk:.
- *                    .dXMMMMMMMMWXkc'.
- *               .,..  ,dKNMMMMMMMMMMN0o,.
- *             ,dKNXOo'. .;dKNMMMMMMMMMWN0c.
- *            .kMMMMMWN0o;. .,lkNMMMMMMWKd,
- *            .OMMMMMMMMMN0x:. .'ckXN0o;. ..
- *             :ONMMMMMMMMMMWKxc. .... .:d0d.
- *              .'cxKWMMMMMMMMMWXkl,.  'o0Nk.
- *            .:l,  .:dKWMMMMMMMMMMNOl,. .;,
- *            .OMKl.   .;oOXWMMMMMMMMMN0o;.
- *            .co;.  .;,. .'lOXWMMMMMMMMMWKl.
- *               .:dOXWWKd;.  'ckXWMMMMMMMMk.
- *             .c0WMMMMMMMWKd:.  .:xXWMMMWNo.
- *             ,oONWMMMMMMMMWXOl.  .;okxl'
- *                .,lkXWMMMMMMMMWXO:
- *                    .ckKWMMMMMWKd;
- *                       .:d0X0d:.
- *                          ...
- */
+// MMMMNkc. .,oKWMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMM
+// MWXd,.      .cONMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMM
+// Wx'           .cKMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMM
+// x.              ;KMMMMMMMMMMMMWKxlcclxKWMMMMMMMMWKxlc::::::::ckWMMXd:cOMMMMMMMMKo:oKMMWkccxWMWKdccccccccccccoKMM0l:l0MMMMMMMMMWkc:dXMMMXkoc::::::clxKW
+// '                lNMMMMMMMMMMNd.  ..  .dNMMMMMMNd.  ..........oWMM0'  oWMMMMMMMk. .kMMN:  :XMNl   .''''''''';OMMX:  ,0MMMMMMMWk.  oNMWk'  ........  .o
+// .                :XMMMMMMMMMWd. .o00l. .dWMMMMWx. .o0KKXKKXXXXNMMM0'  oNWWWWWWWk. .kMMN:  :NMNc  .kNNNNNNNNNNWMMM0,  :XMMMMMM0,  cXMMO.  c0KKKKXK0o.
+// , .lkxo.  ;dkx,  oWMMMMMMMMWk.  oNMMNo. .kWMMMWl  ;KMMMMMMMMMMMMMM0'  .',',,,,,.  .kMMN:  :NMNc   ,:;;;;;;dXMMMMMMO.  lNMMMMK:  ;KMMMd. .OMMMMMMMMX;
+// :  :KWX: .xMWx. .kMMMMMMMMM0'  cXMMMMXc  ,0MMMWl  ;KMMMMMMMMMMMMMM0'  .',,'',,,.  .kMMN:  :NMNc   ',,;;,;;oXMMMMMMWx. .dWMMNc  'OMMMMd. .OMMMMMMMMX;
+// l   ,0WO:oXWd.  .OMMMMMMMMK;  ;KMMMMMMK;  :KMMWd. .o0KKXXKKKXXNMMM0'  oNWWWWWWWx. .kMMN:  :XMNc  .kNNNNNNNNWWWMMMMMNo. .dK0l. .xWMMMMO. .c0KKKXXK0o.
+// o    dWMWWMK,   '0MMMMMMMXc  'OMMMMMMMMO'  cNMMNd.  ..........oWMM0'  oWMMMMMMMk. .kMMN:  :XMNl   .,,,,,,,,,:0MMMMMMNo.  ..  'xWMMMMMWx'   .......  .o
+// O'   :XMMMMk.   cXMMMMMMMKo:cOWMMMMMMMMWOc:oKMMMWKxlc::::::::ckWMMXd:cOMMMMMMMMKo:oKMMWkc:xWMWKoc:::::::::::lKMMMMMMMWKdlcclxXWMMMMMMMMXkoc::::::clxKW
+// WO;  'OMMMWl  .oXMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMM
+// MMNx'.dWMMK;.:0WMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMM
+// MMMM0cdNMM0cdNMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMM
 
 import { ERC721 } from "@openzeppelin/contracts/token/ERC721/ERC721.sol";
 import { ERC721URIStorage } from "@openzeppelin/contracts/token/ERC721/extensions/ERC721URIStorage.sol";
@@ -51,8 +45,8 @@ contract AvatarBound is
     ReentrancyGuard
 {
     bytes32 public constant MINTER_ROLE = keccak256("MINTER_ROLE");
-    bytes32 public constant URI_SETTER_ROLE = keccak256("URI_SETTER_ROLE");
-    bytes32 public constant PAUSER_ROLE = keccak256("PAUSER_ROLE");
+    bytes32 public constant DEV_CONFIG_ROLE = keccak256("DEV_CONFIG_ROLE");
+    bytes32 public constant MANAGER_ROLE = keccak256("MANAGER_ROLE");
     uint256 private _tokenIdCounter;
     uint256 public _baseSkinCounter;
     uint256 private _specialItemId;
@@ -115,8 +109,9 @@ contract AvatarBound is
         bool _mintSpecialItemEnabled
     ) ERC721(_name, _symbol) {
         _grantRole(DEFAULT_ADMIN_ROLE, developerAdmin);
+        _grantRole(DEV_CONFIG_ROLE, developerAdmin);
         _grantRole(MINTER_ROLE, developerAdmin);
-        _grantRole(PAUSER_ROLE, developerAdmin);
+        _grantRole(MANAGER_ROLE, developerAdmin);
         _addWhitelistSigner(developerAdmin);
 
         baseTokenURI = _baseTokenURI;
@@ -234,15 +229,15 @@ contract AvatarBound is
         return _verifySignature(to, nonce, data, signature);
     }
 
-    function pause() public onlyRole(PAUSER_ROLE) {
+    function pause() public onlyRole(MANAGER_ROLE) {
         _pause();
     }
 
-    function unpause() public onlyRole(PAUSER_ROLE) {
+    function unpause() public onlyRole(MANAGER_ROLE) {
         _unpause();
     }
 
-    function batchSetTokenURI(uint256[] memory tokenIds, string[] memory tokenURIs) public onlyRole(URI_SETTER_ROLE) {
+    function batchSetTokenURI(uint256[] memory tokenIds, string[] memory tokenURIs) public onlyRole(DEV_CONFIG_ROLE) {
         require(tokenIds.length == tokenURIs.length, "TokenIds and URIs length mismatch");
         for (uint256 i = 0; i < tokenIds.length; i++) {
             require(_ownerOf(tokenIds[i]) != address(0), "URI set of nonexistent token");
@@ -267,36 +262,36 @@ contract AvatarBound is
         return allBaseSkins;
     }
 
-    function getSpecialId() public view onlyRole(DEFAULT_ADMIN_ROLE) returns (uint256) {
+    function getSpecialId() public view onlyRole(DEV_CONFIG_ROLE) returns (uint256) {
         return _specialItemId;
     }
 
-    function getDefaultItem() public view onlyRole(DEFAULT_ADMIN_ROLE) returns (uint256) {
+    function getDefaultItem() public view onlyRole(DEV_CONFIG_ROLE) returns (uint256) {
         return defaultItemId;
     }
 
-    function setContractURI(string memory _contractURI) public onlyRole(DEFAULT_ADMIN_ROLE) {
+    function setContractURI(string memory _contractURI) public onlyRole(DEV_CONFIG_ROLE) {
         contractURI = _contractURI;
         emit ContractURIChanged(_contractURI, _msgSender());
     }
 
-    function setTokenURI(uint256 tokenId, string memory tokenURL) public onlyRole(DEFAULT_ADMIN_ROLE) {
+    function setTokenURI(uint256 tokenId, string memory tokenURL) public onlyRole(DEV_CONFIG_ROLE) {
         require(_ownerOf(tokenId) != address(0), "URI set of nonexistent token");
         _setTokenURI(tokenId, tokenURL);
         emit URIChanged(tokenId, tokenURL, _msgSender());
     }
 
-    function setBaseURI(string memory _baseTokenURI) public onlyRole(DEFAULT_ADMIN_ROLE) {
+    function setBaseURI(string memory _baseTokenURI) public onlyRole(DEV_CONFIG_ROLE) {
         baseTokenURI = _baseTokenURI;
         emit BaseURIChanged(baseTokenURI, _msgSender());
     }
 
-    function setRevealURI(string memory _revealURI) public onlyRole(DEFAULT_ADMIN_ROLE) {
+    function setRevealURI(string memory _revealURI) public onlyRole(DEV_CONFIG_ROLE) {
         revealURI = _revealURI;
         emit RevealURIChanged(_revealURI, _msgSender());
     }
 
-    function setBaseSkin(uint256 baseSkinId, string memory uri) public onlyRole(DEFAULT_ADMIN_ROLE) {
+    function setBaseSkin(uint256 baseSkinId, string memory uri) public onlyRole(DEV_CONFIG_ROLE) {
         if (bytes(baseSkins[baseSkinId]).length == 0) {
             _baseSkinCounter++;
         }
@@ -304,61 +299,61 @@ contract AvatarBound is
         emit SkinBaseChanged(baseSkinId, uri, _msgSender());
     }
 
-    function setMintRandomItemEnabled(bool _mintRandomItemEnabled) public onlyRole(DEFAULT_ADMIN_ROLE) {
+    function setMintRandomItemEnabled(bool _mintRandomItemEnabled) public onlyRole(DEV_CONFIG_ROLE) {
         require(_mintRandomItemEnabled != mintRandomItemEnabled, "Minting random item already set");
         mintRandomItemEnabled = _mintRandomItemEnabled;
         emit MintRandomItemEnabledChanged(_mintRandomItemEnabled, _msgSender());
     }
 
-    function setMintDefaultItemEnabled(bool _mintDefaultItemEnabled) public onlyRole(DEFAULT_ADMIN_ROLE) {
+    function setMintDefaultItemEnabled(bool _mintDefaultItemEnabled) public onlyRole(DEV_CONFIG_ROLE) {
         require(_mintDefaultItemEnabled != mintDefaultItemEnabled, "Minting default item already set");
         mintDefaultItemEnabled = _mintDefaultItemEnabled;
         emit MintDefaultItemEnabledChanged(_mintDefaultItemEnabled, _msgSender());
     }
 
-    function setItemsNFTAddress(address _newAddress) public onlyRole(DEFAULT_ADMIN_ROLE) {
+    function setItemsNFTAddress(address _newAddress) public onlyRole(DEV_CONFIG_ROLE) {
         itemsNFTAddress = _newAddress;
         emit ItemsNFTAddressChanged(_newAddress, _msgSender());
     }
 
-    function setNftGatingAddress(address _newAddress) public onlyRole(DEFAULT_ADMIN_ROLE) {
+    function setNftGatingAddress(address _newAddress) public onlyRole(DEV_CONFIG_ROLE) {
         gatingNFTAddress = _newAddress;
         emit GatingNFTAddressChanged(_newAddress, _msgSender());
     }
 
-    function setSpecialItemId(uint256 _newId) public onlyRole(DEFAULT_ADMIN_ROLE) {
+    function setSpecialItemId(uint256 _newId) public onlyRole(DEV_CONFIG_ROLE) {
         require(_newId != _specialItemId, "Special Item ID already has this value");
         require(defaultItemId != _newId, "Special Item ID can't have the same value that the Default Item ID");
         _specialItemId = _newId;
         emit SpecialItemIdChanged(_newId, _msgSender());
     }
 
-    function setDefaultItemId(uint256 _newId) public onlyRole(DEFAULT_ADMIN_ROLE) {
+    function setDefaultItemId(uint256 _newId) public onlyRole(DEV_CONFIG_ROLE) {
         require(_newId != defaultItemId, "Same value");
         require(_specialItemId != _newId, "Default Item Id must be different that Special Item Id");
         defaultItemId = _newId;
         emit DefaultItemIdChanged(_newId, _msgSender());
     }
 
-    function setMintNftGatingEnabled(bool _mintNftGatingEnabled) public onlyRole(DEFAULT_ADMIN_ROLE) {
+    function setMintNftGatingEnabled(bool _mintNftGatingEnabled) public onlyRole(DEV_CONFIG_ROLE) {
         require(_mintNftGatingEnabled != mintNftGatingEnabled, "NFT gating already set");
         mintNftGatingEnabled = _mintNftGatingEnabled;
         emit MintNftGatingEnabledChanged(_mintNftGatingEnabled, _msgSender());
     }
 
-    function setMintSpecialItemEnabled(bool _mintSpecialItemEnabled) public onlyRole(DEFAULT_ADMIN_ROLE) {
+    function setMintSpecialItemEnabled(bool _mintSpecialItemEnabled) public onlyRole(DEV_CONFIG_ROLE) {
         require(_mintSpecialItemEnabled != mintSpecialItemEnabled, "NFT gating already set");
         mintSpecialItemEnabled = _mintSpecialItemEnabled;
         emit MintSpecialItemEnabledChanged(_mintSpecialItemEnabled, _msgSender());
     }
 
-    function setMintNftWithoutGatingEnabled(bool _mintNftWithoutGatingEnabled) public onlyRole(DEFAULT_ADMIN_ROLE) {
+    function setMintNftWithoutGatingEnabled(bool _mintNftWithoutGatingEnabled) public onlyRole(DEV_CONFIG_ROLE) {
         require(_mintNftWithoutGatingEnabled != mintNftWithoutGatingEnabled, "NFT without gating already set");
         mintNftWithoutGatingEnabled = _mintNftWithoutGatingEnabled;
         emit MintNftWithoutGatingEnabledChanged(_mintNftWithoutGatingEnabled, _msgSender());
     }
 
-    function setRevealNftGatingEnabled(bool _revealNftGatingEnabled) public onlyRole(DEFAULT_ADMIN_ROLE) {
+    function setRevealNftGatingEnabled(bool _revealNftGatingEnabled) public onlyRole(DEV_CONFIG_ROLE) {
         require(_revealNftGatingEnabled != revealNftGatingEnabled, "NFT without gating already set");
         revealNftGatingEnabled = _revealNftGatingEnabled;
         emit EnabledRevealNftGatingEnabledChanged(_revealNftGatingEnabled, _msgSender());
@@ -405,11 +400,20 @@ contract AvatarBound is
         return super.supportsInterface(interfaceId);
     }
 
-    function addWhitelistSigner(address _signer) external onlyRole(DEFAULT_ADMIN_ROLE) {
+    function addWhitelistSigner(address _signer) external onlyRole(DEV_CONFIG_ROLE) {
         _addWhitelistSigner(_signer);
     }
 
-    function removeWhitelistSigner(address signer) external onlyRole(DEFAULT_ADMIN_ROLE) {
+    function removeWhitelistSigner(address signer) external onlyRole(DEV_CONFIG_ROLE) {
         _removeWhitelistSigner(signer);
+    }
+
+    function _decodeData(bytes calldata _data) private view returns (uint256[] memory) {
+        uint256[] memory itemIds = abi.decode(_data, (uint256[]));
+        return itemIds;
+    }
+
+    function decodeData(bytes calldata _data) public view onlyRole(DEV_CONFIG_ROLE) returns (uint256[] memory) {
+        return _decodeData(_data);
     }
 }

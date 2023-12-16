@@ -33,7 +33,7 @@ export const logExplorerAddress = (chainId: number, address: string) => {
             break;
         }
         case ChainId.ZkSyncTestnet: {
-            log('https://goerli.explorer.zksync.io/address/' + address);
+            log('https://sepolia.explorer.zksync.io/address/' + address);
             break;
         }
         default: {

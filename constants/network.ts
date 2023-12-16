@@ -17,6 +17,7 @@ export enum ChainId {
     MantleWadsley = 5001,
     Ethereum = 1,
     Goerli = 5,
+    Sepolia = 11155111,
     ZkSync = 324,
     ZkSyncTestnet = 280,
 }
@@ -28,6 +29,7 @@ export enum NetworkName {
     PolygonMumbai = 'polygonMumbai',
     Ethereum = 'mainnet',
     Goerli = 'goerli',
+    Sepolia = 'sepolia',
     Mantle = 'Mantle',
     MantleWadsley = 'MantleWadsley',
     ZkSync = 'zkSync',
@@ -54,10 +56,11 @@ export enum NetworkExplorer {
     PolygonMumbai = 'https://mumbai.polygonscan.com',
     Ethereum = 'https://etherscan.io',
     Goerli = 'https://goerli.etherscan.io',
+    Sepolia = 'https://sepolia.etherscan.io',
     Mantle = 'https://explorer.testnet.mantle.xyz',
     MantleWadsley = 'https://explorer.testnet.mantle.xyz',
     ZkSync = 'https://explorer.zksync.io',
-    ZkSyncTestnet = 'https://goerli.explorer.zksync.io',
+    ZkSyncTestnet = 'https://sepolia.explorer.zksync.io',
 }
 
 export function getTransactionUrl(txHash: string, network: NetworkName): string {
@@ -71,6 +74,7 @@ export function getTransactionUrl(txHash: string, network: NetworkName): string 
 export const rpcUrls = {
     [ChainId.Ethereum]: `https://mainnet.infura.io/v3/${WEB3_INFURA_API_KEY}`,
     [ChainId.Goerli]: `https://goerli.infura.io/v3/${WEB3_INFURA_API_KEY}`,
+    [ChainId.Sepolia]: `https://sepolia.infura.io/v3/${WEB3_INFURA_API_KEY}`,
     [ChainId.Polygon]: 'https://polygon.llamarpc.com',
     [ChainId.PolygonMumbai]: 'https://rpc.ankr.com/polygon_mumbai',
     [ChainId.MantleWadsley]: 'https://rpc.testnet.mantle.xyz',

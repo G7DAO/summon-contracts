@@ -38,10 +38,11 @@ const config: HardhatUserConfig = {
             chainId: ChainId.Ganache,
             timeout: 6000000,
         },
-        Goerli: {
+        // Deprecated
+        Sepolia: {
             accounts: [DEPLOYER_PRIVATE_KEY || PRIVATE_KEY],
-            url: `https://goerli.infura.io/v3/${process.env.INFURA_API_KEY}`,
-            chainId: ChainId.Goerli,
+            url: `https://sepolia.infura.io/v3/${process.env.INFURA_API_KEY}`,
+            chainId: ChainId.Sepolia,
         },
         Ethereum: {
             accounts: [DEPLOYER_PRIVATE_KEY || PRIVATE_KEY],

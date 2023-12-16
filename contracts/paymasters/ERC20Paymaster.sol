@@ -1,6 +1,21 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.17;
 
+// MMMMNkc. .,oKWMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMM
+// MWXd,.      .cONMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMM
+// Wx'           .cKMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMM
+// x.              ;KMMMMMMMMMMMMWKxlcclxKWMMMMMMMMWKxlc::::::::ckWMMXd:cOMMMMMMMMKo:oKMMWkccxWMWKdccccccccccccoKMM0l:l0MMMMMMMMMWkc:dXMMMXkoc::::::clxKW
+// '                lNMMMMMMMMMMNd.  ..  .dNMMMMMMNd.  ..........oWMM0'  oWMMMMMMMk. .kMMN:  :XMNl   .''''''''';OMMX:  ,0MMMMMMMWk.  oNMWk'  ........  .o
+// .                :XMMMMMMMMMWd. .o00l. .dWMMMMWx. .o0KKXKKXXXXNMMM0'  oNWWWWWWWk. .kMMN:  :NMNc  .kNNNNNNNNNNWMMM0,  :XMMMMMM0,  cXMMO.  c0KKKKXK0o.
+// , .lkxo.  ;dkx,  oWMMMMMMMMWk.  oNMMNo. .kWMMMWl  ;KMMMMMMMMMMMMMM0'  .',',,,,,.  .kMMN:  :NMNc   ,:;;;;;;dXMMMMMMO.  lNMMMMK:  ;KMMMd. .OMMMMMMMMX;
+// :  :KWX: .xMWx. .kMMMMMMMMM0'  cXMMMMXc  ,0MMMWl  ;KMMMMMMMMMMMMMM0'  .',,'',,,.  .kMMN:  :NMNc   ',,;;,;;oXMMMMMMWx. .dWMMNc  'OMMMMd. .OMMMMMMMMX;
+// l   ,0WO:oXWd.  .OMMMMMMMMK;  ;KMMMMMMK;  :KMMWd. .o0KKXXKKKXXNMMM0'  oNWWWWWWWx. .kMMN:  :XMNc  .kNNNNNNNNWWWMMMMMNo. .dK0l. .xWMMMMO. .c0KKKXXK0o.
+// o    dWMWWMK,   '0MMMMMMMXc  'OMMMMMMMMO'  cNMMNd.  ..........oWMM0'  oWMMMMMMMk. .kMMN:  :XMNl   .,,,,,,,,,:0MMMMMMNo.  ..  'xWMMMMMWx'   .......  .o
+// O'   :XMMMMk.   cXMMMMMMMKo:cOWMMMMMMMMWOc:oKMMMWKxlc::::::::ckWMMXd:cOMMMMMMMMKo:oKMMWkc:xWMWKoc:::::::::::lKMMMMMMMWKdlcclxXWMMMMMMMMXkoc::::::clxKW
+// WO;  'OMMMWl  .oXMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMM
+// MMNx'.dWMMK;.:0WMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMM
+// MMMM0cdNMM0cdNMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMM
+
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {
     ExecutionResult,
@@ -22,7 +37,7 @@ error AllowanceTooLow(uint256 requiredAllowance);
 
 contract ERC20Paymaster is IPaymaster, Pausable, AccessControl {
     bytes32 public constant MANAGER_ROLE = keccak256("MANAGER_ROLE");
-    bytes32 public constant PAUSER_ROLE = keccak256("MANAGER_ROLE");
+    bytes32 public constant DEV_CONFIG_ROLE = keccak256("DEV_CONFIG_ROLE");
 
     mapping(address => bool) public allowedRecipients;
 
@@ -48,23 +63,20 @@ contract ERC20Paymaster is IPaymaster, Pausable, AccessControl {
         ETHPriceId = _ETHPriceId;
         pyth = IPyth(_pythOracle);
         _setupRole(DEFAULT_ADMIN_ROLE, msg.sender);
-        _setupRole(MANAGER_ROLE, msg.sender);
+        _setupRole(DEV_CONFIG_ROLE, msg.sender);
     }
 
-    function setPriceFeeds(
-        bytes32 _USDCPriceId,
-        bytes32 _ETHPriceId
-    ) public onlyRole(DEFAULT_ADMIN_ROLE) whenNotPaused {
+    function setPriceFeeds(bytes32 _USDCPriceId, bytes32 _ETHPriceId) public onlyRole(DEV_CONFIG_ROLE) whenNotPaused {
         USDCPriceId = _USDCPriceId;
         ETHPriceId = _ETHPriceId;
     }
 
-    function setUsePyth(bool _usePyth) public onlyRole(DEFAULT_ADMIN_ROLE) whenNotPaused {
+    function setUsePyth(bool _usePyth) public onlyRole(DEV_CONFIG_ROLE) whenNotPaused {
         require(_usePyth != USE_PYTH, "No change");
         USE_PYTH = _usePyth;
     }
 
-    function setPythNetworkCheckAge(uint _pythNetworkCheckAge) public onlyRole(DEFAULT_ADMIN_ROLE) whenNotPaused {
+    function setPythNetworkCheckAge(uint _pythNetworkCheckAge) public onlyRole(DEV_CONFIG_ROLE) whenNotPaused {
         require(_pythNetworkCheckAge > 0, "pythNetworkCheckAge must be greater than 0");
         require(_pythNetworkCheckAge != pythNetworkCheckAge, "No change");
         pythNetworkCheckAge = _pythNetworkCheckAge;
@@ -197,20 +209,20 @@ contract ERC20Paymaster is IPaymaster, Pausable, AccessControl {
         // Refunds are not supported yet.
     }
 
-    function pause() public onlyRole(PAUSER_ROLE) {
+    function pause() public onlyRole(MANAGER_ROLE) {
         _pause();
     }
 
-    function unpause() public onlyRole(PAUSER_ROLE) {
+    function unpause() public onlyRole(MANAGER_ROLE) {
         _unpause();
     }
 
-    function addRecipient(address _recipient) public onlyRole(DEFAULT_ADMIN_ROLE) {
+    function addRecipient(address _recipient) public onlyRole(DEV_CONFIG_ROLE) {
         require(_recipient != address(0), "NonAddressZero");
         allowedRecipients[_recipient] = true;
     }
 
-    function removeRecipient(address _recipient) public onlyRole(DEFAULT_ADMIN_ROLE) {
+    function removeRecipient(address _recipient) public onlyRole(DEV_CONFIG_ROLE) {
         require(_recipient != address(0), "NonAddressZero");
         allowedRecipients[_recipient] = false;
     }
@@ -222,7 +234,7 @@ contract ERC20Paymaster is IPaymaster, Pausable, AccessControl {
         require(success, "Failed to withdraw funds from paymaster.");
     }
 
-    function updateErc20Allowed(address _erc20USDC) external onlyRole(MANAGER_ROLE) {
+    function updateErc20Allowed(address _erc20USDC) external onlyRole(DEV_CONFIG_ROLE) {
         allowedERC20Token = _erc20USDC;
     }
 

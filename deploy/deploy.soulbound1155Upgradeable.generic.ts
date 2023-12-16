@@ -65,7 +65,7 @@ export default async function (
         const contractAddress = await achievoContract.getAddress();
 
         log(
-            `${CONTRACT_TYPE}(${artifact.contractName}) for ${tenant} was deployed to https://goerli.explorer.zksync.io/address/${contractAddress}#contract`
+            `${CONTRACT_TYPE}(${artifact.contractName}) for ${tenant} was deployed to https://sepolia.explorer.zksync.io/address/${contractAddress}#contract`
         );
 
         deployments[tenant] = {

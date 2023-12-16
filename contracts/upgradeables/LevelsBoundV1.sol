@@ -6,26 +6,20 @@ pragma solidity 0.8.17;
  * Co-Authors: Max <max@game7.io>(https://github.com/vasinl124)
  */
 
-/**                        .;c;.
- *                      'lkXWWWXk:.
- *                    .dXMMMMMMMMWXkc'.
- *               .,..  ,dKNMMMMMMMMMMN0o,.
- *             ,dKNXOo'. .;dKNMMMMMMMMMWN0c.
- *            .kMMMMMWN0o;. .,lkNMMMMMMWKd,
- *            .OMMMMMMMMMN0x:. .'ckXN0o;. ..
- *             :ONMMMMMMMMMMWKxc. .... .:d0d.
- *              .'cxKWMMMMMMMMMWXkl,.  'o0Nk.
- *            .:l,  .:dKWMMMMMMMMMMNOl,. .;,
- *            .OMKl.   .;oOXWMMMMMMMMMN0o;.
- *            .co;.  .;,. .'lOXWMMMMMMMMMWKl.
- *               .:dOXWWKd;.  'ckXWMMMMMMMMk.
- *             .c0WMMMMMMMWKd:.  .:xXWMMMWNo.
- *             ,oONWMMMMMMMMWXOl.  .;okxl'
- *                .,lkXWMMMMMMMMWXO:
- *                    .ckKWMMMMMWKd;
- *                       .:d0X0d:.
- *                          ...
- */
+// MMMMNkc. .,oKWMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMM
+// MWXd,.      .cONMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMM
+// Wx'           .cKMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMM
+// x.              ;KMMMMMMMMMMMMWKxlcclxKWMMMMMMMMWKxlc::::::::ckWMMXd:cOMMMMMMMMKo:oKMMWkccxWMWKdccccccccccccoKMM0l:l0MMMMMMMMMWkc:dXMMMXkoc::::::clxKW
+// '                lNMMMMMMMMMMNd.  ..  .dNMMMMMMNd.  ..........oWMM0'  oWMMMMMMMk. .kMMN:  :XMNl   .''''''''';OMMX:  ,0MMMMMMMWk.  oNMWk'  ........  .o
+// .                :XMMMMMMMMMWd. .o00l. .dWMMMMWx. .o0KKXKKXXXXNMMM0'  oNWWWWWWWk. .kMMN:  :NMNc  .kNNNNNNNNNNWMMM0,  :XMMMMMM0,  cXMMO.  c0KKKKXK0o.
+// , .lkxo.  ;dkx,  oWMMMMMMMMWk.  oNMMNo. .kWMMMWl  ;KMMMMMMMMMMMMMM0'  .',',,,,,.  .kMMN:  :NMNc   ,:;;;;;;dXMMMMMMO.  lNMMMMK:  ;KMMMd. .OMMMMMMMMX;
+// :  :KWX: .xMWx. .kMMMMMMMMM0'  cXMMMMXc  ,0MMMWl  ;KMMMMMMMMMMMMMM0'  .',,'',,,.  .kMMN:  :NMNc   ',,;;,;;oXMMMMMMWx. .dWMMNc  'OMMMMd. .OMMMMMMMMX;
+// l   ,0WO:oXWd.  .OMMMMMMMMK;  ;KMMMMMMK;  :KMMWd. .o0KKXXKKKXXNMMM0'  oNWWWWWWWx. .kMMN:  :XMNc  .kNNNNNNNNWWWMMMMMNo. .dK0l. .xWMMMMO. .c0KKKXXK0o.
+// o    dWMWWMK,   '0MMMMMMMXc  'OMMMMMMMMO'  cNMMNd.  ..........oWMM0'  oWMMMMMMMk. .kMMN:  :XMNl   .,,,,,,,,,:0MMMMMMNo.  ..  'xWMMMMMWx'   .......  .o
+// O'   :XMMMMk.   cXMMMMMMMKo:cOWMMMMMMMMWOc:oKMMMWKxlc::::::::ckWMMXd:cOMMMMMMMMKo:oKMMWkc:xWMWKoc:::::::::::lKMMMMMMMWKdlcclxXWMMMMMMMMXkoc::::::clxKW
+// WO;  'OMMMWl  .oXMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMM
+// MMNx'.dWMMK;.:0WMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMM
+// MMMM0cdNMM0cdNMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMM
 
 import { Initializable } from "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
 import { ERC1155Upgradeable } from "@openzeppelin/contracts-upgradeable/token/ERC1155/ERC1155Upgradeable.sol";
@@ -49,6 +43,7 @@ contract LevelsBoundV1 is
 {
     mapping(address => uint256) private currentPlayerLevel;
     bytes32 public constant MINTER_ROLE = keccak256("MINTER_ROLE");
+    bytes32 public constant DEV_CONFIG_ROLE = keccak256("DEV_CONFIG_ROLE");
 
     string public name;
     string public symbol;
@@ -78,7 +73,8 @@ contract LevelsBoundV1 is
         __ERCWhitelistSignatureUpgradeable_init();
 
         _grantRole(DEFAULT_ADMIN_ROLE, developerAdmin);
-        _setupRole(MINTER_ROLE, developerAdmin);
+        _grantRole(MINTER_ROLE, developerAdmin);
+        _grantRole(DEV_CONFIG_ROLE, developerAdmin);
         _addWhitelistSigner(msg.sender);
         name = _name;
         symbol = _symbol;
@@ -118,7 +114,14 @@ contract LevelsBoundV1 is
         _burn(account, tokenId, 1);
     }
 
-    function adminGetAccountLevel(address account) public view onlyRole(DEFAULT_ADMIN_ROLE) returns (uint256) {
+    function adminMintLevel(address account, uint256 level) public onlyRole(MINTER_ROLE) {
+        require(currentPlayerLevel[account] != level, "Account already has a level");
+        currentPlayerLevel[account] = level;
+        _mint(account, level, 1, "");
+        emit LevelUp(level, account);
+    }
+
+    function adminGetAccountLevel(address account) public view onlyRole(DEV_CONFIG_ROLE) returns (uint256) {
         return currentPlayerLevel[account];
     }
 
@@ -126,7 +129,7 @@ contract LevelsBoundV1 is
         return currentPlayerLevel[_msgSender()];
     }
 
-    function setMintRandomItemEnabled(bool _mintRandomItemEnabled) public onlyRole(DEFAULT_ADMIN_ROLE) {
+    function setMintRandomItemEnabled(bool _mintRandomItemEnabled) public onlyRole(DEV_CONFIG_ROLE) {
         require(_mintRandomItemEnabled != mintRandomItemEnabled, "Minting random item already set");
         mintRandomItemEnabled = _mintRandomItemEnabled;
         emit MintRandomItemEnabledChanged(_mintRandomItemEnabled, _msgSender());
@@ -170,11 +173,11 @@ contract LevelsBoundV1 is
         return super.supportsInterface(interfaceId);
     }
 
-    function addWhitelistSigner(address _signer) external onlyRole(DEFAULT_ADMIN_ROLE) {
+    function addWhitelistSigner(address _signer) external onlyRole(DEV_CONFIG_ROLE) {
         _addWhitelistSigner(_signer);
     }
 
-    function removeWhitelistSigner(address signer) external onlyRole(DEFAULT_ADMIN_ROLE) {
+    function removeWhitelistSigner(address signer) external onlyRole(DEV_CONFIG_ROLE) {
         _removeWhitelistSigner(signer);
     }
 }

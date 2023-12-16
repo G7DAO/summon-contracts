@@ -38,6 +38,7 @@ export default async function (
 
     const wallet = getWallet(PRIVATE_KEY);
     const deployer = new Deployer(hre, wallet);
+    // TODO: THIS ONLY WORK FOR ZKSYNC ... NEED TO BE FIXED
     const artifact = await deployer.loadArtifact(contract.contractName);
 
     const achievoContract = await hre.zkUpgrades.deployProxy(deployer.zkWallet as any, artifact, [
