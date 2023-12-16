@@ -49,6 +49,7 @@ contract LevelsBoundV1 is
 {
     mapping(address => uint256) private currentPlayerLevel;
     bytes32 public constant MINTER_ROLE = keccak256("MINTER_ROLE");
+    bytes32 public constant DEV_CONFIG_ROLE = keccak256("DEV_CONFIG_ROLE");
 
     string public name;
     string public symbol;
@@ -78,7 +79,8 @@ contract LevelsBoundV1 is
         __ERCWhitelistSignatureUpgradeable_init();
 
         _grantRole(DEFAULT_ADMIN_ROLE, developerAdmin);
-        _setupRole(MINTER_ROLE, developerAdmin);
+        _grantRole(MINTER_ROLE, developerAdmin);
+        _grantRole(DEV_CONFIG_ROLE, developerAdmin);
         _addWhitelistSigner(msg.sender);
         name = _name;
         symbol = _symbol;
@@ -118,7 +120,14 @@ contract LevelsBoundV1 is
         _burn(account, tokenId, 1);
     }
 
-    function adminGetAccountLevel(address account) public view onlyRole(DEFAULT_ADMIN_ROLE) returns (uint256) {
+    function adminMintLevel(address account, uint256 level) public onlyRole(MINTER_ROLE) {
+        require(currentPlayerLevel[account] != level, "Account already has a level");
+        currentPlayerLevel[account] = level;
+        _mint(account, level, 1, "");
+        emit LevelUp(level, account);
+    }
+
+    function adminGetAccountLevel(address account) public view onlyRole(DEV_CONFIG_ROLE) returns (uint256) {
         return currentPlayerLevel[account];
     }
 
@@ -126,7 +135,7 @@ contract LevelsBoundV1 is
         return currentPlayerLevel[_msgSender()];
     }
 
-    function setMintRandomItemEnabled(bool _mintRandomItemEnabled) public onlyRole(DEFAULT_ADMIN_ROLE) {
+    function setMintRandomItemEnabled(bool _mintRandomItemEnabled) public onlyRole(DEV_CONFIG_ROLE) {
         require(_mintRandomItemEnabled != mintRandomItemEnabled, "Minting random item already set");
         mintRandomItemEnabled = _mintRandomItemEnabled;
         emit MintRandomItemEnabledChanged(_mintRandomItemEnabled, _msgSender());
@@ -170,11 +179,11 @@ contract LevelsBoundV1 is
         return super.supportsInterface(interfaceId);
     }
 
-    function addWhitelistSigner(address _signer) external onlyRole(DEFAULT_ADMIN_ROLE) {
+    function addWhitelistSigner(address _signer) external onlyRole(DEV_CONFIG_ROLE) {
         _addWhitelistSigner(_signer);
     }
 
-    function removeWhitelistSigner(address signer) external onlyRole(DEFAULT_ADMIN_ROLE) {
+    function removeWhitelistSigner(address signer) external onlyRole(DEV_CONFIG_ROLE) {
         _removeWhitelistSigner(signer);
     }
 }

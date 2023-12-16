@@ -55,6 +55,7 @@ contract ItemBound is
 
     bytes32 public constant MINTER_ROLE = keccak256("MINTER_ROLE");
     bytes32 public constant MANAGER_ROLE = keccak256("MANAGER_ROLE");
+    bytes32 public constant DEV_CONFIG_ROLE = keccak256("DEV_CONFIG_ROLE");
 
     string public contractURI;
     string private baseURI;
@@ -91,6 +92,7 @@ contract ItemBound is
         require(devWallet != address(0), "AddressIsZero");
 
         _grantRole(DEFAULT_ADMIN_ROLE, devWallet);
+        _grantRole(DEV_CONFIG_ROLE, devWallet);
         _grantRole(MINTER_ROLE, devWallet);
         _grantRole(MANAGER_ROLE, devWallet);
         _addWhitelistSigner(devWallet);
@@ -169,7 +171,7 @@ contract ItemBound is
         return true;
     }
 
-    function decodeData(bytes calldata _data) public view onlyRole(DEFAULT_ADMIN_ROLE) returns (uint256[] memory) {
+    function decodeData(bytes calldata _data) public view onlyRole(DEV_CONFIG_ROLE) returns (uint256[] memory) {
         return _decodeData(_data);
     }
 
@@ -186,7 +188,7 @@ contract ItemBound is
         _unpause();
     }
 
-    function addNewToken(LibItems.TokenCreate calldata _token) public onlyRole(MANAGER_ROLE) {
+    function addNewToken(LibItems.TokenCreate calldata _token) public onlyRole(DEV_CONFIG_ROLE) {
         if (bytes(_token.tokenUri).length > 0) {
             tokenUris[_token.tokenId] = _token.tokenUri;
         }
@@ -196,13 +198,13 @@ contract ItemBound is
         itemIds.push(_token.tokenId);
     }
 
-    function addNewTokens(LibItems.TokenCreate[] calldata _tokens) external onlyRole(MANAGER_ROLE) {
+    function addNewTokens(LibItems.TokenCreate[] calldata _tokens) external onlyRole(DEV_CONFIG_ROLE) {
         for (uint256 i = 0; i < _tokens.length; i++) {
             addNewToken(_tokens[i]);
         }
     }
 
-    function addNewTokenWithRoyalty(LibItems.TokenCreateWithRoyalty calldata _token) public onlyRole(MANAGER_ROLE) {
+    function addNewTokenWithRoyalty(LibItems.TokenCreateWithRoyalty calldata _token) public onlyRole(DEV_CONFIG_ROLE) {
         if (_token.receiver == address(0)) {
             revert("ReceiverAddressZero");
         }
@@ -220,20 +222,20 @@ contract ItemBound is
 
     function addNewTokensWithRoyalty(
         LibItems.TokenCreateWithRoyalty[] calldata _tokens
-    ) external onlyRole(MANAGER_ROLE) {
+    ) external onlyRole(DEV_CONFIG_ROLE) {
         for (uint256 i = 0; i < _tokens.length; i++) {
             addNewTokenWithRoyalty(_tokens[i]);
         }
     }
 
-    function updateTokenUri(uint256 _tokenId, string calldata _tokenUri) public onlyRole(MANAGER_ROLE) {
+    function updateTokenUri(uint256 _tokenId, string calldata _tokenUri) public onlyRole(DEV_CONFIG_ROLE) {
         tokenUris[_tokenId] = _tokenUri;
     }
 
     function batchUpdateTokenUri(
         uint256[] calldata _tokenIds,
         string[] calldata _tokenUris
-    ) public onlyRole(MANAGER_ROLE) {
+    ) public onlyRole(DEV_CONFIG_ROLE) {
         if (_tokenIds.length != _tokenUris.length) {
             revert("InvalidInput");
         }
@@ -433,19 +435,19 @@ contract ItemBound is
         uint256 tokenId,
         address receiver,
         uint256 feeBasisPoints
-    ) external onlyRole(MANAGER_ROLE) {
+    ) external onlyRole(DEV_CONFIG_ROLE) {
         _setTokenRoyalty(tokenId, receiver, uint96(feeBasisPoints));
     }
 
-    function resetTokenRoyalty(uint256 tokenId) external onlyRole(MANAGER_ROLE) {
+    function resetTokenRoyalty(uint256 tokenId) external onlyRole(DEV_CONFIG_ROLE) {
         _resetTokenRoyalty(tokenId);
     }
 
-    function updateWhitelistAddress(address _address, bool _isWhitelisted) external onlyRole(MANAGER_ROLE) {
+    function updateWhitelistAddress(address _address, bool _isWhitelisted) external onlyRole(DEV_CONFIG_ROLE) {
         _updateWhitelistAddress(_address, _isWhitelisted);
     }
 
-    function setContractURI(string memory _contractURI) public onlyRole(DEFAULT_ADMIN_ROLE) {
+    function setContractURI(string memory _contractURI) public onlyRole(DEV_CONFIG_ROLE) {
         contractURI = _contractURI;
         emit ContractURIChanged(_contractURI);
     }
@@ -455,15 +457,15 @@ contract ItemBound is
         uint256 nonce,
         bytes calldata data,
         bytes calldata signature
-    ) public onlyRole(DEFAULT_ADMIN_ROLE) returns (bool) {
+    ) public onlyRole(DEV_CONFIG_ROLE) returns (bool) {
         return _verifySignature(to, nonce, data, signature);
     }
 
-    function addWhitelistSigner(address _signer) external onlyRole(DEFAULT_ADMIN_ROLE) {
+    function addWhitelistSigner(address _signer) external onlyRole(DEV_CONFIG_ROLE) {
         _addWhitelistSigner(_signer);
     }
 
-    function removeWhitelistSigner(address signer) external onlyRole(DEFAULT_ADMIN_ROLE) {
+    function removeWhitelistSigner(address signer) external onlyRole(DEV_CONFIG_ROLE) {
         _removeWhitelistSigner(signer);
     }
 }

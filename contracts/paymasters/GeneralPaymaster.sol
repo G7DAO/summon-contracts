@@ -18,7 +18,7 @@ import "@matterlabs/zksync-contracts/l2/system-contracts/Constants.sol";
 
 contract GasLessOpenMintPaymasterETH is IPaymaster, AccessControl, Pausable {
     bytes32 public constant MANAGER_ROLE = keccak256("MANAGER_ROLE");
-    bytes32 public constant PAUSER_ROLE = keccak256("MANAGER_ROLE");
+    bytes32 public constant DEV_CONFIG_ROLE = keccak256("DEV_CONFIG_ROLE");
 
     mapping(address => bool) public allowedRecipients;
 
@@ -26,8 +26,7 @@ contract GasLessOpenMintPaymasterETH is IPaymaster, AccessControl, Pausable {
 
     constructor() {
         _setupRole(DEFAULT_ADMIN_ROLE, msg.sender);
-        _setupRole(MANAGER_ROLE, msg.sender);
-        _setupRole(PAUSER_ROLE, msg.sender);
+        _setupRole(DEV_CONFIG_ROLE, msg.sender);
     }
 
     modifier onlyBootloader() {
@@ -41,7 +40,6 @@ contract GasLessOpenMintPaymasterETH is IPaymaster, AccessControl, Pausable {
         bytes32,
         Transaction calldata _transaction
     ) external payable onlyBootloader whenNotPaused returns (bytes4 magic, bytes memory context) {
-
         address recipient = address(uint160(_transaction.to));
         require(allowedRecipients[recipient], "Invalid recipient");
 
@@ -64,11 +62,11 @@ contract GasLessOpenMintPaymasterETH is IPaymaster, AccessControl, Pausable {
         }
     }
 
-    function pause() public onlyRole(PAUSER_ROLE) {
+    function pause() public onlyRole(MANAGER_ROLE) {
         _pause();
     }
 
-    function unpause() public onlyRole(PAUSER_ROLE) {
+    function unpause() public onlyRole(MANAGER_ROLE) {
         _unpause();
     }
 
@@ -90,12 +88,12 @@ contract GasLessOpenMintPaymasterETH is IPaymaster, AccessControl, Pausable {
         require(success, "Failed to withdraw funds from paymaster.");
     }
 
-    function addRecipient(address _recipient) public onlyRole(DEFAULT_ADMIN_ROLE) {
+    function addRecipient(address _recipient) public onlyRole(DEV_CONFIG_ROLE) {
         require(_recipient != address(0), "NonAddressZero");
         allowedRecipients[_recipient] = true;
     }
 
-    function removeRecipient(address _recipient) public onlyRole(DEFAULT_ADMIN_ROLE) {
+    function removeRecipient(address _recipient) public onlyRole(DEV_CONFIG_ROLE) {
         require(_recipient != address(0), "NonAddressZero");
         allowedRecipients[_recipient] = false;
     }
