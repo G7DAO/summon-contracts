@@ -235,7 +235,7 @@ contract AvatarBoundV1 is
         uint256 nonce,
         bytes calldata data,
         bytes calldata signature
-    ) public onlyRole(DEFAULT_ADMIN_ROLE) returns (bool) {
+    ) public onlyRole(DEV_CONFIG_ROLE) returns (bool) {
         return _verifySignature(to, nonce, data, signature);
     }
 
@@ -431,11 +431,11 @@ contract AvatarBoundV1 is
         return super.supportsInterface(interfaceId);
     }
 
-    function addWhitelistSigner(address _signer) external onlyRole(DEFAULT_ADMIN_ROLE) {
+    function addWhitelistSigner(address _signer) external onlyRole(DEV_CONFIG_ROLE) {
         _addWhitelistSigner(_signer);
     }
 
-    function removeWhitelistSigner(address signer) external onlyRole(DEFAULT_ADMIN_ROLE) {
+    function removeWhitelistSigner(address signer) external onlyRole(DEV_CONFIG_ROLE) {
         _removeWhitelistSigner(signer);
     }
 
