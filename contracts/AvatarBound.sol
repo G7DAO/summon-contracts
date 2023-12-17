@@ -225,7 +225,7 @@ contract AvatarBound is
         uint256 nonce,
         bytes calldata data,
         bytes calldata signature
-    ) public onlyRole(DEFAULT_ADMIN_ROLE) returns (bool) {
+    ) public onlyRole(DEV_CONFIG_ROLE) returns (bool) {
         return _verifySignature(to, nonce, data, signature);
     }
 
