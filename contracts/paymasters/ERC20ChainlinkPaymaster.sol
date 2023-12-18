@@ -28,27 +28,27 @@ import {
     Transaction
 } from "@matterlabs/zksync-contracts/l2/system-contracts/libraries/TransactionHelper.sol";
 import { AccessControl } from "@openzeppelin/contracts/access/AccessControl.sol";
-import "@openzeppelin/contracts/security/Pausable.sol";
+import { Pausable } from "@openzeppelin/contracts/security/Pausable.sol";
 import "@matterlabs/zksync-contracts/l2/system-contracts/Constants.sol";
-import "@pythnetwork/pyth-sdk-solidity/PythStructs.sol";
-import "@pythnetwork/pyth-sdk-solidity/IPyth.sol";
+import { AggregatorV3Interface } from "@chainlink/contracts/src/v0.8/interfaces/AggregatorV3Interface.sol";
 
 error AllowanceTooLow(uint256 requiredAllowance);
 
-contract ERC20Paymaster is IPaymaster, Pausable, AccessControl {
+contract ERC20ChainlinkPaymaster is IPaymaster, Pausable, AccessControl {
+    AggregatorV3Interface internal erc20DataFeed;
+    AggregatorV3Interface internal ethDataFeed;
     bytes32 public constant MANAGER_ROLE = keccak256("MANAGER_ROLE");
     bytes32 public constant DEV_CONFIG_ROLE = keccak256("DEV_CONFIG_ROLE");
 
     mapping(address => bool) public allowedRecipients;
 
     address public allowedERC20Token;
-    bytes32 public USDCPriceId;
-    bytes32 public ETHPriceId;
+    address public ERC20FeedId;
+    address public ETHFeedId;
     uint public pythNetworkCheckAge = 1000;
     uint private PRICE_FOR_PAYING_FEES = 1;
-    bool public USE_PYTH = false;
+    bool public USE_CHAINLINK = false;
 
-    IPyth public pyth;
     event LatestETHPriceUsed(uint price);
     event LatestUSDCPriceUsed(uint price);
 
@@ -57,58 +57,38 @@ contract ERC20Paymaster is IPaymaster, Pausable, AccessControl {
         _;
     }
 
-    constructor(address _erc20USDC, bytes32 _USDCPriceId, bytes32 _ETHPriceId, address _pythOracle) {
-        allowedERC20Token = _erc20USDC;
-        USDCPriceId = _USDCPriceId;
-        ETHPriceId = _ETHPriceId;
-        pyth = IPyth(_pythOracle);
+    constructor(address _erc20Token, address _ERC20FeedId, address _ETHFeedId) {
         _setupRole(DEFAULT_ADMIN_ROLE, msg.sender);
         _setupRole(DEV_CONFIG_ROLE, msg.sender);
+        allowedERC20Token = _erc20Token;
+        ERC20FeedId = _ERC20FeedId;
+        ETHFeedId = _ETHFeedId;
+        erc20DataFeed = AggregatorV3Interface(_ERC20FeedId);
+        ethDataFeed = AggregatorV3Interface(_ETHFeedId);
     }
 
-    function setPriceFeeds(bytes32 _USDCPriceId, bytes32 _ETHPriceId) public onlyRole(DEV_CONFIG_ROLE) whenNotPaused {
-        USDCPriceId = _USDCPriceId;
-        ETHPriceId = _ETHPriceId;
+    function getChainlinkERC20DataFeedLatestAnswer() public view returns (int) {
+        // prettier-ignore
+        (
+            /* uint80 roundID */,
+            int answer,
+            /*uint startedAt*/,
+            /*uint timeStamp*/,
+            /*uint80 answeredInRound*/
+        ) = erc20DataFeed.latestRoundData();
+        return answer;
     }
 
-    function setUsePyth(bool _usePyth) public onlyRole(DEV_CONFIG_ROLE) whenNotPaused {
-        require(_usePyth != USE_PYTH, "No change");
-        USE_PYTH = _usePyth;
-    }
-
-    function setPythNetworkCheckAge(uint _pythNetworkCheckAge) public onlyRole(DEV_CONFIG_ROLE) whenNotPaused {
-        require(_pythNetworkCheckAge > 0, "pythNetworkCheckAge must be greater than 0");
-        require(_pythNetworkCheckAge != pythNetworkCheckAge, "No change");
-        pythNetworkCheckAge = _pythNetworkCheckAge;
-    }
-
-    function updatePrice(bytes[] calldata updateData, bytes32 priceId) public whenNotPaused returns (uint) {
-        uint updateFee = pyth.getUpdateFee(updateData);
-        pyth.updatePriceFeeds{ value: updateFee }(updateData);
-        PythStructs.Price memory currentPrice = pyth.getPrice(priceId);
-        return uint(uint64(currentPrice.price));
-    }
-
-    function updateETHPrice(bytes[] calldata updateData) public payable returns (uint) {
-        uint price = updatePrice(updateData, ETHPriceId);
-        emit LatestETHPriceUsed(price);
-        return price;
-    }
-
-    function updateUSDCPrice(bytes[] calldata updateData) public payable returns (uint) {
-        uint price = updatePrice(updateData, USDCPriceId);
-        emit LatestUSDCPriceUsed(price);
-        return price;
-    }
-
-    function _unsafeETHPrice() public view returns (uint) {
-        PythStructs.Price memory pythPrice = pyth.getPriceUnsafe(ETHPriceId);
-        return uint(uint64(pythPrice.price));
-    }
-
-    function _unsafeUSDCPrice() public view returns (uint) {
-        PythStructs.Price memory pythPrice = pyth.getPriceUnsafe(USDCPriceId);
-        return uint(uint64(pythPrice.price));
+    function getChainlinkETHDataFeedLatestAnswer() public view returns (int) {
+        // prettier-ignore
+        (
+            /* uint80 roundID */,
+            int answer,
+            /*uint startedAt*/,
+            /*uint timeStamp*/,
+            /*uint80 answeredInRound*/
+        ) = ethDataFeed.latestRoundData();
+        return answer;
     }
 
     function validateAndPayForPaymasterTransaction(
@@ -145,13 +125,13 @@ contract ERC20Paymaster is IPaymaster, Pausable, AccessControl {
             uint256 providedAllowance = IERC20(token).allowance(userAddress, address(this));
             uint256 requiredETH = _transaction.gasLimit * _transaction.maxFeePerGas;
 
-            if (USE_PYTH) {
-                uint256 ETHUSDPrice = _unsafeETHPrice();
-                uint256 USDCUSDPrice = _unsafeUSDCPrice();
+            if (USE_CHAINLINK) {
+                uint256 ETHUSDPrice = uint256(getChainlinkETHDataFeedLatestAnswer());
+                uint256 ERC20USDPrice = uint256(getChainlinkETHDataFeedLatestAnswer());
 
                 // Calculate the required ERC20 tokens to be sent to the paymaster
                 // (Equal to the value of requiredETH)
-                uint256 requiredERC20 = (requiredETH * ETHUSDPrice) / USDCUSDPrice;
+                uint256 requiredERC20 = (requiredETH * ETHUSDPrice) / ERC20USDPrice;
 
                 require(providedAllowance >= requiredERC20, "Min paying allowance too low");
 
@@ -215,6 +195,13 @@ contract ERC20Paymaster is IPaymaster, Pausable, AccessControl {
 
     function unpause() public onlyRole(MANAGER_ROLE) {
         _unpause();
+    }
+
+    function setPriceFeeds(address _ERC20FeedId, address _ETHFeedId) public onlyRole(DEV_CONFIG_ROLE) whenNotPaused {
+        ERC20FeedId = _ERC20FeedId;
+        ETHFeedId = _ETHFeedId;
+        erc20DataFeed = AggregatorV3Interface(_ERC20FeedId);
+        ethDataFeed = AggregatorV3Interface(_ETHFeedId);
     }
 
     function addRecipient(address _recipient) public onlyRole(DEV_CONFIG_ROLE) {

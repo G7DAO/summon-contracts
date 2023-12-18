@@ -124,7 +124,7 @@ export const ZKSYNC_TESTNET_CONTRACTS: DeploymentContract[] = [
         ],
     },
     {
-        contractName: 'ERC20Paymaster',
+        contractName: 'ERC20PythPaymaster',
         type: CONTRACT_TYPE.Paymaster,
         chain,
         networkType,
@@ -134,17 +134,44 @@ export const ZKSYNC_TESTNET_CONTRACTS: DeploymentContract[] = [
         dependencies: ['AvatarBoundV1'],
         functionCalls: [
             {
-                contractName: 'ERC20Paymaster',
+                contractName: 'ERC20PythPaymaster',
                 functionName: 'addRecipient',
                 args: ['CONTRACT_AvatarBoundV1'],
             },
             {
-                contractName: 'ERC20Paymaster',
+                contractName: 'ERC20PythPaymaster',
                 functionName: 'addRecipient',
                 args: ['CONTRACT_ItemBoundV1'],
             },
             {
-                contractName: 'ERC20Paymaster',
+                contractName: 'ERC20PythPaymaster',
+                functionName: 'addRecipient',
+                args: ['CONTRACT_LevelsBoundV1'],
+            },
+        ],
+    },
+    {
+        contractName: 'ERC20ChainlinkPaymaster',
+        type: CONTRACT_TYPE.Paymaster,
+        chain,
+        networkType,
+        tenants: [TENANT.ZkSync],
+        verify: true,
+        upgradable: false,
+        dependencies: ['AvatarBoundV1'],
+        functionCalls: [
+            {
+                contractName: 'ERC20ChainlinkPaymaster',
+                functionName: 'addRecipient',
+                args: ['CONTRACT_AvatarBoundV1'],
+            },
+            {
+                contractName: 'ERC20ChainlinkPaymaster',
+                functionName: 'addRecipient',
+                args: ['CONTRACT_ItemBoundV1'],
+            },
+            {
+                contractName: 'ERC20ChainlinkPaymaster',
                 functionName: 'addRecipient',
                 args: ['CONTRACT_LevelsBoundV1'],
             },

@@ -2,7 +2,7 @@ import fs from 'fs';
 import path from 'path';
 
 import * as ConstructorArgs from '@constants/constructor-args';
-import { CONTRACTS, ACHIEVO_TMP_DIR, ABI_PATH_ZK, ABI_PATH } from '@constants/deployments';
+import { CONTRACTS, ACHIEVO_TMP_DIR } from '@constants/deployments';
 import { isAlreadyDeployed, writeChecksumToFile } from '@helpers/checksum';
 import { submitContractDeploymentsToDB, executeFunctionCallBatch } from '@helpers/contract';
 import { createDefaultFolders, getABIFilePath } from '@helpers/folder';
