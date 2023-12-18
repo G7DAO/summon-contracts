@@ -1,11 +1,11 @@
+import { DeploymentContract } from '../../types/deployment-type';
 import { TENANT, CONTRACT_TYPE } from '../constructor-args';
 import { NETWORK_TYPE, NetworkName } from '../network';
-import { DeploymentContract } from '../../types/deployment-type';
 
-const chain = NetworkName.ZkSyncTestnet;
+const chain = NetworkName.ZkSyncGoerli;
 const networkType = NETWORK_TYPE.TESTNET;
 
-export const ZKSYNC_TESTNET_CONTRACTS: DeploymentContract[] = [
+export const ZKSYNC_GOERLI_CONTRACTS: DeploymentContract[] = [
     {
         contractName: 'AvatarBound',
         type: CONTRACT_TYPE.Avatars,
