@@ -9,6 +9,7 @@ import 'tsconfig-paths/register';
 import '@openzeppelin/hardhat-upgrades';
 import { log } from '@helpers/logger';
 import './tasks';
+import { NetworkName } from './constants';
 
 import { ChainId } from './constants';
 dotenv.config();
@@ -39,12 +40,12 @@ const config: HardhatUserConfig = {
             timeout: 6000000,
         },
         // Deprecated
-        Sepolia: {
+        [NetworkName.Sepolia]: {
             accounts: [DEPLOYER_PRIVATE_KEY || PRIVATE_KEY],
             url: `https://sepolia.infura.io/v3/${process.env.INFURA_API_KEY}`,
             chainId: ChainId.Sepolia,
         },
-        Ethereum: {
+        [NetworkName.Ethereum]: {
             accounts: [DEPLOYER_PRIVATE_KEY || PRIVATE_KEY],
             url: `https://mainnet.infura.io/v3/${process.env.INFURA_API_KEY}`,
             chainId: ChainId.Ethereum,

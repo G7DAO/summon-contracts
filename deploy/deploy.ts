@@ -3,12 +3,12 @@ import path from 'path';
 
 import { ChainId, NetworkName, Currency, NetworkExplorer, rpcUrls } from '@constants/network';
 import { encryptPrivateKey } from '@helpers/encrypt';
+import { getFilePath } from '@helpers/folder';
 import { log } from '@helpers/logger';
 import { Deployer } from '@matterlabs/hardhat-zksync-deploy';
 import { HardhatRuntimeEnvironment } from 'hardhat/types';
 
 import getWallet from './getWallet';
-import { getFilePath } from '@helpers/folder';
 
 // load wallet private key from env file
 const PRIVATE_KEY = process.env.PRIVATE_KEY || '';
@@ -40,20 +40,29 @@ export default async function (
     const { name, ...rest } = constructorArgs;
     const restArgs = Object.values(rest);
 
-    const wallet = getWallet(PRIVATE_KEY);
-    // TODO: THIS ONLY WORK FOR ZKSYNC ... NEED TO BE FIXED to work in all the EVMS
-    const deployer = new Deployer(hre, wallet);
-    // TODO: THIS ONLY WORK FOR ZKSYNC ... NEED TO BE FIXED to work in all the EVMS
-    const artifact = await deployer.loadArtifact(contract.contractName);
-
     let achievoContract;
-    if (name) {
-        achievoContract = await deployer.deploy(artifact, [`${name}${tenant}`, ...restArgs]);
+
+    const wallet = getWallet(PRIVATE_KEY);
+
+    if (hre.network.zksync) {
+        const deployer = new Deployer(hre, wallet);
+        const artifact = await deployer.loadArtifact(contract.contractName);
+
+        if (name) {
+            achievoContract = await deployer.deploy(artifact, [`${name}${tenant}`, ...restArgs]);
+        } else {
+            achievoContract = await deployer.deploy(artifact, restArgs);
+        }
     } else {
-        achievoContract = await deployer.deploy(artifact, restArgs);
+        if (name) {
+            achievoContract = await hre.ethers.deployContract(contract.contractName, [`${name}${tenant}`, ...restArgs]);
+        } else {
+            achievoContract = await hre.ethers.deployContract(contract.contractName, restArgs);
+        }
     }
 
     await achievoContract.waitForDeployment();
+
     // Show the contract info.
     const contractAddress = await achievoContract.getAddress();
 
@@ -66,6 +75,12 @@ export default async function (
     const relativeContractPath = path.relative('', contractPath);
 
     if (contract.verify) {
+        log('Waiting for contract to be confirmed...');
+        await achievoContract.deploymentTransaction()?.wait(5); // wait for 5 confirmations
+
+        log('=====================================================');
+        log(`Verifying ${contract.type}(${contract.contractName}) for ${tenant} on ${networkName}`);
+        log('=====================================================');
         await hre.run('verify:verify', {
             address: contractAddress,
             contract: `${relativeContractPath}:${contract.contractName}`,
@@ -98,7 +113,7 @@ export default async function (
 
     log(`*****************************************************`);
     log(
-        `Deployed ${contract.type}(${artifact.contractName}) for ${tenant} to :\n ${blockExplorerBaseUrl}/address/${contractAddress}#contract`
+        `Deployed ${contract.type}(${contract.contractName}) for ${tenant} to :\n ${blockExplorerBaseUrl}/address/${contractAddress}#contract`
     );
     log(`*****************************************************`);
 
