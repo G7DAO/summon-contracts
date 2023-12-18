@@ -19,7 +19,8 @@ export enum ChainId {
     Goerli = 5,
     Sepolia = 11155111,
     ZkSync = 324,
-    ZkSyncTestnet = 280,
+    ZkSyncGoerli = 280,
+    ZkSyncSepolia = 300,
 }
 
 export enum NetworkName {
@@ -33,7 +34,8 @@ export enum NetworkName {
     Mantle = 'Mantle',
     MantleWadsley = 'MantleWadsley',
     ZkSync = 'zkSync',
-    ZkSyncTestnet = 'zkSyncTestnet',
+    ZkSyncGoerli = 'zkSyncGoerli',
+    ZkSyncSepolia = 'zkSyncSepolia',
 }
 
 export enum Currency {
@@ -46,7 +48,8 @@ export enum Currency {
     Mantle = 'MNT',
     MantleWadsley = 'MNT',
     ZkSync = 'ETH',
-    ZkSyncTestnet = 'ETH',
+    ZkSyncGoerli = 'ETH',
+    ZkSyncSepolia = 'ETH',
 }
 
 export enum NetworkExplorer {
@@ -60,7 +63,8 @@ export enum NetworkExplorer {
     Mantle = 'https://explorer.testnet.mantle.xyz',
     MantleWadsley = 'https://explorer.testnet.mantle.xyz',
     ZkSync = 'https://explorer.zksync.io',
-    ZkSyncTestnet = 'https://sepolia.explorer.zksync.io',
+    ZkSyncGoerli = 'https://goerli.explorer.zksync.io',
+    ZkSyncSepolia = 'https://sepolia.explorer.zksync.io',
 }
 
 export function getTransactionUrl(txHash: string, network: NetworkName): string {
@@ -79,5 +83,6 @@ export const rpcUrls = {
     [ChainId.PolygonMumbai]: 'https://rpc.ankr.com/polygon_mumbai',
     [ChainId.MantleWadsley]: 'https://rpc.testnet.mantle.xyz',
     [ChainId.ZkSync]: 'https://mainnet.era.zksync.io',
-    [ChainId.ZkSyncTestnet]: 'https://testnet.era.zksync.dev',
+    [ChainId.ZkSyncGoerli]: 'https://zksync2-testnet.zksync.dev',
+    [ChainId.ZkSyncSepolia]: 'https://sepolia.era.zksync.dev',
 };
