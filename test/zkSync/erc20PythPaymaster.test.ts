@@ -9,13 +9,12 @@ import hardhatConfig from '../../hardhat.config';
 import zkSyncConfig from '../../zkSync.config';
 import { deployContract, fundAccount, setupDeployer } from '../../helpers/zkUtils';
 import { Deployer } from '@matterlabs/hardhat-zksync-deploy';
-import { getFunctionSignature } from '../../scripts/libraries/selectors';
 dotenv.config();
 
 // load wallet private key from env file
 const PRIVATE_KEY = process.env.PRIVATE_KEY || '0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80';
 
-describe('ERC20Paymaster', function () {
+describe('ERC20PythPaymaster', function () {
     let provider: Provider;
     let minterAccount: Wallet;
     let deployer: Deployer;
@@ -66,7 +65,7 @@ describe('ERC20Paymaster', function () {
         mockERC721Soulbound = await deployContract(deployer, 'Mock721Soulbound', []);
         await mockERC721Soulbound.waitForDeployment();
 
-        paymaster = await deployContract(deployer, 'ERC20Paymaster', [
+        paymaster = await deployContract(deployer, 'ERC20PythPaymaster', [
             await token.getAddress(),
             USDC_PRICE_ID,
             ETH_PRICE_ID,
