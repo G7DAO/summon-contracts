@@ -9,6 +9,7 @@
         "accounts": "hardhat --config hardhat.config.ts accounts",
         "generate": "hardhat --config hardhat.config.ts generate",
         "compile:zkSync": "hardhat --config zkSync.config.ts compile --network zkSyncSepolia",
+        "deploy:sepolia": "pnpm compile && hardhat --config hardhat.config.ts deploy --network sepolia",
         "deploy:ZkSync:mainnet": "pnpm compile:zkSync && hardhat --config zkSync.config.ts deploy --network zkSync",
         "deploy:ZkSync:goerli": "pnpm compile:zkSync && hardhat --config zkSync.config.ts deploy --network zkSyncGoerli",
         "deploy:ZkSync:sepolia": "pnpm compile:zkSync && hardhat --config zkSync.config.ts deploy --network zkSyncSepolia",
