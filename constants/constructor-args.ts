@@ -187,7 +187,7 @@ const PYTH_ORACLE_ADDRESS_MAINNET = '0xf087c864AEccFb6A2Bf1Af6A0382B0d0f6c5D834'
 const MAINNET_ERC20_USDC = '0x3355df6D4c9C3035724Fd0e3914dE96A5a83aaf4';
 const TESTNET_ERC20_OUSDC = '0xA79498e38264330603F00AfEC577539B4b5D6F51';
 
-export const ERC20PaymasterArgs = {
+export const ERC20PythPaymasterArgs = {
     MAINNET: {
         erc20Address: MAINNET_ERC20_USDC,
         usdcPriceId: USDC_PRICE_ID_MAINNET,
@@ -199,5 +199,18 @@ export const ERC20PaymasterArgs = {
         usdcPriceId: USDC_PRICE_ID_TESTNET,
         ethPriceId: ETH_PRICE_ID_TESTNET,
         pythOracleAddress: PYTH_ORACLE_ADDRESS_TESTNET,
+    },
+};
+
+export const ERC20ChainlinkPaymasterArgs = {
+    MAINNET: {
+        erc20Address: MAINNET_ERC20_USDC,
+        erc20FeedId: '0x1824D297C6d6D311A204495277B63e943C2D376E',
+        ethFeedId: '0x6D41d1dc818112880b40e26BD6FD347E41008eDA',
+    },
+    TESTNET: {
+        erc20Address: TESTNET_ERC20_OUSDC,
+        erc20FeedId: '0x37FBa63C443Ca1Bf262B9E6cc46c4B46273F687C',
+        ethFeedId: '0x2bBaff398B72d5B26f4f9B3397cfd9DC578a9f08',
     },
 };

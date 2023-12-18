@@ -34,7 +34,7 @@ defaultConfig.networks = {
         ethNetwork: 'sepolia',
         zksync: true,
         accounts: [PRIVATE_KEY],
-        verifyURL: 'https://zksync2-testnet-explorer.zksync.dev/contract_verification',
+        verifyURL: 'https://explorer.sepolia.era.zksync.dev/contract_verification',
     },
 };
 

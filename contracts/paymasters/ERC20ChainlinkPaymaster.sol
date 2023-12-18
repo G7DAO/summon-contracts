@@ -34,7 +34,7 @@ import { AggregatorV3Interface } from "@chainlink/contracts/src/v0.8/interfaces/
 
 error AllowanceTooLow(uint256 requiredAllowance);
 
-contract ERC20Paymaster is IPaymaster, Pausable, AccessControl {
+contract ERC20ChainlinkPaymaster is IPaymaster, Pausable, AccessControl {
     AggregatorV3Interface internal erc20DataFeed;
     AggregatorV3Interface internal ethDataFeed;
     bytes32 public constant MANAGER_ROLE = keccak256("MANAGER_ROLE");

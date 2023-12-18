@@ -35,7 +35,7 @@ import "@pythnetwork/pyth-sdk-solidity/IPyth.sol";
 
 error AllowanceTooLow(uint256 requiredAllowance);
 
-contract ERC20Paymaster is IPaymaster, Pausable, AccessControl {
+contract ERC20PythPaymaster is IPaymaster, Pausable, AccessControl {
     bytes32 public constant MANAGER_ROLE = keccak256("MANAGER_ROLE");
     bytes32 public constant DEV_CONFIG_ROLE = keccak256("DEV_CONFIG_ROLE");
 

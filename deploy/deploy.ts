@@ -65,14 +65,13 @@ export default async function (
 
     const relativeContractPath = path.relative('', contractPath);
 
-    // TODO: enable this after the zkSync verify lib is fixed or check if We have an error
-    // if (contract.verify) {
-    //     await hre.run('verify:verify', {
-    //         address: contractAddress,
-    //         contract: `${relativeContractPath}:${contract.contractName}`,
-    //         constructorArguments: name ? [`${name}${tenant}`, ...restArgs] : restArgs,
-    //     });
-    // }
+    if (contract.verify) {
+        await hre.run('verify:verify', {
+            address: contractAddress,
+            contract: `${relativeContractPath}:${contract.contractName}`,
+            constructorArguments: name ? [`${name}${tenant}`, ...restArgs] : restArgs,
+        });
+    }
 
     // Read the file content
     const abiContent = fs.readFileSync(path.resolve(abiPath), 'utf8');
