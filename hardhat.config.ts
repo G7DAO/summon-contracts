@@ -9,7 +9,7 @@ import 'tsconfig-paths/register';
 import '@openzeppelin/hardhat-upgrades';
 import { log } from '@helpers/logger';
 import './tasks';
-import { NetworkName } from './constants';
+import { NetworkName, rpcUrls } from './constants';
 
 import { ChainId } from './constants';
 dotenv.config();
@@ -42,12 +42,12 @@ const config: HardhatUserConfig = {
         // Deprecated
         [NetworkName.Sepolia]: {
             accounts: [DEPLOYER_PRIVATE_KEY || PRIVATE_KEY],
-            url: `https://sepolia.infura.io/v3/${process.env.INFURA_API_KEY}`,
+            url: rpcUrls[ChainId.Sepolia],
             chainId: ChainId.Sepolia,
         },
         [NetworkName.Ethereum]: {
             accounts: [DEPLOYER_PRIVATE_KEY || PRIVATE_KEY],
-            url: `https://mainnet.infura.io/v3/${process.env.INFURA_API_KEY}`,
+            url: rpcUrls[ChainId.Ethereum],
             chainId: ChainId.Ethereum,
         },
     },

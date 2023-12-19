@@ -2,7 +2,7 @@ import dotenv from 'dotenv';
 
 dotenv.config();
 
-const { WEB3_INFURA_API_KEY } = process.env;
+const { INFURA_API_KEY } = process.env;
 
 export enum NETWORK_TYPE {
     MAINNET = 'MAINNET',
@@ -31,8 +31,8 @@ export enum NetworkName {
     Ethereum = 'mainnet',
     Goerli = 'goerli',
     Sepolia = 'sepolia',
-    Mantle = 'Mantle',
-    MantleWadsley = 'MantleWadsley',
+    Mantle = 'mantle',
+    MantleWadsley = 'mantleWadsley',
     ZkSync = 'zkSync',
     ZkSyncGoerli = 'zkSyncGoerli',
     ZkSyncSepolia = 'zkSyncSepolia',
@@ -76,11 +76,12 @@ export function getTransactionUrl(txHash: string, network: NetworkName): string 
 }
 
 export const rpcUrls = {
-    [ChainId.Ethereum]: `https://mainnet.infura.io/v3/${WEB3_INFURA_API_KEY}`,
-    [ChainId.Goerli]: `https://goerli.infura.io/v3/${WEB3_INFURA_API_KEY}`,
-    [ChainId.Sepolia]: `https://sepolia.infura.io/v3/${WEB3_INFURA_API_KEY}`,
+    [ChainId.Ethereum]: `https://mainnet.infura.io/v3/${INFURA_API_KEY}`,
+    [ChainId.Goerli]: `https://goerli.infura.io/v3/${INFURA_API_KEY}`,
+    [ChainId.Sepolia]: `https://sepolia.infura.io/v3/${INFURA_API_KEY}`,
     [ChainId.Polygon]: 'https://polygon.llamarpc.com',
     [ChainId.PolygonMumbai]: 'https://rpc.ankr.com/polygon_mumbai',
+    [ChainId.Mantle]: 'https://rpc.mantle.xyz',
     [ChainId.MantleWadsley]: 'https://rpc.testnet.mantle.xyz',
     [ChainId.ZkSync]: 'https://mainnet.era.zksync.io',
     [ChainId.ZkSyncGoerli]: 'https://zksync2-testnet.zksync.dev',

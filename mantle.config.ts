@@ -1,4 +1,4 @@
-import { ChainId } from './constants';
+import { ChainId, NetworkExplorer, NetworkName, rpcUrls } from './constants';
 import defaultConfig from './hardhat.config';
 import { log } from './helpers/logger';
 
@@ -11,13 +11,13 @@ log(`Using Mantle config`);
 
 defaultConfig.networks = {
     ...defaultConfig.networks,
-    mantle: {
-        url: `${process.env.MANTLE_PROVIDER_URL}`,
+    [NetworkName.Mantle]: {
+        url: rpcUrls[ChainId.Mantle],
         accounts: [PRIVATE_KEY],
         chainId: ChainId.Mantle,
     },
-    mantleWadsley: {
-        url: 'https://rpc.testnet.mantle.xyz/',
+    [NetworkName.MantleWadsley]: {
+        url: rpcUrls[ChainId.MantleWadsley],
         accounts: [PRIVATE_KEY],
         chainId: ChainId.MantleWadsley,
     },
@@ -27,19 +27,19 @@ defaultConfig.etherscan = {
     apiKey: ETHSCAN_API_KEY,
     customChains: [
         {
-            network: 'mantleWadsley',
-            chainId: 5001,
+            network: NetworkName.Mantle,
+            chainId: ChainId.Mantle,
             urls: {
-                apiURL: 'https://explorer.testnet.mantle.xyz/api',
-                browserURL: 'https://explorer.testnet.mantle.xyz',
+                apiURL: `${NetworkExplorer.Mantle}/api`,
+                browserURL: NetworkExplorer.Mantle,
             },
         },
         {
-            network: 'mantle',
-            chainId: 5000,
+            network: NetworkName.MantleWadsley,
+            chainId: ChainId.MantleWadsley,
             urls: {
-                apiURL: 'https://explorer.mantle.xyz/api',
-                browserURL: 'https://explorer.mantle.xyz',
+                apiURL: `${NetworkExplorer.MantleWadsley}/api`,
+                browserURL: NetworkExplorer.MantleWadsley,
             },
         },
     ],
