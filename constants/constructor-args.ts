@@ -1,6 +1,8 @@
 export enum TENANT {
     Game7 = 'Game7',
     ZkSync = 'zkSync',
+    HyperPlay = 'HyperPlay',
+    Summon = 'Summon',
 }
 
 export enum CONTRACT_TYPE {
@@ -9,6 +11,7 @@ export enum CONTRACT_TYPE {
     Levels = 'Levels',
     OpenMint = 'OpenMint',
     Paymaster = 'Paymaster',
+    GameSummary = 'GameSummary',
 }
 
 export interface ConstructorArgs {
@@ -212,5 +215,14 @@ export const ERC20ChainlinkPaymasterArgs = {
         erc20Address: TESTNET_ERC20_OUSDC,
         erc20FeedId: '0x37FBa63C443Ca1Bf262B9E6cc46c4B46273F687C',
         ethFeedId: '0x2bBaff398B72d5B26f4f9B3397cfd9DC578a9f08',
+    },
+};
+
+export const GameSummaryArgs = {
+    MAINNET: {
+        _uri: 'FILL_ME',
+    },
+    TESTNET: {
+        _uri: 'FILL_ME',
     },
 };

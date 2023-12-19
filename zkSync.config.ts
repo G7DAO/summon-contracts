@@ -4,7 +4,7 @@ import '@matterlabs/hardhat-zksync-verify';
 import '@matterlabs/hardhat-zksync-upgradable';
 
 import defaultConfig from './hardhat.config';
-import { NetworkName } from './constants';
+import { ChainId, NetworkName, rpcUrls } from './constants';
 import { log } from '@helpers/logger';
 
 const { PRIVATE_KEY } = process.env;
@@ -23,22 +23,22 @@ defaultConfig.networks = {
         timeout: 6000000,
     },
     [NetworkName.ZkSync]: {
-        url: 'https://mainnet.era.zksync.io',
-        ethNetwork: 'mainnet',
+        url: rpcUrls[ChainId.ZkSync],
+        ethNetwork: NetworkName.Ethereum,
         zksync: true,
         accounts: [PRIVATE_KEY],
         verifyURL: 'https://zksync2-mainnet-explorer.zksync.io/contract_verification',
     },
     [NetworkName.ZkSyncGoerli]: {
-        url: 'https://testnet.era.zksync.dev',
-        ethNetwork: 'goerli',
+        url: rpcUrls[ChainId.ZkSyncGoerli],
+        ethNetwork: NetworkName.Goerli,
         zksync: true,
         accounts: [PRIVATE_KEY],
         verifyURL: 'https://zksync2-testnet-explorer.zksync.dev/contract_verification',
     },
     [NetworkName.ZkSyncSepolia]: {
-        url: 'https://sepolia.era.zksync.dev',
-        ethNetwork: 'sepolia',
+        url: rpcUrls[ChainId.ZkSyncSepolia],
+        ethNetwork: NetworkName.Sepolia,
         zksync: true,
         accounts: [PRIVATE_KEY],
         verifyURL: 'https://explorer.sepolia.era.zksync.dev/contract_verification',

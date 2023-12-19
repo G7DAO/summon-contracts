@@ -29,7 +29,7 @@ import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
 import "@openzeppelin/contracts/utils/Strings.sol";
 
 // This contract contains only the phase 1 of the GameSummaries contract
-contract GameSummary1155 is ERC1155, AccessControl, Pausable, ReentrancyGuard {
+contract GameSummary is ERC1155, AccessControl, Pausable, ReentrancyGuard {
     bytes32 public constant MINTER_ROLE = keccak256("MINTER_ROLE");
     bytes32 public constant GAME_CREATOR_ROLE = keccak256("GAME_CREATOR_ROLE");
 
