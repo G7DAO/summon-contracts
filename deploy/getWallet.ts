@@ -1,5 +1,5 @@
 import { log } from '@helpers/logger';
-import { Wallet } from 'zksync2-js';
+import { Wallet } from 'zksync-ethers';
 
 export default function (privateKey: string) {
     // Initialize the wallet.
