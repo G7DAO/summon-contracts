@@ -225,6 +225,11 @@ contract ERC20ChainlinkPaymaster is IPaymaster, Pausable, AccessControl {
         allowedERC20Token = _erc20USDC;
     }
 
+    function setUseChainLink(bool _useChainlink) external onlyRole(DEV_CONFIG_ROLE) {
+        require(_useChainlink != USE_CHAINLINK, "Already set");
+        USE_CHAINLINK = _useChainlink;
+    }
+
     function withdrawERC20(address _to, uint256 _amount) external onlyRole(MANAGER_ROLE) {
         // send paymaster funds to the owner
         IERC20 token = IERC20(allowedERC20Token);
