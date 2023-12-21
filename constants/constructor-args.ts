@@ -97,7 +97,7 @@ export const AvatarBoundArgs = {
         symbol: 'AVB',
         baseURI: 'https://achievo.mypinata.cloud/ipfs',
         contractURI: 'https://achievo.mypinata.cloud/ipfs/QmSDbeNWVY2CGUuLHni689L5eSrSG3iZHyTRZJWXX7GpjS',
-        revealURI: 'FILL_ME',
+        revealURI: 'Qmdk4zHamwCyqSzuWNNYypuz4FXAGdApbky7SHNsXYYQg7',
         devWallet: 'DEPLOYER_WALLET',
         gatingNftAddress: '0xD07180c423F9B8CF84012aA28cC174F3c433EE29',
         itemsNftAddress: 'CONTRACT_ItemBound',
