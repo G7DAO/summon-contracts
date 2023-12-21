@@ -95,11 +95,8 @@ export const AvatarBoundArgs = {
     MAINNET: {
         name: 'AvatarBound',
         symbol: 'AVB',
-        // TODO: change this for the final gateway
         baseURI: 'https://achievo.mypinata.cloud/ipfs',
-        // TODO: change this for the final gateway
-        contractURI:
-            'https://apricot-persistent-duck-562.mypinata.cloud/QmSDbeNWVY2CGUuLHni689L5eSrSG3iZHyTRZJWXX7GpjS',
+        contractURI: 'https://achievo.mypinata.cloud/ipfs/QmSDbeNWVY2CGUuLHni689L5eSrSG3iZHyTRZJWXX7GpjS',
         revealURI: 'FILL_ME',
         devWallet: 'DEPLOYER_WALLET',
         gatingNftAddress: '0xD07180c423F9B8CF84012aA28cC174F3c433EE29',

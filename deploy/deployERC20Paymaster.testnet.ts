@@ -3,7 +3,7 @@ import { Deployer } from '@matterlabs/hardhat-zksync-deploy';
 import * as dotenv from 'dotenv';
 import * as ethers from 'ethers';
 import { HardhatRuntimeEnvironment } from 'hardhat/types';
-import { Wallet, Contract } from 'zksync2-js';
+import { Wallet, Contract } from 'zksync-ethers';
 
 dotenv.config();
 

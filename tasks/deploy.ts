@@ -60,6 +60,8 @@ export async function populateParam(
         } else {
             const abiPath = getABIFilePath(hre.network.zksync, contract.contractName);
 
+            // @ts-ignore-next-line
+            // eslint-disable-next-line
             const constructorArgs = await populateConstructorArgs(
                 hre,
                 // @ts-ignore-next-line

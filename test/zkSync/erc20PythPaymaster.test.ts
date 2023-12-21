@@ -1,6 +1,5 @@
-import { ethers } from 'hardhat';
 import { expect } from 'chai';
-import { Wallet, utils, Provider, Contract } from 'zksync2-js';
+import { Wallet, utils, Provider, Contract } from 'zksync-ethers';
 import { log } from '../../helpers/logger';
 
 // load env file

@@ -36,7 +36,7 @@ export const ZKSYNC_MAINNET_CONTRACTS: DeploymentContract[] = [
         tenants: [TENANT.ZkSync],
         verify: true,
         upgradable: true,
-        dependencies: ['OpenMint', 'ItemBoundV1', 'LevelsBoundV1'],
+        dependencies: ['ItemBoundV1', 'LevelsBoundV1'],
         functionCalls: [
             {
                 contractName: 'AvatarBoundV1',
