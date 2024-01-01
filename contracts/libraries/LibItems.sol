@@ -27,6 +27,12 @@ library LibItems {
         string tokenUri;
     }
 
+    struct TokenReward {
+        uint256 tokenId;
+        string tokenUri;
+        uint256 rewardAmount;
+    }
+
     struct TokenCreateWithRoyalty {
         uint256 tokenId;
         string tokenUri;

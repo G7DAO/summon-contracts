@@ -44,7 +44,7 @@
         "deployERC20PythPaymaster:ZkSync:mainnet": "pnpm deploy:ZkSync:mainnet --contractname ERC20PythPaymaster",
         "deployERC20PythPaymaster:ZkSync:goerli": "pnpm deploy:ZkSync:goerli --contractname ERC20PythPaymaster",
         "deployERC20PythPaymaster:ZkSync:sepolia": "pnpm deploy:ZkSync:sepolia --contractname ERC20PythPaymaster",
-        "deployERC20ChainlinkPythPaymaster:ZkSync:mainnet": "pnpm deploy:ZkSync:mainnet --contractname ERC20ChainlinkPaymaster",
+        "deployERC20ChainlinkPaymaster:ZkSync:mainnet": "pnpm deploy:ZkSync:mainnet --contractname ERC20ChainlinkPaymaster",
         "deployERC20ChainlinkPaymaster:ZkSync:goerli": "pnpm deploy:ZkSync:goerli --contractname ERC20ChainlinkPaymaster",
         "deployERC20ChainlinkPaymaster:ZkSync:sepolia": "pnpm deploy:ZkSync:sepolia --contractname ERC20ChainlinkPaymaster",
         "deploySoulboundBadges:ZkSync:goerli": "pnpm compile:zkSync && hardhat --config zkSync.config.ts deploy-zksync --network zkSyncGoerli --script deploySoulboundBadges.testnet.ts",
