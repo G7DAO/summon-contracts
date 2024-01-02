@@ -87,6 +87,17 @@ export const ZKSYNC_SEPOLIA_CONTRACTS: DeploymentContract[] = [
         ],
     },
     {
+        contractName: 'ItemsRewardBound',
+        type: CONTRACT_TYPE.Items,
+        chain,
+        networkType,
+        tenants: [TENANT.Game7],
+        verify: true,
+        upgradable: false,
+        dependencies: [],
+        functionCalls: [],
+    },
+    {
         contractName: 'LevelsBound',
         type: CONTRACT_TYPE.Levels,
         chain,

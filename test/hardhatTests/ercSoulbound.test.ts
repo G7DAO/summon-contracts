@@ -2,7 +2,7 @@ import { expect } from 'chai';
 // @ts-ignore-next-line
 import { ethers } from 'hardhat';
 import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers';
-import { Mock1155Soulbound, Mock721Soulbound } from '../typechain-types';
+import { Mock1155Soulbound, Mock721Soulbound } from '../../typechain-types';
 
 describe('MockSoulbound', function () {
     let mockSoul1155Bound: Mock1155Soulbound;

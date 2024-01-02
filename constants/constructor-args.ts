@@ -74,6 +74,23 @@ export const ItemBoundArgs: Soulbound1155Args = {
 
 export const ItemBoundV1Args: Soulbound1155Args = ItemBoundArgs;
 
+export const ItemsRewardBoundArgs = {
+    MAINNET: {
+        name: 'AchievoItemsReward',
+        symbol: 'AIR',
+        defaultRewardId: 7,
+        isPaused: false,
+        devWallet: 'DEPLOYER_WALLET',
+    },
+    TESTNET: {
+        name: 'AchievoItemsReward',
+        symbol: 'AIR',
+        defaultRewardId: 7,
+        isPaused: false,
+        devWallet: 'DEPLOYER_WALLET',
+    },
+};
+
 export const NFTGatingArgs = {
     MAINNET: {
         name: 'Achievo NFT Gating Admin Access',
