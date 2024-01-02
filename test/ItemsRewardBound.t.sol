@@ -8,6 +8,7 @@ import { ECDSA } from "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
 
 import { ItemsRewardBound } from "../contracts/ItemsRewardBound.sol";
 import { MockERC1155Receiver } from "../contracts/mocks/MockERC1155Receiver.sol";
+import { MockErc20 } from "../contracts/mocks/MockErc20.sol";
 import { LibItems, TestLibItems } from "../contracts/libraries/LibItems.sol";
 
 contract ItemsRewardBoundTest is StdCheats, Test {
@@ -15,6 +16,7 @@ contract ItemsRewardBoundTest is StdCheats, Test {
 
     ItemsRewardBound public itemBound;
     MockERC1155Receiver public mockERC1155Receiver;
+    MockErc20 public mockERC20;
 
     struct Wallet {
         address addr;
@@ -39,6 +41,8 @@ contract ItemsRewardBoundTest is StdCheats, Test {
     uint256 public nonce2;
     bytes public signature2;
     bytes public encodedItems2;
+    address public erc20FakeRewardAddress;
+    uint256 public defaultRewardId = 7;
 
     uint256 private _seed;
     LibItems.TokenReward[] public _tokens;
@@ -113,15 +117,21 @@ contract ItemsRewardBoundTest is StdCheats, Test {
         itemBound = new ItemsRewardBound(
             "ItemsRewardTest1155",
             "T1155",
-            "MISSING_BASE_URL",
-            7,
+            defaultRewardId,
             false,
             address(this)
+        );
+
+        mockERC20 = new MockErc20(
+            "oUSDC",
+            "oUSDC"
         );
 
         itemBound.addWhitelistSigner(minterWallet.addr);
 
         mockERC1155Receiver = new MockERC1155Receiver();
+
+        erc20FakeRewardAddress = address(mockERC20);
 
         for (uint256 i = 0; i < 1300; i++) {
             uint256 _tokenId = generateRandomItemId(); // totally random
@@ -131,6 +141,8 @@ contract ItemsRewardBoundTest is StdCheats, Test {
             LibItems.TokenReward memory _token = LibItems.TokenReward({
                 tokenId: _tokenId,
                 rewardAmount: 2000,
+                rewardERC20: erc20FakeRewardAddress,
+                isEther: false,
                 tokenUri: string(abi.encodePacked("https://something.com", "/", _tokenId.toString()))
             });
 
@@ -156,6 +168,14 @@ contract ItemsRewardBoundTest is StdCheats, Test {
 
         (nonce, signature) = generateSignature(playerWallet.addr, encodedItems1, minterLabel);
         (nonce2, signature2) = generateSignature(playerWallet2.addr, encodedItems2, minterLabel);
+        mockERC20.mint(address(itemBound), 20000000000000000000);
+        itemBound.addNewToken(LibItems.TokenReward({
+            tokenId: defaultRewardId,
+            rewardAmount: 0,
+            rewardERC20: address(mockERC20),
+            isEther: false,
+            tokenUri: "https://achievo.mypinnata.io/ipfs/[roll_uri_hash]"
+        }));
     }
 
     function testTokenExists() public {
@@ -170,6 +190,8 @@ contract ItemsRewardBoundTest is StdCheats, Test {
         LibItems.TokenReward memory _token = LibItems.TokenReward({
             tokenId: _tokenId,
             rewardAmount: 2000,
+            rewardERC20: erc20FakeRewardAddress,
+            isEther: false,
             tokenUri: string(abi.encodePacked("https://something222.com", "/", _tokenId.toString()))
         });
 
@@ -190,6 +212,8 @@ contract ItemsRewardBoundTest is StdCheats, Test {
             LibItems.TokenReward memory _token = LibItems.TokenReward({
                 tokenId: _tokenId,
                 rewardAmount: 2000,
+                rewardERC20: erc20FakeRewardAddress,
+                isEther: false,
                 tokenUri: string(abi.encodePacked("https://something.com", "/", _tokenId.toString()))
             });
 
@@ -212,6 +236,9 @@ contract ItemsRewardBoundTest is StdCheats, Test {
     }
 
     function testPauseUnpauseSpecificToken() public {
+        itemBound.adminMintDefaultReward(address(mockERC1155Receiver), 1, true);
+        itemBound.adminMintDefaultReward(playerWallet.addr, 1, true);
+
         uint256 _tokenId = _tokenIds[0];
 
         itemBound.updateTokenMintPaused(_tokenId, true);
@@ -220,16 +247,17 @@ contract ItemsRewardBoundTest is StdCheats, Test {
         itemBound.adminMintId(address(mockERC1155Receiver), _tokenId, 1, true);
 
         vm.expectRevert("TokenMintPaused");
+
         itemBound.adminMint(address(mockERC1155Receiver), encodedItems1, true);
 
         vm.expectRevert("TokenMintPaused");
         vm.prank(playerWallet.addr);
-        itemBound.mint(encodedItems1, 1, true, nonce, signature);
+        itemBound.mint(encodedItems1, true, false, nonce, signature);
 
         itemBound.updateTokenMintPaused(_tokenId, false);
 
         vm.prank(playerWallet.addr);
-        itemBound.mint(encodedItems1, 1, true, nonce, signature);
+        itemBound.mint(encodedItems1, true, false, nonce, signature);
 
         assertEq(itemBound.balanceOf(playerWallet.addr, _tokenId), 1);
     }
@@ -238,20 +266,22 @@ contract ItemsRewardBoundTest is StdCheats, Test {
     function testInvalidSignature() public {
         vm.prank(playerWallet.addr);
         vm.expectRevert("InvalidSignature");
-        itemBound.mint(encodedItems1, 1, true, nonce, signature2);
+        itemBound.mint(encodedItems1, true, false, nonce, signature2);
     }
 
     function testReuseSignatureMint() public {
+        itemBound.adminMintDefaultReward(playerWallet.addr, 1, true);
         vm.prank(playerWallet.addr);
-        itemBound.mint(encodedItems1, 1, true, nonce, signature);
+        itemBound.mint(encodedItems1, true, false, nonce, signature);
         vm.prank(playerWallet.addr);
         vm.expectRevert("AlreadyUsedSignature");
-        itemBound.mint(encodedItems1, 1, true, nonce, signature);
+        itemBound.mint(encodedItems1, true, false, nonce, signature);
     }
 
     function testMintShouldPass() public {
+        itemBound.adminMintDefaultReward(playerWallet.addr, 1, true);
         vm.prank(playerWallet.addr);
-        itemBound.mint(encodedItems1, 1, true, nonce, signature);
+        itemBound.mint(encodedItems1, true, false, nonce, signature);
 
         vm.expectRevert(
             "ERC1155Soulbound: The amount of soulbounded tokens is more than the amount of tokens to be transferred"
@@ -263,8 +293,9 @@ contract ItemsRewardBoundTest is StdCheats, Test {
         vm.prank(playerWallet.addr);
         itemBound.safeTransferFrom(playerWallet.addr, minterWallet.addr, _tokenIds[0], 0, "");
 
+        itemBound.adminMintDefaultReward(playerWallet2.addr, 1, true);
         vm.prank(playerWallet2.addr);
-        itemBound.mint(encodedItems2, 1, false, nonce2, signature2);
+        itemBound.mint(encodedItems2, false, false, nonce2, signature2);
 
         vm.prank(playerWallet2.addr);
         itemBound.safeTransferFrom(playerWallet2.addr, minterWallet.addr, _tokenIds[3], 1, "");
@@ -274,13 +305,8 @@ contract ItemsRewardBoundTest is StdCheats, Test {
         assertEq(itemBound.balanceOf(minterWallet.addr, _tokenIds[3]), 1);
     }
 
-    function testMintMoreThanLimit() public {
-        vm.expectRevert("ExceedMaxMint");
-        vm.prank(playerWallet.addr);
-        itemBound.mint(encodedItems1, 2, true, nonce, signature);
-    }
-
     function testMintInvalidTokenId() public {
+        itemBound.adminMintDefaultReward(playerWallet.addr, 1, true);
         uint256[] memory _itemIds3 = new uint256[](3);
         _itemIds3[0] = 1233;
         _itemIds3[1] = 3322;
@@ -291,7 +317,7 @@ contract ItemsRewardBoundTest is StdCheats, Test {
 
         vm.expectRevert("TokenNotExist");
         vm.prank(playerWallet.addr);
-        itemBound.mint(encodedItems3, 1, true, _nonce, _signature);
+        itemBound.mint(encodedItems3, true, false, _nonce, _signature);
     }
 
     function testAdminMintNotMinterRole() public {
@@ -304,17 +330,9 @@ contract ItemsRewardBoundTest is StdCheats, Test {
 
     function testNotRewardToken() public {
         vm.expectRevert(
-            "InsufficientRewardsBalance"
+            "InsufficientRewardTokenBalance"
         );
         itemBound.adminMint(address(mockERC1155Receiver), encodedItems1, true);
-    }
-
-    function testAdminMint() public {
-        itemBound.adminMintDefaultReward(address(mockERC1155Receiver), 1, true);
-        itemBound.adminMint(address(mockERC1155Receiver), encodedItems1, true);
-        assertEq(itemBound.balanceOf(address(mockERC1155Receiver), _tokenIds[0]), 1);
-        assertEq(itemBound.balanceOf(address(mockERC1155Receiver), _tokenIds[1]), 1);
-        assertEq(itemBound.balanceOf(address(mockERC1155Receiver), _tokenIds[2]), 1);
     }
 
     function testAdminMintIdNotMinterRole() public {
@@ -326,15 +344,45 @@ contract ItemsRewardBoundTest is StdCheats, Test {
         itemBound.adminMintId(playerWallet.addr, _tokenId, 1, true);
     }
 
+    function testAdminMint() public {
+        itemBound.adminMintDefaultReward(playerWallet.addr, 1, true);
+        itemBound.adminMint(playerWallet.addr, encodedItems1, true);
+        assertEq(itemBound.balanceOf(playerWallet.addr, _tokenIds[0]), 1);
+        assertEq(itemBound.balanceOf(playerWallet.addr, _tokenIds[1]), 1);
+        assertEq(itemBound.balanceOf(playerWallet.addr, _tokenIds[2]), 1);
+    }
+
     function testAdminMintId() public {
         uint256 _tokenId = _tokenIds[0];
         itemBound.adminMintId(playerWallet.addr, _tokenId, 1, true);
         assertEq(itemBound.balanceOf(playerWallet.addr, _tokenIds[0]), 1);
     }
 
-    function testBurnNotOwnerShouldFail() public {
+    function testClaimReward() public {
+        itemBound.adminMintDefaultReward(playerWallet.addr, 1, true);
+        uint256 _tokenId = _tokenIds[0];
+        itemBound.adminMintId(playerWallet.addr, _tokenId, 1, true);
         vm.prank(playerWallet.addr);
-        itemBound.mint(encodedItems1, 1, false, nonce, signature);
+        itemBound.claimERC20Reward(_tokenId);
+        assertEq(itemBound.balanceOf(playerWallet.addr, _tokenIds[0]), 0);
+        assertEq(mockERC20.balanceOf(playerWallet.addr), 2000);
+    }
+
+    function testClaimMint() public {
+        itemBound.adminMintDefaultReward(playerWallet.addr, 1, true);
+        uint256 rewardTokenAmount = itemBound.balanceOf(playerWallet.addr, defaultRewardId);
+        vm.prank(playerWallet.addr);
+        itemBound.mint(encodedItems1, true, true, nonce, signature);
+        assertEq(itemBound.balanceOf(playerWallet.addr, defaultRewardId), 0);
+        assertEq(itemBound.balanceOf(playerWallet.addr, _tokenIds[0]), 1);
+        assertEq(itemBound.balanceOf(playerWallet.addr, _tokenIds[1]), 1);
+        assertEq(itemBound.balanceOf(playerWallet.addr, _tokenIds[2]), 1);
+    }
+
+    function testBurnNotOwnerShouldFail() public {
+        itemBound.adminMintDefaultReward(playerWallet.addr, 1, true);
+        vm.prank(playerWallet.addr);
+        itemBound.mint(encodedItems1, false, false, nonce, signature);
         assertEq(itemBound.balanceOf(playerWallet.addr, _tokenIds[0]), 1);
 
         vm.expectRevert("ERC1155: caller is not token owner or approved");
@@ -343,8 +391,9 @@ contract ItemsRewardBoundTest is StdCheats, Test {
     }
 
     function testBurn() public {
+        itemBound.adminMintDefaultReward(playerWallet.addr, 1, true);
         vm.prank(playerWallet.addr);
-        itemBound.mint(encodedItems1, 1, true, nonce, signature);
+        itemBound.mint(encodedItems1, true, false, nonce, signature);
         assertEq(itemBound.balanceOf(playerWallet.addr, _tokenIds[0]), 1);
 
         vm.expectRevert(
@@ -359,8 +408,9 @@ contract ItemsRewardBoundTest is StdCheats, Test {
         vm.prank(playerWallet.addr);
         itemBound.burn(playerWallet.addr, _tokenIds[0], 1);
 
+        itemBound.adminMintDefaultReward(playerWallet2.addr, 1, true);
         vm.prank(playerWallet2.addr);
-        itemBound.mint(encodedItems2, 1, false, nonce2, signature2);
+        itemBound.mint(encodedItems2, false, false, nonce2, signature2);
 
         vm.prank(playerWallet2.addr);
         itemBound.safeTransferFrom(playerWallet2.addr, playerWallet3.addr, _tokenIds[3], 1, "");
@@ -375,9 +425,11 @@ contract ItemsRewardBoundTest is StdCheats, Test {
     }
 
     function testBurnIfHoldBothNonSoulboundAndSouldbound() public {
+        itemBound.adminMintDefaultReward(playerWallet.addr, 1, true);
         vm.prank(playerWallet.addr);
-        itemBound.mint(encodedItems1, 1, true, nonce, signature);
+        itemBound.mint(encodedItems1, true, false, nonce, signature);
 
+        itemBound.adminMintDefaultReward(playerWallet2.addr, 1, true);
         itemBound.adminMint(playerWallet2.addr, encodedItems1, false);
 
         vm.prank(playerWallet2.addr);
@@ -406,8 +458,9 @@ contract ItemsRewardBoundTest is StdCheats, Test {
         _amount1[1] = 1;
         _amount1[2] = 1;
 
+        itemBound.adminMintDefaultReward(playerWallet.addr, 1, true);
         vm.prank(playerWallet.addr);
-        itemBound.mint(encodedItems1, 1, false, nonce, signature);
+        itemBound.mint(encodedItems1, false, false, nonce, signature);
         assertEq(itemBound.balanceOf(playerWallet.addr, _tokenIds[0]), 1);
 
         vm.expectRevert("ERC1155: caller is not token owner or approved");
@@ -431,8 +484,9 @@ contract ItemsRewardBoundTest is StdCheats, Test {
         _amount1[1] = 1;
         _amount1[2] = 1;
 
+        itemBound.adminMintDefaultReward(playerWallet.addr, 1, true);
         vm.prank(playerWallet.addr);
-        itemBound.mint(encodedItems1, 1, true, nonce, signature);
+        itemBound.mint(encodedItems1, true, false, nonce, signature);
         assertEq(itemBound.balanceOf(playerWallet.addr, _tokenIds[0]), 1);
 
         vm.expectRevert(
@@ -447,8 +501,9 @@ contract ItemsRewardBoundTest is StdCheats, Test {
         vm.prank(playerWallet.addr);
         itemBound.burnBatch(playerWallet.addr, _itemIds1, _amount1);
 
+        itemBound.adminMintDefaultReward(playerWallet2.addr, 1, true);
         vm.prank(playerWallet2.addr);
-        itemBound.mint(encodedItems2, 1, false, nonce2, signature2);
+        itemBound.mint(encodedItems2, false, false, nonce2, signature2);
 
         vm.prank(playerWallet2.addr);
         itemBound.safeTransferFrom(playerWallet2.addr, playerWallet3.addr, _tokenIds[3], 1, "");
@@ -482,10 +537,12 @@ contract ItemsRewardBoundTest is StdCheats, Test {
         _amount1[1] = 1;
         _amount1[2] = 1;
 
+        itemBound.adminMintDefaultReward(playerWallet.addr, 1, true);
         vm.prank(playerWallet.addr);
-        itemBound.mint(encodedItems1, 1, true, nonce, signature);
+        itemBound.mint(encodedItems1, true, false, nonce, signature);
         assertEq(itemBound.balanceOf(playerWallet.addr, _tokenIds[0]), 1);
 
+        itemBound.adminMintDefaultReward(playerWallet2.addr, 1, true);
         itemBound.adminMint(playerWallet2.addr, encodedItems1, false);
 
         vm.prank(playerWallet2.addr);
@@ -517,18 +574,6 @@ contract ItemsRewardBoundTest is StdCheats, Test {
         itemBound.uri(1);
     }
 
-    function testTokenURIIfTokenIdExistNOSpeficTokenURIFallbackToBaseURI() public {
-        uint256 _tokenId = generateRandomItemId(); // totally random
-        uint256 _level = generateRandomLevel(); // level 1-10
-        TestLibItems.Tier _tier = generateRandomTier(); // tier 0-4
-
-        LibItems.TokenReward memory _token = LibItems.TokenReward({ tokenId: _tokenId, tokenUri: "", rewardAmount: 2000 });
-
-        itemBound.addNewToken(_token);
-
-        assertEq(itemBound.uri(_tokenId), string(abi.encodePacked("MISSING_BASE_URL", "/", _tokenId.toString())));
-    }
-
     function testTokenURIIfTokenIdExistWithSpeficTokenURI() public {
         uint256 _tokenId = generateRandomItemId(); // totally random
         uint256 _level = generateRandomLevel(); // level 1-10
@@ -537,41 +582,14 @@ contract ItemsRewardBoundTest is StdCheats, Test {
         LibItems.TokenReward memory _token = LibItems.TokenReward({
             tokenId: _tokenId,
             rewardAmount: 2000,
+            rewardERC20: erc20FakeRewardAddress,
+            isEther: false,
             tokenUri: "ipfs://specific-token-uri.com"
         });
 
         itemBound.addNewToken(_token);
 
         assertEq(itemBound.uri(_tokenId), "ipfs://specific-token-uri.com");
-    }
-
-    function testUpdateTokenBaseURIFailNotDevConfigRole() public {
-        string memory newBaseURI = "https://something-new.com";
-
-        vm.expectRevert(
-            "AccessControl: account 0x44e97af4418b7a17aabd8090bea0a471a366305c is missing role 0x3b359cf0b4471a5de84269135285268e64ac56f52d3161392213003a780ad63b"
-        );
-        vm.prank(playerWallet.addr);
-        itemBound.updateBaseUri(newBaseURI);
-    }
-
-    function testUpdateTokenBaseURIPass() public {
-        uint256 _tokenId = generateRandomItemId(); // totally random
-        uint256 _level = generateRandomLevel(); // level 1-10
-        TestLibItems.Tier _tier = generateRandomTier(); // tier 0-4
-
-        LibItems.TokenReward memory _token = LibItems.TokenReward({ tokenId: _tokenId, tokenUri: "", rewardAmount: 2000 });
-
-        itemBound.addNewToken(_token);
-
-        string memory newBaseURI = "https://something-new.com";
-
-        assertEq(itemBound.uri(_tokenId), string(abi.encodePacked("MISSING_BASE_URL", "/", _tokenId.toString())));
-        itemBound.updateBaseUri(newBaseURI);
-        assertEq(
-            itemBound.uri(_tokenId),
-            string(abi.encodePacked("https://something-new.com", "/", _tokenId.toString()))
-        );
     }
 
     function testUpdateTokenURIFailNoDevConfigRole() public {
@@ -589,13 +607,19 @@ contract ItemsRewardBoundTest is StdCheats, Test {
         uint256 _level = generateRandomLevel(); // level 1-10
         TestLibItems.Tier _tier = generateRandomTier(); // tier 0-4
 
-        LibItems.TokenReward memory _token = LibItems.TokenReward({ tokenId: _tokenId, tokenUri: "", rewardAmount: 2000 });
+        LibItems.TokenReward memory _token = LibItems.TokenReward({
+            tokenId: _tokenId,
+            tokenUri: "123",
+            rewardAmount: 2000,
+            rewardERC20: erc20FakeRewardAddress,
+            isEther: false
+        });
 
         itemBound.addNewToken(_token);
 
         string memory newTokenUri = "https://something-new.com/232";
 
-        assertEq(itemBound.uri(_tokenId), string(abi.encodePacked("MISSING_BASE_URL", "/", _tokenId.toString())));
+        assertEq(itemBound.uri(_tokenId), "123");
         itemBound.updateTokenUri(_tokenId, newTokenUri);
         assertEq(itemBound.uri(_tokenId), "https://something-new.com/232");
     }
@@ -655,6 +679,7 @@ contract ItemsRewardBoundTest is StdCheats, Test {
 
     function testGetAllItems() public {
         bytes memory encodedItemsAll = encode(_tokenIds);
+        itemBound.adminMintDefaultReward(playerWallet.addr, 1, true);
         itemBound.adminMint(playerWallet.addr, encodedItemsAll, false);
 
         string memory newTokenUri = "https://something-new.com/232";
@@ -690,41 +715,5 @@ contract ItemsRewardBoundTest is StdCheats, Test {
         vm.prank(minterWallet.addr);
         LibItems.TokenReturn[] memory allTokensInfo3 = itemBound.getAllItems();
         assertEq(allTokensInfo3.length, 1);
-    }
-
-    function testGetAllItemsAdmin() public {
-        bytes memory encodedItemsAll = encode(_tokenIds);
-        itemBound.adminMint(playerWallet.addr, encodedItemsAll, false);
-
-        string memory newTokenUri = "https://something-new.com/232";
-        itemBound.updateTokenUri(_tokenIds[23], newTokenUri);
-        assertEq(itemBound.uri(_tokenIds[23]), "https://something-new.com/232");
-
-        LibItems.TokenReturn[] memory allTokensInfo = itemBound.getAllItemsAdmin(playerWallet.addr);
-        assertEq(allTokensInfo.length, 1300);
-
-        vm.prank(playerWallet.addr);
-        itemBound.safeTransferFrom(playerWallet.addr, minterWallet.addr, _tokenIds[24], 1, "");
-
-        LibItems.TokenReturn[] memory allTokensInfo2 = itemBound.getAllItemsAdmin(playerWallet.addr);
-        assertEq(allTokensInfo2.length, 1300);
-
-        for (uint256 i = 0; i < allTokensInfo.length; i++) {
-            assertEq(allTokensInfo[i].tokenId, _tokenIds[i]);
-
-            if (i == 23) {
-                assertEq(allTokensInfo[i].tokenUri, newTokenUri);
-                assertEq(allTokensInfo[i].amount, 1);
-            } else {
-                assertEq(allTokensInfo[i].amount, 1);
-                assertEq(
-                    allTokensInfo[i].tokenUri,
-                    string(abi.encodePacked("https://something.com", "/", _tokenIds[i].toString()))
-                );
-            }
-        }
-
-        LibItems.TokenReturn[] memory allTokensInfo3 = itemBound.getAllItemsAdmin(minterWallet.addr);
-        assertEq(allTokensInfo3.length, 1300);
     }
 }

@@ -22,6 +22,7 @@ pragma solidity 0.8.17;
 // MMMM0cdNMM0cdNMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMM
 
 import { ERC1155 } from "@openzeppelin/contracts/token/ERC1155/ERC1155.sol";
+import { IERC20 } from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import { ERC1155Burnable } from "@openzeppelin/contracts/token/ERC1155/extensions/ERC1155Burnable.sol";
 import { ERC1155Supply } from "@openzeppelin/contracts/token/ERC1155/extensions/ERC1155Supply.sol";
 import { AccessControl } from "@openzeppelin/contracts/access/AccessControl.sol";
@@ -47,7 +48,6 @@ contract ItemsRewardBound is
     bytes32 public constant MANAGER_ROLE = keccak256("MANAGER_ROLE");
     bytes32 public constant DEV_CONFIG_ROLE = keccak256("DEV_CONFIG_ROLE");
 
-    string private baseURI;
     string public name;
     string public symbol;
     using Strings for uint256;
@@ -56,7 +56,7 @@ contract ItemsRewardBound is
     uint256 public defaultRewardId;
 
     mapping(uint256 => bool) private tokenExists;
-    mapping(uint256 => string) public tokenUris;
+    mapping(uint256 => LibItems.TokenReward) public tokenRewards;
     mapping(uint256 => bool) public isTokenMintPaused; // tokenId => bool - default is false
 
     uint256[] public itemIds;
@@ -66,11 +66,10 @@ contract ItemsRewardBound is
     constructor(
         string memory _name,
         string memory _symbol,
-        string memory _initBaseURI,
         uint256 _defaultRewardId,
         bool _isPaused,
         address devWallet
-    ) ERC1155(_initBaseURI) {
+    ) ERC1155("") {
         require(devWallet != address(0), "AddressIsZero");
 
         _grantRole(DEFAULT_ADMIN_ROLE, devWallet);
@@ -81,7 +80,6 @@ contract ItemsRewardBound is
 
         name = _name;
         symbol = _symbol;
-        baseURI = _initBaseURI;
         defaultRewardId = _defaultRewardId;
 
         if (_isPaused) _pause();
@@ -112,12 +110,11 @@ contract ItemsRewardBound is
     }
 
     function addNewToken(LibItems.TokenReward calldata _token) public onlyRole(DEV_CONFIG_ROLE) {
-        if (bytes(_token.tokenUri).length > 0) {
-            tokenUris[_token.tokenId] = _token.tokenUri;
-        }
-
+        require(bytes(_token.tokenUri).length > 0, "InvalidTokenUri");
+        require(_token.tokenId != 0, "InvalidTokenId");
+        require(_token.rewardERC20 != address(0), "InvalidRewardERC20");
+        tokenRewards[_token.tokenId] = _token;
         tokenExists[_token.tokenId] = true;
-
         itemIds.push(_token.tokenId);
     }
 
@@ -128,16 +125,17 @@ contract ItemsRewardBound is
     }
 
     function updateTokenUri(uint256 _tokenId, string calldata _tokenUri) public onlyRole(DEV_CONFIG_ROLE) {
-        tokenUris[_tokenId] = _tokenUri;
+        require(bytes(_tokenUri).length > 0, "InvalidTokenUri");
+        require(_tokenId != 0, "InvalidTokenId");
+        tokenRewards[_tokenId].tokenUri = _tokenUri;
     }
 
     function batchUpdateTokenUri(
         uint256[] calldata _tokenIds,
         string[] calldata _tokenUris
     ) public onlyRole(DEV_CONFIG_ROLE) {
-        if (_tokenIds.length != _tokenUris.length) {
-            revert("InvalidInput");
-        }
+        require(_tokenIds.length > 0, "InvalidInput");
+        require(_tokenIds.length == _tokenUris.length, "InvalidInput");
         for (uint256 i = 0; i < _tokenIds.length; i++) {
             updateTokenUri(_tokenIds[i], _tokenUris[i]);
         }
@@ -147,7 +145,35 @@ contract ItemsRewardBound is
         isTokenMintPaused[_tokenId] = _isTokenMintPaused;
     }
 
-    function _mintBatch(address to, uint256[] memory _tokenIds, uint256 amount, bool soulbound) private {
+    function claimERC20Reward(uint256 _tokenId) public nonReentrant {
+        require(balanceOf(_msgSender(), _tokenId) > 0, "InsufficientBalance");
+        require(tokenRewards[_tokenId].rewardAmount > 0, "InvalidRewardAmount");
+        require(!tokenRewards[_tokenId].isEther, "InvalidRewardType");
+
+        IERC20 token  = IERC20(tokenRewards[_tokenId].rewardERC20);
+        uint256 contractBalance = token.balanceOf(address(this));
+        require(contractBalance >= tokenRewards[_tokenId].rewardAmount, "InsufficientContractBalance");
+
+        token.transfer(_msgSender(), tokenRewards[_tokenId].rewardAmount);
+        _burn(_msgSender(), _tokenId, 1);
+    }
+
+    function claimETHReward(uint256 _tokenId) public nonReentrant {
+        require(balanceOf(_msgSender(), _tokenId) > 0, "InsufficientBalance");
+        require(tokenRewards[_tokenId].rewardAmount > 0, "InvalidRewardAmount");
+        require(tokenRewards[_tokenId].isEther, "InvalidRewardType");
+
+        require(address(this).balance >= tokenRewards[_tokenId].rewardAmount, "InsufficientContractBalance");
+        payable(_msgSender()).transfer(tokenRewards[_tokenId].rewardAmount);
+        _burn(_msgSender(), _tokenId, 1);
+    }
+
+    function _mintAndBurnReward(address to, uint256[] memory _tokenIds, uint256 amount, bool claimReward, bool soulbound) private {
+        require(amount > 0, "InvalidAmount");
+        require(_tokenIds.length > 0, "InvalidInput");
+        require(balanceOf(to, defaultRewardId) >= 1, "InsufficientRewardTokenBalance");
+        _burn(to, defaultRewardId, 1);
+
         for (uint256 i = 0; i < _tokenIds.length; i++) {
             uint256 _id = _tokenIds[i];
             isTokenExist(_id);
@@ -155,32 +181,43 @@ contract ItemsRewardBound is
                 revert("TokenMintPaused");
             }
 
+            if (claimReward) {
+                LibItems.TokenReward memory tokenReward = tokenRewards[_id];
+
+                if (!tokenReward.isEther) {
+                    IERC20 token = IERC20(tokenReward.rewardERC20);
+                    uint256 contractBalance = token.balanceOf(address(this));
+                    require(contractBalance >= tokenReward.rewardAmount, "InsufficientContractBalance");
+                    token.transfer(to, tokenReward.rewardAmount);
+                } else {
+                    require(address(this).balance >= tokenReward.rewardAmount, "InsufficientContractBalance");
+                    payable(to).transfer(tokenReward.rewardAmount);
+                }
+
+            }
+
             if (soulbound) {
                 _soulbound(to, _id, amount);
             }
 
             _mint(to, _id, amount, "");
-            // burn reward token
-            _burn(_msgSender(), defaultRewardId, amount);
         }
     }
 
     function mint(
         bytes calldata data,
-        uint256 amount,
         bool soulbound,
+        bool claimReward,
         uint256 nonce,
         bytes calldata signature
     ) external nonReentrant signatureCheck(_msgSender(), nonce, data, signature) whenNotPaused {
-        // check balance of one specific token id before mint
-        require(balanceOf(_msgSender(), defaultRewardId) >= amount, "InsufficientRewardsBalance");
         uint256[] memory _tokenIds = _decodeData(data);
-        _mintBatch(_msgSender(), _tokenIds, amount, soulbound);
+        _mintAndBurnReward(_msgSender(), _tokenIds, 1, claimReward, soulbound);
     }
 
     function adminMint(address to, bytes calldata data, bool soulbound) external onlyRole(MINTER_ROLE) whenNotPaused {
         uint256[] memory _tokenIds = _decodeData(data);
-        _mintBatch(to, _tokenIds, 1, soulbound);
+        _mintAndBurnReward(to, _tokenIds, 1, false, soulbound);
     }
 
     function adminMintDefaultReward(
@@ -188,7 +225,7 @@ contract ItemsRewardBound is
         uint256 amount,
         bool soulbound
     ) public onlyRole(MINTER_ROLE) whenNotPaused {
-        this.adminMintId(to, defaultRewardId, amount, soulbound);
+        adminMintId(to, defaultRewardId, amount, soulbound);
     }
 
     function adminBatchMintDefaultReward(
@@ -199,7 +236,7 @@ contract ItemsRewardBound is
         require(addresses.length == amounts.length, "InvalidInput");
         require(addresses.length == soulbounds.length, "InvalidInput");
         for (uint256 i = 0; i < addresses.length; i++) {
-            this.adminMintId(addresses[i], defaultRewardId, amounts[i], soulbounds[i]);
+            adminMintId(addresses[i], defaultRewardId, amounts[i], soulbounds[i]);
         }
     }
 
@@ -343,11 +380,7 @@ contract ItemsRewardBound is
 
     function uri(uint256 tokenId) public view override returns (string memory) {
         isTokenExist(tokenId);
-        if (bytes(tokenUris[tokenId]).length > 0) {
-            return tokenUris[tokenId];
-        } else {
-            return string(abi.encodePacked(baseURI, "/", tokenId.toString()));
-        }
+        return tokenRewards[tokenId].tokenUri;
     }
 
     function getAllItems() public view returns (LibItems.TokenReturn[] memory) {
@@ -377,39 +410,6 @@ contract ItemsRewardBound is
         }
 
         return returnsTruncated;
-    }
-
-    function getAllItemsAdmin(
-        address _owner
-    ) public view onlyRole(MINTER_ROLE) returns (LibItems.TokenReturn[] memory) {
-        uint256 totalTokens = itemIds.length;
-        LibItems.TokenReturn[] memory tokenReturns = new LibItems.TokenReturn[](totalTokens);
-
-        uint index;
-        for (uint i = 0; i < totalTokens; i++) {
-            uint256 tokenId = itemIds[i];
-            uint256 amount = balanceOf(_owner, tokenId);
-
-            LibItems.TokenReturn memory tokenReturn = LibItems.TokenReturn({
-                tokenId: tokenId,
-                tokenUri: uri(tokenId),
-                amount: amount
-            });
-            tokenReturns[index] = tokenReturn;
-            index++;
-        }
-
-        // truncate the array
-        LibItems.TokenReturn[] memory returnsTruncated = new LibItems.TokenReturn[](index);
-        for (uint i = 0; i < index; i++) {
-            returnsTruncated[i] = tokenReturns[i];
-        }
-
-        return returnsTruncated;
-    }
-
-    function updateBaseUri(string memory _baseURI) external onlyRole(DEV_CONFIG_ROLE) {
-        baseURI = _baseURI;
     }
 
     function updateWhitelistAddress(address _address, bool _isWhitelisted) external onlyRole(DEV_CONFIG_ROLE) {

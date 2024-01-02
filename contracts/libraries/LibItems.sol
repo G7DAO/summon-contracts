@@ -30,7 +30,9 @@ library LibItems {
     struct TokenReward {
         uint256 tokenId;
         string tokenUri;
-        uint256 rewardAmount;
+        uint256 rewardAmount; // depending of the erc20 token decimal
+        address rewardERC20; // USDC, USDT, DAI, etc
+        bool isEther;
     }
 
     struct TokenCreateWithRoyalty {
