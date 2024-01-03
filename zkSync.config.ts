@@ -39,7 +39,6 @@ defaultConfig.networks = {
     [NetworkName.ZkSyncSepolia]: {
         url: rpcUrls[ChainId.ZkSyncSepolia],
         ethNetwork: NetworkName.Sepolia,
-        chainId: 300,
         zksync: true,
         accounts: [PRIVATE_KEY],
         verifyURL: 'https://explorer.sepolia.era.zksync.dev/contract_verification',

@@ -104,14 +104,14 @@ export const ZKSYNC_SEPOLIA_CONTRACTS: DeploymentContract[] = [
                         {
                             tokenId: 1,
                             rewardAmount: 0,
-                            rewardERC20: '',
+                            rewardERC20: '0x4b6021A15cB4E76DD40dE7B0d316A6a7fb613C05',
                             isEther: false,
                             tokenUri:
                                 'https://achievo.mypinata.cloud/ipfs/QmT86CwHwRzUh9zBj6qvDB7P2Gn2wUK6BnJrn2RzESq3e3',
                         },
                         {
                             tokenId: 2,
-                            rewardAmount: 250000000000000000000,
+                            rewardAmount: 250,
                             rewardERC20: '0x4b6021A15cB4E76DD40dE7B0d316A6a7fb613C05',
                             isEther: false,
                             tokenUri:
@@ -119,7 +119,7 @@ export const ZKSYNC_SEPOLIA_CONTRACTS: DeploymentContract[] = [
                         },
                         {
                             tokenId: 3,
-                            rewardAmount: 150000000000000000000,
+                            rewardAmount: 150,
                             rewardERC20: '0x4b6021A15cB4E76DD40dE7B0d316A6a7fb613C05',
                             isEther: false,
                             tokenUri:
@@ -127,7 +127,7 @@ export const ZKSYNC_SEPOLIA_CONTRACTS: DeploymentContract[] = [
                         },
                         {
                             tokenId: 4,
-                            rewardAmount: 100000000000000000000,
+                            rewardAmount: 100,
                             rewardERC20: '0x4b6021A15cB4E76DD40dE7B0d316A6a7fb613C05',
                             isEther: false,
                             tokenUri:
@@ -135,7 +135,7 @@ export const ZKSYNC_SEPOLIA_CONTRACTS: DeploymentContract[] = [
                         },
                         {
                             tokenId: 5,
-                            rewardAmount: 75000000000000000000,
+                            rewardAmount: 75,
                             rewardERC20: '0x4b6021A15cB4E76DD40dE7B0d316A6a7fb613C05',
                             isEther: false,
                             tokenUri:
@@ -143,7 +143,7 @@ export const ZKSYNC_SEPOLIA_CONTRACTS: DeploymentContract[] = [
                         },
                         {
                             tokenId: 6,
-                            rewardAmount: 50000000000000000000,
+                            rewardAmount: 50,
                             rewardERC20: '0x4b6021A15cB4E76DD40dE7B0d316A6a7fb613C05',
                             isEther: false,
                             tokenUri:
@@ -151,7 +151,7 @@ export const ZKSYNC_SEPOLIA_CONTRACTS: DeploymentContract[] = [
                         },
                         {
                             tokenId: 7,
-                            rewardAmount: 25000000000000000000,
+                            rewardAmount: 25,
                             rewardERC20: '0x4b6021A15cB4E76DD40dE7B0d316A6a7fb613C05',
                             isEther: false,
                             tokenUri:
@@ -159,7 +159,7 @@ export const ZKSYNC_SEPOLIA_CONTRACTS: DeploymentContract[] = [
                         },
                         {
                             tokenId: 8,
-                            rewardAmount: 50000000000000000000,
+                            rewardAmount: 50,
                             rewardERC20: '0x4b6021A15cB4E76DD40dE7B0d316A6a7fb613C05',
                             isEther: false,
                             tokenUri:
@@ -167,7 +167,7 @@ export const ZKSYNC_SEPOLIA_CONTRACTS: DeploymentContract[] = [
                         },
                         {
                             tokenId: 9,
-                            rewardAmount: 75000000000000000000,
+                            rewardAmount: 75,
                             rewardERC20: '0x4b6021A15cB4E76DD40dE7B0d316A6a7fb613C05',
                             isEther: false,
                             tokenUri:
@@ -175,7 +175,7 @@ export const ZKSYNC_SEPOLIA_CONTRACTS: DeploymentContract[] = [
                         },
                         {
                             tokenId: 10,
-                            rewardAmount: 100000000000000000000,
+                            rewardAmount: 100,
                             rewardERC20: '0x4b6021A15cB4E76DD40dE7B0d316A6a7fb613C05',
                             isEther: false,
                             tokenUri:
@@ -183,7 +183,7 @@ export const ZKSYNC_SEPOLIA_CONTRACTS: DeploymentContract[] = [
                         },
                         {
                             tokenId: 11,
-                            rewardAmount: 150000000000000000000,
+                            rewardAmount: 150,
                             rewardERC20: '0x4b6021A15cB4E76DD40dE7B0d316A6a7fb613C05',
                             isEther: false,
                             tokenUri:
@@ -191,7 +191,7 @@ export const ZKSYNC_SEPOLIA_CONTRACTS: DeploymentContract[] = [
                         },
                         {
                             tokenId: 12,
-                            rewardAmount: 200000000000000000000,
+                            rewardAmount: 200,
                             rewardERC20: '0x4b6021A15cB4E76DD40dE7B0d316A6a7fb613C05',
                             isEther: false,
                             tokenUri:
