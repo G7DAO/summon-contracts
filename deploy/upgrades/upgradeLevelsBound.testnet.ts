@@ -28,7 +28,6 @@ async function main() {
 
     log(`${CONTRACT_NAME}${VERSION} upgraded to =>  ${CONTRACT_NAME}${VERSION}`);
 
-    // if (contract.verify) {
     await new Promise((resolve, reject) => {
         exec(
             `npx hardhat verify --network ${hre.network.name} ${PROXY_ADDRESS} --config zkSync.config.ts`,
@@ -41,7 +40,6 @@ async function main() {
             }
         );
     });
-    // }
 }
 
 main().catch((error) => {
