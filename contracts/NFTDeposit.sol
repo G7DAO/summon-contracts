@@ -135,7 +135,7 @@ contract NFTDeposits is ERC721Holder, ERC1155Holder, ERCWhitelistSignature, Paus
         bytes calldata signature
     ) onlyRole(MANAGER_ROLE) nonReentrant whenNotPaused external {
         // send paymaster funds to the owner
-        IERC20 token = IERC20(allowedERC20Token);
+        IERC20 token = IERC20(erc20Address);
         uint256 balance = token.balanceOf(address(this));
         require(balance >= _amount, "Insufficient balance");
         token.transfer(_to, _amount);
