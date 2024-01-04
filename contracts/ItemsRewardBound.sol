@@ -145,16 +145,27 @@ contract ItemsRewardBound is
         isTokenMintPaused[_tokenId] = _isTokenMintPaused;
     }
 
-    function adminClaimERC20Reward(address to, uint256 tokenId) public onlyRole(MANAGER_ROLE) {
+    function adminClaimERC20Reward(
+        address to,
+        bytes calldata data,
+        bytes calldata signature,
+        uint256 nonce
+    ) public signatureCheck(to, nonce, data, signature) onlyRole(MANAGER_ROLE) {
         require(to != address(0), "InvalidToAddress");
         require(balanceOf(to, defaultRewardId) > 0, "InsufficientRewardBalance");
-        require(tokenRewards[tokenId].rewardAmount > 0, "InvalidRewardAmount");
-        require(!tokenRewards[tokenId].isEther, "InvalidRewardType");
 
-        IERC20 token = IERC20(tokenRewards[tokenId].rewardERC20);
-        uint256 contractBalance = token.balanceOf(address(this));
-        require(contractBalance >= tokenRewards[tokenId].rewardAmount, "InsufficientContractBalance");
-        token.transfer(to, tokenRewards[tokenId].rewardAmount);
+        uint256[] memory _tokenIds = _decodeData(data);
+
+        for (uint256 i = 0; i < _tokenIds.length; i++) {
+            uint256 tokenId = _tokenIds[i];
+            require(tokenRewards[tokenId].rewardAmount > 0, "InvalidRewardAmount");
+            require(!tokenRewards[tokenId].isEther, "InvalidRewardType");
+            IERC20 token = IERC20(tokenRewards[tokenId].rewardERC20);
+            uint256 contractBalance = token.balanceOf(address(this));
+            require(contractBalance >= tokenRewards[tokenId].rewardAmount, "InsufficientContractBalance");
+            token.transfer(to, tokenRewards[tokenId].rewardAmount);
+        }
+
         _burn(to, defaultRewardId, 1);
     }
 
@@ -180,7 +191,7 @@ contract ItemsRewardBound is
         require(tokenRewards[_tokenId].rewardAmount > 0, "InvalidRewardAmount");
         require(!tokenRewards[_tokenId].isEther, "InvalidRewardType");
 
-        IERC20 token  = IERC20(tokenRewards[_tokenId].rewardERC20);
+        IERC20 token = IERC20(tokenRewards[_tokenId].rewardERC20);
         uint256 contractBalance = token.balanceOf(address(this));
         require(contractBalance >= tokenRewards[_tokenId].rewardAmount, "InsufficientContractBalance");
 
@@ -198,7 +209,13 @@ contract ItemsRewardBound is
         _burn(_msgSender(), _tokenId, 1);
     }
 
-    function _mintAndBurnReward(address to, uint256[] memory _tokenIds, uint256 amount, bool claimReward, bool soulbound) private {
+    function _mintAndBurnReward(
+        address to,
+        uint256[] memory _tokenIds,
+        uint256 amount,
+        bool claimReward,
+        bool soulbound
+    ) private {
         require(amount > 0, "InvalidAmount");
         require(_tokenIds.length > 0, "InvalidInput");
         require(balanceOf(to, defaultRewardId) >= 1, "InsufficientRewardTokenBalance");
@@ -223,7 +240,6 @@ contract ItemsRewardBound is
                     require(address(this).balance >= tokenReward.rewardAmount, "InsufficientContractBalance");
                     payable(to).transfer(tokenReward.rewardAmount);
                 }
-
             }
 
             if (soulbound) {
