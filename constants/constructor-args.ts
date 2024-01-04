@@ -8,10 +8,12 @@ export enum TENANT {
 export enum CONTRACT_TYPE {
     Avatars = 'Avatars',
     Items = 'Items',
+    RewardItems = 'RewardItems',
     Levels = 'Levels',
     OpenMint = 'OpenMint',
     Paymaster = 'Paymaster',
     GameSummary = 'GameSummary',
+    ERC20 = 'ERC20',
 }
 
 export interface ConstructorArgs {
@@ -78,14 +80,14 @@ export const ItemsRewardBoundArgs = {
     MAINNET: {
         name: 'AchievoItemsReward',
         symbol: 'AIR',
-        defaultRewardId: 7,
+        defaultRewardId: 1,
         isPaused: false,
         devWallet: 'DEPLOYER_WALLET',
     },
     TESTNET: {
         name: 'AchievoItemsReward',
         symbol: 'AIR',
-        defaultRewardId: 7,
+        defaultRewardId: 1,
         isPaused: false,
         devWallet: 'DEPLOYER_WALLET',
     },

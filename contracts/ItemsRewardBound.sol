@@ -265,6 +265,12 @@ contract ItemsRewardBound is
         defaultRewardId = _defaultRewardId;
     }
 
+    function changeRewardAmount(uint256 _tokenId, uint256 _newAmount) external onlyRole(DEV_CONFIG_ROLE) {
+        require(tokenExists[_tokenId], "TokenNotExist");
+        require(tokenRewards[_tokenId].rewardAmount != _newAmount, "InvalidAmount");
+        tokenRewards[_tokenId].rewardAmount = _newAmount;
+    }
+
     function _beforeTokenTransfer(
         address operator,
         address from,

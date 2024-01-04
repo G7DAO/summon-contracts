@@ -17,3 +17,4 @@ lint   :; pnpm lint
 test   :; forge test -vv
 
 deployAvatarBound  :; forge script script/DeployAvatarBound.s.sol:DeployAvatarBoundScript --rpc-url ${RPC_URL} --broadcast --verify -vvvv
+deployERC20MockBound  :; forge script script/DeployERC20MockScript.s.sol:DeployERC20MockScript --rpc-url ${RPC_URL} --broadcast --verify -vvvv
