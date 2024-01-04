@@ -145,6 +145,23 @@ contract ItemsRewardBound is
         isTokenMintPaused[_tokenId] = _isTokenMintPaused;
     }
 
+    function withdrawERC20(address _tokenAddress, address _to, uint256 _amount) external onlyRole(MANAGER_ROLE) {
+        require(_tokenAddress != address(0), "InvalidTokenAddress");
+        require(_to != address(0), "InvalidToAddress");
+        require(_amount > 0, "InvalidAmount");
+        IERC20 token = IERC20(_tokenAddress);
+        uint256 contractBalance = token.balanceOf(address(this));
+        require(contractBalance >= _amount, "InsufficientContractBalance");
+        token.transfer(_to, _amount);
+    }
+
+    function withdrawETH(address payable _to, uint256 _amount) external onlyRole(MANAGER_ROLE) {
+        require(_to != address(0), "InvalidToAddress");
+        require(_amount > 0, "InvalidAmount");
+        require(address(this).balance >= _amount, "InsufficientContractBalance");
+        _to.transfer(_amount);
+    }
+
     function claimERC20Reward(uint256 _tokenId) public nonReentrant {
         require(balanceOf(_msgSender(), _tokenId) > 0, "InsufficientBalance");
         require(tokenRewards[_tokenId].rewardAmount > 0, "InvalidRewardAmount");
