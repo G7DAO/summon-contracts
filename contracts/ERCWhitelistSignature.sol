@@ -57,7 +57,7 @@ contract ERCWhitelistSignature {
     function _recoverAddress(
         address to,
         uint256 nonce,
-        bytes calldata data,
+        bytes memory data,
         bytes calldata signature
     ) internal pure virtual returns (address) {
         bytes32 message = keccak256(abi.encodePacked(to, data, nonce));
@@ -69,7 +69,7 @@ contract ERCWhitelistSignature {
     function _verifySignature(
         address to,
         uint256 nonce,
-        bytes calldata data,
+        bytes memory data,
         bytes calldata signature
     ) internal virtual returns (bool) {
         if (usedSignatures[signature]) revert("AlreadyUsedSignature");
