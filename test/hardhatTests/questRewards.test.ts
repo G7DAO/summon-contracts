@@ -3,7 +3,7 @@ import { expect } from 'chai';
 // @ts-ignore-next-line
 import { ethers } from 'hardhat';
 
-import { QuestRewards, NonFunToken } from '../typechain-types';
+import { QuestRewards, NonFunToken } from '../../typechain-types';
 
 describe('QuestReward', function () {
     let adminAccount: SignerWithAddress;
