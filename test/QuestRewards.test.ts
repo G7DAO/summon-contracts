@@ -1,7 +1,8 @@
+import { SignerWithAddress } from '@nomicfoundation/hardhat-ethers/signers';
 import { expect } from 'chai';
 // @ts-ignore-next-line
 import { ethers } from 'hardhat';
-import { SignerWithAddress } from '@nomicfoundation/hardhat-ethers/signers';
+
 import { QuestRewards, NonFunToken } from '../typechain-types';
 
 describe('QuestReward', function () {
@@ -46,6 +47,6 @@ describe('QuestReward', function () {
         expect(nftOwner).to.equal('');
 
         // get signature from admin account to withdraw
-        //withdraw
+        // withdraw
     });
 });
