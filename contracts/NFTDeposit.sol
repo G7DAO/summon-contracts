@@ -21,6 +21,7 @@ pragma solidity 0.8.17;
 // MMNx'.dWMMK;.:0WMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMM
 // MMMM0cdNMM0cdNMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMM
 
+import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/token/ERC1155/utils/ERC1155Holder.sol";
 import "@openzeppelin/contracts/token/ERC1155/utils/ERC1155Receiver.sol";
 import "@openzeppelin/contracts/token/ERC1155/IERC1155.sol";
@@ -33,16 +34,20 @@ import "./ERCWhitelistSignature.sol";
 
 contract QuestRewards is ERC721Holder, ERC1155Holder, ERCWhitelistSignature, Pausable, AccessControl, ReentrancyGuard {
     bytes32 public constant PAUSER_ROLE = keccak256("PAUSER_ROLE");
+    bytes32 public constant DEV_CONFIG_ROLE = keccak256("DEV_CONFIG_ROLE");
+    bytes32 public constant MANAGER_ROLE = keccak256("DEV_CONFIG_ROLE");
+
 
     // Mapping for ERC721 deposits: contract address => tokenId => owner address
-    mapping(address => mapping(uint256 => address)) private _erc721Deposits;
+    mapping(address => mapping(uint256 => address)) public _erc721Deposits;
 
     // Mapping for ERC1155 deposits: contract address => tokenId => balance
-    mapping(address => mapping(uint256 => uint256)) private _erc1155Deposits;
+    mapping(address => mapping(uint256 => uint256)) public _erc1155Deposits;
 
-    constructor(address adminWallet) {
+    constructor(address adminWallet, address devWallet) {
         _addWhitelistSigner(adminWallet);
         _setupRole(DEFAULT_ADMIN_ROLE, adminWallet);
+        _setupRole(DEV_CONFIG_ROLE, devWallet);
     }
 
     /**
@@ -66,11 +71,11 @@ contract QuestRewards is ERC721Holder, ERC1155Holder, ERCWhitelistSignature, Pau
             contractAddress
         );
         uint256 nonce = 0;
-        require(_verifySignature(msg.sender, nonce, message, signature), "Invalid signature");
+        require(_verifySignature(_msgSender(), nonce, message, signature), "Invalid signature");
         IERC721 nft = IERC721(contractAddress);
-        require(nft.ownerOf(tokenId) == msg.sender, "Not the token owner");
-        nft.safeTransferFrom(msg.sender, address(this), tokenId);
-        _erc721Deposits[contractAddress][tokenId] = msg.sender;
+        require(nft.ownerOf(tokenId) == _msgSender(), "Not the token owner");
+        nft.safeTransferFrom(_msgSender(), address(this), tokenId);
+        _erc721Deposits[contractAddress][tokenId] = _msgSender();
     }
 
     // Deposit an ERC1155 token
@@ -92,12 +97,12 @@ contract QuestRewards is ERC721Holder, ERC1155Holder, ERCWhitelistSignature, Pau
     //         amount
     //     );
     //     uint256 nonce = 0;
-    //     bytes32 data = keccak256(abi.encodePacked(msg.sender, message, nonce));
-    //     require(_verifySignature(msg.sender, 0, data, signature), "Invalid signature");
+    //     bytes32 data = keccak256(abi.encodePacked(_msgSender(), message, nonce));
+    //     require(_verifySignature(_msgSender(), 0, data, signature), "Invalid signature");
     //     IERC1155 nft = IERC1155(contractAddress);
-    //     require(nft.balanceOf(msg.sender, tokenId) >= amount, "Insufficient token balance");
-    //     nft.safeTransferFrom(msg.sender, address(this), tokenId, amount, "");
-    //     _erc1155Deposits[contractAddress][tokenId] = msg.sender;
+    //     require(nft.balanceOf(_msgSender(), tokenId) >= amount, "Insufficient token balance");
+    //     nft.safeTransferFrom(_msgSender(), address(this), tokenId, amount, "");
+    //     _erc1155Deposits[contractAddress][tokenId] = _msgSender();
     // }
 
     // // Withdraw an ERC721 token
@@ -105,7 +110,7 @@ contract QuestRewards is ERC721Holder, ERC1155Holder, ERCWhitelistSignature, Pau
     //     address contractAddress,
     //     uint256 tokenId,
     //     bytes calldata signature
-    // ) external nonReentrant whenNotPaused {
+    // ) external onlyRole(MANAGER_ROLE) nonReentrant whenNotPaused {
     //     // It is necessary to construct the signed message here to prevent one signature being used for any function
     //     string memory message = abi.encodePacked(
     //         "WITHDRAW",
@@ -116,10 +121,10 @@ contract QuestRewards is ERC721Holder, ERC1155Holder, ERCWhitelistSignature, Pau
     //         contractAddress
     //     );
     //     uint256 nonce = 0;
-    //     bytes32 data = keccak256(abi.encodePacked(msg.sender, message, nonce));
-    //     require(_verifySignature(msg.sender, nonce, data, signature), "Invalid signature");
-    //     require(_erc721Deposits[contractAddress][tokenId] == msg.sender, "Not the token depositor");
-    //     IERC721(contractAddress).safeTransferFrom(address(this), msg.sender, tokenId);
+    //     bytes32 data = keccak256(abi.encodePacked(_msgSender(), message, nonce));
+    //     require(_verifySignature(_msgSender(), nonce, data, signature), "Invalid signature");
+    //     require(_erc721Deposits[contractAddress][tokenId] == _msgSender(), "Not the token depositor");
+    //     IERC721(contractAddress).safeTransferFrom(address(this), _msgSender(), tokenId);
     //     delete _erc721Deposits[contractAddress][tokenId];
     // }
 
@@ -129,7 +134,7 @@ contract QuestRewards is ERC721Holder, ERC1155Holder, ERCWhitelistSignature, Pau
     //     uint256 tokenId,
     //     uint256 amount,
     //     bytes calldata signature
-    // ) external nonReentrant whenNotPaused {
+    // ) external onlyRole(MANAGER_ROLE) nonReentrant whenNotPaused {
     //     // It is necessary to construct the signed message here to prevent one signature being used for any function
     //     string memory message = abi.encodePacked(
     //         "WITHDRAW",
@@ -142,11 +147,11 @@ contract QuestRewards is ERC721Holder, ERC1155Holder, ERCWhitelistSignature, Pau
     //         amount
     //     );
     //     uint256 nonce = 0;
-    //     bytes32 data = keccak256(abi.encodePacked(msg.sender, message, nonce));
+    //     bytes32 data = keccak256(abi.encodePacked(_msgSender(), message, nonce));
     //     // construct data with nonce
-    //     require(_verifySignature(msg.sender, 0, data, signature), "Invalid signature");
-    //     require(_erc1155Deposits[contractAddress][tokenId] == msg.sender, "Not the token depositor");
-    //     IERC1155(contractAddress).safeTransferFrom(address(this), msg.sender, tokenId, amount, "");
+    //     require(_verifySignature(_msgSender(), 0, data, signature), "Invalid signature");
+    //     require(_erc1155Deposits[contractAddress][tokenId] == _msgSender(), "Not the token depositor");
+    //     IERC1155(contractAddress).safeTransferFrom(address(this), _msgSender(), tokenId, amount, "");
     //     delete _erc1155Deposits[contractAddress][tokenId];
     // }
 

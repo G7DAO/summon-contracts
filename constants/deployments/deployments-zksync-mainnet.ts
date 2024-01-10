@@ -158,7 +158,7 @@ export const ZKSYNC_MAINNET_CONTRACTS: DeploymentContract[] = [
         tenants: [TENANT.ZkSync],
         verify: true,
         upgradable: false,
-        dependencies: ['AvatarBoundV1'],
+        dependencies: ['AvatarBoundV1', 'ItemBoundV1', 'LevelsBoundV1'],
         functionCalls: [
             {
                 contractName: 'ERC20chainlinkPaymaster',

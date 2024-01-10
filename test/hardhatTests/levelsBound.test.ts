@@ -2,7 +2,7 @@ import { expect } from 'chai';
 // @ts-ignore-next-line
 import { ethers } from 'hardhat';
 import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers';
-import { LevelsBound, Soulbound1155 } from '../typechain-types';
+import { LevelsBound, Soulbound1155 } from '../../typechain-types';
 
 describe.skip('LevelsBound', function () {
     let levelsBound: LevelsBound;
@@ -19,7 +19,15 @@ describe.skip('LevelsBound', function () {
         playerAccount = player;
         playerAccount2 = player2;
 
-        await itemsBoundContract.deploy('myItems', 'mIs', 'https://app.bueno.art/api/contract/J9SFsPXBW4nXJP-fake/chain/1', 1, false, adminAccount.address, 10);
+        await itemsBoundContract.deploy(
+            'myItems',
+            'mIs',
+            'https://app.bueno.art/api/contract/J9SFsPXBW4nXJP-fake/chain/1',
+            1,
+            false,
+            adminAccount.address,
+            10
+        );
         await itemsBoundContract.wait();
 
         await levelBoundcontract.deploy(adminAccount.address, true, itemsBoundContract.address);
@@ -37,46 +45,62 @@ describe.skip('LevelsBound', function () {
     });
 
     it("As user I can't mint levels for a player", async function () {
-        await expect(levelsBound.connect(playerAccount).levelUp(playerAccount.address, 1)).to.be.revertedWith('Ownable: caller is not the owner');
+        await expect(levelsBound.connect(playerAccount).levelUp(playerAccount.address, 1)).to.be.revertedWith(
+            'Ownable: caller is not the owner'
+        );
     });
 
     it("The user can't have the same level token twice", async function () {
         const tx = await levelsBound.levelUp(playerAccount.address, 1);
         await tx.wait();
-        await expect(levelsBound.levelUp(playerAccount.address, 1)).to.be.revertedWith('Player already has this level token');
+        await expect(levelsBound.levelUp(playerAccount.address, 1)).to.be.revertedWith(
+            'Player already has this level token'
+        );
     });
 
     it('Sent the level 0 as new level is not allowed', async function () {
-        await expect(levelsBound.levelUp(playerAccount.address, 0)).to.be.revertedWith('New level must be greater than 0');
+        await expect(levelsBound.levelUp(playerAccount.address, 0)).to.be.revertedWith(
+            'New level must be greater than 0'
+        );
     });
 
     it('User only can lvl up once per level, more than once is not allowed', async function () {
         const tx = await levelsBound.levelUp(playerAccount.address, 1);
         await tx.wait();
-        await expect(levelsBound.levelUp(playerAccount.address, 3)).to.be.revertedWith('Player does not have the previous level token');
+        await expect(levelsBound.levelUp(playerAccount.address, 3)).to.be.revertedWith(
+            'Player does not have the previous level token'
+        );
     });
 
     it('Level down is not allowed', async function () {
         const tx = await levelsBound.levelUp(playerAccount.address, 1);
         await tx.wait();
-        await expect(levelsBound.levelUp(playerAccount.address, 3)).to.be.revertedWith('Player does not have the previous level token');
+        await expect(levelsBound.levelUp(playerAccount.address, 3)).to.be.revertedWith(
+            'Player does not have the previous level token'
+        );
     });
 
     it('Level up to the level 1 twice is not possible', async function () {
         const tx = await levelsBound.levelUp(playerAccount.address, 1);
         await tx.wait();
-        await expect(levelsBound.levelUp(playerAccount.address, 1)).to.be.revertedWith('Player already has this level token');
+        await expect(levelsBound.levelUp(playerAccount.address, 1)).to.be.revertedWith(
+            'Player already has this level token'
+        );
     });
 
     it("As user I can't transfer the level tokens", async function () {
         await expect(
-            levelsBound.connect(playerAccount).safeTransferFrom(playerAccount.address, minterAccount.address, 1, 1, ethers.toUtf8Bytes(''))
+            levelsBound
+                .connect(playerAccount)
+                .safeTransferFrom(playerAccount.address, minterAccount.address, 1, 1, ethers.toUtf8Bytes(''))
         ).to.be.revertedWith("You can't transfer this token");
     });
 
     it("As user I can't transfer the level tokens using the batch as well", async function () {
         await expect(
-            levelsBound.connect(playerAccount).safeBatchTransferFrom(playerAccount.address, minterAccount.address, [1], [1], ethers.toUtf8Bytes(''))
+            levelsBound
+                .connect(playerAccount)
+                .safeBatchTransferFrom(playerAccount.address, minterAccount.address, [1], [1], ethers.toUtf8Bytes(''))
         ).to.be.revertedWith("You can't transfer this token");
     });
 

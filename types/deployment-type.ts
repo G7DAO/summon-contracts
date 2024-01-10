@@ -35,7 +35,7 @@ export interface DeploymentContract {
 export interface FunctionCall {
     contractName: string;
     functionName: string;
-    args: (string | number | boolean)[];
+    args: (string | number | boolean | Record<string, any>)[];
     contractAddress?: string;
 }
 export interface DeploymentMap {

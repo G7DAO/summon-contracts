@@ -8,10 +8,12 @@ export enum TENANT {
 export enum CONTRACT_TYPE {
     Avatars = 'Avatars',
     Items = 'Items',
+    RewardItems = 'RewardItems',
     Levels = 'Levels',
     OpenMint = 'OpenMint',
     Paymaster = 'Paymaster',
     GameSummary = 'GameSummary',
+    ERC20 = 'ERC20',
 }
 
 export interface ConstructorArgs {
@@ -74,6 +76,23 @@ export const ItemBoundArgs: Soulbound1155Args = {
 
 export const ItemBoundV1Args: Soulbound1155Args = ItemBoundArgs;
 
+export const ItemsRewardBoundArgs = {
+    MAINNET: {
+        name: 'AchievoItemsReward',
+        symbol: 'AIR',
+        defaultRewardId: 1,
+        isPaused: false,
+        devWallet: 'DEPLOYER_WALLET',
+    },
+    TESTNET: {
+        name: 'AchievoItemsReward',
+        symbol: 'AIR',
+        defaultRewardId: 1,
+        isPaused: false,
+        devWallet: 'DEPLOYER_WALLET',
+    },
+};
+
 export const NFTGatingArgs = {
     MAINNET: {
         name: 'Achievo NFT Gating Admin Access',
@@ -113,7 +132,7 @@ export const AvatarBoundArgs = {
         contractURI: 'https://achievo.mypinata.cloud/ipfs/QmSDbeNWVY2CGUuLHni689L5eSrSG3iZHyTRZJWXX7GpjS',
         revealURI: 'QmZnvSyeKRQxWwcofVmq41BNCtHbBmomk8Ny8mtGRTjtzS',
         devWallet: 'DEPLOYER_WALLET',
-        gatingNftAddress: '0xcc1eBf6Dbb9fF24A745D1cc7F6DC3eeDa5f9fa71',
+        gatingNftAddress: '0x6E03Ea6c9aBBb78Dd761b9c71c06176c508488C3',
         itemsNftAddress: 'CONTRACT_ItemBound',
         mintNftGatingEnabled: true,
         mintNFtWithoutGatingEnabled: true,
