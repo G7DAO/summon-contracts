@@ -29,7 +29,10 @@ describe('QuestReward', function () {
         );
 
         const QuestRewardsFactory = await ethers.getContractFactory('QuestRewards');
-        questReward = (await QuestRewardsFactory.deploy(adminAccount.address)) as QuestRewards;
+        questReward = (await QuestRewardsFactory.deploy(
+            adminAccount.address,
+            gameDeveloperAccount.address
+        )) as QuestRewards;
         await questReward.waitForDeployment();
 
         const NonFunTokenFactory = await ethers.getContractFactory('NonFunToken');
