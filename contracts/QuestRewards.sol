@@ -45,7 +45,12 @@ contract QuestRewards is ERC721Holder, ERC1155Holder, ERCWhitelistSignature, Pau
         _setupRole(DEFAULT_ADMIN_ROLE, adminWallet);
     }
 
-    // Deposit an ERC721 token
+    /**
+     * @notice Whitelist signer signature gated function to deposit ERC721 tokens. 
+     * @dev Caller will have to approve this contract on the ERC721 contract first.
+     * @param contractAddress ERC721 contract address
+     * @param tokenId Token id to deposit from caller
+     */
     function depositERC721(
         address contractAddress,
         uint256 tokenId,
