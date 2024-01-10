@@ -114,7 +114,7 @@ export const AvatarBoundArgs = {
     MAINNET: {
         name: 'AvatarBound',
         symbol: 'AVB',
-        baseURI: 'https://achievo.mypinata.cloud/ipfs',
+        baseURI: '',
         contractURI: 'https://achievo.mypinata.cloud/ipfs/QmSDbeNWVY2CGUuLHni689L5eSrSG3iZHyTRZJWXX7GpjS',
         revealURI: 'Qmdk4zHamwCyqSzuWNNYypuz4FXAGdApbky7SHNsXYYQg7',
         devWallet: 'DEPLOYER_WALLET',
@@ -128,7 +128,7 @@ export const AvatarBoundArgs = {
     TESTNET: {
         name: 'AvatarBound',
         symbol: 'AVB',
-        baseURI: 'https://achievo.mypinata.cloud/ipfs',
+        baseURI: '',
         contractURI: 'https://achievo.mypinata.cloud/ipfs/QmSDbeNWVY2CGUuLHni689L5eSrSG3iZHyTRZJWXX7GpjS',
         revealURI: 'QmZnvSyeKRQxWwcofVmq41BNCtHbBmomk8Ny8mtGRTjtzS',
         devWallet: 'DEPLOYER_WALLET',
