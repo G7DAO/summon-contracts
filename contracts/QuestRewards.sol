@@ -37,8 +37,8 @@ contract QuestRewards is ERC721Holder, ERC1155Holder, ERCWhitelistSignature, Pau
     // Mapping for ERC721 deposits: contract address => tokenId => owner address
     mapping(address => mapping(uint256 => address)) private _erc721Deposits;
 
-    // Mapping for ERC1155 deposits: contract address => tokenId => owner address
-    mapping(address => mapping(uint256 => address)) private _erc1155Deposits;
+    // Mapping for ERC1155 deposits: contract address => tokenId => balance
+    mapping(address => mapping(uint256 => uint256)) private _erc1155Deposits;
 
     constructor(address adminWallet) {
         _addWhitelistSigner(adminWallet);
