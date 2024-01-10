@@ -33,7 +33,8 @@
         "constants",
         "helpers",
         "./typechain-types",
-        "tasks"
+        "tasks",
+        "./test"
     ],
     "exclude": ["**/node_modules"],
     "ts-node": {
