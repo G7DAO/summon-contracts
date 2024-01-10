@@ -1,7 +1,7 @@
 import { expect } from 'chai';
 // @ts-ignore-next-line
 import { ethers } from 'hardhat';
-import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers';
+import { SignerWithAddress } from '@nomicfoundation/hardhat-ethers/signers';
 import { GameSummary } from '../typechain-types';
 import { generateSignature } from '../helpers/signature';
 import { hashIds } from '../helpers/hashing';

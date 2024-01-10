@@ -1,7 +1,7 @@
 import { expect } from 'chai';
 // @ts-ignore-next-line
 import { ethers } from 'hardhat';
-import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers';
+import { SignerWithAddress } from '@nomicfoundation/hardhat-ethers/signers';
 import { QuestRewards, NonFunToken } from '../typechain-types';
 
 describe('QuestReward', function () {
@@ -18,11 +18,11 @@ describe('QuestReward', function () {
         gameDeveloperAccount = gameDev;
 
         const QuestRewardsFactory = await ethers.getContractFactory('QuestRewards');
-        questReward = await QuestRewardsFactory.deploy(adminAccount) as QuestRewards;
+        questReward = (await QuestRewardsFactory.deploy(adminAccount)) as QuestRewards;
         await questReward.waitForDeployment();
 
         const NonFunTokenFactory = await ethers.getContractFactory('NonFunToken');
-        nonFunToken = await NonFunTokenFactory.deploy(adminAccount) as NonFunToken;
+        nonFunToken = (await NonFunTokenFactory.deploy(adminAccount)) as NonFunToken;
         await nonFunToken.waitForDeployment();
 
         await nonFunToken.mintCollectionNFT(gameDeveloperAccount.address, 0);
@@ -31,19 +31,10 @@ describe('QuestReward', function () {
     it('Deposits and withdraws an ERC721', async function () {
         // game developer gets signature from admin account to deposit
         const addr = await nonFunToken.getAddress();
-        
+
         const msg = ethers.solidityPacked(
-            ["address", "string", "string", "string", "uint256", "string", "address", "uint256"],
-            [
-                adminAccount.address,
-                "DEPOSIT",
-                "ERC721",
-                "TOKENID",
-                0,
-                "CONTRACT_ADDRESS",
-                addr,
-                0
-            ]
+            ['address', 'string', 'string', 'string', 'uint256', 'string', 'address', 'uint256'],
+            [adminAccount.address, 'DEPOSIT', 'ERC721', 'TOKENID', 0, 'CONTRACT_ADDRESS', addr, 0]
         );
         const signature = await adminAccount.signMessage(msg);
         console.log('Signed the deposit! Signature: ', signature);
@@ -52,9 +43,9 @@ describe('QuestReward', function () {
         await questReward.connect(gameDeveloperAccount).depositERC721(addr, 0, signature);
 
         const nftOwner = await nonFunToken.ownerOf(0);
-        expect(nftOwner).to.equal('')
+        expect(nftOwner).to.equal('');
 
         // get signature from admin account to withdraw
         //withdraw
-    })
-})
+    });
+});
