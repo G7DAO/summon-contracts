@@ -3,13 +3,13 @@ import { expect } from 'chai';
 // @ts-ignore-next-line
 import { ethers } from 'hardhat';
 
-import { QuestRewards, NonFunToken } from '../../typechain-types';
+import { NFTDeposit, NonFunToken } from '../../typechain-types';
 
-describe('QuestReward', function () {
+describe('Token Deposits', function () {
     let adminAccount: SignerWithAddress;
     let gameDeveloperAccount: SignerWithAddress;
     let playerAccount: SignerWithAddress;
-    let questReward: QuestRewards;
+    let nftDeposit: NFTDeposit;
     let questRewardContractAddress: string;
     let nonFunToken: NonFunToken;
     let nonFunTokenContractAddress: string;
@@ -28,12 +28,9 @@ describe('QuestReward', function () {
             gameDeveloperAccount.address
         );
 
-        const QuestRewardsFactory = await ethers.getContractFactory('QuestRewards');
-        questReward = (await QuestRewardsFactory.deploy(
-            adminAccount.address,
-            gameDeveloperAccount.address
-        )) as QuestRewards;
-        await questReward.waitForDeployment();
+        const NFTDepositFactory = await ethers.getContractFactory('NFTDeposit');
+        nftDeposit = (await NFTDepositFactory.deploy(adminAccount.address, gameDeveloperAccount.address)) as NFTDeposit;
+        await nftDeposit.waitForDeployment();
 
         const NonFunTokenFactory = await ethers.getContractFactory('NonFunToken');
         nonFunToken = (await NonFunTokenFactory.deploy()) as NonFunToken;
@@ -41,7 +38,7 @@ describe('QuestReward', function () {
 
         await nonFunToken.mintCollectionNFT(gameDeveloperAccount.address, 0);
         nonFunTokenContractAddress = await nonFunToken.getAddress();
-        questRewardContractAddress = await questReward.getAddress();
+        questRewardContractAddress = await nftDeposit.getAddress();
     });
 
     it('Deposits and withdraws an ERC721', async function () {
@@ -65,7 +62,7 @@ describe('QuestReward', function () {
         await nonFunToken.connect(gameDeveloperAccount).setApprovalForAll(questRewardContractAddress, true);
 
         // game developer deposits NFT
-        await questReward.connect(gameDeveloperAccount).depositERC721(nonFunTokenContractAddress, 0, signature);
+        await nftDeposit.connect(gameDeveloperAccount).depositERC721(nonFunTokenContractAddress, 0, signature);
 
         const nftOwner = await nonFunToken.ownerOf(0);
         expect(nftOwner).to.equal(questRewardContractAddress);

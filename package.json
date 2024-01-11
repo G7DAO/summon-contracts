@@ -64,7 +64,7 @@
         "deployGameSummary:mantle:mainnet": "pnpm deploy:mantle:mainnet --contractname GameSummary",
         "deployGameSummary:mantle:wadsley": "pnpm deploy:mantle:wadsley --contractname GameSummary",
         "test": "REPORT_GAS=true hardhat --config hardhat.config.ts test test/hardhatTests/*.ts --network hardhat",
-        "test:questRewards": "hardhat --config hardhat.config.ts test test/hardhatTests/questRewards.test.ts  --network hardhat",
+        "test:tokenDeposits": "hardhat --config hardhat.config.ts test test/hardhatTests/nftDeposit.test.ts  --network hardhat",
         "test:ci": "hardhat --config hardhat.config.ts test test/hardhatTests/*.ts  --network hardhat ",
         "test:zkSyncLocal": "hardhat --config zkSync.config.ts test test/zkSync/*.ts --network zkSyncLocal",
         "lint": "eslint --config ./.eslintrc.js --ignore-path ./.eslintignore ./test/**/*.ts",

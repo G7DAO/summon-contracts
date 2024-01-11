@@ -32,14 +32,13 @@ import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
 import "@openzeppelin/contracts/access/AccessControl.sol";
 import "./ERCWhitelistSignature.sol";
 
-contract QuestRewards is ERC721Holder, ERC1155Holder, ERCWhitelistSignature, Pausable, AccessControl, ReentrancyGuard {
+contract NFTDeposit is ERC721Holder, ERC1155Holder, ERCWhitelistSignature, Pausable, AccessControl, ReentrancyGuard {
     bytes32 public constant PAUSER_ROLE = keccak256("PAUSER_ROLE");
     bytes32 public constant DEV_CONFIG_ROLE = keccak256("DEV_CONFIG_ROLE");
     bytes32 public constant MANAGER_ROLE = keccak256("DEV_CONFIG_ROLE");
 
-
-    // Mapping for ERC721 deposits: contract address => tokenId => owner address
-    mapping(address => mapping(uint256 => address)) public _erc721Deposits;
+    // Mapping for ERC721 deposits: contract address => tokenId
+    mapping(address => mapping(uint256 => bool)) public _erc721Deposits;
 
     // Mapping for ERC1155 deposits: contract address => tokenId => balance
     mapping(address => mapping(uint256 => uint256)) public _erc1155Deposits;
@@ -75,7 +74,7 @@ contract QuestRewards is ERC721Holder, ERC1155Holder, ERCWhitelistSignature, Pau
         IERC721 nft = IERC721(contractAddress);
         require(nft.ownerOf(tokenId) == _msgSender(), "Not the token owner");
         nft.safeTransferFrom(_msgSender(), address(this), tokenId);
-        _erc721Deposits[contractAddress][tokenId] = _msgSender();
+        _erc721Deposits[contractAddress][tokenId] = true;
     }
 
     // Deposit an ERC1155 token
