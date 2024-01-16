@@ -27,14 +27,15 @@ import {
     TransactionHelper,
     Transaction
 } from "@matterlabs/zksync-contracts/l2/system-contracts/libraries/TransactionHelper.sol";
-import { AccessControl } from "@openzeppelin/contracts/access/AccessControl.sol";
-import { Pausable } from "@openzeppelin/contracts/security/Pausable.sol";
 import "@matterlabs/zksync-contracts/l2/system-contracts/Constants.sol";
 import { AggregatorV3Interface } from "@chainlink/contracts/src/v0.8/interfaces/AggregatorV3Interface.sol";
+import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
+import "@openzeppelin/contracts-upgradeable/access/AccessControlUpgradeable.sol";
+import "@openzeppelin/contracts-upgradeable/security/PausableUpgradeable.sol";
 
 error AllowanceTooLow(uint256 requiredAllowance);
 
-contract ERC20ChainlinkPaymaster is IPaymaster, Pausable, AccessControl {
+contract ERC20ChainlinkPaymasterV1 is Initializable, IPaymaster, PausableUpgradeable, AccessControlUpgradeable {
     AggregatorV3Interface internal erc20DataFeed;
     AggregatorV3Interface internal ethDataFeed;
     bytes32 public constant MANAGER_ROLE = keccak256("MANAGER_ROLE");
@@ -56,7 +57,20 @@ contract ERC20ChainlinkPaymaster is IPaymaster, Pausable, AccessControl {
         _;
     }
 
-    constructor(address _erc20Token, address _ERC20FeedId, address _ETHFeedId, uint _fixedPrice, bool _useChainlink) {
+    /// @custom:oz-upgrades-unsafe-allow constructor
+    constructor() {
+        _disableInitializers();
+    }
+
+    function initialize(
+        address _erc20Token,
+        address _ERC20FeedId,
+        address _ETHFeedId,
+        uint _fixedPrice,
+        bool _useChainlink
+    ) public initializer {
+        __Pausable_init();
+        __AccessControl_init();
         _setupRole(DEFAULT_ADMIN_ROLE, msg.sender);
         _setupRole(DEV_CONFIG_ROLE, msg.sender);
         allowedERC20Token = _erc20Token;
