@@ -17,24 +17,25 @@ pragma solidity 0.8.17;
 // MMMM0cdNMM0cdNMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMM
 
 import {
-    ExecutionResult,
-    PAYMASTER_VALIDATION_SUCCESS_MAGIC,
-    IPaymaster
+ExecutionResult,
+PAYMASTER_VALIDATION_SUCCESS_MAGIC,
+IPaymaster
 } from "@matterlabs/zksync-contracts/l2/system-contracts/interfaces/IPaymaster.sol";
 import { IPaymasterFlow } from "@matterlabs/zksync-contracts/l2/system-contracts/interfaces/IPaymasterFlow.sol";
 import {
-    TransactionHelper,
-    Transaction
+TransactionHelper,
+Transaction
 } from "@matterlabs/zksync-contracts/l2/system-contracts/libraries/TransactionHelper.sol";
-import { AccessControl } from "@openzeppelin/contracts/access/AccessControl.sol";
-import { Pausable } from "@openzeppelin/contracts/security/Pausable.sol";
 import "@matterlabs/zksync-contracts/l2/system-contracts/Constants.sol";
 import { AggregatorV3Interface } from "@chainlink/contracts/src/v0.8/interfaces/AggregatorV3Interface.sol";
+import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
+import "@openzeppelin/contracts-upgradeable/access/AccessControlUpgradeable.sol";
+import "@openzeppelin/contracts-upgradeable/security/PausableUpgradeable.sol";
 import "../interfaces/IERC20Decimals.sol";
 
 error AllowanceTooLow(uint256 requiredAllowance);
 
-contract ERC20ChainlinkPaymaster is IPaymaster, Pausable, AccessControl {
+contract ERC20ChainlinkPaymasterV2 is Initializable, IPaymaster, PausableUpgradeable, AccessControlUpgradeable {
     AggregatorV3Interface internal erc20DataFeed;
     AggregatorV3Interface internal ethDataFeed;
     bytes32 public constant MANAGER_ROLE = keccak256("MANAGER_ROLE");
@@ -57,7 +58,20 @@ contract ERC20ChainlinkPaymaster is IPaymaster, Pausable, AccessControl {
         _;
     }
 
-    constructor(address _erc20Token, address _ERC20FeedId, address _ETHFeedId, uint _fixedPrice, bool _useChainlink) {
+    /// @custom:oz-upgrades-unsafe-allow constructor
+    constructor() {
+        _disableInitializers();
+    }
+
+    function initialize(
+        address _erc20Token,
+        address _ERC20FeedId,
+        address _ETHFeedId,
+        uint _fixedPrice,
+        bool _useChainlink
+    ) public initializer {
+        __Pausable_init();
+        __AccessControl_init();
         _setupRole(DEFAULT_ADMIN_ROLE, msg.sender);
         _setupRole(DEV_CONFIG_ROLE, msg.sender);
         allowedERC20Token = _erc20Token;
@@ -73,11 +87,11 @@ contract ERC20ChainlinkPaymaster is IPaymaster, Pausable, AccessControl {
     function getChainlinkERC20DataFeedLatestAnswer() public view returns (int) {
         // prettier-ignore
         (
-            /* uint80 roundID */,
+        /* uint80 roundID */,
             int answer,
-            /*uint startedAt*/,
-            /*uint timeStamp*/,
-            /*uint80 answeredInRound*/
+        /*uint startedAt*/,
+        /*uint timeStamp*/,
+        /*uint80 answeredInRound*/
         ) = erc20DataFeed.latestRoundData();
         return answer;
     }
@@ -85,11 +99,11 @@ contract ERC20ChainlinkPaymaster is IPaymaster, Pausable, AccessControl {
     function getChainlinkETHDataFeedLatestAnswer() public view returns (int) {
         // prettier-ignore
         (
-            /* uint80 roundID */,
+        /* uint80 roundID */,
             int answer,
-            /*uint startedAt*/,
-            /*uint timeStamp*/,
-            /*uint80 answeredInRound*/
+        /*uint startedAt*/,
+        /*uint timeStamp*/,
+        /*uint80 answeredInRound*/
         ) = ethDataFeed.latestRoundData();
         return answer;
     }
@@ -126,6 +140,7 @@ contract ERC20ChainlinkPaymaster is IPaymaster, Pausable, AccessControl {
             address userAddress = address(uint160(_transaction.from));
 
             uint256 providedAllowance = IERC20Decimals(token).allowance(userAddress, address(this));
+
             // Gas cost in wei (18 decimals)
             uint256 requiredETH = _transaction.gasLimit * _transaction.maxFeePerGas;
 
@@ -135,6 +150,7 @@ contract ERC20ChainlinkPaymaster is IPaymaster, Pausable, AccessControl {
 
                 ETHUSDPrice = ETHUSDPrice * 1e10;
                 ERC20USDPrice = ERC20USDPrice * 1e10;
+
 
                 // Calculate the required ERC20 tokens to be sent to the paymaster
                 // (Equal to the value of requiredETH)

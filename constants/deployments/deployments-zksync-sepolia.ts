@@ -294,4 +294,31 @@ export const ZKSYNC_SEPOLIA_CONTRACTS: DeploymentContract[] = [
             },
         ],
     },
+    {
+        contractName: 'ERC20ChainlinkPaymasterV1',
+        type: CONTRACT_TYPE.Paymaster,
+        chain,
+        networkType,
+        tenants: [TENANT.ZkSync],
+        verify: true,
+        upgradable: false,
+        dependencies: ['AvatarBoundV1', 'ItemBoundV1', 'LevelsBoundV1'],
+        functionCalls: [
+            {
+                contractName: 'ERC20chainlinkPaymasterV1',
+                functionName: 'addRecipient',
+                args: ['CONTRACT_AvatarBoundV1'],
+            },
+            {
+                contractName: 'ERC20chainlinkPaymasterV1',
+                functionName: 'addRecipient',
+                args: ['CONTRACT_ItemBoundV1'],
+            },
+            {
+                contractName: 'ERC20chainlinkPaymasterV1',
+                functionName: 'addRecipient',
+                args: ['CONTRACT_LevelsBoundV1'],
+            },
+        ],
+    },
 ];

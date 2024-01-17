@@ -39,7 +39,6 @@ const config: HardhatUserConfig = {
             chainId: ChainId.Ganache,
             timeout: 6000000,
         },
-        // Deprecated
         [NetworkName.Sepolia]: {
             accounts: [DEPLOYER_PRIVATE_KEY || PRIVATE_KEY],
             url: rpcUrls[ChainId.Sepolia],
@@ -60,9 +59,7 @@ const config: HardhatUserConfig = {
     },
 };
 
-// if (USE_PAYMASTER) {
 // @ts-ignore
 config.solidity.settings.viaIR = true;
-// }
 
 export default config;
