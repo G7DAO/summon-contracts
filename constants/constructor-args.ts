@@ -195,44 +195,58 @@ export const OpenMintArgs = {
     },
 };
 
-const USDC_PRICE_ID_TESTNET = '0x41f3625971ca2ed2263e78573fe5ce23e13d2558ed3f2e47ab0f84fb9e7ae722';
-const ETH_PRICE_ID_TESTNET = '0xca80ba6dc32e08d06f1aa886011eed1d77c77be9eb761cc10d72b7d0a2fd57a6';
+const PYTH_USDC_PRICE_ID_TESTNET = '0x41f3625971ca2ed2263e78573fe5ce23e13d2558ed3f2e47ab0f84fb9e7ae722';
+const PYTH_ETH_PRICE_ID_TESTNET = '0xca80ba6dc32e08d06f1aa886011eed1d77c77be9eb761cc10d72b7d0a2fd57a6';
 const PYTH_ORACLE_ADDRESS_TESTNET = '0x8739d5024B5143278E2b15Bd9e7C26f6CEc658F1';
 
-const USDC_PRICE_ID_MAINNET = '0xeaa020c61cc479712813461ce153894a96a6c00b21ed0cfc2798d1f9a9e9c94a';
-const ETH_PRICE_ID_MAINNET = '0xff61491a931112ddf1bd8147cd1b641375f79f5825126d665480874634fd0ace';
+const PYTH_USDC_PRICE_ID_MAINNET = '0xeaa020c61cc479712813461ce153894a96a6c00b21ed0cfc2798d1f9a9e9c94a';
+const PYTH_ETH_PRICE_ID_MAINNET = '0xff61491a931112ddf1bd8147cd1b641375f79f5825126d665480874634fd0ace';
 const PYTH_ORACLE_ADDRESS_MAINNET = '0xf087c864AEccFb6A2Bf1Af6A0382B0d0f6c5D834';
 
-const MAINNET_ERC20_USDC = '0x3355df6D4c9C3035724Fd0e3914dE96A5a83aaf4';
-const TESTNET_ERC20_OUSDC = '0xA79498e38264330603F00AfEC577539B4b5D6F51';
+const CHAINLINK_USDC_PRICE_ID_TESTNET = '0x37FBa63C443Ca1Bf262B9E6cc46c4B46273F687C';
+const CHAINLINK_ETH_PRICE_ID_TESTNET = '0x2bBaff398B72d5B26f4f9B3397cfd9DC578a9f08';
+
+const CHAINLINK_USDC_PRICE_ID_MAINNET = '0x1824D297C6d6D311A204495277B63e943C2D376E';
+const CHAINLINK_ETH_PRICE_ID_MAINNET = '0x6D41d1dc818112880b40e26BD6FD347E41008eDA';
+
+const ZKSYNC_MAINNET_ERC20_USDC = '0x3355df6D4c9C3035724Fd0e3914dE96A5a83aaf4';
+const ZKSYNC_TESTNET_ERC20_OUSDC = '0x4b6021A15cB4E76DD40dE7B0d316A6a7fb613C05';
 
 export const ERC20PythPaymasterArgs = {
     MAINNET: {
-        erc20Address: MAINNET_ERC20_USDC,
-        usdcPriceId: USDC_PRICE_ID_MAINNET,
-        ethPriceId: ETH_PRICE_ID_MAINNET,
+        erc20Address: ZKSYNC_MAINNET_ERC20_USDC,
+        usdcPriceId: PYTH_USDC_PRICE_ID_MAINNET,
+        ethPriceId: PYTH_ETH_PRICE_ID_MAINNET,
         pythOracleAddress: PYTH_ORACLE_ADDRESS_MAINNET,
     },
     TESTNET: {
-        erc20Address: TESTNET_ERC20_OUSDC,
-        usdcPriceId: USDC_PRICE_ID_TESTNET,
-        ethPriceId: ETH_PRICE_ID_TESTNET,
+        erc20Address: ZKSYNC_TESTNET_ERC20_OUSDC,
+        usdcPriceId: PYTH_USDC_PRICE_ID_TESTNET,
+        ethPriceId: PYTH_ETH_PRICE_ID_TESTNET,
         pythOracleAddress: PYTH_ORACLE_ADDRESS_TESTNET,
     },
 };
 
 export const ERC20ChainlinkPaymasterArgs = {
     MAINNET: {
-        erc20Address: MAINNET_ERC20_USDC,
-        erc20FeedId: '0x1824D297C6d6D311A204495277B63e943C2D376E',
-        ethFeedId: '0x6D41d1dc818112880b40e26BD6FD347E41008eDA',
+        erc20Address: ZKSYNC_MAINNET_ERC20_USDC,
+        erc20FeedId: CHAINLINK_USDC_PRICE_ID_MAINNET,
+        ethFeedId: CHAINLINK_ETH_PRICE_ID_MAINNET,
+        fixedPrice: 1,
+        useChainLink: true,
     },
     TESTNET: {
-        erc20Address: TESTNET_ERC20_OUSDC,
-        erc20FeedId: '0x37FBa63C443Ca1Bf262B9E6cc46c4B46273F687C',
-        ethFeedId: '0x2bBaff398B72d5B26f4f9B3397cfd9DC578a9f08',
+        erc20Address: ZKSYNC_TESTNET_ERC20_OUSDC,
+        erc20FeedId: CHAINLINK_USDC_PRICE_ID_TESTNET,
+        ethFeedId: CHAINLINK_ETH_PRICE_ID_TESTNET,
+        fixedPrice: 1,
+        // This is in "false" because chainlink is not available on zkSync-sepolia yet, anyway check this link:
+        // https://docs.chain.link/data-feeds/price-feeds/addresses?network=zksync&page=1
+        useChainLink: false,
     },
 };
+
+export const ERC20ChainlinkPaymasterV1Args = ERC20ChainlinkPaymasterArgs;
 
 export const GameSummaryArgs = {
     MAINNET: {

@@ -33,23 +33,40 @@ export default async function (
     log(`[DEPLOYING] deploying ${contract.contractName} UPGRADEABLE contract for [[${tenant}]] on ${networkName}`);
     log('=====================================================');
 
+    log('=====================================================');
+    log(`Upgradeable ${contract.upgradable}`);
+    log('=====================================================');
+
     const { name, ...rest } = constructorArgs;
     const restArgs = Object.values(rest);
+
+    log('=====================================================');
+    log(`Args ${restArgs}`);
+    log('=====================================================');
 
     const wallet = getWallet(PRIVATE_KEY);
     const deployer = new Deployer(hre, wallet);
     // TODO: THIS ONLY WORK FOR ZKSYNC ... NEED TO BE FIXED
     const artifact = await deployer.loadArtifact(contract.contractName);
 
-    const achievoContract = await hre.zkUpgrades.deployProxy(deployer.zkWallet as any, artifact, [
-        `${tenant}${name}`,
-        ...restArgs,
-    ]);
+    let achievoContract;
+    if (!name) {
+        achievoContract = await hre.zkUpgrades.deployProxy(deployer.zkWallet as any, artifact, [...restArgs]);
+    } else {
+        achievoContract = await hre.zkUpgrades.deployProxy(deployer.zkWallet as any, artifact, [
+            `${tenant}${name}`,
+            ...restArgs,
+        ]);
+    }
 
     await achievoContract.waitForDeployment();
 
     // Show the contract info.
     const contractAddress = await achievoContract.getAddress();
+
+    log('=====================================================');
+    log(`VERIFY: ${contract.verify}`);
+    log('=====================================================');
 
     if (contract.verify) {
         await new Promise((resolve, reject) => {

@@ -40,6 +40,10 @@ export default async function (
     const { name, ...rest } = constructorArgs;
     const restArgs = Object.values(rest);
 
+    log('=====================================================');
+    log(`Args ${restArgs}`);
+    log('=====================================================');
+
     let achievoContract;
 
     const wallet = getWallet(PRIVATE_KEY);

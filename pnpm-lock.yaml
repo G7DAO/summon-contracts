@@ -9,17 +9,17 @@ dependencies:
     specifier: ^0.8.0
     version: 0.8.0(ethers@6.9.0)
   '@matterlabs/hardhat-zksync-deploy':
-    specifier: ^1.1.1
-    version: 1.1.1(ethers@6.9.0)(hardhat@2.19.1)(zksync-ethers@6.0.0)
+    specifier: ^1.1.2
+    version: 1.1.2(ethers@6.9.0)(hardhat@2.19.1)(zksync-ethers@6.0.0)
   '@matterlabs/hardhat-zksync-solc':
-    specifier: ^1.0.5
-    version: 1.0.5(hardhat@2.19.1)
+    specifier: ^1.0.6
+    version: 1.0.6(hardhat@2.19.1)
   '@matterlabs/hardhat-zksync-upgradable':
-    specifier: ^1.2.0
-    version: 1.2.0(@openzeppelin/contracts-upgradeable@4.9.3)(ethers@6.9.0)(hardhat@2.19.1)(zksync-ethers@6.0.0)
-  '@matterlabs/hardhat-zksync-verify':
     specifier: ^1.2.1
-    version: 1.2.1(@nomicfoundation/hardhat-verify@2.0.1)(debug@4.3.4)(ethers@6.9.0)(hardhat@2.19.1)
+    version: 1.2.1(@openzeppelin/contracts-upgradeable@4.9.3)(ethers@6.9.0)(hardhat@2.19.1)(zksync-ethers@6.0.0)
+  '@matterlabs/hardhat-zksync-verify':
+    specifier: ^1.2.2
+    version: 1.2.2(@nomicfoundation/hardhat-verify@2.0.1)(debug@4.3.4)(ethers@6.9.0)(hardhat@2.19.1)
   '@matterlabs/zksync-contracts':
     specifier: ^0.6.1
     version: 0.6.1(@openzeppelin/contracts-upgradeable@4.9.3)(@openzeppelin/contracts@4.9.3)
@@ -679,28 +679,28 @@ packages:
       '@jridgewell/resolve-uri': 3.1.1
       '@jridgewell/sourcemap-codec': 1.4.15
 
-  /@matterlabs/hardhat-zksync-deploy@1.1.1(ethers@6.9.0)(hardhat@2.19.1)(zksync-ethers@6.0.0):
-    resolution: {integrity: sha512-THPXZ08ejcvr0NzqnmNARxk0VaLnQaxA6qzfh9re2pVWe1Ch6YH7kDpHYvVNafp2HINtOE9bVzzd7OOp73/wvw==}
+  /@matterlabs/hardhat-zksync-deploy@1.1.2(ethers@6.9.0)(hardhat@2.19.1)(zksync-ethers@6.0.0):
+    resolution: {integrity: sha512-Q9eBvMUAoodRFPmfzoHTkNKKYNs6oib2utZsxTPf6cq+mhdu7sqfY5Bu0XQzZQW35xzi5D23p9v1ubhOrGXK9Q==}
     peerDependencies:
       ethers: ^6.7.1
-      hardhat: ^2.18.1
+      hardhat: ^2.19.2
       zksync-ethers: ^6.0.0
     dependencies:
-      '@matterlabs/hardhat-zksync-solc': 1.0.5(hardhat@2.19.1)
+      '@matterlabs/hardhat-zksync-solc': 1.0.6(hardhat@2.19.1)
       chalk: 4.1.2
       ethers: 6.9.0
       hardhat: 2.19.1(ts-node@10.9.1)(typescript@4.9.5)
-      ts-morph: 20.0.0
+      ts-morph: 21.0.1
       zksync-ethers: 6.0.0(ethers@6.9.0)
     transitivePeerDependencies:
       - encoding
       - supports-color
     dev: false
 
-  /@matterlabs/hardhat-zksync-solc@1.0.5(hardhat@2.19.1):
-    resolution: {integrity: sha512-IBWvbGJSISNtWIz/4VBfV1NweVYK7xHmy787o6fDjntxP5P4XEklTJU3/pNBQdL5fZbIrQqMmXFMOwUXnuEY6Q==}
+  /@matterlabs/hardhat-zksync-solc@1.0.6(hardhat@2.19.1):
+    resolution: {integrity: sha512-0icYSufXba/Bbb7v2iXuZJ+IbYsiNpR4Wy6UizHnGuFw3OMHgh+saebQphuaN9yyRL2UPGZbPkQFHWBLZj5/xQ==}
     peerDependencies:
-      hardhat: ^2.18.1
+      hardhat: ^2.19.2
     dependencies:
       '@nomiclabs/hardhat-docker': 2.0.2
       chalk: 4.1.2
@@ -714,13 +714,13 @@ packages:
       - supports-color
     dev: false
 
-  /@matterlabs/hardhat-zksync-upgradable@1.2.0(@openzeppelin/contracts-upgradeable@4.9.3)(ethers@6.9.0)(hardhat@2.19.1)(zksync-ethers@6.0.0):
-    resolution: {integrity: sha512-7mx9W+d42BfH4M5cMcqrNdiCCSDPawUOSakn43CzpUP34VzlsmYBDlyjigVsD4q5WU1sk60n1zadIpVneefQAw==}
+  /@matterlabs/hardhat-zksync-upgradable@1.2.1(@openzeppelin/contracts-upgradeable@4.9.3)(ethers@6.9.0)(hardhat@2.19.1)(zksync-ethers@6.0.0):
+    resolution: {integrity: sha512-Zc3wRKDHGmwhMNzrRUZeig1HDEyw6oS5IVlS3qndr/mvnV4xVl1KYduC1vuSkHmiFdih46mjhU44ScT2iKZlpg==}
     peerDependencies:
       '@openzeppelin/contracts-upgradeable': ^4.9.2
     dependencies:
-      '@matterlabs/hardhat-zksync-deploy': 1.1.1(ethers@6.9.0)(hardhat@2.19.1)(zksync-ethers@6.0.0)
-      '@matterlabs/hardhat-zksync-solc': 1.0.5(hardhat@2.19.1)
+      '@matterlabs/hardhat-zksync-deploy': 1.1.2(ethers@6.9.0)(hardhat@2.19.1)(zksync-ethers@6.0.0)
+      '@matterlabs/hardhat-zksync-solc': 1.0.6(hardhat@2.19.1)
       '@openzeppelin/contracts-upgradeable': 4.9.3
       '@openzeppelin/upgrades-core': 1.31.1
     transitivePeerDependencies:
@@ -731,12 +731,12 @@ packages:
       - zksync-ethers
     dev: false
 
-  /@matterlabs/hardhat-zksync-verify@1.2.1(@nomicfoundation/hardhat-verify@2.0.1)(debug@4.3.4)(ethers@6.9.0)(hardhat@2.19.1):
-    resolution: {integrity: sha512-kysWVNi07dgqTbesuQUnIUXNJBKWpMfTOAFErV9C69KUNIZg776em5hosdINIConAbwnnLrVa1/4g//Zpltk5g==}
+  /@matterlabs/hardhat-zksync-verify@1.2.2(@nomicfoundation/hardhat-verify@2.0.1)(debug@4.3.4)(ethers@6.9.0)(hardhat@2.19.1):
+    resolution: {integrity: sha512-l3q5JHlFA1O28TamAUcMtD/gVzDDeoyeVohGNpwYZ5qb8dPkWS3DkYCIrvsQFR4mHDzqoGKEZt1IKG/a/lYU+Q==}
     peerDependencies:
       '@nomicfoundation/hardhat-verify': ^2.0.0
     dependencies:
-      '@matterlabs/hardhat-zksync-solc': 1.0.5(hardhat@2.19.1)
+      '@matterlabs/hardhat-zksync-solc': 1.0.6(hardhat@2.19.1)
       '@nomicfoundation/hardhat-verify': 2.0.1(hardhat@2.19.1)
       axios: 1.6.2(debug@4.3.4)
       chalk: 4.1.2
@@ -1521,12 +1521,12 @@ packages:
   /@swc/wasm@1.3.97:
     resolution: {integrity: sha512-O9p6R6zN1NV1U64eBmU/2NvJGA79W/vUl9BaQwIgoSf2qrPrKMtexDV/aFk2N/mQriWxaK3HHxJAQSPRWsRs+w==}
 
-  /@ts-morph/common@0.21.0:
-    resolution: {integrity: sha512-ES110Mmne5Vi4ypUKrtVQfXFDtCsDXiUiGxF6ILVlE90dDD4fdpC1LSjydl/ml7xJWKSDZwUYD2zkOePMSrPBA==}
+  /@ts-morph/common@0.22.0:
+    resolution: {integrity: sha512-HqNBuV/oIlMKdkLshXd1zKBqNQCsuPEsgQOkfFQ/eUKjRlwndXW1AjN9LVkBEIukm00gGXSRmfkl0Wv5VXLnlw==}
     dependencies:
       fast-glob: 3.3.2
-      minimatch: 7.4.6
-      mkdirp: 2.1.6
+      minimatch: 9.0.3
+      mkdirp: 3.0.1
       path-browserify: 1.0.1
     dev: false
 
@@ -4693,9 +4693,9 @@ packages:
       brace-expansion: 2.0.1
     dev: true
 
-  /minimatch@7.4.6:
-    resolution: {integrity: sha512-sBz8G/YjVniEz6lKPNpKxXwazJe4c19fEfV2GDMX6AjFz+MX9uDWIZW8XreVhkFW3fkIdTv/gxWr/Kks5FFAVw==}
-    engines: {node: '>=10'}
+  /minimatch@9.0.3:
+    resolution: {integrity: sha512-RHiac9mvaRw0x3AYRgDC1CxAP7HTcNrrECeA8YYJeWnpo+2Q5CegtZjaotWTWxDG3UeGA1coE05iH1mPjT/2mg==}
+    engines: {node: '>=16 || 14 >=14.17'}
     dependencies:
       brace-expansion: 2.0.1
     dev: false
@@ -4719,8 +4719,8 @@ packages:
     hasBin: true
     dev: true
 
-  /mkdirp@2.1.6:
-    resolution: {integrity: sha512-+hEnITedc8LAtIP9u3HJDFIdcLV2vXP33sqLLIzkv1Db1zO/1OxbvYf0Y1OC/S/Qo5dxHXepofhmxL02PsKe+A==}
+  /mkdirp@3.0.1:
+    resolution: {integrity: sha512-+NsyUUAZDmo6YVHzL/stxSu3t9YS1iljliy3BSDrXJ/dkn1KYdmtZODGGjLcc9XLgVVpH4KshHB8XmZgMhaBXg==}
     engines: {node: '>=10'}
     hasBin: true
     dev: false
@@ -5939,10 +5939,10 @@ packages:
       typescript: 4.9.5
     dev: true
 
-  /ts-morph@20.0.0:
-    resolution: {integrity: sha512-JVmEJy2Wow5n/84I3igthL9sudQ8qzjh/6i4tmYCm6IqYyKFlNbJZi7oBdjyqcWSWYRu3CtL0xbT6fS03ESZIg==}
+  /ts-morph@21.0.1:
+    resolution: {integrity: sha512-dbDtVdEAncKctzrVZ+Nr7kHpHkv+0JDJb2MjjpBaj8bFeCkePU9rHfMklmhuLFnpeq/EJZk2IhStY6NzqgjOkg==}
     dependencies:
-      '@ts-morph/common': 0.21.0
+      '@ts-morph/common': 0.22.0
       code-block-writer: 12.0.0
     dev: false
 
