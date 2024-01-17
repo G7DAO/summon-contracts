@@ -16,26 +16,26 @@ pragma solidity 0.8.17;
 // MMNx'.dWMMK;.:0WMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMM
 // MMMM0cdNMM0cdNMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMM
 
-import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {
-    ExecutionResult,
-    PAYMASTER_VALIDATION_SUCCESS_MAGIC,
-    IPaymaster
+ExecutionResult,
+PAYMASTER_VALIDATION_SUCCESS_MAGIC,
+IPaymaster
 } from "@matterlabs/zksync-contracts/l2/system-contracts/interfaces/IPaymaster.sol";
 import { IPaymasterFlow } from "@matterlabs/zksync-contracts/l2/system-contracts/interfaces/IPaymasterFlow.sol";
 import {
-    TransactionHelper,
-    Transaction
+TransactionHelper,
+Transaction
 } from "@matterlabs/zksync-contracts/l2/system-contracts/libraries/TransactionHelper.sol";
 import "@matterlabs/zksync-contracts/l2/system-contracts/Constants.sol";
 import { AggregatorV3Interface } from "@chainlink/contracts/src/v0.8/interfaces/AggregatorV3Interface.sol";
 import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
 import "@openzeppelin/contracts-upgradeable/access/AccessControlUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/security/PausableUpgradeable.sol";
+import "../interfaces/IERC20Decimals.sol";
 
 error AllowanceTooLow(uint256 requiredAllowance);
 
-contract ERC20ChainlinkPaymasterV1 is Initializable, IPaymaster, PausableUpgradeable, AccessControlUpgradeable {
+contract ERC20ChainlinkPaymasterV2 is Initializable, IPaymaster, PausableUpgradeable, AccessControlUpgradeable {
     AggregatorV3Interface internal erc20DataFeed;
     AggregatorV3Interface internal ethDataFeed;
     bytes32 public constant MANAGER_ROLE = keccak256("MANAGER_ROLE");
@@ -44,6 +44,7 @@ contract ERC20ChainlinkPaymasterV1 is Initializable, IPaymaster, PausableUpgrade
     mapping(address => bool) public allowedRecipients;
 
     address public allowedERC20Token;
+    uint8 public tokenDecimals;
     address public ERC20FeedId;
     address public ETHFeedId;
     uint public PRICE_FOR_PAYING_FEES;
@@ -80,16 +81,17 @@ contract ERC20ChainlinkPaymasterV1 is Initializable, IPaymaster, PausableUpgrade
         ethDataFeed = AggregatorV3Interface(_ETHFeedId);
         PRICE_FOR_PAYING_FEES = _fixedPrice;
         USE_CHAINLINK = _useChainlink;
+        tokenDecimals = IERC20Decimals(_erc20Token).decimals();
     }
 
     function getChainlinkERC20DataFeedLatestAnswer() public view returns (int) {
         // prettier-ignore
         (
-            /* uint80 roundID */,
+        /* uint80 roundID */,
             int answer,
-            /*uint startedAt*/,
-            /*uint timeStamp*/,
-            /*uint80 answeredInRound*/
+        /*uint startedAt*/,
+        /*uint timeStamp*/,
+        /*uint80 answeredInRound*/
         ) = erc20DataFeed.latestRoundData();
         return answer;
     }
@@ -97,11 +99,11 @@ contract ERC20ChainlinkPaymasterV1 is Initializable, IPaymaster, PausableUpgrade
     function getChainlinkETHDataFeedLatestAnswer() public view returns (int) {
         // prettier-ignore
         (
-            /* uint80 roundID */,
+        /* uint80 roundID */,
             int answer,
-            /*uint startedAt*/,
-            /*uint timeStamp*/,
-            /*uint80 answeredInRound*/
+        /*uint startedAt*/,
+        /*uint timeStamp*/,
+        /*uint80 answeredInRound*/
         ) = ethDataFeed.latestRoundData();
         return answer;
     }
@@ -137,22 +139,34 @@ contract ERC20ChainlinkPaymasterV1 is Initializable, IPaymaster, PausableUpgrade
             // We verify that the user has provided enough allowance
             address userAddress = address(uint160(_transaction.from));
 
-            uint256 providedAllowance = IERC20(token).allowance(userAddress, address(this));
+            uint256 providedAllowance = IERC20Decimals(token).allowance(userAddress, address(this));
+
+            // Gas cost in wei (18 decimals)
             uint256 requiredETH = _transaction.gasLimit * _transaction.maxFeePerGas;
 
             if (USE_CHAINLINK) {
                 uint256 ETHUSDPrice = uint256(getChainlinkETHDataFeedLatestAnswer());
                 uint256 ERC20USDPrice = uint256(getChainlinkERC20DataFeedLatestAnswer());
 
+                ETHUSDPrice = ETHUSDPrice * 1e10;
+                ERC20USDPrice = ERC20USDPrice * 1e10;
+
+
                 // Calculate the required ERC20 tokens to be sent to the paymaster
                 // (Equal to the value of requiredETH)
-                uint256 requiredERC20 = (requiredETH * ETHUSDPrice) / ERC20USDPrice;
+                uint256 requiredERC20 = (requiredETH * ETHUSDPrice / ERC20USDPrice) / 1e12;
+
+                // Convert from wei (18 decimals) to the ERC20 token's decimals
+                uint256 decimalFactor = 18 - uint256(tokenDecimals);
+
+                // Adjust for token decimals
+                requiredERC20 = requiredERC20 / (10**decimalFactor);
 
                 require(providedAllowance >= requiredERC20, "Min paying allowance too low");
 
                 // Note, that while the minimal amount of ETH needed is tx.gasPrice * tx.gasLimit,
                 // neither paymaster nor account are allowed to access this context variable.
-                try IERC20(token).transferFrom(userAddress, address(this), requiredERC20) {} catch (
+                try IERC20Decimals(token).transferFrom(userAddress, address(this), requiredERC20) {} catch (
                     bytes memory revertReason
                 ) {
                     if (requiredERC20 > amount) {
@@ -171,7 +185,7 @@ contract ERC20ChainlinkPaymasterV1 is Initializable, IPaymaster, PausableUpgrade
 
                 // Note, that while the minimal amount of ETH needed is tx.gasPrice * tx.gasLimit,
                 // neither paymaster nor account are allowed to access this context variable.
-                try IERC20(token).transferFrom(userAddress, address(this), amount) {} catch (
+                try IERC20Decimals(token).transferFrom(userAddress, address(this), amount) {} catch (
                     bytes memory revertReason
                 ) {
                     if (revertReason.length <= 4) {
@@ -238,6 +252,7 @@ contract ERC20ChainlinkPaymasterV1 is Initializable, IPaymaster, PausableUpgrade
 
     function updateErc20Allowed(address _erc20USDC) external onlyRole(DEV_CONFIG_ROLE) {
         allowedERC20Token = _erc20USDC;
+        tokenDecimals = IERC20Decimals(_erc20USDC).decimals();
     }
 
     function setUseChainLink(bool _useChainlink) external onlyRole(DEV_CONFIG_ROLE) {
@@ -247,7 +262,7 @@ contract ERC20ChainlinkPaymasterV1 is Initializable, IPaymaster, PausableUpgrade
 
     function withdrawERC20(address _to, uint256 _amount) external onlyRole(MANAGER_ROLE) {
         // send paymaster funds to the owner
-        IERC20 token = IERC20(allowedERC20Token);
+        IERC20Decimals token = IERC20Decimals(allowedERC20Token);
         uint256 balance = token.balanceOf(address(this));
         require(balance >= _amount, "Not enough funds");
         token.transfer(_to, _amount);

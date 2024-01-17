@@ -1,6 +1,6 @@
 {
     "name": "achievo-contracts",
-    "version": "0.18.3",
+    "version": "0.19.0",
     "description": "Smart contracts for achievo.xyz",
     "scripts": {
         "localChain": "hardhat --config hardhat.config.ts node",
@@ -25,6 +25,7 @@
         "deployAvatarBoundUpgradeable:ZkSync:mainnet": "pnpm deploy:ZkSync:mainnet --contractname AvatarBoundV1",
         "deployAvatarBoundUpgradeable:ZkSync:goerli": "pnpm deploy:ZkSync:goerli --contractname AvatarBoundV1",
         "deployAvatarBoundUpgradeable:ZkSync:sepolia": "pnpm deploy:ZkSync:sepolia --contractname AvatarBoundV1",
+        "upgradeERC20ChainlinkPaymaster:ZkSync:mainnet": "pnpm compile:zkSync && hardhat run deploy/upgrades/upgradeERC20ChainlinkPaymaster.mainnet.ts --config zkSync.config.ts --network zkSync",
         "upgradeAvatarBound:ZkSync:mainnet": "pnpm compile:zkSync && hardhat run deploy/upgrades/upgradeAvatarBound.mainnet.ts --config zkSync.config.ts --network zkSync",
         "upgradeAvatarBound:ZkSync:goerli": "pnpm compile:zkSync && hardhat run deploy/upgrades/upgradeAvatarBound.testnet.ts --config zkSync.config.ts --network zkSyncGoerli",
         "upgradeAvatarBound:ZkSync:sepolia": "pnpm compile:zkSync && hardhat run deploy/upgrades/upgradeAvatarBound.testnet.ts --config zkSync.config.ts --network zkSyncSepolia",
