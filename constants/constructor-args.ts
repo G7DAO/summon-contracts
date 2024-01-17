@@ -240,6 +240,8 @@ export const ERC20ChainlinkPaymasterArgs = {
         erc20FeedId: CHAINLINK_USDC_PRICE_ID_TESTNET,
         ethFeedId: CHAINLINK_ETH_PRICE_ID_TESTNET,
         fixedPrice: 1,
+        // This is in "false" because chainlink is not available on zkSync-sepolia yet, anyway check this link:
+        // https://docs.chain.link/data-feeds/price-feeds/addresses?network=zksync&page=1
         useChainLink: false,
     },
 };
