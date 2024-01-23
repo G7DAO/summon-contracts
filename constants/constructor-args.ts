@@ -16,6 +16,7 @@ export enum CONTRACT_TYPE {
     GameSummary = 'GameSummary',
     ERC20 = 'ERC20',
     Staker = 'Staker',
+    Badge = 'Badge',
 }
 
 export interface ConstructorArgs {
@@ -271,3 +272,25 @@ export const StakerV1Args = {
         regularToken: 'FILL_ME',
     },
 };
+export const BadgeBoundArgs: Soulbound1155Args = {
+    MAINNET: {
+        name: 'Item',
+        symbol: 'ISB',
+        baseURI: 'https://achievo.mypinata.cloud/ipfs',
+        contractURI: 'https://achievo.mypinata.cloud/ipfs/QmSDbeNWVY2CGUuLHni689L5eSrSG3iZHyTRZJWXX7GpjS',
+        maxPerMint: 1,
+        isPaused: false,
+        devWallet: 'DEPLOYER_WALLET',
+    },
+    TESTNET: {
+        name: 'Badge',
+        symbol: 'BADGE',
+        baseURI: 'https://achievo.mypinata.cloud/ipfs',
+        contractURI: 'https://achievo.mypinata.cloud/ipfs/QmSDbeNWVY2CGUuLHni689L5eSrSG3iZHyTRZJWXX7GpjS',
+        maxPerMint: 1,
+        isPaused: false,
+        devWallet: 'DEPLOYER_WALLET',
+    },
+};
+
+export const BadgeBoundV1Args: Soulbound1155Args = BadgeBoundArgs;
