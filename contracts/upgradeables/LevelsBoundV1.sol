@@ -23,7 +23,6 @@ pragma solidity 0.8.17;
 
 import { Initializable } from "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
 import { ERC1155Upgradeable } from "@openzeppelin/contracts-upgradeable/token/ERC1155/ERC1155Upgradeable.sol";
-import { OwnableUpgradeable } from "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
 import {
     ReentrancyGuardUpgradeable
 } from "@openzeppelin/contracts-upgradeable/security/ReentrancyGuardUpgradeable.sol";
@@ -36,7 +35,6 @@ contract LevelsBoundV1 is
     Initializable,
     ERC1155Upgradeable,
     ERC1155SoulboundUpgradeable,
-    OwnableUpgradeable,
     ReentrancyGuardUpgradeable,
     ERCWhitelistSignatureUpgradeable,
     AccessControlUpgradeable
@@ -67,7 +65,6 @@ contract LevelsBoundV1 is
         address _itemsNFTAddress
     ) public initializer {
         __ERC1155_init("");
-        __Ownable_init();
         __ReentrancyGuard_init();
         __AccessControl_init();
         __ERCWhitelistSignatureUpgradeable_init();

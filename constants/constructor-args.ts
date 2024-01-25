@@ -3,6 +3,7 @@ export enum TENANT {
     ZkSync = 'zkSync',
     HyperPlay = 'HyperPlay',
     Summon = 'Summon',
+    ETHDenver = 'ETHDenver',
 }
 
 export enum CONTRACT_TYPE {
@@ -14,6 +15,7 @@ export enum CONTRACT_TYPE {
     Paymaster = 'Paymaster',
     GameSummary = 'GameSummary',
     ERC20 = 'ERC20',
+    Staker = 'Staker',
 }
 
 export interface ConstructorArgs {
@@ -254,5 +256,18 @@ export const GameSummaryArgs = {
     },
     TESTNET: {
         _uri: 'FILL_ME',
+    },
+};
+
+export const StakerV1Args = {
+    MAINNET: {
+        developerAdmin: 'DEPLOYER_WALLET',
+        stakeToken: '0x39a3920ca05e238d558f0c1786314bca647d1b39',
+        regularToken: '0x9ca6a77c8b38159fd2da9bd25bc3e259c33f5e39',
+    },
+    TESTNET: {
+        developerAdmin: 'FILL_ME',
+        stakeToken: 'FILL_ME',
+        regularToken: 'FILL_ME',
     },
 };
