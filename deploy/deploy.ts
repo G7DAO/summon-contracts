@@ -101,6 +101,7 @@ export default async function (
         contractAddress,
         type: contract.type,
         networkType: contract.networkType,
+        name: contract.name,
         active: false,
         networkName,
         chainId,

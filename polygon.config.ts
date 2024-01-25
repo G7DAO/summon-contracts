@@ -1,5 +1,6 @@
+import { ChainId, NetworkName } from '@constants/network';
+
 import defaultConfig from './hardhat.config';
-import { ChainId, NetworkName } from './constants';
 import { log } from './helpers/logger';
 
 const { PRIVATE_KEY, POLYGONSCAN_API_KEY, POLYGON_ALCHEMY_PROVIDER, POLYGON_PROVIDER_URL } = process.env;

@@ -1,24 +1,3 @@
-export enum TENANT {
-    Game7 = 'Game7',
-    ZkSync = 'zkSync',
-    HyperPlay = 'HyperPlay',
-    Summon = 'Summon',
-    ETHDenver = 'ETHDenver',
-}
-
-export enum CONTRACT_TYPE {
-    Avatars = 'Avatars',
-    Items = 'Items',
-    RewardItems = 'RewardItems',
-    Levels = 'Levels',
-    OpenMint = 'OpenMint',
-    Paymaster = 'Paymaster',
-    GameSummary = 'GameSummary',
-    ERC20 = 'ERC20',
-    Staker = 'Staker',
-    Badge = 'Badge',
-}
-
 export interface ConstructorArgs {
     name: string;
     symbol: string;

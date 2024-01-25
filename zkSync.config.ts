@@ -3,9 +3,10 @@ import '@matterlabs/hardhat-zksync-deploy';
 import '@matterlabs/hardhat-zksync-verify';
 import '@matterlabs/hardhat-zksync-upgradable';
 
-import defaultConfig from './hardhat.config';
-import { ChainId, NetworkName, rpcUrls } from './constants';
+import { ChainId, NetworkName, rpcUrls } from '@constants/network';
 import { log } from '@helpers/logger';
+
+import defaultConfig from './hardhat.config';
 
 const { PRIVATE_KEY } = process.env;
 if (!PRIVATE_KEY) {

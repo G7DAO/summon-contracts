@@ -1,4 +1,4 @@
-import { ChainId } from '../constants';
+import { ChainId } from '@constants/network';
 import debug from 'debug';
 
 const logger: debug.Debugger = debug('Achievo:log');

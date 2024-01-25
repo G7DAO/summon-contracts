@@ -1,5 +1,7 @@
+import { CONTRACT_TYPE } from '@constants/contract';
+import { TENANT } from '@constants/tenant';
+
 import { DeploymentContract } from '../../types/deployment-type';
-import { TENANT, CONTRACT_TYPE } from '../constructor-args';
 import { NETWORK_TYPE, NetworkName } from '../network';
 
 const chain = NetworkName.Sepolia;
@@ -9,12 +11,14 @@ export const SEPOLIA_CONTRACTS: DeploymentContract[] = [
     {
         contractName: 'AvatarBound',
         type: CONTRACT_TYPE.Avatars,
+        name: CONTRACT_TYPE.Avatars,
         chain,
         networkType,
         tenants: [TENANT.ZkSync],
         verify: true,
         upgradable: false,
         dependencies: ['ItemBound', 'LevelsBound'],
+        // constructorArgs: {},
         functionCalls: [
             {
                 contractName: 'AvatarBound',
@@ -31,6 +35,7 @@ export const SEPOLIA_CONTRACTS: DeploymentContract[] = [
     {
         contractName: 'AvatarBoundV1',
         type: CONTRACT_TYPE.Avatars,
+        name: CONTRACT_TYPE.Avatars,
         chain,
         networkType,
         tenants: [TENANT.ZkSync],
@@ -53,6 +58,7 @@ export const SEPOLIA_CONTRACTS: DeploymentContract[] = [
     {
         contractName: 'ItemBound',
         type: CONTRACT_TYPE.Items,
+        name: CONTRACT_TYPE.Items,
         chain,
         networkType,
         tenants: [TENANT.ZkSync],
@@ -67,6 +73,7 @@ export const SEPOLIA_CONTRACTS: DeploymentContract[] = [
     {
         contractName: 'ItemBoundV1',
         type: CONTRACT_TYPE.Items,
+        name: CONTRACT_TYPE.Items,
         chain,
         networkType,
         tenants: [TENANT.ZkSync],
@@ -89,6 +96,7 @@ export const SEPOLIA_CONTRACTS: DeploymentContract[] = [
     {
         contractName: 'LevelsBound',
         type: CONTRACT_TYPE.Levels,
+        name: CONTRACT_TYPE.Levels,
         chain,
         networkType,
         tenants: [TENANT.ZkSync],
@@ -99,6 +107,7 @@ export const SEPOLIA_CONTRACTS: DeploymentContract[] = [
     {
         contractName: 'LevelsBoundV1',
         type: CONTRACT_TYPE.Levels,
+        name: CONTRACT_TYPE.Levels,
         chain,
         networkType,
         tenants: [TENANT.ZkSync],
@@ -107,8 +116,9 @@ export const SEPOLIA_CONTRACTS: DeploymentContract[] = [
         dependencies: ['ItemBoundV1', 'AvatarBoundV1'],
     },
     {
-        contractName: 'OpenMint',
-        type: CONTRACT_TYPE.OpenMint,
+        contractName: 'FreeMint',
+        type: CONTRACT_TYPE.FreeMint,
+        name: CONTRACT_TYPE.FreeMint,
         chain,
         networkType,
         tenants: [TENANT.ZkSync],
@@ -126,6 +136,7 @@ export const SEPOLIA_CONTRACTS: DeploymentContract[] = [
     {
         contractName: 'ERC20PythPaymaster',
         type: CONTRACT_TYPE.Paymaster,
+        name: CONTRACT_TYPE.Paymaster,
         chain,
         networkType,
         tenants: [TENANT.ZkSync],
@@ -153,6 +164,7 @@ export const SEPOLIA_CONTRACTS: DeploymentContract[] = [
     {
         contractName: 'ERC20ChainlinkPaymaster',
         type: CONTRACT_TYPE.Paymaster,
+        name: CONTRACT_TYPE.Paymaster,
         chain,
         networkType,
         tenants: [TENANT.ZkSync],
@@ -176,27 +188,5 @@ export const SEPOLIA_CONTRACTS: DeploymentContract[] = [
                 args: ['CONTRACT_LevelsBoundV1'],
             },
         ],
-    },
-    {
-        contractName: 'BadgeBound',
-        type: CONTRACT_TYPE.Badge,
-        chain,
-        networkType,
-        tenants: [TENANT.ETHDenver],
-        verify: true,
-        upgradable: false,
-        dependencies: [],
-        functionCalls: [],
-    },
-    {
-        contractName: 'BadgeBoundV1',
-        type: CONTRACT_TYPE.Badge,
-        chain,
-        networkType,
-        tenants: [TENANT.ETHDenver],
-        verify: true,
-        upgradable: true,
-        dependencies: [],
-        functionCalls: [],
     },
 ];
