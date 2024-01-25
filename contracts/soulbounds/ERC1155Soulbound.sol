@@ -30,14 +30,14 @@ import { Strings } from "@openzeppelin/contracts/utils/Strings.sol";
 import { ECDSA } from "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
 import { ReentrancyGuard } from "@openzeppelin/contracts/security/ReentrancyGuard.sol";
 
-import { ERC1155Soulbound } from "./extensions/ERC1155Soulbound.sol";
-import { ERCWhitelistSignature } from "./ERCWhitelistSignature.sol";
-import { LibItems } from "./libraries/LibItems.sol";
+import { Achievo1155Soulbound } from "../ercs/extensions/Achievo1155Soulbound.sol";
+import { ERCWhitelistSignature } from "../ercs/ERCWhitelistSignature.sol";
+import { LibItems } from "../libraries/LibItems.sol";
 
-contract BadgeBound is
+contract ERC1155Soulbound is
     ERC1155Burnable,
     ERC1155Supply,
-    ERC1155Soulbound,
+    Achievo1155Soulbound,
     ERCWhitelistSignature,
     AccessControl,
     Pausable,

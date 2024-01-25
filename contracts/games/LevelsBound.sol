@@ -25,11 +25,11 @@ import { ERC1155 } from "@openzeppelin/contracts/token/ERC1155/ERC1155.sol";
 import { Ownable } from "@openzeppelin/contracts/access/Ownable.sol";
 import { ReentrancyGuard } from "@openzeppelin/contracts/security/ReentrancyGuard.sol";
 import { AccessControl } from "@openzeppelin/contracts/access/AccessControl.sol";
-import { ERCWhitelistSignature } from "./ERCWhitelistSignature.sol";
-import { IItemBound } from "./interfaces/IItemBound.sol";
-import { ERC1155Soulbound } from "./extensions/ERC1155Soulbound.sol";
+import { ERCWhitelistSignature } from "../ercs/ERCWhitelistSignature.sol";
+import { IItemBound } from "../interfaces/IItemBound.sol";
+import { Achievo1155Soulbound } from "../ercs/extensions/Achievo1155Soulbound.sol";
 
-contract LevelsBound is ERC1155, Ownable, ReentrancyGuard, ERCWhitelistSignature, AccessControl, ERC1155Soulbound {
+contract LevelsBound is ERC1155, Ownable, ReentrancyGuard, ERCWhitelistSignature, AccessControl, Achievo1155Soulbound {
     mapping(address => uint256) public currentPlayerLevel;
     bytes32 public constant MINTER_ROLE = keccak256("MINTER_ROLE");
 

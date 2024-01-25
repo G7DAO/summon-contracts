@@ -6,14 +6,14 @@ import "forge-std/StdCheats.sol";
 import { Strings } from "@openzeppelin/contracts/utils/Strings.sol";
 import { ECDSA } from "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
 
-import { ItemBound } from "../contracts/ItemBound.sol";
+import { ERC1155RoyaltiesSoulbound } from "../contracts/soulbounds/ERC1155RoyaltiesSoulbound.sol";
 import { MockERC1155Receiver } from "../contracts/mocks/MockERC1155Receiver.sol";
 import { LibItems, TestLibItems } from "../contracts/libraries/LibItems.sol";
 
 contract ItemBoundTest is StdCheats, Test {
     using Strings for uint256;
 
-    ItemBound public itemBound;
+    ERC1155RoyaltiesSoulbound public itemBound;
     MockERC1155Receiver public mockERC1155Receiver;
 
     struct Wallet {
@@ -110,7 +110,7 @@ contract ItemBoundTest is StdCheats, Test {
         playerWallet3 = getWallet(player3Label);
         minterWallet = getWallet(minterLabel);
 
-        itemBound = new ItemBound(
+        itemBound = new ERC1155RoyaltiesSoulbound(
             "Test1155",
             "T1155",
             "MISSING_BASE_URL",
@@ -252,12 +252,12 @@ contract ItemBoundTest is StdCheats, Test {
         itemBound.mint(encodedItems1, 1, true, nonce, signature);
 
         vm.expectRevert(
-            "ERC1155Soulbound: The amount of soulbounded tokens is more than the amount of tokens to be transferred"
+            "Achievo1155Soulbound: The amount of soulbounded tokens is more than the amount of tokens to be transferred"
         );
         vm.prank(playerWallet.addr);
         itemBound.safeTransferFrom(playerWallet.addr, minterWallet.addr, _tokenIds[0], 1, "");
 
-        vm.expectRevert("ERC1155Soulbound: can't be zero amount");
+        vm.expectRevert("Achievo1155Soulbound: can't be zero amount");
         vm.prank(playerWallet.addr);
         itemBound.safeTransferFrom(playerWallet.addr, minterWallet.addr, _tokenIds[0], 0, "");
 
@@ -338,13 +338,13 @@ contract ItemBoundTest is StdCheats, Test {
         assertEq(itemBound.balanceOf(playerWallet.addr, _tokenIds[0]), 1);
 
         vm.expectRevert(
-            "ERC1155Soulbound: The amount of soulbounded tokens is more than the amount of tokens to be transferred"
+            "Achievo1155Soulbound: The amount of soulbounded tokens is more than the amount of tokens to be transferred"
         );
         vm.prank(playerWallet.addr);
         itemBound.safeTransferFrom(playerWallet.addr, minterWallet.addr, _tokenIds[0], 1, "");
 
         vm.expectRevert(
-            "ERC1155Soulbound: The amount of soulbounded tokens is more than the amount of tokens to be transferred"
+            "Achievo1155Soulbound: The amount of soulbounded tokens is more than the amount of tokens to be transferred"
         );
         vm.prank(playerWallet.addr);
         itemBound.burn(playerWallet.addr, _tokenIds[0], 1);
@@ -376,7 +376,7 @@ contract ItemBoundTest is StdCheats, Test {
         assertEq(itemBound.balanceOf(playerWallet.addr, _tokenIds[0]), 2);
 
         vm.expectRevert(
-            "ERC1155Soulbound: The amount of soulbounded tokens is more than the amount of tokens to be transferred"
+            "Achievo1155Soulbound: The amount of soulbounded tokens is more than the amount of tokens to be transferred"
         );
         vm.prank(playerWallet.addr);
         itemBound.safeTransferFrom(playerWallet.addr, minterWallet.addr, _tokenIds[0], 2, "");
@@ -426,13 +426,13 @@ contract ItemBoundTest is StdCheats, Test {
         assertEq(itemBound.balanceOf(playerWallet.addr, _tokenIds[0]), 1);
 
         vm.expectRevert(
-            "ERC1155Soulbound: The amount of soulbounded tokens is more than the amount of tokens to be transferred"
+            "Achievo1155Soulbound: The amount of soulbounded tokens is more than the amount of tokens to be transferred"
         );
         vm.prank(playerWallet.addr);
         itemBound.safeTransferFrom(playerWallet.addr, minterWallet.addr, _tokenIds[0], 1, "");
 
         vm.expectRevert(
-            "ERC1155Soulbound: The amount of soulbounded tokens is more than the amount of tokens to be transferred"
+            "Achievo1155Soulbound: The amount of soulbounded tokens is more than the amount of tokens to be transferred"
         );
         vm.prank(playerWallet.addr);
         itemBound.burnBatch(playerWallet.addr, _itemIds1, _amount1);
@@ -605,12 +605,12 @@ contract ItemBoundTest is StdCheats, Test {
         itemBound.adminMintId(playerWallet.addr, _tokenId, 1, true);
 
         vm.expectRevert(
-            "ERC1155Soulbound: The amount of soulbounded tokens is more than the amount of tokens to be transferred"
+            "Achievo1155Soulbound: The amount of soulbounded tokens is more than the amount of tokens to be transferred"
         );
         vm.prank(playerWallet.addr);
         itemBound.safeTransferFrom(playerWallet.addr, minterWallet.addr, _tokenId, 1, "");
 
-        vm.expectRevert("ERC1155Soulbound: can't be zero amount");
+        vm.expectRevert("Achievo1155Soulbound: can't be zero amount");
         vm.prank(playerWallet.addr);
         itemBound.safeTransferFrom(playerWallet.addr, minterWallet.addr, _tokenId, 0, "");
     }
@@ -620,7 +620,7 @@ contract ItemBoundTest is StdCheats, Test {
         itemBound.adminMintId(playerWallet.addr, _tokenId, 1, true);
 
         vm.expectRevert(
-            "ERC1155Soulbound: The amount of soulbounded tokens is more than the amount of tokens to be transferred"
+            "Achievo1155Soulbound: The amount of soulbounded tokens is more than the amount of tokens to be transferred"
         );
         vm.prank(playerWallet.addr);
         itemBound.safeTransferFrom(playerWallet.addr, playerWallet3.addr, _tokenId, 1, "");
@@ -636,7 +636,7 @@ contract ItemBoundTest is StdCheats, Test {
         itemBound.updateWhitelistAddress(playerWallet3.addr, false);
 
         vm.expectRevert(
-            "ERC1155Soulbound: The amount of soulbounded tokens is more than the amount of tokens to be transferred"
+            "Achievo1155Soulbound: The amount of soulbounded tokens is more than the amount of tokens to be transferred"
         );
         vm.prank(playerWallet.addr);
         itemBound.safeTransferFrom(playerWallet.addr, playerWallet3.addr, _tokenId, 1, "");

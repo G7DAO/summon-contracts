@@ -31,8 +31,8 @@ import "@openzeppelin/contracts/access/AccessControl.sol";
 import "../libraries/LibCrafting.sol";
 import "../libraries/LibDiamond.sol";
 import "../security/DiamondReentrancyGuard.sol";
-import { MockErc20 } from "../mocks/MockErc20.sol";
-import { MockERC1155 } from "../mocks/MockErc1155.sol";
+import { MockErc20 } from "../../mocks/MockErc20.sol";
+import { MockERC1155 } from "../../mocks/MockErc1155.sol";
 
 contract CraftingFacet is ERC1155Holder, ERC721Holder, DiamondReentrancyGuard, AccessControl {
     bytes32 public constant MINTER_ROLE = keccak256("MINTER_ROLE");

@@ -30,13 +30,12 @@ import "@openzeppelin/contracts/token/ERC721/IERC721.sol";
 import "@openzeppelin/contracts/security/Pausable.sol";
 import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
 import "@openzeppelin/contracts/access/AccessControl.sol";
-import "./ERCWhitelistSignature.sol";
+import "../ercs/ERCWhitelistSignature.sol";
 
 contract NFTDeposits is ERC721Holder, ERC1155Holder, ERCWhitelistSignature, Pausable, AccessControl, ReentrancyGuard {
     bytes32 public constant PAUSER_ROLE = keccak256("PAUSER_ROLE");
     bytes32 public constant DEV_CONFIG_ROLE = keccak256("DEV_CONFIG_ROLE");
     bytes32 public constant MANAGER_ROLE = keccak256("DEV_CONFIG_ROLE");
-
 
     // Mapping for ERC721 deposits: tokenId => owner address
     mapping(uint256 => address) public _erc721Deposits;
@@ -88,7 +87,7 @@ contract NFTDeposits is ERC721Holder, ERC1155Holder, ERCWhitelistSignature, Paus
         uint256 nonce,
         bytes calldata data,
         bytes calldata signature
-    ) external onlyRole(MANAGER_ROLE) nonReentrant whenNotPaused  {
+    ) external onlyRole(MANAGER_ROLE) nonReentrant whenNotPaused {
         require(_verifySignature(_msgSender(), nonce, data, signature), "Invalid signature");
         require(_erc721Deposits[tokenId] == _msgSender(), "Not the token depositor");
         IERC721(nftAddress).safeTransferFrom(address(this), _msgSender(), tokenId);
@@ -117,7 +116,7 @@ contract NFTDeposits is ERC721Holder, ERC1155Holder, ERCWhitelistSignature, Paus
         uint256 nonce,
         bytes calldata data,
         bytes calldata signature
-    ) external onlyRole(MANAGER_ROLE) nonReentrant whenNotPaused{
+    ) external onlyRole(MANAGER_ROLE) nonReentrant whenNotPaused {
         require(_verifySignature(_msgSender(), nonce, data, signature), "Invalid signature");
         IERC1155 nft = IERC1155(nftAddress);
         for (uint256 i = 0; i < tokenIds.length; i++) {
@@ -133,7 +132,7 @@ contract NFTDeposits is ERC721Holder, ERC1155Holder, ERCWhitelistSignature, Paus
         address erc20Address,
         bytes calldata data,
         bytes calldata signature
-    ) onlyRole(MANAGER_ROLE) nonReentrant whenNotPaused external {
+    ) external onlyRole(MANAGER_ROLE) nonReentrant whenNotPaused {
         // send paymaster funds to the owner
         IERC20 token = IERC20(erc20Address);
         uint256 balance = token.balanceOf(address(this));

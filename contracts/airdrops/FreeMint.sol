@@ -29,14 +29,14 @@ import "@openzeppelin/contracts/utils/Counters.sol";
 import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
 import "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
 
-contract OpenMint is ERC721URIStorage, ERC721Enumerable, AccessControl, ReentrancyGuard {
+contract FreeMint is ERC721URIStorage, ERC721Enumerable, AccessControl, ReentrancyGuard {
     bytes32 public constant MINTER_ROLE = keccak256("MINTER_ROLE");
     string public baseTokenURI;
     mapping(uint256 => bool) public nftRevealed;
     bool public LOCKED_CONTRACT = false;
     mapping(address => bool) private addressesMinted;
     string private unrevealedURI;
-    string private _contractURI = "https://summon.mypinata.cloud/ipfs/QmPkeXk49oqBYckGeM5mzwNztVDGcsnCB7RwbCPKo5racj";
+    string private _contractURI = "https://achievo.mypinata.cloud/ipfs/QmPkeXk49oqBYckGeM5mzwNztVDGcsnCB7RwbCPKo5racj";
     mapping(address => bool) public whitelistSigners;
     bool public freeMintPaused = false;
     bool public freeQRMintPaused = false;
@@ -49,7 +49,7 @@ contract OpenMint is ERC721URIStorage, ERC721Enumerable, AccessControl, Reentran
     event FreeQRMintUnpaused(bool paused);
     event SignerAdded(address signer);
     event SignerRemoved(address signer);
-    event FreeMint(address indexed to);
+    event FreeMinted(address indexed to);
     event NFTRevealed(uint256 indexed tokenId);
 
     using Counters for Counters.Counter;
@@ -129,7 +129,7 @@ contract OpenMint is ERC721URIStorage, ERC721Enumerable, AccessControl, Reentran
         _setTokenURI(tokenId, unrevealedURI);
         addressesMinted[to] = true;
         _tokenIdCounter.increment();
-        emit FreeMint(to);
+        emit FreeMinted(to);
     }
 
     function batchMint(address[] memory to) public onlyRole(DEFAULT_ADMIN_ROLE) noLocked {

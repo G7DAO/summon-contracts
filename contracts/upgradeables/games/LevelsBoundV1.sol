@@ -27,14 +27,15 @@ import {
     ReentrancyGuardUpgradeable
 } from "@openzeppelin/contracts-upgradeable/security/ReentrancyGuardUpgradeable.sol";
 import { AccessControlUpgradeable } from "@openzeppelin/contracts-upgradeable/access/AccessControlUpgradeable.sol";
-import { ERCWhitelistSignatureUpgradeable } from "./ERCWhitelistSignatureUpgradeable.sol";
-import { IItemBound } from "../interfaces/IItemBound.sol";
-import { ERC1155SoulboundUpgradeable } from "../extensions/upgradeables/ERC1155SoulboundUpgradeable.sol";
+import { ERCWhitelistSignatureUpgradeable } from "../ercs/ERCWhitelistSignatureUpgradeable.sol";
+import { IItemBound } from "../../interfaces/IItemBound.sol";
+import { Achievo1155SoulboundUpgradeable } from "../ercs/extensions/Achievo1155SoulboundUpgradeable.sol";
 
 contract LevelsBoundV1 is
     Initializable,
     ERC1155Upgradeable,
-    ERC1155SoulboundUpgradeable,
+    Achievo1155SoulboundUpgradeable,
+    OwnableUpgradeable,
     ReentrancyGuardUpgradeable,
     ERCWhitelistSignatureUpgradeable,
     AccessControlUpgradeable

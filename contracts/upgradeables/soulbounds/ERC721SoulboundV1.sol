@@ -21,32 +21,60 @@ pragma solidity 0.8.17;
 // MMNx'.dWMMK;.:0WMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMM
 // MMMM0cdNMM0cdNMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMM
 
-import "@openzeppelin/contracts/token/ERC721/ERC721.sol";
-import "@openzeppelin/contracts/token/ERC721/extensions/ERC721URIStorage.sol";
-import "@openzeppelin/contracts/token/ERC721/extensions/ERC721Enumerable.sol";
-import "@openzeppelin/contracts/token/ERC721/IERC721.sol";
-import "@openzeppelin/contracts/access/AccessControl.sol";
-import "@openzeppelin/contracts/security/Pausable.sol";
-import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
-import "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
-import { ERC721Soulbound } from "./extensions/ERC721Soulbound.sol";
-import { IItemBound } from "./interfaces/IItemBound.sol";
+import { Initializable } from "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
 
-contract NFTGating is ERC721URIStorage, ERC721Enumerable, AccessControl, ERC721Soulbound, Pausable, ReentrancyGuard {
+import { AccessControlUpgradeable } from "@openzeppelin/contracts-upgradeable/access/AccessControlUpgradeable.sol";
+import { PausableUpgradeable } from "@openzeppelin/contracts-upgradeable/security/PausableUpgradeable.sol";
+import {
+    ReentrancyGuardUpgradeable
+} from "@openzeppelin/contracts-upgradeable/security/ReentrancyGuardUpgradeable.sol";
+
+import "@openzeppelin/contracts-upgradeable/token/ERC721/ERC721Upgradeable.sol";
+import {
+    ERC721URIStorageUpgradeable
+} from "@openzeppelin/contracts-upgradeable/token/ERC721/extensions/ERC721URIStorageUpgradeable.sol";
+import {
+    ERC721EnumerableUpgradeable
+} from "@openzeppelin/contracts-upgradeable/token/ERC721/extensions/ERC721EnumerableUpgradeable.sol";
+
+// import "@openzeppelin/contracts-upgradeable/utils/cryptography/ECDSA.sol";
+import { Achievo721SoulboundUpgradeable } from "../ercs/extensions/Achievo721SoulboundUpgradeable.sol";
+
+import { IItemBound } from "../../interfaces/IItemBound.sol";
+
+contract ERC721SoulboundV1 is
+    Initializable,
+    ERC721URIStorageUpgradeable,
+    ERC721EnumerableUpgradeable,
+    AccessControlUpgradeable,
+    Achievo721SoulboundUpgradeable,
+    PausableUpgradeable,
+    ReentrancyGuardUpgradeable
+{
     uint256 private _tokenIdCounter;
     bytes32 public constant MINTER_ROLE = keccak256("MINTER_ROLE");
     string public baseTokenURI;
     string private adminTokenURI;
     string private superAdminTokenURI;
 
-    constructor(
+    /// @custom:oz-upgrades-unsafe-allow constructor
+    constructor() {
+        _disableInitializers();
+    }
+
+    function initialize(
         string memory _name,
         string memory _symbol,
         address devAdmin,
         string memory _baseUri,
         string memory _adminTokenURI,
         string memory _superAdminTokenURI
-    ) ERC721(_name, _symbol) {
+    ) public initializer {
+        __ERC721_init(_name, _symbol);
+        __ReentrancyGuard_init();
+        __AccessControl_init();
+        __Achievo721SoulboundUpgradable_init();
+
         _setupRole(DEFAULT_ADMIN_ROLE, devAdmin);
         _setupRole(MINTER_ROLE, devAdmin);
         baseTokenURI = _baseUri;
@@ -70,11 +98,11 @@ contract NFTGating is ERC721URIStorage, ERC721Enumerable, AccessControl, ERC721S
         address to,
         uint256 tokenId,
         uint256 batch
-    ) internal override(ERC721, ERC721Enumerable) soulboundAddressCheck(from) {
+    ) internal override(ERC721Upgradeable, ERC721EnumerableUpgradeable) soulboundAddressCheck(from) {
         super._beforeTokenTransfer(from, to, tokenId, batch);
     }
 
-    function _burn(uint256 tokenId) internal override(ERC721, ERC721URIStorage) {}
+    function _burn(uint256 tokenId) internal override(ERC721Upgradeable, ERC721URIStorageUpgradeable) {}
 
     function _baseURI() internal view override returns (string memory) {
         return baseTokenURI;
@@ -84,13 +112,20 @@ contract NFTGating is ERC721URIStorage, ERC721Enumerable, AccessControl, ERC721S
         baseTokenURI = _baseTokenURI;
     }
 
-    function tokenURI(uint256 tokenId) public view override(ERC721, ERC721URIStorage) returns (string memory) {
+    function tokenURI(
+        uint256 tokenId
+    ) public view override(ERC721Upgradeable, ERC721URIStorageUpgradeable) returns (string memory) {
         return super.tokenURI(tokenId);
     }
 
     function supportsInterface(
         bytes4 interfaceId
-    ) public view override(ERC721URIStorage, ERC721Enumerable, AccessControl) returns (bool) {
+    )
+        public
+        view
+        override(ERC721URIStorageUpgradeable, ERC721EnumerableUpgradeable, AccessControlUpgradeable)
+        returns (bool)
+    {
         return super.supportsInterface(interfaceId);
     }
 }

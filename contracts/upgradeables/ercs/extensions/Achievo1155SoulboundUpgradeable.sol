@@ -23,7 +23,7 @@ pragma solidity 0.8.17;
 
 import { Initializable } from "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
 
-contract ERC1155SoulboundUpgradeable is Initializable {
+contract Achievo1155SoulboundUpgradeable is Initializable {
     mapping(address => bool) internal _soulboundAddresses; // mid gas usage
     mapping(address => mapping(uint256 => uint256)) internal _soulbounds; // high gas usage
     mapping(address => bool) internal whitelistAddresses;
@@ -51,10 +51,13 @@ contract ERC1155SoulboundUpgradeable is Initializable {
         uint256[] memory amounts,
         uint256[] memory totalAmounts
     ) {
-        require(tokenIds.length == amounts.length, "ERC1155SoulboundUpgradeable: tokenIds and amounts length mismatch");
+        require(
+            tokenIds.length == amounts.length,
+            "Achievo1155SoulboundUpgradeable: tokenIds and amounts length mismatch"
+        );
         require(
             amounts.length == totalAmounts.length,
-            "ERC1155SoulboundUpgradeable: tokenIds and amounts length mismatch"
+            "Achievo1155SoulboundUpgradeable: tokenIds and amounts length mismatch"
         );
 
         for (uint256 i = 0; i < tokenIds.length; i++) {
@@ -65,11 +68,11 @@ contract ERC1155SoulboundUpgradeable is Initializable {
     }
 
     modifier revertOperation() {
-        revert("ERC1155SoulboundUpgradeable: Operation denied, soulbounded");
+        revert("Achievo1155SoulboundUpgradeable: Operation denied, soulbounded");
         _;
     }
 
-    function __ERC1155SoulboundUpgradable_init() internal onlyInitializing {}
+    function __Achievo1155SoulboundUpgradable_init() internal onlyInitializing {}
 
     /**
      * @dev Returns if a `tokenId` is soulbound
@@ -98,9 +101,9 @@ contract ERC1155SoulboundUpgradeable is Initializable {
         uint256 amount,
         uint256 totalAmount
     ) private view {
-        require(from != address(0), "ERC1155SoulboundUpgradeable: can't be zero address");
-        require(amount > 0, "ERC1155SoulboundUpgradeable: can't be zero amount");
-        require(amount <= totalAmount, "ERC1155SoulboundUpgradeable: can't transfer more than you have");
+        require(from != address(0), "Achievo1155SoulboundUpgradeable: can't be zero address");
+        require(amount > 0, "Achievo1155SoulboundUpgradeable: can't be zero amount");
+        require(amount <= totalAmount, "Achievo1155SoulboundUpgradeable: can't transfer more than you have");
         // check if from or to whitelist addresses let it through
         if (whitelistAddresses[from] || whitelistAddresses[to]) {
             return;
@@ -108,7 +111,7 @@ contract ERC1155SoulboundUpgradeable is Initializable {
 
         if (totalAmount - _soulbounds[from][tokenId] < amount) {
             revert(
-                "ERC1155SoulboundUpgradeable: The amount of soulbounded tokens is more than the amount of tokens to be transferred"
+                "Achievo1155SoulboundUpgradeable: The amount of soulbounded tokens is more than the amount of tokens to be transferred"
             );
         }
     }
@@ -145,7 +148,10 @@ contract ERC1155SoulboundUpgradeable is Initializable {
      *
      */
     function _soulboundBatch(address to, uint256[] memory tokenIds, uint256[] memory amounts) internal virtual {
-        require(tokenIds.length == amounts.length, "ERC1155SoulboundUpgradeable: tokenIds and amounts length mismatch");
+        require(
+            tokenIds.length == amounts.length,
+            "Achievo1155SoulboundUpgradeable: tokenIds and amounts length mismatch"
+        );
         for (uint256 i = 0; i < tokenIds.length; i++) {
             _soulbounds[to][tokenIds[i]] += amounts[i];
         }
@@ -162,7 +168,7 @@ contract ERC1155SoulboundUpgradeable is Initializable {
      * - `to` cannot be the zero address.
      */
     function _soulboundAddress(address to) internal virtual {
-        require(to != address(0), "ERC1155SoulboundUpgradeable: Bound to the zero address not allowed");
+        require(to != address(0), "Achievo1155SoulboundUpgradeable: Bound to the zero address not allowed");
         _soulboundAddresses[to] = true;
         emit SoulboundAddress(to);
     }

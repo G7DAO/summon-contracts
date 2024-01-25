@@ -38,15 +38,16 @@ import {
     ReentrancyGuardUpgradeable
 } from "@openzeppelin/contracts-upgradeable/security/ReentrancyGuardUpgradeable.sol";
 
-import { ERC1155SoulboundUpgradeable } from "../extensions/upgradeables/ERC1155SoulboundUpgradeable.sol";
-import { ERCWhitelistSignatureUpgradeable } from "./ERCWhitelistSignatureUpgradeable.sol";
-import { LibItems } from "../libraries/LibItems.sol";
+import { Achievo1155SoulboundUpgradeable } from "../ercs/extensions/Achievo1155SoulboundUpgradeable.sol";
+import { ERCWhitelistSignatureUpgradeable } from "../ercs/ERCWhitelistSignatureUpgradeable.sol";
+import { LibItems } from "../../libraries/LibItems.sol";
 
-contract BadgeBoundV1 is
+contract ERC1155RoyaltiesSoulboundV1 is
     Initializable,
     ERC1155BurnableUpgradeable,
     ERC1155SupplyUpgradeable,
-    ERC1155SoulboundUpgradeable,
+    Achievo1155SoulboundUpgradeable,
+    ERC2981Upgradeable,
     ERCWhitelistSignatureUpgradeable,
     AccessControlUpgradeable,
     PausableUpgradeable,
@@ -98,7 +99,7 @@ contract BadgeBoundV1 is
         __ERC1155_init("");
         __ReentrancyGuard_init();
         __AccessControl_init();
-        __ERC1155SoulboundUpgradable_init();
+        __Achievo1155SoulboundUpgradable_init();
         __ERCWhitelistSignatureUpgradeable_init();
 
         require(devWallet != address(0), "AddressIsZero");
@@ -213,6 +214,30 @@ contract BadgeBoundV1 is
     function addNewTokens(LibItems.TokenCreate[] calldata _tokens) external onlyRole(DEV_CONFIG_ROLE) {
         for (uint256 i = 0; i < _tokens.length; i++) {
             addNewToken(_tokens[i]);
+        }
+    }
+
+    function addNewTokenWithRoyalty(LibItems.TokenCreateWithRoyalty calldata _token) public onlyRole(DEV_CONFIG_ROLE) {
+        if (_token.receiver == address(0)) {
+            revert("ReceiverAddressZero");
+        }
+
+        if (bytes(_token.tokenUri).length > 0) {
+            tokenUris[_token.tokenId] = _token.tokenUri;
+        }
+
+        tokenExists[_token.tokenId] = true;
+
+        itemIds.push(_token.tokenId);
+
+        _setTokenRoyalty(_token.tokenId, _token.receiver, uint96(_token.feeBasisPoints));
+    }
+
+    function addNewTokensWithRoyalty(
+        LibItems.TokenCreateWithRoyalty[] calldata _tokens
+    ) external onlyRole(DEV_CONFIG_ROLE) {
+        for (uint256 i = 0; i < _tokens.length; i++) {
+            addNewTokenWithRoyalty(_tokens[i]);
         }
     }
 
@@ -398,7 +423,7 @@ contract BadgeBoundV1 is
 
     function supportsInterface(
         bytes4 interfaceId
-    ) public view override(ERC1155Upgradeable, AccessControlUpgradeable) returns (bool) {
+    ) public view override(ERC1155Upgradeable, ERC2981Upgradeable, AccessControlUpgradeable) returns (bool) {
         return super.supportsInterface(interfaceId);
     }
 
@@ -413,6 +438,18 @@ contract BadgeBoundV1 is
 
     function updateBaseUri(string memory _baseURI) external onlyRole(DEV_CONFIG_ROLE) {
         baseURI = _baseURI;
+    }
+
+    function setRoyaltyInfo(address receiver, uint96 feeBasisPoints) external onlyRole(MANAGER_ROLE) {
+        _setDefaultRoyalty(receiver, feeBasisPoints);
+    }
+
+    function setTokenRoyalty(uint256 tokenId, address receiver, uint96 feeBasisPoints) external onlyRole(MANAGER_ROLE) {
+        _setTokenRoyalty(tokenId, receiver, uint96(feeBasisPoints));
+    }
+
+    function resetTokenRoyalty(uint256 tokenId) external onlyRole(MANAGER_ROLE) {
+        _resetTokenRoyalty(tokenId);
     }
 
     function updateWhitelistAddress(address _address, bool _isWhitelisted) external onlyRole(DEV_CONFIG_ROLE) {

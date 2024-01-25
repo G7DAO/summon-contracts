@@ -22,52 +22,78 @@ pragma solidity 0.8.17;
 // MMMM0cdNMM0cdNMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMM
 
 import { Initializable } from "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
-import { LibItems } from "../libraries/LibItems.sol";
 
-contract ItemTierManagerUpgradeable is Initializable {
-    event TierAdded(uint256 tierId, string tierName);
-    event TierRemoved(uint256 tierId, string tierName);
+contract Achievo721SoulboundUpgradeable is Initializable {
+    mapping(uint256 => bool) internal _soulboundTokens; // low gas usage
+    mapping(address => bool) internal _soulboundAddresses; // mid gas usage
+    mapping(address => bool) internal whitelistAddresses;
 
-    mapping(uint256 => LibItems.Tier) public tiers; // tierId => tier
+    event SoulboundToken(uint256 indexed tokenId);
+    event SoulboundAddress(address indexed to);
 
-    function __ItemTierManagerUpgradeableUpgradeable_init() internal onlyInitializing {
-        LibItems.Tier[] memory _tiers = new LibItems.Tier[](6);
-        _tiers[0] = LibItems.Tier({ tierId: 0, tierName: "NONE" });
-        _tiers[1] = LibItems.Tier({ tierId: 1, tierName: "COMMON" });
-        _tiers[2] = LibItems.Tier({ tierId: 2, tierName: "UNCOMMON" });
-        _tiers[3] = LibItems.Tier({ tierId: 3, tierName: "RARE" });
-        _tiers[4] = LibItems.Tier({ tierId: 4, tierName: "LEGENDARY" });
-        _tiers[5] = LibItems.Tier({ tierId: 5, tierName: "MYTHICAL" });
-
-        _addTiers(_tiers);
+    modifier soulboundTokenCheck(uint256 tokenId) {
+        require(!_soulboundTokens[tokenId], "Achievo721SoulboundUpgradeable: This token is soulbounded");
+        _;
     }
 
-    function _addTier(LibItems.Tier memory _tier) internal {
-        tiers[_tier.tierId] = _tier;
-        emit TierAdded(_tier.tierId, _tier.tierName);
+    modifier soulboundAddressCheck(address from) {
+        require(!_soulboundAddresses[from], "Achievo721SoulboundUpgradeable: This address is soulbounded");
+        _;
     }
 
-    function _addTiers(LibItems.Tier[] memory _tiers) internal {
-        for (uint256 i = 0; i < _tiers.length; i++) {
-            _addTier(_tiers[i]);
-        }
+    modifier revertOperation() {
+        revert("Achievo721SoulboundUpgradeable: Operation denied, soulbounded");
+        _;
     }
 
-    function _removeTier(uint256 _tierId) internal {
-        LibItems.Tier memory _tier = tiers[_tierId];
-        delete tiers[_tierId];
-        emit TierRemoved(_tier.tierId, _tier.tierName);
+    function __Achievo721SoulboundUpgradable_init() internal onlyInitializing {}
+
+    /**
+     * @dev Returns if a `tokenId` is soulbound
+     *
+     */
+    function isSoulboundToken(uint256 tokenId) external view virtual returns (bool) {
+        return _soulboundTokens[tokenId];
     }
 
-    function _removeTiers(uint256[] memory _tierIds) internal {
-        for (uint256 i = 0; i < _tierIds.length; i++) {
-            _removeTier(_tierIds[i]);
-        }
+    /**
+     * @dev Returns if a `address` is soulbound
+     *
+     */
+    function isSoulboundAddress(address to) public view virtual returns (bool) {
+        return _soulboundAddresses[to];
     }
 
-    function isTierExist(uint256 _tierId) public view returns (bool) {
-        if (bytes(tiers[_tierId].tierName).length > 0) {
-            return true;
-        }
+    function _updateWhitelistAddress(address _address, bool _isWhitelisted) internal {
+        whitelistAddresses[_address] = _isWhitelisted;
     }
+
+    /**
+     * @dev Soulbound `tokenId` - ERC721 use cases
+     *
+     * Emits a {SoulboundToken} event.
+     *
+     */
+    function _soulboundToken(uint256 tokenId) internal virtual {
+        _soulboundTokens[tokenId] = true;
+        emit SoulboundToken(tokenId);
+    }
+
+    /**
+     * @dev Soulbound `address` to save that address  - Custom use cases
+     *
+     * Emits a {SoulboundAddress} event.
+     *
+     * Requirements:
+     *
+     * - `to` cannot be the zero address.
+     */
+    function _soulboundAddress(address to) internal virtual {
+        require(to != address(0), "Achievo721SoulboundUpgradeable: Bound to the zero address not allowed");
+        _soulboundAddresses[to] = true;
+        emit SoulboundAddress(to);
+    }
+
+    // Reserved storage space to allow for layout changes in the future.
+    uint256[47] private __gap;
 }

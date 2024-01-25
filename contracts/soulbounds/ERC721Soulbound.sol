@@ -1,5 +1,10 @@
-// SPDX-License-Identifier: UNLICENSED
+// SPDX-License-Identifier: MIT
 pragma solidity 0.8.17;
+
+/**
+ * Author: Omar <omar@game7.io>(https://github.com/ogarciarevett)
+ * Co-Authors: Max <max@game7.io>(https://github.com/vasinl124)
+ */
 
 // MMMMNkc. .,oKWMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMM
 // MWXd,.      .cONMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMM
@@ -16,18 +21,55 @@ pragma solidity 0.8.17;
 // MMNx'.dWMMK;.:0WMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMM
 // MMMM0cdNMM0cdNMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMM
 
-import { ERC721 } from "@openzeppelin/contracts/token/ERC721/ERC721.sol";
+import "@openzeppelin/contracts/token/ERC721/ERC721.sol";
+import "@openzeppelin/contracts/token/ERC721/extensions/ERC721URIStorage.sol";
+import "@openzeppelin/contracts/token/ERC721/extensions/ERC721Enumerable.sol";
+import "@openzeppelin/contracts/token/ERC721/IERC721.sol";
+import "@openzeppelin/contracts/access/AccessControl.sol";
+import "@openzeppelin/contracts/security/Pausable.sol";
+import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
+import "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
 import { Achievo721Soulbound } from "../ercs/extensions/Achievo721Soulbound.sol";
+import { IItemBound } from "../interfaces/IItemBound.sol";
 
-contract Mock721Soulbound is ERC721, Achievo721Soulbound {
+contract ERC721Soulbound is
+    ERC721URIStorage,
+    ERC721Enumerable,
+    AccessControl,
+    Achievo721Soulbound,
+    Pausable,
+    ReentrancyGuard
+{
     uint256 private _tokenIdCounter;
+    bytes32 public constant MINTER_ROLE = keccak256("MINTER_ROLE");
+    string public baseTokenURI;
+    string private adminTokenURI;
+    string private superAdminTokenURI;
 
-    constructor() ERC721("Mock721SoulboundToken", "M721SBT") {}
+    constructor(
+        string memory _name,
+        string memory _symbol,
+        address devAdmin,
+        string memory _baseUri,
+        string memory _adminTokenURI,
+        string memory _superAdminTokenURI
+    ) ERC721(_name, _symbol) {
+        _setupRole(DEFAULT_ADMIN_ROLE, devAdmin);
+        _setupRole(MINTER_ROLE, devAdmin);
+        baseTokenURI = _baseUri;
+        superAdminTokenURI = _superAdminTokenURI;
+        adminTokenURI = _adminTokenURI;
+    }
 
-    function mint(address to) public {
+    function mint(address to, bool superAdmin) public onlyRole(MINTER_ROLE) {
         uint256 tokenId = _tokenIdCounter++;
         _safeMint(to, tokenId);
-        _soulboundToken(tokenId);
+        if (superAdmin) {
+            _setTokenURI(tokenId, superAdminTokenURI);
+        } else {
+            _setTokenURI(tokenId, adminTokenURI);
+        }
+        _soulboundAddress(to);
     }
 
     function _beforeTokenTransfer(
@@ -35,11 +77,27 @@ contract Mock721Soulbound is ERC721, Achievo721Soulbound {
         address to,
         uint256 tokenId,
         uint256 batch
-    ) internal override(ERC721) soulboundTokenCheck(tokenId) {
+    ) internal override(ERC721, ERC721Enumerable) soulboundAddressCheck(from) {
         super._beforeTokenTransfer(from, to, tokenId, batch);
     }
 
-    function supportsInterface(bytes4 interfaceId) public view override(ERC721) returns (bool) {
+    function _burn(uint256 tokenId) internal override(ERC721, ERC721URIStorage) {}
+
+    function _baseURI() internal view override returns (string memory) {
+        return baseTokenURI;
+    }
+
+    function setBaseURI(string memory _baseTokenURI) public onlyRole(DEFAULT_ADMIN_ROLE) {
+        baseTokenURI = _baseTokenURI;
+    }
+
+    function tokenURI(uint256 tokenId) public view override(ERC721, ERC721URIStorage) returns (string memory) {
+        return super.tokenURI(tokenId);
+    }
+
+    function supportsInterface(
+        bytes4 interfaceId
+    ) public view override(ERC721URIStorage, ERC721Enumerable, AccessControl) returns (bool) {
         return super.supportsInterface(interfaceId);
     }
 }

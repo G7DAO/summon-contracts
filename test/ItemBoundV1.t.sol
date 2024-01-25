@@ -10,7 +10,7 @@ import { Strings } from "@openzeppelin/contracts/utils/Strings.sol";
 import { ECDSAUpgradeable } from "@openzeppelin/contracts-upgradeable/utils/cryptography/ECDSAUpgradeable.sol";
 
 import { LibItems, TestLibItems } from "../contracts/libraries/LibItems.sol";
-import { ItemBoundV1 } from "../contracts/upgradeables/ItemBoundV1.sol";
+import { ERC1155RoyaltiesSoulboundV1 } from "../contracts/upgradeables/soulbounds/ERC1155RoyaltiesSoulboundV1.sol";
 import { MockERC1155Receiver } from "../contracts/mocks/MockERC1155Receiver.sol";
 
 contract ItemBoundV1Test is StdCheats, Test {
@@ -18,7 +18,7 @@ contract ItemBoundV1Test is StdCheats, Test {
 
     address itemBoundV1Address;
 
-    ItemBoundV1 public itemBoundProxy;
+    ERC1155RoyaltiesSoulboundV1 public itemBoundProxy;
 
     MockERC1155Receiver public mockERC1155Receiver;
 
@@ -110,10 +110,10 @@ contract ItemBoundV1Test is StdCheats, Test {
         return (abi.encode(itemIds));
     }
 
-    function deployContract() public returns (ItemBoundV1) {
-        ItemBoundV1 itemBoundV1 = new ItemBoundV1();
+    function deployContract() public returns (ERC1155RoyaltiesSoulboundV1) {
+        ERC1155RoyaltiesSoulboundV1 itemBoundV1 = new ERC1155RoyaltiesSoulboundV1();
         ERC1967Proxy proxy = new ERC1967Proxy(address(itemBoundV1), "");
-        ItemBoundV1(address(proxy)).initialize(
+        ERC1155RoyaltiesSoulboundV1(address(proxy)).initialize(
             "Test1155",
             "T1155",
             "MISSING_BASE_URL",
@@ -123,7 +123,7 @@ contract ItemBoundV1Test is StdCheats, Test {
             address(this)
         );
 
-        return ItemBoundV1(address(proxy));
+        return ERC1155RoyaltiesSoulboundV1(address(proxy));
     }
 
     function setUp() public {
@@ -266,12 +266,12 @@ contract ItemBoundV1Test is StdCheats, Test {
         itemBoundProxy.mint(encodedItems1, 1, true, nonce, signature);
 
         vm.expectRevert(
-            "ERC1155SoulboundUpgradeable: The amount of soulbounded tokens is more than the amount of tokens to be transferred"
+            "Achievo1155SoulboundUpgradeable: The amount of soulbounded tokens is more than the amount of tokens to be transferred"
         );
         vm.prank(playerWallet.addr);
         itemBoundProxy.safeTransferFrom(playerWallet.addr, minterWallet.addr, _tokenIds[0], 1, "");
 
-        vm.expectRevert("ERC1155SoulboundUpgradeable: can't be zero amount");
+        vm.expectRevert("Achievo1155SoulboundUpgradeable: can't be zero amount");
         vm.prank(playerWallet.addr);
         itemBoundProxy.safeTransferFrom(playerWallet.addr, minterWallet.addr, _tokenIds[0], 0, "");
 
@@ -352,13 +352,13 @@ contract ItemBoundV1Test is StdCheats, Test {
         assertEq(itemBoundProxy.balanceOf(playerWallet.addr, _tokenIds[0]), 1);
 
         vm.expectRevert(
-            "ERC1155SoulboundUpgradeable: The amount of soulbounded tokens is more than the amount of tokens to be transferred"
+            "Achievo1155SoulboundUpgradeable: The amount of soulbounded tokens is more than the amount of tokens to be transferred"
         );
         vm.prank(playerWallet.addr);
         itemBoundProxy.safeTransferFrom(playerWallet.addr, minterWallet.addr, _tokenIds[0], 1, "");
 
         vm.expectRevert(
-            "ERC1155SoulboundUpgradeable: The amount of soulbounded tokens is more than the amount of tokens to be transferred"
+            "Achievo1155SoulboundUpgradeable: The amount of soulbounded tokens is more than the amount of tokens to be transferred"
         );
         vm.prank(playerWallet.addr);
         itemBoundProxy.burn(playerWallet.addr, _tokenIds[0], 1);
@@ -390,7 +390,7 @@ contract ItemBoundV1Test is StdCheats, Test {
         assertEq(itemBoundProxy.balanceOf(playerWallet.addr, _tokenIds[0]), 2);
 
         vm.expectRevert(
-            "ERC1155SoulboundUpgradeable: The amount of soulbounded tokens is more than the amount of tokens to be transferred"
+            "Achievo1155SoulboundUpgradeable: The amount of soulbounded tokens is more than the amount of tokens to be transferred"
         );
         vm.prank(playerWallet.addr);
         itemBoundProxy.safeTransferFrom(playerWallet.addr, minterWallet.addr, _tokenIds[0], 2, "");
@@ -440,13 +440,13 @@ contract ItemBoundV1Test is StdCheats, Test {
         assertEq(itemBoundProxy.balanceOf(playerWallet.addr, _tokenIds[0]), 1);
 
         vm.expectRevert(
-            "ERC1155SoulboundUpgradeable: The amount of soulbounded tokens is more than the amount of tokens to be transferred"
+            "Achievo1155SoulboundUpgradeable: The amount of soulbounded tokens is more than the amount of tokens to be transferred"
         );
         vm.prank(playerWallet.addr);
         itemBoundProxy.safeTransferFrom(playerWallet.addr, minterWallet.addr, _tokenIds[0], 1, "");
 
         vm.expectRevert(
-            "ERC1155SoulboundUpgradeable: The amount of soulbounded tokens is more than the amount of tokens to be transferred"
+            "Achievo1155SoulboundUpgradeable: The amount of soulbounded tokens is more than the amount of tokens to be transferred"
         );
         vm.prank(playerWallet.addr);
         itemBoundProxy.burnBatch(playerWallet.addr, _itemIds1, _amount1);
@@ -619,12 +619,12 @@ contract ItemBoundV1Test is StdCheats, Test {
         itemBoundProxy.adminMintId(playerWallet.addr, _tokenId, 1, true);
 
         vm.expectRevert(
-            "ERC1155SoulboundUpgradeable: The amount of soulbounded tokens is more than the amount of tokens to be transferred"
+            "Achievo1155SoulboundUpgradeable: The amount of soulbounded tokens is more than the amount of tokens to be transferred"
         );
         vm.prank(playerWallet.addr);
         itemBoundProxy.safeTransferFrom(playerWallet.addr, minterWallet.addr, _tokenId, 1, "");
 
-        vm.expectRevert("ERC1155SoulboundUpgradeable: can't be zero amount");
+        vm.expectRevert("Achievo1155SoulboundUpgradeable: can't be zero amount");
         vm.prank(playerWallet.addr);
         itemBoundProxy.safeTransferFrom(playerWallet.addr, minterWallet.addr, _tokenId, 0, "");
     }
@@ -634,7 +634,7 @@ contract ItemBoundV1Test is StdCheats, Test {
         itemBoundProxy.adminMintId(playerWallet.addr, _tokenId, 1, true);
 
         vm.expectRevert(
-            "ERC1155SoulboundUpgradeable: The amount of soulbounded tokens is more than the amount of tokens to be transferred"
+            "Achievo1155SoulboundUpgradeable: The amount of soulbounded tokens is more than the amount of tokens to be transferred"
         );
         vm.prank(playerWallet.addr);
         itemBoundProxy.safeTransferFrom(playerWallet.addr, playerWallet3.addr, _tokenId, 1, "");
@@ -650,7 +650,7 @@ contract ItemBoundV1Test is StdCheats, Test {
         itemBoundProxy.updateWhitelistAddress(playerWallet3.addr, false);
 
         vm.expectRevert(
-            "ERC1155SoulboundUpgradeable: The amount of soulbounded tokens is more than the amount of tokens to be transferred"
+            "Achievo1155SoulboundUpgradeable: The amount of soulbounded tokens is more than the amount of tokens to be transferred"
         );
         vm.prank(playerWallet.addr);
         itemBoundProxy.safeTransferFrom(playerWallet.addr, playerWallet3.addr, _tokenId, 1, "");

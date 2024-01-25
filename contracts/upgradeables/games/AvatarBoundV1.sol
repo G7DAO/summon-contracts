@@ -21,28 +21,26 @@ pragma solidity 0.8.17;
 // MMNx'.dWMMK;.:0WMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMM
 // MMMM0cdNMM0cdNMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMM
 
-import { ERC721 } from "@openzeppelin/contracts/token/ERC721/ERC721.sol";
-import { ERC721URIStorage } from "@openzeppelin/contracts/token/ERC721/extensions/ERC721URIStorage.sol";
-import { ERC721Enumerable } from "@openzeppelin/contracts/token/ERC721/extensions/ERC721Enumerable.sol";
-import { IERC721 } from "@openzeppelin/contracts/token/ERC721/IERC721.sol";
-import { AccessControl } from "@openzeppelin/contracts/access/AccessControl.sol";
-import { Pausable } from "@openzeppelin/contracts/security/Pausable.sol";
-import { ReentrancyGuard } from "@openzeppelin/contracts/security/ReentrancyGuard.sol";
-import { ECDSA } from "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
+import "@openzeppelin/contracts-upgradeable/token/ERC721/extensions/ERC721URIStorageUpgradeable.sol";
+import "@openzeppelin/contracts-upgradeable/token/ERC721/extensions/ERC721EnumerableUpgradeable.sol";
+import "@openzeppelin/contracts-upgradeable/access/AccessControlUpgradeable.sol";
+import "@openzeppelin/contracts-upgradeable/security/PausableUpgradeable.sol";
+import "@openzeppelin/contracts-upgradeable/security/ReentrancyGuardUpgradeable.sol";
+import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
+import { Achievo721SoulboundUpgradeable } from "../ercs/extensions/Achievo721SoulboundUpgradeable.sol";
+import { ERCWhitelistSignatureUpgradeable } from "../ercs/ERCWhitelistSignatureUpgradeable.sol";
+import { IOpenMint } from "../../interfaces/IOpenMint.sol";
+import { IItemBound } from "../../interfaces/IItemBound.sol";
 
-import { ERC721Soulbound } from "./extensions/ERC721Soulbound.sol";
-import { ERCWhitelistSignature } from "./ERCWhitelistSignature.sol";
-import { IItemBound } from "./interfaces/IItemBound.sol";
-import { IOpenMint } from "./interfaces/IOpenMint.sol";
-
-contract AvatarBound is
-    ERC721URIStorage,
-    ERC721Enumerable,
-    AccessControl,
-    ERC721Soulbound,
-    ERCWhitelistSignature,
-    Pausable,
-    ReentrancyGuard
+contract AvatarBoundV1 is
+    Initializable,
+    ERC721EnumerableUpgradeable,
+    ERC721URIStorageUpgradeable,
+    AccessControlUpgradeable,
+    PausableUpgradeable,
+    ReentrancyGuardUpgradeable,
+    Achievo721SoulboundUpgradeable,
+    ERCWhitelistSignatureUpgradeable
 {
     bytes32 public constant MINTER_ROLE = keccak256("MINTER_ROLE");
     bytes32 public constant DEV_CONFIG_ROLE = keccak256("DEV_CONFIG_ROLE");
@@ -94,7 +92,12 @@ contract AvatarBound is
 
     mapping(uint256 => string) public baseSkins;
 
-    constructor(
+    /// @custom:oz-upgrades-unsafe-allow constructor
+    constructor() {
+        _disableInitializers();
+    }
+
+    function initialize(
         string memory _name,
         string memory _symbol,
         string memory _baseTokenURI,
@@ -107,10 +110,18 @@ contract AvatarBound is
         bool _mintNftWithoutGatingEnabled,
         bool _mintRandomItemEnabled,
         bool _mintSpecialItemEnabled
-    ) ERC721(_name, _symbol) {
+    ) public initializer {
+        __ERC721_init(_name, _symbol);
+        __ERC721Enumerable_init();
+        __ERC721URIStorage_init();
+        __AccessControl_init();
+        __Pausable_init();
+        __ReentrancyGuard_init();
+        __Achievo721SoulboundUpgradable_init();
+        __ERCWhitelistSignatureUpgradeable_init();
         _grantRole(DEFAULT_ADMIN_ROLE, developerAdmin);
-        _grantRole(DEV_CONFIG_ROLE, developerAdmin);
         _grantRole(MINTER_ROLE, developerAdmin);
+        _grantRole(DEV_CONFIG_ROLE, developerAdmin);
         _grantRole(MANAGER_ROLE, developerAdmin);
         _addWhitelistSigner(developerAdmin);
 
@@ -129,7 +140,6 @@ contract AvatarBound is
 
     function mint(address to, uint256 baseSkinId) private {
         require(balanceOf(to) == 0, "Already has an Avatar");
-
         require(!isSoulboundAddress(to), "Address has already minted an Avatar");
         require(bytes(baseSkins[baseSkinId]).length > 0, "Base Skin not found on-chain");
         uint256 tokenId = _tokenIdCounter++;
@@ -187,7 +197,7 @@ contract AvatarBound is
     }
 
     function adminMint(address to, uint256 baseSkinId) public onlyRole(MINTER_ROLE) whenNotPaused {
-        require(balanceOf(to) == 0, "Sender already has an Avatar");
+        require(balanceOf(to) == 0, "Address already has an Avatar");
         mint(to, baseSkinId);
     }
 
@@ -299,6 +309,13 @@ contract AvatarBound is
         emit SkinBaseChanged(baseSkinId, uri, _msgSender());
     }
 
+    function removeBaseSkin(uint256 baseSkinId) public onlyRole(DEV_CONFIG_ROLE) {
+        require(bytes(baseSkins[baseSkinId]).length > 0, "Base Skin not found on-chain");
+        delete baseSkins[baseSkinId];
+        _baseSkinCounter--;
+        emit SkinBaseChanged(baseSkinId, "", _msgSender());
+    }
+
     function setMintRandomItemEnabled(bool _mintRandomItemEnabled) public onlyRole(DEV_CONFIG_ROLE) {
         require(_mintRandomItemEnabled != mintRandomItemEnabled, "Minting random item already set");
         mintRandomItemEnabled = _mintRandomItemEnabled;
@@ -364,16 +381,23 @@ contract AvatarBound is
         address to,
         uint256 tokenId,
         uint256 batch
-    ) internal override(ERC721, ERC721Enumerable) soulboundAddressCheck(from) {
+    ) internal override(ERC721Upgradeable, ERC721EnumerableUpgradeable) soulboundAddressCheck(from) {
         super._beforeTokenTransfer(from, to, tokenId, batch);
     }
 
-    function transferFrom(address from, address to, uint256 tokenId) public override(IERC721, ERC721) nonReentrant {
+    function transferFrom(
+        address from,
+        address to,
+        uint256 tokenId
+    ) public override(IERC721Upgradeable, ERC721Upgradeable) nonReentrant {
         revert("You can't transfer this token");
-        super.transferFrom(from, to, tokenId);
     }
 
-    function safeTransferFrom(address from, address to, uint256 tokenId) public override(IERC721, ERC721) nonReentrant {
+    function safeTransferFrom(
+        address from,
+        address to,
+        uint256 tokenId
+    ) public override(IERC721Upgradeable, ERC721Upgradeable) nonReentrant {
         revert("You can't transfer this token");
         super.safeTransferFrom(from, to, tokenId, "");
     }
@@ -383,20 +407,27 @@ contract AvatarBound is
         address to,
         uint256 tokenId,
         bytes memory data
-    ) public override(IERC721, ERC721) nonReentrant {
+    ) public override(IERC721Upgradeable, ERC721Upgradeable) nonReentrant {
         revert("You can't transfer this token");
         super._safeTransfer(from, to, tokenId, data);
     }
 
-    function _burn(uint256 tokenId) internal override(ERC721, ERC721URIStorage) {}
+    function _burn(uint256 tokenId) internal override(ERC721Upgradeable, ERC721URIStorageUpgradeable) {}
 
-    function tokenURI(uint256 tokenId) public view override(ERC721, ERC721URIStorage) returns (string memory) {
+    function tokenURI(
+        uint256 tokenId
+    ) public view override(ERC721Upgradeable, ERC721URIStorageUpgradeable) returns (string memory) {
         return super.tokenURI(tokenId);
     }
 
     function supportsInterface(
         bytes4 interfaceId
-    ) public view override(ERC721Enumerable, ERC721URIStorage, AccessControl) returns (bool) {
+    )
+        public
+        view
+        override(ERC721EnumerableUpgradeable, ERC721URIStorageUpgradeable, AccessControlUpgradeable)
+        returns (bool)
+    {
         return super.supportsInterface(interfaceId);
     }
 

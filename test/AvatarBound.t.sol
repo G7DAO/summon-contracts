@@ -5,11 +5,11 @@ import { Test, console } from "forge-std/Test.sol";
 import { Strings } from "@openzeppelin/contracts/utils/Strings.sol";
 import { ECDSA } from "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
 
-import { AvatarBound } from "../contracts/AvatarBound.sol";
-import { ItemBound } from "../contracts/ItemBound.sol";
+import { AvatarBound } from "../contracts/games/AvatarBound.sol";
+import { ERC1155RoyaltiesSoulbound } from "../contracts/soulbounds/ERC1155RoyaltiesSoulbound.sol";
 import { MockERC721Receiver } from "../contracts/mocks/MockERC721Receiver.sol";
 import { MockERC1155Receiver } from "../contracts/mocks/MockERC1155Receiver.sol";
-import { OpenMint } from "../contracts/OpenMint.sol";
+import { FreeMint } from "../contracts/airdrops/FreeMint.sol";
 import { LibItems } from "../contracts/libraries/LibItems.sol";
 
 contract AvatarBoundTest is Test {
@@ -17,8 +17,8 @@ contract AvatarBoundTest is Test {
     AvatarBound public avatarBound;
     MockERC721Receiver public mockERC721Receiver;
     MockERC1155Receiver public mockERC1155Receiver;
-    ItemBound public itemBound;
-    OpenMint public capsuleNft;
+    ERC1155RoyaltiesSoulbound public itemBound;
+    FreeMint public capsuleNft;
 
     uint256 public defaultBaseSkinId = 1;
     uint256 public defaultCapsuleNftId = 0;
@@ -125,7 +125,7 @@ contract AvatarBoundTest is Test {
     function setUp() public {
         playerWallet = getWallet(playerLabel);
         minterWallet = getWallet(minterLabel);
-        itemBound = new ItemBound(
+        itemBound = new ERC1155RoyaltiesSoulbound(
             "Test1155",
             "T1155",
             "MISSING_BASE_URL",
@@ -135,10 +135,10 @@ contract AvatarBoundTest is Test {
             address(this)
         );
 
-        capsuleNft = new OpenMint(
+        capsuleNft = new FreeMint(
             "OpenMint-TEST",
             "OM_TEST",
-            "https://summon.mypinata.cloud/ipfs/",
+            "https://achievo.mypinata.cloud/ipfs/",
             "QmPrH4o5q9uB8DGiFd9oDSuT3TnLiCzsFXT4wXQbpUr6c8"
         );
 
@@ -197,7 +197,7 @@ contract AvatarBoundTest is Test {
         // test that the capsule now has the new uri(revealed uri)
         assertEq(
             capsuleNft.tokenURI(defaultCapsuleNftId),
-            "https://summon.mypinata.cloud/ipfs/MISSING_REVEAL_CAPSULE_URL"
+            "https://achievo.mypinata.cloud/ipfs/MISSING_REVEAL_CAPSULE_URL"
         );
         vm.stopPrank();
     }
@@ -269,7 +269,7 @@ contract AvatarBoundTest is Test {
         avatarBound.adminMint(address(playerWallet.addr), 1);
 
         vm.startPrank(playerWallet.addr);
-        vm.expectRevert("ERC721Soulbound: Operation denied, soulbounded");
+        vm.expectRevert("Achievo721Soulbound: Operation denied, soulbounded");
         avatarBound.transferFrom(address(playerWallet.addr), address(this), 0);
         vm.stopPrank();
     }

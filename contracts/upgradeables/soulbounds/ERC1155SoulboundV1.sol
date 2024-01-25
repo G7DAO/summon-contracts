@@ -1,9 +1,9 @@
-// SPDX-License-Identifier: UNLICENSED
+// SPDX-License-Identifier: MIT
 pragma solidity 0.8.17;
 
 /**
- * Author: Omar <omar@game7.io>(https://github.com/ogarciarevett)
- * Co-Authors: Max <max@game7.io>(https://github.com/vasinl124)
+ * Author: Max <max@game7.io>(https://github.com/vasinl124)
+ * Co-Authors: Omar <omar@game7.io>(https://github.com/ogarciarevett)
  */
 
 // MMMMNkc. .,oKWMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMM
@@ -21,68 +21,159 @@ pragma solidity 0.8.17;
 // MMNx'.dWMMK;.:0WMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMM
 // MMMM0cdNMM0cdNMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMM
 
-import { ERC1155 } from "@openzeppelin/contracts/token/ERC1155/ERC1155.sol";
-import { IERC20 } from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
-import { ERC1155Burnable } from "@openzeppelin/contracts/token/ERC1155/extensions/ERC1155Burnable.sol";
-import { ERC1155Supply } from "@openzeppelin/contracts/token/ERC1155/extensions/ERC1155Supply.sol";
-import { AccessControl } from "@openzeppelin/contracts/access/AccessControl.sol";
-import { Pausable } from "@openzeppelin/contracts/security/Pausable.sol";
-import { Strings } from "@openzeppelin/contracts/utils/Strings.sol";
-import { ECDSA } from "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
-import { ReentrancyGuard } from "@openzeppelin/contracts/security/ReentrancyGuard.sol";
+import { Initializable } from "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
+import { ERC1155Upgradeable } from "@openzeppelin/contracts-upgradeable/token/ERC1155/ERC1155Upgradeable.sol";
+import {
+    ERC1155BurnableUpgradeable
+} from "@openzeppelin/contracts-upgradeable/token/ERC1155/extensions/ERC1155BurnableUpgradeable.sol";
+import {
+    ERC1155SupplyUpgradeable
+} from "@openzeppelin/contracts-upgradeable/token/ERC1155/extensions/ERC1155SupplyUpgradeable.sol";
+import { AccessControlUpgradeable } from "@openzeppelin/contracts-upgradeable/access/AccessControlUpgradeable.sol";
+import { PausableUpgradeable } from "@openzeppelin/contracts-upgradeable/security/PausableUpgradeable.sol";
+import { StringsUpgradeable } from "@openzeppelin/contracts-upgradeable/utils/StringsUpgradeable.sol";
+import { ERC2981Upgradeable } from "@openzeppelin/contracts-upgradeable/token/common/ERC2981Upgradeable.sol";
+import { ECDSAUpgradeable } from "@openzeppelin/contracts-upgradeable/utils/cryptography/ECDSAUpgradeable.sol";
+import {
+    ReentrancyGuardUpgradeable
+} from "@openzeppelin/contracts-upgradeable/security/ReentrancyGuardUpgradeable.sol";
 
-import { ERC1155Soulbound } from "./extensions/ERC1155Soulbound.sol";
-import { ERCWhitelistSignature } from "./ERCWhitelistSignature.sol";
-import { LibItems } from "./libraries/LibItems.sol";
+import { Achievo1155SoulboundUpgradeable } from "../ercs/extensions/Achievo1155SoulboundUpgradeable.sol";
+import { ERCWhitelistSignatureUpgradeable } from "../ercs/ERCWhitelistSignatureUpgradeable.sol";
+import { LibItems } from "../../libraries/LibItems.sol";
 
-contract ItemsRewardBound is
-    ERC1155Burnable,
-    ERC1155Supply,
-    ERC1155Soulbound,
-    ERCWhitelistSignature,
-    AccessControl,
-    Pausable,
-    ReentrancyGuard
+contract ERC1155SoulboundV1 is
+    Initializable,
+    ERC1155BurnableUpgradeable,
+    ERC1155SupplyUpgradeable,
+    Achievo1155SoulboundUpgradeable,
+    ERCWhitelistSignatureUpgradeable,
+    AccessControlUpgradeable,
+    PausableUpgradeable,
+    ReentrancyGuardUpgradeable
 {
+    event ContractURIChanged(string indexed uri);
+
     bytes32 public constant MINTER_ROLE = keccak256("MINTER_ROLE");
     bytes32 public constant MANAGER_ROLE = keccak256("MANAGER_ROLE");
     bytes32 public constant DEV_CONFIG_ROLE = keccak256("DEV_CONFIG_ROLE");
 
+    string public contractURI;
+    string private baseURI;
     string public name;
     string public symbol;
-    using Strings for uint256;
+    using StringsUpgradeable for uint256;
 
     uint256 public MAX_PER_MINT;
-    uint256 public defaultRewardId;
 
     mapping(uint256 => bool) private tokenExists;
-    mapping(uint256 => LibItems.TokenReward) public tokenRewards;
+    mapping(uint256 => string) public tokenUris; // tokenId => tokenUri
     mapping(uint256 => bool) public isTokenMintPaused; // tokenId => bool - default is false
 
     uint256[] public itemIds;
 
     mapping(address => mapping(uint256 => bool)) private tokenIdProcessed;
 
-    constructor(
+    modifier maxPerMintCheck(uint256 amount) {
+        if (amount > MAX_PER_MINT) {
+            revert("ExceedMaxMint");
+        }
+        _;
+    }
+
+    /// @custom:oz-upgrades-unsafe-allow constructor
+    constructor() {
+        _disableInitializers();
+    }
+
+    function initialize(
         string memory _name,
         string memory _symbol,
-        uint256 _defaultRewardId,
+        string memory _initBaseURI,
+        string memory _contractURI,
+        uint256 _maxPerMint,
         bool _isPaused,
         address devWallet
-    ) ERC1155("") {
+    ) public initializer {
+        __ERC1155_init("");
+        __ReentrancyGuard_init();
+        __AccessControl_init();
+        __Achievo1155SoulboundUpgradable_init();
+        __ERCWhitelistSignatureUpgradeable_init();
+
         require(devWallet != address(0), "AddressIsZero");
 
         _grantRole(DEFAULT_ADMIN_ROLE, devWallet);
-        _grantRole(DEV_CONFIG_ROLE, devWallet);
         _grantRole(MINTER_ROLE, devWallet);
         _grantRole(MANAGER_ROLE, devWallet);
+        _grantRole(DEV_CONFIG_ROLE, devWallet);
         _addWhitelistSigner(devWallet);
 
         name = _name;
         symbol = _symbol;
-        defaultRewardId = _defaultRewardId;
+        baseURI = _initBaseURI;
+        contractURI = _contractURI;
+        MAX_PER_MINT = _maxPerMint;
 
         if (_isPaused) _pause();
+    }
+
+    function getAllItems() public view returns (LibItems.TokenReturn[] memory) {
+        uint256 totalTokens = itemIds.length;
+        LibItems.TokenReturn[] memory tokenReturns = new LibItems.TokenReturn[](totalTokens);
+
+        uint index;
+        for (uint i = 0; i < totalTokens; i++) {
+            uint256 tokenId = itemIds[i];
+            uint256 amount = balanceOf(_msgSender(), tokenId);
+
+            if (amount > 0) {
+                LibItems.TokenReturn memory tokenReturn = LibItems.TokenReturn({
+                    tokenId: tokenId,
+                    tokenUri: uri(tokenId),
+                    amount: amount
+                });
+                tokenReturns[index] = tokenReturn;
+                index++;
+            }
+        }
+
+        // truncate the array
+        LibItems.TokenReturn[] memory returnsTruncated = new LibItems.TokenReturn[](index);
+        for (uint i = 0; i < index; i++) {
+            returnsTruncated[i] = tokenReturns[i];
+        }
+
+        return returnsTruncated;
+    }
+
+    function getAllItemsAdmin(
+        address _owner
+    ) public view onlyRole(MINTER_ROLE) returns (LibItems.TokenReturn[] memory) {
+        uint256 totalTokens = itemIds.length;
+        LibItems.TokenReturn[] memory tokenReturns = new LibItems.TokenReturn[](totalTokens);
+
+        uint index;
+        for (uint i = 0; i < totalTokens; i++) {
+            uint256 tokenId = itemIds[i];
+            uint256 amount = balanceOf(_owner, tokenId);
+
+            LibItems.TokenReturn memory tokenReturn = LibItems.TokenReturn({
+                tokenId: tokenId,
+                tokenUri: uri(tokenId),
+                amount: amount
+            });
+            tokenReturns[index] = tokenReturn;
+            index++;
+        }
+
+        // truncate the array
+        LibItems.TokenReturn[] memory returnsTruncated = new LibItems.TokenReturn[](index);
+        for (uint i = 0; i < index; i++) {
+            returnsTruncated[i] = tokenReturns[i];
+        }
+
+        return returnsTruncated;
     }
 
     function isTokenExist(uint256 _tokenId) public view returns (bool) {
@@ -109,33 +200,33 @@ contract ItemsRewardBound is
         _unpause();
     }
 
-    function addNewToken(LibItems.TokenReward calldata _token) public onlyRole(DEV_CONFIG_ROLE) {
-        require(bytes(_token.tokenUri).length > 0, "InvalidTokenUri");
-        require(_token.tokenId != 0, "InvalidTokenId");
-        require(_token.rewardERC20 != address(0), "InvalidRewardERC20");
-        tokenRewards[_token.tokenId] = _token;
+    function addNewToken(LibItems.TokenCreate calldata _token) public onlyRole(DEV_CONFIG_ROLE) {
+        if (bytes(_token.tokenUri).length > 0) {
+            tokenUris[_token.tokenId] = _token.tokenUri;
+        }
+
         tokenExists[_token.tokenId] = true;
+
         itemIds.push(_token.tokenId);
     }
 
-    function addNewTokens(LibItems.TokenReward[] calldata _tokens) external onlyRole(DEV_CONFIG_ROLE) {
+    function addNewTokens(LibItems.TokenCreate[] calldata _tokens) external onlyRole(DEV_CONFIG_ROLE) {
         for (uint256 i = 0; i < _tokens.length; i++) {
             addNewToken(_tokens[i]);
         }
     }
 
     function updateTokenUri(uint256 _tokenId, string calldata _tokenUri) public onlyRole(DEV_CONFIG_ROLE) {
-        require(bytes(_tokenUri).length > 0, "InvalidTokenUri");
-        require(_tokenId != 0, "InvalidTokenId");
-        tokenRewards[_tokenId].tokenUri = _tokenUri;
+        tokenUris[_tokenId] = _tokenUri;
     }
 
     function batchUpdateTokenUri(
         uint256[] calldata _tokenIds,
         string[] calldata _tokenUris
     ) public onlyRole(DEV_CONFIG_ROLE) {
-        require(_tokenIds.length > 0, "InvalidInput");
-        require(_tokenIds.length == _tokenUris.length, "InvalidInput");
+        if (_tokenIds.length != _tokenUris.length) {
+            revert("InvalidInput");
+        }
         for (uint256 i = 0; i < _tokenIds.length; i++) {
             updateTokenUri(_tokenIds[i], _tokenUris[i]);
         }
@@ -145,101 +236,12 @@ contract ItemsRewardBound is
         isTokenMintPaused[_tokenId] = _isTokenMintPaused;
     }
 
-    function adminClaimERC20Reward(
-        address to,
-        bytes calldata data,
-        bytes calldata signature,
-        uint256 nonce
-    ) public signatureCheck(to, nonce, data, signature) onlyRole(MANAGER_ROLE) {
-        require(to != address(0), "InvalidToAddress");
-        require(balanceOf(to, defaultRewardId) > 0, "InsufficientRewardBalance");
-
-        uint256[] memory _tokenIds = _decodeData(data);
-
-        for (uint256 i = 0; i < _tokenIds.length; i++) {
-            uint256 tokenId = _tokenIds[i];
-            require(tokenRewards[tokenId].rewardAmount > 0, "InvalidRewardAmount");
-            require(!tokenRewards[tokenId].isEther, "InvalidRewardType");
-            IERC20 token = IERC20(tokenRewards[tokenId].rewardERC20);
-            uint256 contractBalance = token.balanceOf(address(this));
-            require(contractBalance >= tokenRewards[tokenId].rewardAmount, "InsufficientContractBalance");
-            token.transfer(to, tokenRewards[tokenId].rewardAmount);
-        }
-
-        _burn(to, defaultRewardId, 1);
-    }
-
-    function withdrawERC20(address _tokenAddress, address _to, uint256 _amount) external onlyRole(MANAGER_ROLE) {
-        require(_tokenAddress != address(0), "InvalidTokenAddress");
-        require(_to != address(0), "InvalidToAddress");
-        require(_amount > 0, "InvalidAmount");
-        IERC20 token = IERC20(_tokenAddress);
-        uint256 contractBalance = token.balanceOf(address(this));
-        require(contractBalance >= _amount, "InsufficientContractBalance");
-        token.transfer(_to, _amount);
-    }
-
-    function withdrawETH(address payable _to, uint256 _amount) external onlyRole(MANAGER_ROLE) {
-        require(_to != address(0), "InvalidToAddress");
-        require(_amount > 0, "InvalidAmount");
-        require(address(this).balance >= _amount, "InsufficientContractBalance");
-        _to.transfer(_amount);
-    }
-
-    function claimERC20Reward(uint256 _tokenId) public nonReentrant {
-        require(balanceOf(_msgSender(), _tokenId) > 0, "InsufficientBalance");
-        require(tokenRewards[_tokenId].rewardAmount > 0, "InvalidRewardAmount");
-        require(!tokenRewards[_tokenId].isEther, "InvalidRewardType");
-
-        IERC20 token = IERC20(tokenRewards[_tokenId].rewardERC20);
-        uint256 contractBalance = token.balanceOf(address(this));
-        require(contractBalance >= tokenRewards[_tokenId].rewardAmount, "InsufficientContractBalance");
-
-        token.transfer(_msgSender(), tokenRewards[_tokenId].rewardAmount);
-        _burn(_msgSender(), _tokenId, 1);
-    }
-
-    function claimETHReward(uint256 _tokenId) public nonReentrant {
-        require(balanceOf(_msgSender(), _tokenId) > 0, "InsufficientBalance");
-        require(tokenRewards[_tokenId].rewardAmount > 0, "InvalidRewardAmount");
-        require(tokenRewards[_tokenId].isEther, "InvalidRewardType");
-
-        require(address(this).balance >= tokenRewards[_tokenId].rewardAmount, "InsufficientContractBalance");
-        payable(_msgSender()).transfer(tokenRewards[_tokenId].rewardAmount);
-        _burn(_msgSender(), _tokenId, 1);
-    }
-
-    function _mintAndBurnReward(
-        address to,
-        uint256[] memory _tokenIds,
-        uint256 amount,
-        bool claimReward,
-        bool soulbound
-    ) private {
-        require(amount > 0, "InvalidAmount");
-        require(_tokenIds.length > 0, "InvalidInput");
-        require(balanceOf(to, defaultRewardId) >= 1, "InsufficientRewardTokenBalance");
-        _burn(to, defaultRewardId, 1);
-
+    function _mintBatch(address to, uint256[] memory _tokenIds, uint256 amount, bool soulbound) private {
         for (uint256 i = 0; i < _tokenIds.length; i++) {
             uint256 _id = _tokenIds[i];
             isTokenExist(_id);
             if (isTokenMintPaused[_id]) {
                 revert("TokenMintPaused");
-            }
-
-            if (claimReward) {
-                LibItems.TokenReward memory tokenReward = tokenRewards[_id];
-
-                if (!tokenReward.isEther) {
-                    IERC20 token = IERC20(tokenReward.rewardERC20);
-                    uint256 contractBalance = token.balanceOf(address(this));
-                    require(contractBalance >= tokenReward.rewardAmount, "InsufficientContractBalance");
-                    token.transfer(to, tokenReward.rewardAmount);
-                } else {
-                    require(address(this).balance >= tokenReward.rewardAmount, "InsufficientContractBalance");
-                    payable(to).transfer(tokenReward.rewardAmount);
-                }
             }
 
             if (soulbound) {
@@ -252,38 +254,18 @@ contract ItemsRewardBound is
 
     function mint(
         bytes calldata data,
+        uint256 amount,
         bool soulbound,
-        bool claimReward,
         uint256 nonce,
         bytes calldata signature
-    ) external nonReentrant signatureCheck(_msgSender(), nonce, data, signature) whenNotPaused {
+    ) external nonReentrant signatureCheck(_msgSender(), nonce, data, signature) maxPerMintCheck(amount) whenNotPaused {
         uint256[] memory _tokenIds = _decodeData(data);
-        _mintAndBurnReward(_msgSender(), _tokenIds, 1, claimReward, soulbound);
+        _mintBatch(_msgSender(), _tokenIds, amount, soulbound);
     }
 
     function adminMint(address to, bytes calldata data, bool soulbound) external onlyRole(MINTER_ROLE) whenNotPaused {
         uint256[] memory _tokenIds = _decodeData(data);
-        _mintAndBurnReward(to, _tokenIds, 1, false, soulbound);
-    }
-
-    function adminMintDefaultReward(
-        address to,
-        uint256 amount,
-        bool soulbound
-    ) public onlyRole(MINTER_ROLE) whenNotPaused {
-        adminMintId(to, defaultRewardId, amount, soulbound);
-    }
-
-    function adminBatchMintDefaultReward(
-        address[] calldata addresses,
-        uint256[] calldata amounts,
-        bool[] calldata soulbounds
-    ) public onlyRole(MINTER_ROLE) whenNotPaused {
-        require(addresses.length == amounts.length, "InvalidInput");
-        require(addresses.length == soulbounds.length, "InvalidInput");
-        for (uint256 i = 0; i < addresses.length; i++) {
-            adminMintId(addresses[i], defaultRewardId, amounts[i], soulbounds[i]);
-        }
+        _mintBatch(to, _tokenIds, 1, soulbound);
     }
 
     function adminMintId(
@@ -291,7 +273,7 @@ contract ItemsRewardBound is
         uint256 id,
         uint256 amount,
         bool soulbound
-    ) public onlyRole(MINTER_ROLE) whenNotPaused {
+    ) external onlyRole(MINTER_ROLE) whenNotPaused {
         isTokenExist(id);
 
         if (isTokenMintPaused[id]) {
@@ -305,18 +287,6 @@ contract ItemsRewardBound is
         _mint(to, id, amount, "");
     }
 
-    function setDefaultRewardId(uint256 _defaultRewardId) external onlyRole(DEV_CONFIG_ROLE) {
-        require(_defaultRewardId != defaultRewardId, "SameDefaultRewardId");
-        require(tokenExists[_defaultRewardId], "TokenNotExist");
-        defaultRewardId = _defaultRewardId;
-    }
-
-    function changeRewardAmount(uint256 _tokenId, uint256 _newAmount) external onlyRole(DEV_CONFIG_ROLE) {
-        require(tokenExists[_tokenId], "TokenNotExist");
-        require(tokenRewards[_tokenId].rewardAmount != _newAmount, "InvalidAmount");
-        tokenRewards[_tokenId].rewardAmount = _newAmount;
-    }
-
     function _beforeTokenTransfer(
         address operator,
         address from,
@@ -324,7 +294,7 @@ contract ItemsRewardBound is
         uint256[] memory ids,
         uint256[] memory amounts,
         bytes memory data
-    ) internal virtual override(ERC1155, ERC1155Supply) {
+    ) internal virtual override(ERC1155Upgradeable, ERC1155SupplyUpgradeable) {
         super._beforeTokenTransfer(operator, from, to, ids, amounts, data);
     }
 
@@ -393,7 +363,7 @@ contract ItemsRewardBound is
         nonReentrant
         soulboundCheckAndSync(to, address(0), tokenId, amount, balanceOf(to, tokenId))
     {
-        ERC1155Burnable.burn(to, tokenId, amount);
+        ERC1155BurnableUpgradeable.burn(to, tokenId, amount);
     }
 
     function burnBatch(
@@ -417,7 +387,7 @@ contract ItemsRewardBound is
             tokenIdProcessed[to][id] = true;
         }
 
-        ERC1155Burnable.burnBatch(to, tokenIds, amounts);
+        ERC1155BurnableUpgradeable.burnBatch(to, tokenIds, amounts);
 
         // Reset processed status after the transfer is completed
         for (uint256 i = 0; i < tokenIds.length; i++) {
@@ -426,46 +396,32 @@ contract ItemsRewardBound is
         }
     }
 
-    function supportsInterface(bytes4 interfaceId) public view override(ERC1155, AccessControl) returns (bool) {
+    function supportsInterface(
+        bytes4 interfaceId
+    ) public view override(ERC1155Upgradeable, AccessControlUpgradeable) returns (bool) {
         return super.supportsInterface(interfaceId);
     }
 
     function uri(uint256 tokenId) public view override returns (string memory) {
         isTokenExist(tokenId);
-        return tokenRewards[tokenId].tokenUri;
+        if (bytes(tokenUris[tokenId]).length > 0) {
+            return tokenUris[tokenId];
+        } else {
+            return string(abi.encodePacked(baseURI, "/", tokenId.toString()));
+        }
     }
 
-    function getAllItems() public view returns (LibItems.TokenReturn[] memory) {
-        uint256 totalTokens = itemIds.length;
-        LibItems.TokenReturn[] memory tokenReturns = new LibItems.TokenReturn[](totalTokens);
-
-        uint index;
-        for (uint i = 0; i < totalTokens; i++) {
-            uint256 tokenId = itemIds[i];
-            uint256 amount = balanceOf(_msgSender(), tokenId);
-
-            if (amount > 0) {
-                LibItems.TokenReturn memory tokenReturn = LibItems.TokenReturn({
-                    tokenId: tokenId,
-                    tokenUri: uri(tokenId),
-                    amount: amount
-                });
-                tokenReturns[index] = tokenReturn;
-                index++;
-            }
-        }
-
-        // truncate the array
-        LibItems.TokenReturn[] memory returnsTruncated = new LibItems.TokenReturn[](index);
-        for (uint i = 0; i < index; i++) {
-            returnsTruncated[i] = tokenReturns[i];
-        }
-
-        return returnsTruncated;
+    function updateBaseUri(string memory _baseURI) external onlyRole(DEV_CONFIG_ROLE) {
+        baseURI = _baseURI;
     }
 
     function updateWhitelistAddress(address _address, bool _isWhitelisted) external onlyRole(DEV_CONFIG_ROLE) {
         _updateWhitelistAddress(_address, _isWhitelisted);
+    }
+
+    function setContractURI(string memory _contractURI) public onlyRole(DEV_CONFIG_ROLE) {
+        contractURI = _contractURI;
+        emit ContractURIChanged(_contractURI);
     }
 
     function adminVerifySignature(

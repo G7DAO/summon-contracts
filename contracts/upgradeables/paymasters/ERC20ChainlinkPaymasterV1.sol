@@ -17,21 +17,21 @@ pragma solidity 0.8.17;
 // MMMM0cdNMM0cdNMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMM
 
 import {
-ExecutionResult,
-PAYMASTER_VALIDATION_SUCCESS_MAGIC,
-IPaymaster
+    ExecutionResult,
+    PAYMASTER_VALIDATION_SUCCESS_MAGIC,
+    IPaymaster
 } from "@matterlabs/zksync-contracts/l2/system-contracts/interfaces/IPaymaster.sol";
 import { IPaymasterFlow } from "@matterlabs/zksync-contracts/l2/system-contracts/interfaces/IPaymasterFlow.sol";
 import {
-TransactionHelper,
-Transaction
+    TransactionHelper,
+    Transaction
 } from "@matterlabs/zksync-contracts/l2/system-contracts/libraries/TransactionHelper.sol";
 import "@matterlabs/zksync-contracts/l2/system-contracts/Constants.sol";
 import { AggregatorV3Interface } from "@chainlink/contracts/src/v0.8/interfaces/AggregatorV3Interface.sol";
 import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
 import "@openzeppelin/contracts-upgradeable/access/AccessControlUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/security/PausableUpgradeable.sol";
-import "../interfaces/IERC20Decimals.sol";
+import "../../interfaces/IERC20Decimals.sol";
 
 error AllowanceTooLow(uint256 requiredAllowance);
 
@@ -151,16 +151,15 @@ contract ERC20ChainlinkPaymasterV2 is Initializable, IPaymaster, PausableUpgrade
                 ETHUSDPrice = ETHUSDPrice * 1e10;
                 ERC20USDPrice = ERC20USDPrice * 1e10;
 
-
                 // Calculate the required ERC20 tokens to be sent to the paymaster
                 // (Equal to the value of requiredETH)
-                uint256 requiredERC20 = (requiredETH * ETHUSDPrice / ERC20USDPrice) / 1e12;
+                uint256 requiredERC20 = ((requiredETH * ETHUSDPrice) / ERC20USDPrice) / 1e12;
 
                 // Convert from wei (18 decimals) to the ERC20 token's decimals
                 uint256 decimalFactor = 18 - uint256(tokenDecimals);
 
                 // Adjust for token decimals
-                requiredERC20 = requiredERC20 / (10**decimalFactor);
+                requiredERC20 = requiredERC20 / (10 ** decimalFactor);
 
                 require(providedAllowance >= requiredERC20, "Min paying allowance too low");
 

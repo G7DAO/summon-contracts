@@ -21,7 +21,7 @@ pragma solidity 0.8.17;
 // MMNx'.dWMMK;.:0WMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMM
 // MMMM0cdNMM0cdNMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMM
 
-contract ERC1155Soulbound {
+contract Achievo1155Soulbound {
     mapping(address => bool) internal _soulboundAddresses; // mid gas usage
     mapping(address => mapping(uint256 => uint256)) internal _soulbounds; // high gas usage
     mapping(address => bool) internal whitelistAddresses;
@@ -49,7 +49,7 @@ contract ERC1155Soulbound {
         uint256[] memory amounts,
         uint256[] memory totalAmounts
     ) {
-        require(amounts.length == totalAmounts.length, "ERC1155Soulbound: tokenIds and amounts length mismatch");
+        require(amounts.length == totalAmounts.length, "Achievo1155Soulbound: tokenIds and amounts length mismatch");
 
         for (uint256 i = 0; i < tokenIds.length; i++) {
             _checkMultipleAmounts(from, to, tokenIds[i], amounts[i], totalAmounts[i]);
@@ -59,7 +59,7 @@ contract ERC1155Soulbound {
     }
 
     modifier revertOperation() {
-        revert("ERC1155Soulbound: Operation denied, soulbounded");
+        revert("Achievo1155Soulbound: Operation denied, soulbounded");
         _;
     }
 
@@ -90,7 +90,7 @@ contract ERC1155Soulbound {
         uint256 amount,
         uint256 totalAmount
     ) private view {
-        require(amount > 0, "ERC1155Soulbound: can't be zero amount");
+        require(amount > 0, "Achievo1155Soulbound: can't be zero amount");
         // check if from or to whitelist addresses let it through
         if (whitelistAddresses[from] || whitelistAddresses[to]) {
             return;
@@ -98,7 +98,7 @@ contract ERC1155Soulbound {
 
         if (totalAmount - _soulbounds[from][tokenId] < amount) {
             revert(
-                "ERC1155Soulbound: The amount of soulbounded tokens is more than the amount of tokens to be transferred"
+                "Achievo1155Soulbound: The amount of soulbounded tokens is more than the amount of tokens to be transferred"
             );
         }
     }
@@ -135,7 +135,7 @@ contract ERC1155Soulbound {
      *
      */
     function _soulboundBatch(address to, uint256[] memory tokenIds, uint256[] memory amounts) internal virtual {
-        require(tokenIds.length == amounts.length, "ERC1155Soulbound: tokenIds and amounts length mismatch");
+        require(tokenIds.length == amounts.length, "Achievo1155Soulbound: tokenIds and amounts length mismatch");
         for (uint256 i = 0; i < tokenIds.length; i++) {
             _soulbounds[to][tokenIds[i]] += amounts[i];
         }
@@ -152,7 +152,7 @@ contract ERC1155Soulbound {
      * - `to` cannot be the zero address.
      */
     function _soulboundAddress(address to) internal virtual {
-        require(to != address(0), "ERC1155Soulbound: Bound to the zero address not allowed");
+        require(to != address(0), "Achievo1155Soulbound: Bound to the zero address not allowed");
         _soulboundAddresses[to] = true;
         emit SoulboundAddress(to);
     }
