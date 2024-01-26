@@ -56,10 +56,6 @@ export function isAlreadyDeployed(contract: DeploymentContract, tenant: string):
     }
     let _isAlreadyDeployed = checksum === previousChecksum;
 
-    console.log('checksum', checksum);
-    console.log('previous', previousChecksum);
-    console.log('isAlreadyDeployed', _isAlreadyDeployed);
-
     const filePathDeploymentLatest = path.resolve(
         `${ACHIEVO_TMP_DIR}/${contract.chain}/${contract.upgradable ? 'upgradeables/' : ''}deployments-${
             contract.name

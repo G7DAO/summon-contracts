@@ -7,6 +7,7 @@ export enum CONTRACT_TYPE {
     Paymaster = 'Paymaster',
     GameSummary = 'GameSummary',
     ERC20 = 'ERC20',
+    Staker = 'Staker',
     Badge = 'Badge',
 }
 
@@ -27,6 +28,7 @@ export enum CONTRACT_UPGRADABLE_FILE_NAME {
     Levels = 'LevelsBoundV1',
     ERC20ChainlinkPaymaster = 'ERC20ChainlinkPaymasterV1',
     ERC1155Soulbound = 'ERC1155SoulboundV1',
+    Staker = 'StakerV1',
 }
 
 export enum CONTRACT_UPGRADABLE_FILE_NAME_V2 {
@@ -56,5 +58,6 @@ export enum CONTRACT_UPGRADABLE_NAME {
     Levels = 'LevelsUpgradable',
     PaymasterChainlink = 'PaymasterChainlinkUpgradable',
     ERC20 = 'ERC20Upgradable',
+    Staker = 'StakerUpgradable',
     Badge = 'BadgeUpgradable',
 }

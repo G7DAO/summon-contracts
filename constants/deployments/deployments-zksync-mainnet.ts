@@ -256,7 +256,7 @@ export const ZKSYNC_MAINNET_CONTRACTS: DeploymentContract[] = [
     {
         contractFileName: CONTRACT_UPGRADABLE_FILE_NAME.Levels,
         type: CONTRACT_TYPE.Levels,
-        name: CONTRACT_NAME.Levels,
+        name: CONTRACT_UPGRADABLE_NAME.Levels,
         chain,
         networkType,
         tenants: [TENANT.ZkSync],

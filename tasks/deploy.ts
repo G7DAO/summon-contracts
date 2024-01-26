@@ -17,6 +17,8 @@ import deployUpgradeable from '../deploy/deployUpgradeable';
 const PRIVATE_KEY = process.env.PRIVATE_KEY || '';
 const wallet = getWallet(PRIVATE_KEY);
 
+const MINTER_ROLE = '0x9f2df0fed2c77648de5860a4cc508cd0818c85b8b8a1ab4ceeef8d981c8956a6';
+
 export async function populateParam(
     hre: HardhatRuntimeEnvironment,
     param: string | number | boolean,
@@ -30,22 +32,24 @@ export async function populateParam(
     }
 
     if (param === 'MINTER_ROLE') {
-        return '0x9f2df0fed2c77648de5860a4cc508cd0818c85b8b8a1ab4ceeef8d981c8956a6';
+        return MINTER_ROLE;
     }
 
     if (typeof param === 'string' && param.startsWith('CONTRACT_')) {
-        const contractFileName = param.substring('CONTRACT_'.length);
-        const contract = CONTRACTS.find((c) => c.contractFileName === contractFileName && c.chain === chain);
+        const name = param.substring('CONTRACT_'.length);
+        const contract = CONTRACTS.find((c) => c.name === name && c.chain === chain);
 
         if (!contract) {
-            throw new Error(`Contract ${contractFileName} not found`);
+            throw new Error(`Contract ${name} not found`);
         }
 
         const goingToDeploy = !isAlreadyDeployed(contract, tenant as string);
 
+        console.log('goingToDeploy->', name, goingToDeploy);
+
         const filePathDeploymentLatest = path.resolve(
             `${ACHIEVO_TMP_DIR}/${contract?.chain}/${contract?.upgradable ? 'upgradeables/' : ''}deployments-${
-                contract?.type
+                contract?.name
             }-${tenant}-latest.json`
         );
 
@@ -165,11 +169,11 @@ const prepFunctionOne = async (
     };
 };
 
-const getDependencies = (contractFileName: string, chain: string) => {
-    const dependencies = new Set([contractFileName]);
+const getDependencies = (contractName: string, chain: string) => {
+    const dependencies = new Set([contractName]);
 
-    function collect(contractFileName: string) {
-        const contract = CONTRACTS.find((c) => c.contractFileName === contractFileName && c.chain === chain);
+    function collect(contractName: string) {
+        const contract = CONTRACTS.find((c) => c.name === contractName && c.chain === chain);
         if (contract) {
             contract.dependencies?.forEach((dep) => {
                 if (!dependencies.has(dep)) {
@@ -180,7 +184,7 @@ const getDependencies = (contractFileName: string, chain: string) => {
         }
     }
 
-    collect(contractFileName);
+    collect(contractName);
 
     return [...dependencies];
 };
@@ -203,7 +207,7 @@ task('deploy', 'Deploys Smart contracts')
             throw new Error(`Contract ${name} not found on ${network}`);
         }
 
-        const contractsToDeploy = getDependencies(contract.contractFileName, network);
+        const contractsToDeploy = getDependencies(contract.name, network);
 
         for (const tenant of contract.tenants) {
             log('=====================================================');
@@ -222,12 +226,12 @@ task('deploy', 'Deploys Smart contracts')
 
             const deployments: Deployment[] = [];
 
-            for (const contractFileName of contractsToDeploy) {
+            for (const contractName of contractsToDeploy) {
                 const contract = CONTRACTS.find(
-                    (d) => d.contractFileName === contractFileName && d.chain === network
+                    (d) => d.name === contractName && d.chain === network
                 ) as unknown as DeploymentContract;
                 log(
-                    `[PREPPING] Get ready to deploy ${name}:<${contractFileName}> contract on ${network} for ${tenant}`
+                    `[PREPPING] Get ready to deploy ${name}:<${contract.contractFileName}> contract on ${network} for ${tenant}`
                 );
 
                 const deployment = await deployOne(hre, contract, tenant, force);

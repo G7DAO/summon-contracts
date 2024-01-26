@@ -35,7 +35,6 @@ contract LevelsBoundV1 is
     Initializable,
     ERC1155Upgradeable,
     Achievo1155SoulboundUpgradeable,
-    OwnableUpgradeable,
     ReentrancyGuardUpgradeable,
     ERCWhitelistSignatureUpgradeable,
     AccessControlUpgradeable

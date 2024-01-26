@@ -30,13 +30,6 @@ defaultConfig.networks = {
         accounts: [PRIVATE_KEY],
         verifyURL: 'https://zksync2-mainnet-explorer.zksync.io/contract_verification',
     },
-    [NetworkName.ZkSyncGoerli]: {
-        url: rpcUrls[ChainId.ZkSyncGoerli],
-        ethNetwork: NetworkName.Goerli,
-        zksync: true,
-        accounts: [PRIVATE_KEY],
-        verifyURL: 'https://zksync2-testnet-explorer.zksync.dev/contract_verification',
-    },
     [NetworkName.ZkSyncSepolia]: {
         url: rpcUrls[ChainId.ZkSyncSepolia],
         ethNetwork: NetworkName.Sepolia,
@@ -47,7 +40,7 @@ defaultConfig.networks = {
 };
 
 defaultConfig.zksolc = {
-    version: 'latest',
+    version: '1.3.19',
     settings: {},
 };
 

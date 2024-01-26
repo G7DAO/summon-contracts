@@ -33,6 +33,7 @@ export default async function (
     const currency = Currency[networkNameKey as keyof typeof Currency];
     const blockExplorerBaseUrl = NetworkExplorer[networkNameKey as keyof typeof NetworkExplorer];
 
+    log('\n\n');
     log('=====================================================');
     log(`[DEPLOYING] deploying ${contract.name} contract for [[${tenant}]] on ${networkName}`);
     log('=====================================================');
@@ -122,7 +123,7 @@ export default async function (
 
     log(`*****************************************************`);
     log(
-        `Deployed ${contract.name}(${contract.contractName}) for ${tenant} to :\n ${blockExplorerBaseUrl}/address/${contractAddress}#contract`
+        `Deployed ${contract.name}(${contract.contractFileName}) for ${tenant} to :\n ${blockExplorerBaseUrl}/address/${contractAddress}#contract`
     );
     log(`*****************************************************`);
 

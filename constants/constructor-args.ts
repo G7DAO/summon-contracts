@@ -1,3 +1,5 @@
+import { CONTRACT_NAME, CONTRACT_UPGRADABLE_NAME } from './contract';
+
 export interface ConstructorArgs {
     name: string;
     symbol: string;
@@ -99,7 +101,7 @@ export const AvatarBoundArgs = {
         revealURI: 'Qmdk4zHamwCyqSzuWNNYypuz4FXAGdApbky7SHNsXYYQg7',
         devWallet: 'DEPLOYER_WALLET',
         gatingNftAddress: '0xD07180c423F9B8CF84012aA28cC174F3c433EE29',
-        itemsNftAddress: 'CONTRACT_ItemBound',
+        itemsNftAddress: `CONTRACT_${CONTRACT_NAME.Items}`,
         mintNftGatingEnabled: true,
         mintNFtWithoutGatingEnabled: true,
         mintRandomItemEnabled: true,
@@ -113,7 +115,7 @@ export const AvatarBoundArgs = {
         revealURI: 'QmZnvSyeKRQxWwcofVmq41BNCtHbBmomk8Ny8mtGRTjtzS',
         devWallet: 'DEPLOYER_WALLET',
         gatingNftAddress: '0x6E03Ea6c9aBBb78Dd761b9c71c06176c508488C3',
-        itemsNftAddress: 'CONTRACT_ItemBound',
+        itemsNftAddress: `CONTRACT_${CONTRACT_NAME.Items}`,
         mintNftGatingEnabled: true,
         mintNFtWithoutGatingEnabled: true,
         mintRandomItemEnabled: true,
@@ -124,11 +126,11 @@ export const AvatarBoundArgs = {
 export const AvatarBoundV1Args = {
     MAINNET: {
         ...AvatarBoundArgs.MAINNET,
-        itemsNftAddress: 'CONTRACT_ItemBoundV1',
+        itemsNftAddress: `CONTRACT_${CONTRACT_UPGRADABLE_NAME.Items}`,
     },
     TESTNET: {
         ...AvatarBoundArgs.TESTNET,
-        itemsNftAddress: 'CONTRACT_ItemBoundV1',
+        itemsNftAddress: `CONTRACT_${CONTRACT_UPGRADABLE_NAME.Items}`,
     },
 };
 
@@ -138,25 +140,25 @@ export const LevelsBoundArgs = {
         symbol: 'LVL',
         developerAdmin: 'DEPLOYER_WALLET',
         mintRandomItemEnabled: true,
-        itemsNFTAddress: 'CONTRACT_ItemBound',
+        itemsNFTAddress: `CONTRACT_${CONTRACT_NAME.Items}`,
     },
     TESTNET: {
         name: 'LevelsBound',
         symbol: 'LVL',
         developerAdmin: 'DEPLOYER_WALLET',
         mintRandomItemEnabled: true,
-        itemsNFTAddress: 'CONTRACT_ItemBound',
+        itemsNFTAddress: `CONTRACT_${CONTRACT_NAME.Items}`,
     },
 };
 
 export const LevelsBoundV1Args = {
     MAINNET: {
         ...LevelsBoundArgs.MAINNET,
-        itemsNFTAddress: 'CONTRACT_ItemBoundV1',
+        itemsNFTAddress: `CONTRACT_${CONTRACT_UPGRADABLE_NAME.Items}`,
     },
     TESTNET: {
         ...LevelsBoundArgs.TESTNET,
-        itemsNFTAddress: 'CONTRACT_ItemBoundV1',
+        itemsNFTAddress: `CONTRACT_${CONTRACT_UPGRADABLE_NAME.Items}`,
     },
 };
 

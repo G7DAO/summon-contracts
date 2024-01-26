@@ -6,11 +6,11 @@ import { ChainId, NetworkName, Currency, NetworkExplorer, rpcUrls } from '@const
 import { encryptPrivateKey } from '@helpers/encrypt';
 import { log } from '@helpers/logger';
 import { Deployer } from '@matterlabs/hardhat-zksync-deploy';
+import * as ethers from 'ethers';
 import { HardhatRuntimeEnvironment } from 'hardhat/types';
+import { Wallet } from 'zksync-ethers';
 
 import getZkWallet from './getWallet';
-import { Wallet } from 'zksync-ethers';
-import * as ethers from 'ethers';
 
 const { Wallet: EthersWallet } = ethers;
 
@@ -53,12 +53,12 @@ export default async function (
     let achievoContract;
     let artifact;
 
-    const isZkSync = chainId === ChainId.ZkSync || chainId === ChainId.ZkSyncSepolia;
+    const isZkSync = hre.network.zksync;
 
     if (isZkSync) {
-        const wallet = getZkWallet(PRIVATE_KEY);
+        wallet = getZkWallet(PRIVATE_KEY);
         const deployer = new Deployer(hre, wallet);
-        artifact = await deployer.loadArtifact(contract.contractName);
+        artifact = await deployer.loadArtifact(contract.contractFileName);
 
         if (!name) {
             achievoContract = await hre.zkUpgrades.deployProxy(deployer.zkWallet as any, artifact, [...restArgs]);
@@ -71,7 +71,7 @@ export default async function (
     } else {
         // @ts-ignore
         wallet = new EthersWallet(PRIVATE_KEY, hre.ethers.provider);
-        artifact = await hre.ethers.getContractFactory(contract.contractName);
+        artifact = await hre.ethers.getContractFactory(contract.contractFileName);
         if (!name) {
             // @ts-ignore
             achievoContract = await hre.upgrades.deployProxy(artifact, [...restArgs]);
@@ -105,7 +105,7 @@ export default async function (
         });
     }
 
-    if (contract.verify) {
+    if (contract.verify && !isZkSync) {
         await new Promise((resolve, reject) => {
             exec(
                 `npx hardhat verify --network ${contract.chain} ${contractAddress} --config ${networkName}.config.ts`,
