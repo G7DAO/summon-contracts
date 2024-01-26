@@ -34,7 +34,7 @@ export default async function (
     const blockExplorerBaseUrl = NetworkExplorer[networkNameKey as keyof typeof NetworkExplorer];
 
     log('=====================================================');
-    log(`[DEPLOYING] deploying ${contract.contractName} UPGRADEABLE contract for [[${tenant}]] on ${networkName}`);
+    log(`[DEPLOYING] deploying ${contract.name} UPGRADEABLE contract for [[${tenant}]] on ${networkName}`);
     log('=====================================================');
 
     log('=====================================================');
@@ -50,7 +50,6 @@ export default async function (
 
     // @ts-ignore
     let wallet: Wallet | EthersWallet;
-
     let achievoContract;
     let artifact;
 
@@ -143,11 +142,12 @@ export default async function (
         fakeContractAddress: '',
         explorerUrl: `${blockExplorerBaseUrl}/address/${contractAddress}#contract`,
         upgradable: true,
+        createdAt: new Date(),
     };
 
     log(`*****************************************************`);
     log(
-        `Deployed ${contract.type}(${artifact?.contractName}) for ${tenant} to :\n ${blockExplorerBaseUrl}/address/${contractAddress}#contract`
+        `Deployed ${contract.name}(${contract.contractFileName}) for ${tenant} to :\n ${blockExplorerBaseUrl}/address/${contractAddress}#contract`
     );
     log(`*****************************************************`);
 

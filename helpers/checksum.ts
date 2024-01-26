@@ -12,15 +12,15 @@ export function generateChecksum(str: string) {
     return crypto.createHash('md5').update(str, 'utf8').digest('hex');
 }
 
-export function generateChecksumFromFile(contractName: string): string {
+export function generateChecksumFromFile(contractFileName: string): string {
     // Find contract file in contracts directory recursively
-    const contractFiles = glob.sync(`**/${contractName}.sol`, {
+    const contractFiles = glob.sync(`**/${contractFileName}.sol`, {
         cwd: path.resolve('contracts'),
         absolute: true,
     });
 
     if (contractFiles.length === 0) {
-        throw new Error(`Contract file ${contractName}.sol not found in directory`);
+        throw new Error(`Contract file ${contractFileName}.sol not found in directory`);
     }
 
     const data = fs.readFileSync(contractFiles[0]);
@@ -28,9 +28,9 @@ export function generateChecksumFromFile(contractName: string): string {
     return checksum;
 }
 
-export function writeChecksumToFile(contractName: string, tenant: string) {
+export function writeChecksumToFile(contractFileName: string, contractName: string, tenant: string) {
     const filePath = path.resolve(`${CHECKSUM_PATH}/checksum-${contractName}-${tenant}`);
-    const checksum = generateChecksumFromFile(contractName);
+    const checksum = generateChecksumFromFile(contractFileName);
     // Write to the file
     fs.writeFileSync(filePath, checksum);
     console.log(`checksum-${contractName}-${tenant} saved to ${filePath}`);
@@ -49,16 +49,20 @@ export function readChecksumFromFile(contractName: string, tenant: string): stri
 }
 
 export function isAlreadyDeployed(contract: DeploymentContract, tenant: string): boolean {
-    const checksum = generateChecksumFromFile(contract.contractName);
-    const previousChecksum = readChecksumFromFile(contract.contractName, tenant);
+    const checksum = generateChecksumFromFile(contract.contractFileName);
+    const previousChecksum = readChecksumFromFile(contract.name, tenant);
     if (!previousChecksum) {
         return false;
     }
     let _isAlreadyDeployed = checksum === previousChecksum;
 
+    console.log('checksum', checksum);
+    console.log('previous', previousChecksum);
+    console.log('isAlreadyDeployed', _isAlreadyDeployed);
+
     const filePathDeploymentLatest = path.resolve(
         `${ACHIEVO_TMP_DIR}/${contract.chain}/${contract.upgradable ? 'upgradeables/' : ''}deployments-${
-            contract.type
+            contract.name
         }-${tenant}-latest.json`
     );
 

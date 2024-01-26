@@ -1,7 +1,6 @@
 import fs from 'fs';
 import path from 'path';
 
-import * as ConstructorArgs from '@constants/constructor-args';
 import { CONTRACTS, ACHIEVO_TMP_DIR } from '@constants/deployments';
 import { isAlreadyDeployed, writeChecksumToFile } from '@helpers/checksum';
 import { submitContractDeploymentsToDB, executeFunctionCallBatch } from '@helpers/contract';
@@ -35,12 +34,11 @@ export async function populateParam(
     }
 
     if (typeof param === 'string' && param.startsWith('CONTRACT_')) {
-        const contractName = param.substring('CONTRACT_'.length);
-        // Do something with contractName
-        const contract = CONTRACTS.find((c) => c.contractName === contractName && c.chain === chain);
+        const contractFileName = param.substring('CONTRACT_'.length);
+        const contract = CONTRACTS.find((c) => c.contractFileName === contractFileName && c.chain === chain);
 
         if (!contract) {
-            throw new Error(`Contract ${contractName} not found`);
+            throw new Error(`Contract ${contractFileName} not found`);
         }
 
         const goingToDeploy = !isAlreadyDeployed(contract, tenant as string);
@@ -53,20 +51,19 @@ export async function populateParam(
 
         let deploymentPayload;
         if (!goingToDeploy) {
-            log(`SKIPPED: ${contract?.contractName} Already deployed, using existing deploymentPayload`);
+            log(`SKIPPED: ${contract?.contractFileName} Already deployed, using existing deploymentPayload`);
 
             const deploymentPayloadContent = fs.readFileSync(filePathDeploymentLatest, 'utf8');
             deploymentPayload = JSON.parse(deploymentPayloadContent);
         } else {
-            const abiPath = getABIFilePath(hre.network.zksync, contract.contractName);
+            const abiPath = getABIFilePath(hre.network.zksync, contract?.contractFileName);
 
             // @ts-ignore-next-line
             // eslint-disable-next-line
             const constructorArgs = await populateConstructorArgs(
                 hre,
                 // @ts-ignore-next-line
-                // eslint-disable-next-line @typescript-eslint/no-unsafe-argument
-                ConstructorArgs[`${contract.contractName}Args`][`${contract?.networkType}`],
+                contract.args,
                 tenant as string
             );
 
@@ -77,7 +74,7 @@ export async function populateParam(
             }
 
             // @ts-ignore-next-line
-            writeChecksumToFile(contract?.contractName, tenant);
+            writeChecksumToFile(contract?.contractFileName, tenant);
 
             // Convert deployments to JSON
             const deploymentsJson = JSON.stringify(deploymentPayload, null, 2);
@@ -109,9 +106,10 @@ const deployOne = async (
     tenant: string,
     force: boolean
 ): Promise<Deployment> => {
+    // @ts-ignore-next-line
     const constructorArgs = await populateConstructorArgs(hre, contract.args, tenant);
 
-    const abiPath = getABIFilePath(hre.network.zksync, contract.contractName);
+    const abiPath = getABIFilePath(hre.network.zksync, contract.contractFileName);
 
     let goingToDeploy = true;
     if (!force) {
@@ -120,14 +118,14 @@ const deployOne = async (
 
     const filePathDeploymentLatest = path.resolve(
         `${ACHIEVO_TMP_DIR}/${contract.chain}/${contract.upgradable ? 'upgradeables/' : ''}deployments-${
-            contract.type
+            contract.name
         }-${tenant}-latest.json`
     );
 
     let deploymentPayload: Deployment;
     // TODO: this is wrong, this must save the artifact and ask if the bytecode is the same, instead of just the file, tech-debt @max
     if (!goingToDeploy) {
-        log(`SKIPPED: ${contract?.contractName} Already deployed, using existing deploymentPayload`);
+        log(`SKIPPED: ${contract?.name} Already deployed, using existing deploymentPayload`);
         const deploymentPayloadContent = fs.readFileSync(filePathDeploymentLatest, 'utf8');
         deploymentPayload = JSON.parse(deploymentPayloadContent);
     } else {
@@ -137,7 +135,7 @@ const deployOne = async (
             deploymentPayload = await deploy(hre, contract, constructorArgs, abiPath as string, tenant);
         }
 
-        writeChecksumToFile(contract.contractName as unknown as string, tenant);
+        writeChecksumToFile(contract.contractFileName, contract.name as unknown as string, tenant);
 
         // Convert deployments to JSON
         const deploymentsJson = JSON.stringify(deploymentPayload, null, 2);
@@ -167,11 +165,11 @@ const prepFunctionOne = async (
     };
 };
 
-const getDependencies = (contractName: string, chain: string) => {
-    const dependencies = new Set([contractName]);
+const getDependencies = (contractFileName: string, chain: string) => {
+    const dependencies = new Set([contractFileName]);
 
-    function collect(contractName: string) {
-        const contract = CONTRACTS.find((c) => c.contractName === contractName && c.chain === chain);
+    function collect(contractFileName: string) {
+        const contract = CONTRACTS.find((c) => c.contractFileName === contractFileName && c.chain === chain);
         if (contract) {
             contract.dependencies?.forEach((dep) => {
                 if (!dependencies.has(dep)) {
@@ -182,7 +180,7 @@ const getDependencies = (contractName: string, chain: string) => {
         }
     }
 
-    collect(contractName);
+    collect(contractFileName);
 
     return [...dependencies];
 };
@@ -194,14 +192,10 @@ task('deploy', 'Deploys Smart contracts')
         const { name, force } = _args;
         const network = hre.network.name;
         log('└─ args :\n');
-        log(`   ├─ contractName : ${name}\n`);
+        log(`   ├─ contractFileName : ${name}\n`);
         log(`   ├─ network : ${network}\n`);
         log(`   └─ force : ${force}\n`);
         createDefaultFolders(network); // create default folders
-
-        if (!name) {
-            throw new Error('Contract name is required');
-        }
 
         const contract = CONTRACTS.find((d) => d.name === name && d.chain === network);
 
@@ -209,7 +203,7 @@ task('deploy', 'Deploys Smart contracts')
             throw new Error(`Contract ${name} not found on ${network}`);
         }
 
-        const contractsToDeploy = getDependencies(contract.contractName, network);
+        const contractsToDeploy = getDependencies(contract.contractFileName, network);
 
         for (const tenant of contract.tenants) {
             log('=====================================================');
@@ -228,14 +222,15 @@ task('deploy', 'Deploys Smart contracts')
 
             const deployments: Deployment[] = [];
 
-            for (const contractName of contractsToDeploy) {
+            for (const contractFileName of contractsToDeploy) {
                 const contract = CONTRACTS.find(
-                    (d) => d.contractName === contractName && d.chain === network
+                    (d) => d.contractFileName === contractFileName && d.chain === network
                 ) as unknown as DeploymentContract;
-                log(`[PREPPING] Get ready to deploy ${name}:<${contractName}> contract on ${network} for ${tenant}`);
+                log(
+                    `[PREPPING] Get ready to deploy ${name}:<${contractFileName}> contract on ${network} for ${tenant}`
+                );
 
                 const deployment = await deployOne(hre, contract, tenant, force);
-                console.log('deployment->>', deployment);
                 deployments.push(deployment);
             }
 
@@ -244,55 +239,57 @@ task('deploy', 'Deploys Smart contracts')
             log('=====================================================');
             log('\n');
 
-            // // submit to db
-            // try {
-            //     log('*******************************************');
-            //     log('[SUBMITTING] Deployments to db');
-            //     log('*******************************************');
-            //     await submitContractDeploymentsToDB(deployments, tenant);
-            //     log('*******************************************');
-            //     log('*** Deployments submitted to db ***');
-            //     log('*******************************************');
-            // } catch (error: any) {
-            //     log('*******************************************');
-            //     log('***', error.message, '***');
-            //     log('*******************************************');
-            // }
+            // submit to db
+            try {
+                log('*******************************************');
+                log('[SUBMITTING] Deployments to db');
+                log('*******************************************');
+                await submitContractDeploymentsToDB(deployments, tenant);
+                log('*******************************************');
+                log('*** Deployments submitted to db ***');
+                log('*******************************************');
+            } catch (error: any) {
+                log('*******************************************');
+                log('***', error.message, '***');
+                log('*******************************************');
+            }
 
-            // const calls = [];
-            // for (const deployment of deployments) {
-            //     // write deployment payload per tenant
-            //     // Define the path to the file
-            //     const filePath = path.resolve(
-            //         `${ACHIEVO_TMP_DIR}/deployments/${contract.chain}/${
-            //             contract.upgradable ? 'upgradeables/' : ''
-            //         }deployments-${deployment.type}-${tenant}-${Date.now()}.json`
-            //     );
-            //     // Convert deployments to JSON
-            //     const deploymentsJson = JSON.stringify(deployment, null, 2);
-            //     // Write to the file
-            //     fs.writeFileSync(filePath, deploymentsJson);
+            const calls = [];
+            for (const deployment of deployments) {
+                // write deployment payload per tenant
+                // Define the path to the file
+                const filePath = path.resolve(
+                    `${ACHIEVO_TMP_DIR}/deployments/${contract.chain}/${
+                        contract.upgradable ? 'upgradeables/' : ''
+                    }deployments-${deployment.type}-${tenant}-${Date.now()}.json`
+                );
+                // Convert deployments to JSON
+                const deploymentsJson = JSON.stringify(deployment, null, 2);
+                // Write to the file
+                fs.writeFileSync(filePath, deploymentsJson);
 
-            //     log(`Deployments saved to ${filePath}`);
+                log(`Deployments saved to ${filePath}`);
 
-            //     const deployedContract = CONTRACTS.find(
-            //         (d) => d.type === deployment.type && d.chain === network && d.upgradable === deployment.upgradable
-            //     );
+                const deployedContract = CONTRACTS.find(
+                    (d) => d.type === deployment.type && d.chain === network && d.upgradable === deployment.upgradable
+                );
 
-            //     if (!deployedContract?.functionCalls || deployedContract?.functionCalls?.length === 0) {
-            //         continue;
-            //     }
+                if (!deployedContract?.functionCalls || deployedContract?.functionCalls?.length === 0) {
+                    continue;
+                }
 
-            //     for (const call of deployedContract?.functionCalls) {
-            //         console.log(
-            //             `[CALLING]: ${deployedContract.contractName} on ${deployedContract.chain} for ${tenant} `
-            //         );
-            //         const _call = await prepFunctionOne(hre, call, tenant, deployment.contractAddress);
-            //         calls.push(_call);
-            //     }
-            // }
+                for (const call of deployedContract?.functionCalls) {
+                    console.log(
+                        `[CALLING]: ${deployedContract.contractFileName} on ${deployedContract.chain} for ${tenant} `
+                    );
+                    const _call = await prepFunctionOne(hre, call, tenant, deployment.contractAddress);
+                    calls.push(_call);
+                }
+            }
 
-            // // execute function calls
-            // await executeFunctionCallBatch(calls, tenant);
+            // execute function calls
+            if (calls.length > 0) {
+                await executeFunctionCallBatch(calls, tenant);
+            }
         }
     });

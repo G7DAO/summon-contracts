@@ -56,8 +56,6 @@ export const ItemBoundArgs: Soulbound1155Args = {
     },
 };
 
-export const ItemBoundV1Args: Soulbound1155Args = ItemBoundArgs;
-
 export const ItemsRewardBoundArgs = {
     MAINNET: {
         name: 'AchievoItemsReward',
@@ -228,8 +226,6 @@ export const ERC20ChainlinkPaymasterArgs = {
     },
 };
 
-export const ERC20ChainlinkPaymasterV1Args = ERC20ChainlinkPaymasterArgs;
-
 export const GameSummaryArgs = {
     MAINNET: {
         _uri: 'FILL_ME',
@@ -271,5 +267,3 @@ export const BadgeBoundArgs: Soulbound1155Args = {
         devWallet: 'DEPLOYER_WALLET',
     },
 };
-
-export const BadgeBoundV1Args: Soulbound1155Args = BadgeBoundArgs;

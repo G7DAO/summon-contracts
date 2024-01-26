@@ -34,7 +34,7 @@ export default async function (
     const blockExplorerBaseUrl = NetworkExplorer[networkNameKey as keyof typeof NetworkExplorer];
 
     log('=====================================================');
-    log(`[DEPLOYING] deploying ${contract.contractName} contract for [[${tenant}]] on ${networkName}`);
+    log(`[DEPLOYING] deploying ${contract.name} contract for [[${tenant}]] on ${networkName}`);
     log('=====================================================');
 
     const { name, ...rest } = constructorArgs;
@@ -50,7 +50,7 @@ export default async function (
 
     if (hre.network.zksync) {
         const deployer = new Deployer(hre, wallet);
-        const artifact = await deployer.loadArtifact(contract.contractName);
+        const artifact = await deployer.loadArtifact(contract.contractFileName);
 
         if (name) {
             achievoContract = await deployer.deploy(artifact, [`${name}${tenant}`, ...restArgs]);
@@ -59,9 +59,12 @@ export default async function (
         }
     } else {
         if (name) {
-            achievoContract = await hre.ethers.deployContract(contract.contractName, [`${name}${tenant}`, ...restArgs]);
+            achievoContract = await hre.ethers.deployContract(contract.contractFileName, [
+                `${name}${tenant}`,
+                ...restArgs,
+            ]);
         } else {
-            achievoContract = await hre.ethers.deployContract(contract.contractName, restArgs);
+            achievoContract = await hre.ethers.deployContract(contract.contractFileName, restArgs);
         }
     }
 
@@ -70,10 +73,10 @@ export default async function (
     // Show the contract info.
     const contractAddress = await achievoContract.getAddress();
 
-    const contractPath = getFilePath('contracts', `${contract.contractName}.sol`);
+    const contractPath = getFilePath('contracts', `${contract.contractFileName}.sol`);
 
     if (!contractPath) {
-        throw new Error(`File ${contract.contractName}.sol not found`);
+        throw new Error(`File ${contract.contractFileName}.sol not found`);
     }
 
     const relativeContractPath = path.relative('', contractPath);
@@ -83,11 +86,11 @@ export default async function (
         await achievoContract.deploymentTransaction()?.wait(5); // wait for 5 confirmations
 
         log('=====================================================');
-        log(`Verifying ${contract.type}(${contract.contractName}) for ${tenant} on ${networkName}`);
+        log(`Verifying ${contract.type}(${contract.name}) for ${tenant} on ${networkName}`);
         log('=====================================================');
         await hre.run('verify:verify', {
             address: contractAddress,
-            contract: `${relativeContractPath}:${contract.contractName}`,
+            contract: `${relativeContractPath}:${contract.contractFileName}`,
             constructorArguments: name ? [`${name}${tenant}`, ...restArgs] : restArgs,
         });
     }
@@ -114,11 +117,12 @@ export default async function (
         fakeContractAddress: '',
         explorerUrl: `${blockExplorerBaseUrl}/address/${contractAddress}#contract`,
         upgradable: false,
+        createdAt: new Date(),
     };
 
     log(`*****************************************************`);
     log(
-        `Deployed ${contract.type}(${contract.contractName}) for ${tenant} to :\n ${blockExplorerBaseUrl}/address/${contractAddress}#contract`
+        `Deployed ${contract.name}(${contract.contractName}) for ${tenant} to :\n ${blockExplorerBaseUrl}/address/${contractAddress}#contract`
     );
     log(`*****************************************************`);
 

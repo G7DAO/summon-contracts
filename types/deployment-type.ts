@@ -22,7 +22,7 @@ export interface Deployment {
 }
 
 export interface DeploymentContract {
-    contractName: string;
+    contractFileName: string;
     type: CONTRACT_TYPE;
     name: string;
     chain: string;
@@ -33,6 +33,7 @@ export interface DeploymentContract {
     dependencies: string[];
     functionCalls?: FunctionCall[];
     args?: Record<string, any>;
+    version?: number;
 }
 
 export interface FunctionCall {
