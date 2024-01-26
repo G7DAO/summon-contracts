@@ -262,7 +262,7 @@ export const GameSummaryArgs = {
 export const StakerV1Args = {
     MAINNET: {
         developerAdmin: 'DEPLOYER_WALLET',
-        stakeToken: '0x39a3920ca05e238d558f0c1786314bca647d1b39',
+        stakeToken: '0x058d96BAa6f9D16853970b333ed993aCC0c35aDd',
         regularToken: '0x9ca6a77c8b38159fd2da9bd25bc3e259c33f5e39',
     },
     TESTNET: {
