@@ -17,6 +17,8 @@
         "deploy:ZkSync:mainnet": "pnpm compile:zkSync && hardhat --config zkSync.config.ts deploy --network zkSync",
         "deploy:ZkSync:goerli": "pnpm compile:zkSync && hardhat --config zkSync.config.ts deploy --network zkSyncGoerli",
         "deploy:ZkSync:sepolia": "pnpm compile:zkSync && hardhat --config zkSync.config.ts deploy --network zkSyncSepolia",
+        "deployStakerUpgradeable:polygon:mumbai": "pnpm deploy:polygon:mumbai --contractname StakerV1",
+        "deployStakerUpgradeable:polygon:mainnet": "pnpm deploy:polygon:mainnet --contractname StakerV1",
         "deployAvatarBound:ZkSync:mainnet": "pnpm deploy:ZkSync:mainnet --contractname AvatarBound",
         "deployOpenMint:ZkSync:mainnet": "pnpm deploy:ZkSync:mainnet --contractname OpenMint",
         "deployOpenMint:ZkSync:sepolia": "pnpm deploy:ZkSync:sepolia --contractname OpenMint",

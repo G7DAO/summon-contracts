@@ -8,7 +8,11 @@ import { log } from '@helpers/logger';
 import { Deployer } from '@matterlabs/hardhat-zksync-deploy';
 import { HardhatRuntimeEnvironment } from 'hardhat/types';
 
-import getWallet from './getWallet';
+import getZkWallet from './getWallet';
+import { Wallet } from 'zksync-ethers';
+import * as ethers from 'ethers';
+
+const { Wallet: EthersWallet } = ethers;
 
 // load wallet private key from env file
 const PRIVATE_KEY = process.env.PRIVATE_KEY || '';
@@ -44,19 +48,38 @@ export default async function (
     log(`Args ${restArgs}`);
     log('=====================================================');
 
-    const wallet = getWallet(PRIVATE_KEY);
-    const deployer = new Deployer(hre, wallet);
-    // TODO: THIS ONLY WORK FOR ZKSYNC ... NEED TO BE FIXED
-    const artifact = await deployer.loadArtifact(contract.contractName);
+    // @ts-ignore
+    let wallet: Wallet | EthersWallet;
 
     let achievoContract;
-    if (!name) {
-        achievoContract = await hre.zkUpgrades.deployProxy(deployer.zkWallet as any, artifact, [...restArgs]);
+    let artifact;
+
+    const isZkSync = chainId === ChainId.ZkSync || chainId === ChainId.ZkSyncSepolia;
+
+    if (isZkSync) {
+        const wallet = getZkWallet(PRIVATE_KEY);
+        const deployer = new Deployer(hre, wallet);
+        artifact = await deployer.loadArtifact(contract.contractName);
+
+        if (!name) {
+            achievoContract = await hre.zkUpgrades.deployProxy(deployer.zkWallet as any, artifact, [...restArgs]);
+        } else {
+            achievoContract = await hre.zkUpgrades.deployProxy(deployer.zkWallet as any, artifact, [
+                `${tenant}${name}`,
+                ...restArgs,
+            ]);
+        }
     } else {
-        achievoContract = await hre.zkUpgrades.deployProxy(deployer.zkWallet as any, artifact, [
-            `${tenant}${name}`,
-            ...restArgs,
-        ]);
+        // @ts-ignore
+        wallet = new EthersWallet(PRIVATE_KEY, hre.ethers.provider);
+        artifact = await hre.ethers.getContractFactory(contract.contractName);
+        if (!name) {
+            // @ts-ignore
+            achievoContract = await hre.upgrades.deployProxy(artifact, [...restArgs]);
+        } else {
+            // @ts-ignore
+            achievoContract = await hre.upgrades.deployProxy(artifact, [`${tenant}${name}`, ...restArgs]);
+        }
     }
 
     await achievoContract.waitForDeployment();
@@ -68,10 +91,25 @@ export default async function (
     log(`VERIFY: ${contract.verify}`);
     log('=====================================================');
 
-    if (contract.verify) {
+    if (contract.verify && isZkSync) {
         await new Promise((resolve, reject) => {
             exec(
                 `npx hardhat verify --network ${contract.chain} ${contractAddress} --config zkSync.config.ts`,
+                (error, stdout, stderr) => {
+                    if (error) {
+                        console.warn(error);
+                        reject(error);
+                    }
+                    resolve(stdout ? stdout : stderr);
+                }
+            );
+        });
+    }
+
+    if (contract.verify) {
+        await new Promise((resolve, reject) => {
+            exec(
+                `npx hardhat verify --network ${contract.chain} ${contractAddress} --config ${networkName}.config.ts`,
                 (error, stdout, stderr) => {
                     if (error) {
                         console.warn(error);
@@ -108,7 +146,7 @@ export default async function (
 
     log(`*****************************************************`);
     log(
-        `Deployed ${contract.type}(${artifact.contractName}) for ${tenant} to :\n ${blockExplorerBaseUrl}/address/${contractAddress}#contract`
+        `Deployed ${contract.type}(${artifact?.contractName}) for ${tenant} to :\n ${blockExplorerBaseUrl}/address/${contractAddress}#contract`
     );
     log(`*****************************************************`);
 
