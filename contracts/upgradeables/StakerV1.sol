@@ -104,4 +104,12 @@ contract StakerV1 is
         require(success, "TransferFailed");
         emit Unstaked(msg.sender, _amount);
     }
+
+    function changeStakeToken(IERC20Burnable _stakeToken) public onlyRole(DEV_CONFIG_ROLE) {
+        stakeToken = _stakeToken;
+    }
+
+    function changeRegularToken(IERC20Decimals _regularToken) public onlyRole(DEV_CONFIG_ROLE) {
+        regularToken = _regularToken;
+    }
 }
