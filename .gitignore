@@ -12,7 +12,7 @@ artifacts
 /generated/**/*
 
 .idea
-
+.zed
 out
 
 .flat

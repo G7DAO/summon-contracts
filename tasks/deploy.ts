@@ -1,7 +1,6 @@
 import fs from 'fs';
 import path from 'path';
 
-import * as ConstructorArgs from '@constants/constructor-args';
 import { CONTRACTS, ACHIEVO_TMP_DIR } from '@constants/deployments';
 import { isAlreadyDeployed, writeChecksumToFile } from '@helpers/checksum';
 import { submitContractDeploymentsToDB, executeFunctionCallBatch } from '@helpers/contract';
@@ -18,6 +17,8 @@ import deployUpgradeable from '../deploy/deployUpgradeable';
 const PRIVATE_KEY = process.env.PRIVATE_KEY || '';
 const wallet = getWallet(PRIVATE_KEY);
 
+const MINTER_ROLE = '0x9f2df0fed2c77648de5860a4cc508cd0818c85b8b8a1ab4ceeef8d981c8956a6';
+
 export async function populateParam(
     hre: HardhatRuntimeEnvironment,
     param: string | number | boolean,
@@ -31,42 +32,42 @@ export async function populateParam(
     }
 
     if (param === 'MINTER_ROLE') {
-        return '0x9f2df0fed2c77648de5860a4cc508cd0818c85b8b8a1ab4ceeef8d981c8956a6';
+        return MINTER_ROLE;
     }
 
     if (typeof param === 'string' && param.startsWith('CONTRACT_')) {
-        const contractName = param.substring('CONTRACT_'.length);
-        // Do something with contractName
-        const contract = CONTRACTS.find((c) => c.contractName === contractName && c.chain === chain);
+        const name = param.substring('CONTRACT_'.length);
+        const contract = CONTRACTS.find((c) => c.name === name && c.chain === chain);
 
         if (!contract) {
-            throw new Error(`Contract ${contractName} not found`);
+            throw new Error(`Contract ${name} not found`);
         }
 
         const goingToDeploy = !isAlreadyDeployed(contract, tenant as string);
 
+        console.log('goingToDeploy->', name, goingToDeploy);
+
         const filePathDeploymentLatest = path.resolve(
             `${ACHIEVO_TMP_DIR}/${contract?.chain}/${contract?.upgradable ? 'upgradeables/' : ''}deployments-${
-                contract?.type
+                contract?.name
             }-${tenant}-latest.json`
         );
 
         let deploymentPayload;
         if (!goingToDeploy) {
-            log(`SKIPPED: ${contract?.contractName} Already deployed, using existing deploymentPayload`);
+            log(`SKIPPED: ${contract?.contractFileName} Already deployed, using existing deploymentPayload`);
 
             const deploymentPayloadContent = fs.readFileSync(filePathDeploymentLatest, 'utf8');
             deploymentPayload = JSON.parse(deploymentPayloadContent);
         } else {
-            const abiPath = getABIFilePath(hre.network.zksync, contract.contractName);
+            const abiPath = getABIFilePath(hre.network.zksync, contract?.contractFileName);
 
             // @ts-ignore-next-line
             // eslint-disable-next-line
             const constructorArgs = await populateConstructorArgs(
                 hre,
                 // @ts-ignore-next-line
-                // eslint-disable-next-line @typescript-eslint/no-unsafe-argument
-                ConstructorArgs[`${contract.contractName}Args`][`${contract?.networkType}`],
+                contract.args,
                 tenant as string
             );
 
@@ -77,7 +78,7 @@ export async function populateParam(
             }
 
             // @ts-ignore-next-line
-            writeChecksumToFile(contract?.contractName, tenant);
+            writeChecksumToFile(contract?.contractFileName, tenant);
 
             // Convert deployments to JSON
             const deploymentsJson = JSON.stringify(deploymentPayload, null, 2);
@@ -109,15 +110,10 @@ const deployOne = async (
     tenant: string,
     force: boolean
 ): Promise<Deployment> => {
-    const constructorArgs = await populateConstructorArgs(
-        hre,
-        // @ts-ignore-next-line
-        // eslint-disable-next-line @typescript-eslint/no-unsafe-argument
-        ConstructorArgs[`${contract.contractName}Args`][`${contract.networkType}`],
-        tenant
-    );
+    // @ts-ignore-next-line
+    const constructorArgs = await populateConstructorArgs(hre, contract.args, tenant);
 
-    const abiPath = getABIFilePath(hre.network.zksync, contract.contractName);
+    const abiPath = getABIFilePath(hre.network.zksync, contract.contractFileName);
 
     let goingToDeploy = true;
     if (!force) {
@@ -126,14 +122,14 @@ const deployOne = async (
 
     const filePathDeploymentLatest = path.resolve(
         `${ACHIEVO_TMP_DIR}/${contract.chain}/${contract.upgradable ? 'upgradeables/' : ''}deployments-${
-            contract.type
+            contract.name
         }-${tenant}-latest.json`
     );
 
     let deploymentPayload: Deployment;
     // TODO: this is wrong, this must save the artifact and ask if the bytecode is the same, instead of just the file, tech-debt @max
     if (!goingToDeploy) {
-        log(`SKIPPED: ${contract?.contractName} Already deployed, using existing deploymentPayload`);
+        log(`SKIPPED: ${contract?.name} Already deployed, using existing deploymentPayload`);
         const deploymentPayloadContent = fs.readFileSync(filePathDeploymentLatest, 'utf8');
         deploymentPayload = JSON.parse(deploymentPayloadContent);
     } else {
@@ -143,7 +139,7 @@ const deployOne = async (
             deploymentPayload = await deploy(hre, contract, constructorArgs, abiPath as string, tenant);
         }
 
-        writeChecksumToFile(contract.contractName as unknown as string, tenant);
+        writeChecksumToFile(contract.contractFileName, contract.name as unknown as string, tenant);
 
         // Convert deployments to JSON
         const deploymentsJson = JSON.stringify(deploymentPayload, null, 2);
@@ -177,7 +173,7 @@ const getDependencies = (contractName: string, chain: string) => {
     const dependencies = new Set([contractName]);
 
     function collect(contractName: string) {
-        const contract = CONTRACTS.find((c) => c.contractName === contractName && c.chain === chain);
+        const contract = CONTRACTS.find((c) => c.name === contractName && c.chain === chain);
         if (contract) {
             contract.dependencies?.forEach((dep) => {
                 if (!dependencies.has(dep)) {
@@ -194,33 +190,29 @@ const getDependencies = (contractName: string, chain: string) => {
 };
 
 task('deploy', 'Deploys Smart contracts')
-    .addParam('contractname', 'Contract Name you want to deploy', undefined, types.string)
+    .addParam('name', 'Contract Name you want to deploy', undefined, types.string)
     .addFlag('force', 'Do you want to force deploy?')
-    .setAction(async (_args: { contractname: string; force: boolean }, hre: HardhatRuntimeEnvironment) => {
-        const { contractname: contractName, force } = _args;
+    .setAction(async (_args: { name: string; force: boolean }, hre: HardhatRuntimeEnvironment) => {
+        const { name, force } = _args;
         const network = hre.network.name;
         log('└─ args :\n');
-        log(`   ├─ contractName : ${contractName}\n`);
+        log(`   ├─ contractFileName : ${name}\n`);
         log(`   ├─ network : ${network}\n`);
         log(`   └─ force : ${force}\n`);
         createDefaultFolders(network); // create default folders
 
-        if (!contractName) {
-            throw new Error('Contract name is required');
-        }
-
-        const contract = CONTRACTS.find((d) => d.contractName === contractName && d.chain === network);
+        const contract = CONTRACTS.find((d) => d.name === name && d.chain === network);
 
         if (!contract) {
-            throw new Error(`Contract ${contractName} not found on ${network}`);
+            throw new Error(`Contract ${name} not found on ${network}`);
         }
 
-        const contractsToDeploy = getDependencies(contract.contractName, network);
+        const contractsToDeploy = getDependencies(contract.name, network);
 
         for (const tenant of contract.tenants) {
             log('=====================================================');
             log('=====================================================');
-            log(`[STARTING] Deploy ${contractName} contract on ${network} for [[${tenant}]]`);
+            log(`[STARTING] Deploy ${name} contract on ${network} for [[${tenant}]]`);
             log(`Contracts to deploy: ${contractsToDeploy.length}`);
             for (const contract of contractsToDeploy) {
                 log(`contract: ${contract}`);
@@ -236,16 +228,18 @@ task('deploy', 'Deploys Smart contracts')
 
             for (const contractName of contractsToDeploy) {
                 const contract = CONTRACTS.find(
-                    (d) => d.contractName === contractName && d.chain === network
+                    (d) => d.name === contractName && d.chain === network
                 ) as unknown as DeploymentContract;
-                log(`[PREPPING] Get ready to deploy ${contractName} contract on ${network} for ${tenant}`);
+                log(
+                    `[PREPPING] Get ready to deploy ${name}:<${contract.contractFileName}> contract on ${network} for ${tenant}`
+                );
 
                 const deployment = await deployOne(hre, contract, tenant, force);
                 deployments.push(deployment);
             }
 
             log('=====================================================');
-            log(`[DONE] ${contractName} contract deployment on ${network} for [[${tenant}]] is DONE!`);
+            log(`[DONE] ${name} contract deployment on ${network} for [[${tenant}]] is DONE!`);
             log('=====================================================');
             log('\n');
 
@@ -290,7 +284,7 @@ task('deploy', 'Deploys Smart contracts')
 
                 for (const call of deployedContract?.functionCalls) {
                     console.log(
-                        `[CALLING]: ${deployedContract.contractName} on ${deployedContract.chain} for ${tenant} `
+                        `[CALLING]: ${deployedContract.contractFileName} on ${deployedContract.chain} for ${tenant} `
                     );
                     const _call = await prepFunctionOne(hre, call, tenant, deployment.contractAddress);
                     calls.push(_call);
@@ -298,6 +292,8 @@ task('deploy', 'Deploys Smart contracts')
             }
 
             // execute function calls
-            await executeFunctionCallBatch(calls, tenant);
+            if (calls.length > 0) {
+                await executeFunctionCallBatch(calls, tenant);
+            }
         }
     });

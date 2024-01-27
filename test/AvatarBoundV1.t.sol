@@ -10,9 +10,9 @@ import { Strings } from "@openzeppelin/contracts/utils/Strings.sol";
 import { ECDSAUpgradeable } from "@openzeppelin/contracts-upgradeable/utils/cryptography/ECDSAUpgradeable.sol";
 
 import { LibItems, TestLibItems } from "../contracts/libraries/LibItems.sol";
-import { AvatarBoundV1 } from "../contracts/upgradeables/AvatarBoundV1.sol";
-import { ItemBoundV1 } from "../contracts/upgradeables/ItemBoundV1.sol";
-import { OpenMint } from "../contracts/OpenMint.sol";
+import { AvatarBoundV1 } from "../contracts/upgradeables/games/AvatarBoundV1.sol";
+import { ERC1155RoyaltiesSoulboundV1 } from "../contracts/upgradeables/soulbounds/ERC1155RoyaltiesSoulboundV1.sol";
+import { FreeMint } from "../contracts/airdrops/FreeMint.sol";
 import { MockERC721Receiver } from "../contracts/mocks/MockERC721Receiver.sol";
 import { MockERC1155Receiver } from "../contracts/mocks/MockERC1155Receiver.sol";
 
@@ -23,8 +23,8 @@ contract AvatarBoundV1Test is StdCheats, Test {
     address AvatarBoundV1Address;
 
     AvatarBoundV1 public avatarBound;
-    ItemBoundV1 public itemBound;
-    OpenMint public capsuleNft;
+    ERC1155RoyaltiesSoulboundV1 public itemBound;
+    FreeMint public capsuleNft;
 
     MockERC721Receiver public mockERC721Receiver;
     MockERC1155Receiver public mockERC1155Receiver;
@@ -152,10 +152,10 @@ contract AvatarBoundV1Test is StdCheats, Test {
         return AvatarBoundV1(address(proxy));
     }
 
-    function deployItemBoundV1Contract() public returns (ItemBoundV1) {
-        ItemBoundV1 itemBoundV1 = new ItemBoundV1();
+    function deployItemBoundV1Contract() public returns (ERC1155RoyaltiesSoulboundV1) {
+        ERC1155RoyaltiesSoulboundV1 itemBoundV1 = new ERC1155RoyaltiesSoulboundV1();
         ERC1967Proxy proxy = new ERC1967Proxy(address(itemBoundV1), "");
-        ItemBoundV1(address(proxy)).initialize(
+        ERC1155RoyaltiesSoulboundV1(address(proxy)).initialize(
             "Test1155",
             "T1155",
             "MISSING_BASE_URL",
@@ -165,7 +165,7 @@ contract AvatarBoundV1Test is StdCheats, Test {
             address(this)
         );
 
-        return ItemBoundV1(address(proxy));
+        return ERC1155RoyaltiesSoulboundV1(address(proxy));
     }
 
     function setUp() public {
@@ -174,10 +174,10 @@ contract AvatarBoundV1Test is StdCheats, Test {
 
         itemBound = deployItemBoundV1Contract();
 
-        capsuleNft = new OpenMint(
+        capsuleNft = new FreeMint(
             "OpenMint-TEST",
             "OM_TEST",
-            "https://summon.mypinata.cloud/ipfs/",
+            "https://achievo.mypinata.cloud/ipfs/",
             "QmPrH4o5q9uB8DGiFd9oDSuT3TnLiCzsFXT4wXQbpUr6c8"
         );
 
@@ -223,7 +223,7 @@ contract AvatarBoundV1Test is StdCheats, Test {
         // test that the capsule now has the new uri(revealed uri)
         assertEq(
             capsuleNft.tokenURI(defaultCapsuleNftId),
-            "https://summon.mypinata.cloud/ipfs/MISSING_REVEAL_CAPSULE_URL"
+            "https://achievo.mypinata.cloud/ipfs/MISSING_REVEAL_CAPSULE_URL"
         );
         vm.stopPrank();
     }
@@ -295,7 +295,7 @@ contract AvatarBoundV1Test is StdCheats, Test {
         avatarBound.adminMint(address(playerWallet.addr), 1);
 
         vm.startPrank(playerWallet.addr);
-        vm.expectRevert("ERC721Soulbound: Operation denied, soulbounded");
+        vm.expectRevert("Achievo721Soulbound: Operation denied, soulbounded");
         avatarBound.transferFrom(address(playerWallet.addr), address(this), 0);
         vm.stopPrank();
     }

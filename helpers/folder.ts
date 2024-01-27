@@ -53,12 +53,12 @@ export const getFilePath = (folderPath: string, fileName: string): string | null
     return null;
 };
 
-export const getABIFilePath = (isZkSync: boolean, contractName: string): string | null => {
+export const getABIFilePath = (isZkSync: boolean, contractFileName: string): string | null => {
     const folder = isZkSync ? ABI_PATH_ZK : ABI_PATH;
-    const abiPath = getFilePath(folder, `${contractName}.json`);
+    const abiPath = getFilePath(folder, `${contractFileName}.json`);
 
     if (!abiPath) {
-        throw new Error(`File ${contractName}.json not found`);
+        throw new Error(`File ${contractFileName}.json not found`);
     }
 
     return path.relative('', abiPath);

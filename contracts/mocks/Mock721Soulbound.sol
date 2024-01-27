@@ -17,9 +17,9 @@ pragma solidity 0.8.17;
 // MMMM0cdNMM0cdNMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMM
 
 import { ERC721 } from "@openzeppelin/contracts/token/ERC721/ERC721.sol";
-import { ERC721Soulbound } from "../extensions/ERC721Soulbound.sol";
+import { Achievo721Soulbound } from "../ercs/extensions/Achievo721Soulbound.sol";
 
-contract Mock721Soulbound is ERC721, ERC721Soulbound {
+contract Mock721Soulbound is ERC721, Achievo721Soulbound {
     uint256 private _tokenIdCounter;
 
     constructor() ERC721("Mock721SoulboundToken", "M721SBT") {}

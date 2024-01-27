@@ -1,4 +1,4 @@
-import { ChainId } from '../constants';
+import { ChainId } from '@constants/network';
 import debug from 'debug';
 
 const logger: debug.Debugger = debug('Achievo:log');
@@ -30,10 +30,6 @@ export const logExplorerAddress = (chainId: number, address: string) => {
         }
         case ChainId.ZkSync: {
             log('https://explorer.zksync.io/address/' + address);
-            break;
-        }
-        case ChainId.ZkSyncGoerli: {
-            log('https://goerli.explorer.zksync.io/address/' + address);
             break;
         }
         case ChainId.ZkSyncSepolia: {

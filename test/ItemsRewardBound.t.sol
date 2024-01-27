@@ -6,7 +6,7 @@ import "forge-std/StdCheats.sol";
 import { Strings } from "@openzeppelin/contracts/utils/Strings.sol";
 import { ECDSA } from "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
 
-import { ItemsRewardBound } from "../contracts/ItemsRewardBound.sol";
+import { ERC1155RewardSoulbound } from "../contracts/soulbounds/ERC1155RewardSoulbound.sol";
 import { MockERC1155Receiver } from "../contracts/mocks/MockERC1155Receiver.sol";
 import { MockErc20 } from "../contracts/mocks/MockErc20.sol";
 import { LibItems, TestLibItems } from "../contracts/libraries/LibItems.sol";
@@ -14,7 +14,7 @@ import { LibItems, TestLibItems } from "../contracts/libraries/LibItems.sol";
 contract ItemsRewardBoundTest is StdCheats, Test {
     using Strings for uint256;
 
-    ItemsRewardBound public itemBound;
+    ERC1155RewardSoulbound public itemBound;
     MockERC1155Receiver public mockERC1155Receiver;
     MockErc20 public mockERC20;
 
@@ -114,18 +114,9 @@ contract ItemsRewardBoundTest is StdCheats, Test {
         playerWallet3 = getWallet(player3Label);
         minterWallet = getWallet(minterLabel);
 
-        itemBound = new ItemsRewardBound(
-            "ItemsRewardTest1155",
-            "T1155",
-            defaultRewardId,
-            false,
-            address(this)
-        );
+        itemBound = new ERC1155RewardSoulbound("ItemsRewardTest1155", "T1155", defaultRewardId, false, address(this));
 
-        mockERC20 = new MockErc20(
-            "oUSDC",
-            "oUSDC"
-        );
+        mockERC20 = new MockErc20("oUSDC", "oUSDC");
 
         itemBound.addWhitelistSigner(minterWallet.addr);
 
@@ -169,13 +160,15 @@ contract ItemsRewardBoundTest is StdCheats, Test {
         (nonce, signature) = generateSignature(playerWallet.addr, encodedItems1, minterLabel);
         (nonce2, signature2) = generateSignature(playerWallet2.addr, encodedItems2, minterLabel);
         mockERC20.mint(address(itemBound), 20000000000000000000);
-        itemBound.addNewToken(LibItems.TokenReward({
-            tokenId: defaultRewardId,
-            rewardAmount: 0,
-            rewardERC20: address(mockERC20),
-            isEther: false,
-            tokenUri: "https://achievo.mypinnata.io/ipfs/[roll_uri_hash]"
-        }));
+        itemBound.addNewToken(
+            LibItems.TokenReward({
+                tokenId: defaultRewardId,
+                rewardAmount: 0,
+                rewardERC20: address(mockERC20),
+                isEther: false,
+                tokenUri: "https://achievo.mypinnata.io/ipfs/[roll_uri_hash]"
+            })
+        );
     }
 
     function testTokenExists() public {
@@ -284,12 +277,12 @@ contract ItemsRewardBoundTest is StdCheats, Test {
         itemBound.mint(encodedItems1, true, false, nonce, signature);
 
         vm.expectRevert(
-            "ERC1155Soulbound: The amount of soulbounded tokens is more than the amount of tokens to be transferred"
+            "Achievo1155Soulbound: The amount of soulbounded tokens is more than the amount of tokens to be transferred"
         );
         vm.prank(playerWallet.addr);
         itemBound.safeTransferFrom(playerWallet.addr, minterWallet.addr, _tokenIds[0], 1, "");
 
-        vm.expectRevert("ERC1155Soulbound: can't be zero amount");
+        vm.expectRevert("Achievo1155Soulbound: can't be zero amount");
         vm.prank(playerWallet.addr);
         itemBound.safeTransferFrom(playerWallet.addr, minterWallet.addr, _tokenIds[0], 0, "");
 
@@ -329,9 +322,7 @@ contract ItemsRewardBoundTest is StdCheats, Test {
     }
 
     function testNotRewardToken() public {
-        vm.expectRevert(
-            "InsufficientRewardTokenBalance"
-        );
+        vm.expectRevert("InsufficientRewardTokenBalance");
         itemBound.adminMint(address(mockERC1155Receiver), encodedItems1, true);
     }
 
@@ -397,13 +388,13 @@ contract ItemsRewardBoundTest is StdCheats, Test {
         assertEq(itemBound.balanceOf(playerWallet.addr, _tokenIds[0]), 1);
 
         vm.expectRevert(
-            "ERC1155Soulbound: The amount of soulbounded tokens is more than the amount of tokens to be transferred"
+            "Achievo1155Soulbound: The amount of soulbounded tokens is more than the amount of tokens to be transferred"
         );
         vm.prank(playerWallet.addr);
         itemBound.safeTransferFrom(playerWallet.addr, minterWallet.addr, _tokenIds[0], 1, "");
 
         vm.expectRevert(
-            "ERC1155Soulbound: The amount of soulbounded tokens is more than the amount of tokens to be transferred"
+            "Achievo1155Soulbound: The amount of soulbounded tokens is more than the amount of tokens to be transferred"
         );
         vm.prank(playerWallet.addr);
         itemBound.burn(playerWallet.addr, _tokenIds[0], 1);
@@ -438,7 +429,7 @@ contract ItemsRewardBoundTest is StdCheats, Test {
         assertEq(itemBound.balanceOf(playerWallet.addr, _tokenIds[0]), 2);
 
         vm.expectRevert(
-            "ERC1155Soulbound: The amount of soulbounded tokens is more than the amount of tokens to be transferred"
+            "Achievo1155Soulbound: The amount of soulbounded tokens is more than the amount of tokens to be transferred"
         );
         vm.prank(playerWallet.addr);
         itemBound.safeTransferFrom(playerWallet.addr, minterWallet.addr, _tokenIds[0], 2, "");
@@ -490,13 +481,13 @@ contract ItemsRewardBoundTest is StdCheats, Test {
         assertEq(itemBound.balanceOf(playerWallet.addr, _tokenIds[0]), 1);
 
         vm.expectRevert(
-            "ERC1155Soulbound: The amount of soulbounded tokens is more than the amount of tokens to be transferred"
+            "Achievo1155Soulbound: The amount of soulbounded tokens is more than the amount of tokens to be transferred"
         );
         vm.prank(playerWallet.addr);
         itemBound.safeTransferFrom(playerWallet.addr, minterWallet.addr, _tokenIds[0], 1, "");
 
         vm.expectRevert(
-            "ERC1155Soulbound: The amount of soulbounded tokens is more than the amount of tokens to be transferred"
+            "Achievo1155Soulbound: The amount of soulbounded tokens is more than the amount of tokens to be transferred"
         );
         vm.prank(playerWallet.addr);
         itemBound.burnBatch(playerWallet.addr, _itemIds1, _amount1);
@@ -640,12 +631,12 @@ contract ItemsRewardBoundTest is StdCheats, Test {
         itemBound.adminMintId(playerWallet.addr, _tokenId, 1, true);
 
         vm.expectRevert(
-            "ERC1155Soulbound: The amount of soulbounded tokens is more than the amount of tokens to be transferred"
+            "Achievo1155Soulbound: The amount of soulbounded tokens is more than the amount of tokens to be transferred"
         );
         vm.prank(playerWallet.addr);
         itemBound.safeTransferFrom(playerWallet.addr, minterWallet.addr, _tokenId, 1, "");
 
-        vm.expectRevert("ERC1155Soulbound: can't be zero amount");
+        vm.expectRevert("Achievo1155Soulbound: can't be zero amount");
         vm.prank(playerWallet.addr);
         itemBound.safeTransferFrom(playerWallet.addr, minterWallet.addr, _tokenId, 0, "");
     }
@@ -655,7 +646,7 @@ contract ItemsRewardBoundTest is StdCheats, Test {
         itemBound.adminMintId(playerWallet.addr, _tokenId, 1, true);
 
         vm.expectRevert(
-            "ERC1155Soulbound: The amount of soulbounded tokens is more than the amount of tokens to be transferred"
+            "Achievo1155Soulbound: The amount of soulbounded tokens is more than the amount of tokens to be transferred"
         );
         vm.prank(playerWallet.addr);
         itemBound.safeTransferFrom(playerWallet.addr, playerWallet3.addr, _tokenId, 1, "");
@@ -671,7 +662,7 @@ contract ItemsRewardBoundTest is StdCheats, Test {
         itemBound.updateWhitelistAddress(playerWallet3.addr, false);
 
         vm.expectRevert(
-            "ERC1155Soulbound: The amount of soulbounded tokens is more than the amount of tokens to be transferred"
+            "Achievo1155Soulbound: The amount of soulbounded tokens is more than the amount of tokens to be transferred"
         );
         vm.prank(playerWallet.addr);
         itemBound.safeTransferFrom(playerWallet.addr, playerWallet3.addr, _tokenId, 1, "");

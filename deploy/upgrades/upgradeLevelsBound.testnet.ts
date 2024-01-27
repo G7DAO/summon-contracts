@@ -1,8 +1,10 @@
 import { exec } from 'node:child_process';
-import * as hre from 'hardhat';
-import getWallet from '../getWallet';
-import { Deployer } from '@matterlabs/hardhat-zksync-deploy';
+
 import { log } from '@helpers/logger';
+import { Deployer } from '@matterlabs/hardhat-zksync-deploy';
+import * as hre from 'hardhat';
+
+import getWallet from '../getWallet';
 
 const PRIVATE_KEY = process.env.PRIVATE_KEY || '';
 

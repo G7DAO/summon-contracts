@@ -20,7 +20,7 @@ describe('ERC20ChainlinkPaymaster', function () {
     let token: Contract;
     let paymaster: Contract;
     let playerAccount: Wallet;
-    let mockERC721Soulbound: Contract;
+    let mockAchievo721Soulbound: Contract;
 
     const USDC_PRICE_ID = '0x37FBa63C443Ca1Bf262B9E6cc46c4B46273F687C';
     const ETH_PRICE_ID = '0x2bBaff398B72d5B26f4f9B3397cfd9DC578a9f08';
@@ -37,7 +37,7 @@ describe('ERC20ChainlinkPaymaster', function () {
             innerInput: new Uint8Array(),
         });
 
-        const mintTrx = await mockERC721Soulbound.connect(user).mint(user.address, {
+        const mintTrx = await mockAchievo721Soulbound.connect(user).mint(user.address, {
             customData: {
                 gasPerPubdata: utils.DEFAULT_GAS_PER_PUBDATA_LIMIT,
                 paymasterParams,
@@ -60,8 +60,8 @@ describe('ERC20ChainlinkPaymaster', function () {
         token = await deployContract(deployer, 'MockUSDC', ['MyUSDC', 'mUSDC', 18]);
         await token.waitForDeployment();
 
-        mockERC721Soulbound = await deployContract(deployer, 'Mock721Soulbound', []);
-        await mockERC721Soulbound.waitForDeployment();
+        mockAchievo721Soulbound = await deployContract(deployer, 'Mock721Soulbound', []);
+        await mockAchievo721Soulbound.waitForDeployment();
 
         paymaster = await deployContract(deployer, 'ERC20PythPaymaster', [
             await token.getAddress(),
@@ -75,7 +75,7 @@ describe('ERC20ChainlinkPaymaster', function () {
 
         log(`Empty wallet's address: ${emptyWallet.address}`);
         log('Token deployed', await token.getAddress());
-        log('mockERC721Soulbound deployed', await mockERC721Soulbound.getAddress());
+        log('mockAchievo721Soulbound deployed', await mockAchievo721Soulbound.getAddress());
         log('paymaster deployed', await paymaster.getAddress());
 
         // fund paymaster
@@ -93,7 +93,7 @@ describe('ERC20ChainlinkPaymaster', function () {
 
         const initialPaymasterBalance = await provider.getBalance(paymasterAddress);
 
-        const addRecipientTx = await paymaster.addRecipient(await mockERC721Soulbound.getAddress());
+        const addRecipientTx = await paymaster.addRecipient(await mockAchievo721Soulbound.getAddress());
         await addRecipientTx.wait();
 
         await executeMintTransaction(playerAccount);
@@ -102,7 +102,7 @@ describe('ERC20ChainlinkPaymaster', function () {
         const finalUserTokenBalance = await token.balanceOf(playerAccount.address);
         const finalPaymasterBalance = await provider.getBalance(paymasterAddress);
 
-        expect(await mockERC721Soulbound.balanceOf(playerAccount.address)).to.equal(1);
+        expect(await mockAchievo721Soulbound.balanceOf(playerAccount.address)).to.equal(1);
         expect(initialPaymasterBalance > finalPaymasterBalance).to.be.true;
         expect(userInitialETHBalance).to.eql(finalETHBalance);
         expect(userInitialTokenBalance > finalUserTokenBalance).to.be.true;
@@ -126,7 +126,7 @@ describe('ERC20ChainlinkPaymaster', function () {
         await success.wait();
 
         const managerInitialTokenBalance = await token.balanceOf(minterAccount.address);
-        const addRecipientTx = await paymaster.addRecipient(await mockERC721Soulbound.getAddress());
+        const addRecipientTx = await paymaster.addRecipient(await mockAchievo721Soulbound.getAddress());
         await addRecipientTx.wait();
 
         // +1n ERC20 to the paymaster

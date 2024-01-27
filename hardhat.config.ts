@@ -9,9 +9,8 @@ import 'tsconfig-paths/register';
 import '@openzeppelin/hardhat-upgrades';
 import { log } from '@helpers/logger';
 import './tasks';
-import { NetworkName, rpcUrls } from './constants';
+import { ChainId, NetworkName, rpcUrls } from '@constants/network';
 
-import { ChainId } from './constants';
 dotenv.config();
 log(`Using Default Hardhat config`);
 

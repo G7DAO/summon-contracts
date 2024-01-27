@@ -1,8 +1,9 @@
-import { deployContract, setupDeployer } from '@helpers/zkUtils';
-import zkSyncConfig from '../zkSync.config';
-import * as dotenv from 'dotenv';
 import { log } from '@helpers/logger';
+import { deployContract, setupDeployer } from '@helpers/zkUtils';
+import * as dotenv from 'dotenv';
 import hre from 'hardhat';
+
+import zkSyncConfig from '../zkSync.config';
 
 dotenv.config();
 

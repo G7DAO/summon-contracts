@@ -1,4 +1,5 @@
-import { ChainId, NetworkExplorer, NetworkName, rpcUrls } from './constants';
+import { ChainId, NetworkExplorer, NetworkName, rpcUrls } from '@constants/network';
+
 import defaultConfig from './hardhat.config';
 import { log } from './helpers/logger';
 

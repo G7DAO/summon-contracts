@@ -19,7 +19,6 @@ export enum ChainId {
     Goerli = 5,
     Sepolia = 11155111,
     ZkSync = 324,
-    ZkSyncGoerli = 280,
     ZkSyncSepolia = 300,
 }
 
@@ -34,7 +33,6 @@ export enum NetworkName {
     Mantle = 'mantle',
     MantleWadsley = 'mantleWadsley',
     ZkSync = 'zkSync',
-    ZkSyncGoerli = 'zkSyncGoerli',
     ZkSyncSepolia = 'zkSyncSepolia',
 }
 
@@ -48,7 +46,6 @@ export enum Currency {
     Mantle = 'MNT',
     MantleWadsley = 'MNT',
     ZkSync = 'ETH',
-    ZkSyncGoerli = 'ETH',
     ZkSyncSepolia = 'ETH',
 }
 
@@ -63,7 +60,6 @@ export enum NetworkExplorer {
     Mantle = 'https://explorer.testnet.mantle.xyz',
     MantleWadsley = 'https://explorer.testnet.mantle.xyz',
     ZkSync = 'https://explorer.zksync.io',
-    ZkSyncGoerli = 'https://goerli.explorer.zksync.io',
     ZkSyncSepolia = 'https://sepolia.explorer.zksync.io',
 }
 
@@ -84,6 +80,5 @@ export const rpcUrls = {
     [ChainId.Mantle]: 'https://rpc.mantle.xyz',
     [ChainId.MantleWadsley]: 'https://rpc.testnet.mantle.xyz',
     [ChainId.ZkSync]: 'https://mainnet.era.zksync.io',
-    [ChainId.ZkSyncGoerli]: 'https://zksync2-testnet.zksync.dev',
     [ChainId.ZkSyncSepolia]: 'https://sepolia.era.zksync.dev',
 };

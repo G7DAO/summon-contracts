@@ -1,5 +1,6 @@
+import { CONTRACT_TYPE } from '@constants/contract';
 import { NETWORK_TYPE } from '@constants/network';
-import { CONTRACT_TYPE, TENANT } from '@constants/constructor-args';
+import { TENANT } from '@constants/tenant';
 
 export interface Deployment {
     contractAbi: any;
@@ -21,8 +22,9 @@ export interface Deployment {
 }
 
 export interface DeploymentContract {
-    contractName: string;
+    contractFileName: string;
     type: CONTRACT_TYPE;
+    name: string;
     chain: string;
     networkType: NETWORK_TYPE;
     tenants: TENANT[];
@@ -30,6 +32,8 @@ export interface DeploymentContract {
     upgradable: boolean;
     dependencies: string[];
     functionCalls?: FunctionCall[];
+    args?: Record<string, any>;
+    version?: number;
 }
 
 export interface FunctionCall {
