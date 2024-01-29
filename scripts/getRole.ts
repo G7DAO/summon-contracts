@@ -17,10 +17,7 @@ async function main() {
     // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
     const achievementFacet = new ethers.Contract(process.env.DIAMOND_ADDRESS!, abi, signer) as AchievementFacet;
 
-    const data = await achievementFacet.hasRole(
-        '0x9f2df0fed2c77648de5860a4cc508cd0818c85b8b8a1ab4ceeef8d981c8956a6',
-        '0xa2f5785506b0344abfd15eefc4bde21d4cd3125b'
-    );
+    const data = await achievementFacet.hasRole('X1', 'X2');
 
     log(data);
 }

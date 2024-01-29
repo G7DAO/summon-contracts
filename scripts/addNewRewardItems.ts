@@ -4,7 +4,7 @@ import { ethers } from 'hardhat';
 import { abi } from '../artifacts/contracts/ItemsRewardBound.sol/ItemsRewardBound.json';
 import { ItemsRewardBound } from '../typechain-types';
 
-const CONTRACT_ADDRESS = '0x7A82a6944c41AC8b8f15DE40A08967c5cF979881';
+const CONTRACT_ADDRESS = 'X_REWARD_ITEMS_CONTRACT_ADDRESS_X';
 
 async function main() {
     const { PRIVATE_KEY } = process.env;
