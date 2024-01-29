@@ -268,4 +268,7 @@ contract ERC20ChainlinkPaymasterV2 is Initializable, IPaymaster, PausableUpgrade
     }
 
     receive() external payable {}
+
+    // Reserved storage space to allow for layout changes in the future.
+    uint256[39] private __gap;
 }

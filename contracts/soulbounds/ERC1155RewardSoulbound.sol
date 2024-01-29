@@ -183,7 +183,9 @@ contract ERC1155RewardSoulbound is
         require(_to != address(0), "InvalidToAddress");
         require(_amount > 0, "InvalidAmount");
         require(address(this).balance >= _amount, "InsufficientContractBalance");
-        _to.transfer(_amount);
+
+        (bool success, ) = address(_to).call{ value: address(this).balance }("");
+        require(success, "Transfer failed.");
     }
 
     function claimERC20Reward(uint256 _tokenId) public nonReentrant {
@@ -205,7 +207,10 @@ contract ERC1155RewardSoulbound is
         require(tokenRewards[_tokenId].isEther, "InvalidRewardType");
 
         require(address(this).balance >= tokenRewards[_tokenId].rewardAmount, "InsufficientContractBalance");
-        payable(_msgSender()).transfer(tokenRewards[_tokenId].rewardAmount);
+
+        (bool success, ) = address(_msgSender()).call{ value: tokenRewards[_tokenId].rewardAmount }("");
+        require(success, "Transfer failed.");
+
         _burn(_msgSender(), _tokenId, 1);
     }
 
@@ -238,7 +243,9 @@ contract ERC1155RewardSoulbound is
                     token.transfer(to, tokenReward.rewardAmount);
                 } else {
                     require(address(this).balance >= tokenReward.rewardAmount, "InsufficientContractBalance");
-                    payable(to).transfer(tokenReward.rewardAmount);
+
+                    (bool success, ) = address(to).call{ value: tokenReward.rewardAmount }("");
+                    require(success, "Transfer failed.");
                 }
             }
 

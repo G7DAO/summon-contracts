@@ -74,4 +74,13 @@ contract Diamond {
     }
 
     receive() external payable {}
+
+    function withdrawETH(address payable _to, uint256 _value) external {
+        LibDiamond.enforceIsContractOwner();
+        require(_value > 0, "InvalidAmount");
+        require(address(this).balance >= _value, "InsufficientContractBalance");
+
+        (bool success, ) = address(_to).call{ value: _value }("");
+        require(success, "Transfer failed.");
+    }
 }
