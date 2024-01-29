@@ -2,8 +2,8 @@
 pragma solidity 0.8.17;
 
 /**
- * Author: Omar <omar@game7.io>(https://github.com/ogarciarevett)
- * Co-Authors: Max <max@game7.io>(https://github.com/vasinl124)
+ * Author: Omar <ogarciarevett>(https://github.com/ogarciarevett)
+ * Co-Authors: Max <vasinl124>(https://github.com/vasinl124)
  */
 
 // MMMMNkc. .,oKWMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMM
@@ -81,5 +81,15 @@ contract ERCWhitelistSignature {
         } else {
             return false;
         }
+    }
+
+    function _decodeStringData(bytes calldata _data) internal virtual returns (string[] memory) {
+        string[] memory values = abi.decode(_data, (string[]));
+        return values;
+    }
+
+    function _decodeUintData(bytes calldata _data) internal virtual returns (uint256[] memory) {
+        uint256[] memory values = abi.decode(_data, (uint256[]));
+        return values;
     }
 }

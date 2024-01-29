@@ -22,14 +22,13 @@ pragma solidity 0.8.17;
 // MMMM0cdNMM0cdNMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMM
 
 import "../../../interfaces/IERC20Decimals.sol";
-import "../../../interfaces/IERC20Burnable.sol";
 import "@openzeppelin/contracts-upgradeable/security/PausableUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/security/ReentrancyGuardUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
 import { ERCWhitelistSignatureUpgradeable } from "../../ercs/ERCWhitelistSignatureUpgradeable.sol";
 import { AccessControlUpgradeable } from "@openzeppelin/contracts-upgradeable/access/AccessControlUpgradeable.sol";
 
-contract StakerV1 is
+contract ERC20BridgeV1 is
     Initializable,
     PausableUpgradeable,
     ReentrancyGuardUpgradeable,
@@ -40,33 +39,32 @@ contract StakerV1 is
     bytes32 public constant MANAGER_ROLE = keccak256("MANAGER_ROLE");
     bytes32 public constant DEV_CONFIG_ROLE = keccak256("DEV_CONFIG_ROLE");
 
-    IERC20Burnable public stakeToken;
-    IERC20Decimals public regularToken;
+    mapping(address => bool) public disabledTokens;
+    bool public allowLock;
+    bool public allowUnlock;
+    uint256 public chainIdFrom;
+    uint256 public chainIdTo;
 
-    event Staked(address indexed user, uint256 amount);
-    event Unstaked(address indexed user, uint256 amount);
+    event Lock(address indexed from, address indexed token, uint256 value, uint8 decimals);
+    event Unlock(address indexed from, address indexed token, uint256 value, uint8 decimals);
 
     /// @custom:oz-upgrades-unsafe-allow constructor
     constructor() {
         _disableInitializers();
     }
 
-    function initialize(
-        address developerAdmin,
-        IERC20Burnable _stakeToken,
-        IERC20Decimals _regularToken
-    ) public initializer {
+    function initialize(address developerAdmin, uint256 _chainIdFrom, uint256 _chainIdTo) public initializer {
         __ReentrancyGuard_init();
         __AccessControl_init();
         __ERCWhitelistSignatureUpgradeable_init();
-
         _grantRole(DEFAULT_ADMIN_ROLE, developerAdmin);
         _grantRole(MINTER_ROLE, developerAdmin);
         _grantRole(DEV_CONFIG_ROLE, developerAdmin);
-        _addWhitelistSigner(_msgSender());
+        _addWhitelistSigner(msg.sender);
+        chainIdFrom = _chainIdFrom;
+        chainIdTo = _chainIdTo;
 
-        stakeToken = _stakeToken;
-        regularToken = _regularToken;
+        disabledTokens[address(0)] = true;
     }
 
     function pause() public onlyRole(MANAGER_ROLE) {
@@ -77,42 +75,61 @@ contract StakerV1 is
         _unpause();
     }
 
-    function withdrawERC20(address tokenAddress, address to, uint256 amount) public onlyRole(MANAGER_ROLE) {
-        IERC20(tokenAddress).transfer(to, amount);
-    }
-
-    function stake(uint256 nonce, bytes calldata data, bytes calldata signature, uint256 _amount) public nonReentrant {
-        require(_verifySignature(_msgSender(), nonce, data, signature), "Invalid signature");
-        require(_amount > 0, "InvalidAmount");
-        bool success = regularToken.transferFrom(_msgSender(), address(this), _amount);
-        require(success, "TransferFailed");
-
-        stakeToken.mint(_msgSender(), _amount);
-        emit Staked(_msgSender(), _amount);
-    }
-
-    function unstake(
+    function lock(
         uint256 nonce,
         bytes calldata data,
         bytes calldata signature,
-        uint256 _amount
-    ) public nonReentrant {
+        address token,
+        uint256 amount
+    ) external nonReentrant {
         require(_verifySignature(_msgSender(), nonce, data, signature), "Invalid signature");
-        require(_amount > 0, "InvalidAmount");
-        stakeToken.burnFrom(_msgSender(), _amount);
-        bool success = regularToken.transfer(_msgSender(), _amount);
+        require(allowLock, "Lock is currently disabled");
+        require(!disabledTokens[token], "lock: disabled token");
+        require(amount > 0, "InvalidAmount");
+
+        string[] memory decodedValues = _decodeStringData(data);
+        _checkDecodeData(decodedValues);
+
+        // check allowance
+        uint256 allowance = IERC20(token).allowance(_msgSender(), address(this));
+        require(allowance >= amount, "InsufficientAllowance");
+
+        bool success = IERC20Decimals(token).transferFrom(_msgSender(), address(this), amount);
         require(success, "TransferFailed");
-        emit Unstaked(_msgSender(), _amount);
+
+        emit Lock(_msgSender(), token, amount, IERC20Decimals(token).decimals());
     }
 
-    function changeStakeToken(IERC20Burnable _stakeToken) public onlyRole(DEV_CONFIG_ROLE) {
-        stakeToken = _stakeToken;
+    function unlock(
+        uint256 nonce,
+        bytes calldata data,
+        bytes calldata signature,
+        address token,
+        uint256 amount,
+    ) external nonReentrant {
+        require(_verifySignature(_msgSender(), nonce, data, signature), "Invalid signature");
+        require(allowUnlock, "Unlock is currently disabled");
+        require(!disabledTokens[token], "unlock: disabled token");
+        require(amount > 0, "InvalidAmount");
+
+        string[] memory decodedValues = _decodeStringData(data);
+        _checkDecodeData(decodedValues);
+
+        // check balance
+        uint256 balance = IERC20(token).balanceOf(address(this));
+        require(balance >= amount, "InsufficientBalance");
+
+        bool success = IERC20Decimals(token).transfer(_msgSender(), amount);
+        require(success, "TransferFailed");
+
+        emit Unlock(_msgSender(), token, amount, IERC20Decimals(token).decimals());
     }
 
-    function changeRegularToken(IERC20Decimals _regularToken) public onlyRole(DEV_CONFIG_ROLE) {
-        regularToken = _regularToken;
+    function _checkDecodeData(string[] memory decodedData) private view {
+        require(decodedData[1] == address(this), "SignatureInvalidDecodedData");
+        require(decodedData[2] == chainIdFrom, "SignatureInvalidDecodedData");
     }
 
     // Reserved storage space to allow for layout changes in the future.
-    uint256[45] private __gap;
+    uint256[42] private __gap;
 }
