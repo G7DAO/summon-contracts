@@ -60,4 +60,5 @@ export enum CONTRACT_UPGRADABLE_NAME {
     ERC20 = 'ERC20Upgradable',
     Staker = 'StakerUpgradable',
     Badge = 'BadgeUpgradable',
+    Bridge = 'BridgeUpgradable',
 }

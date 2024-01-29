@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 
 /**
- * Authors: Omar Garcia <omar@game7.io>
+ * Authors: Omar Garcia
  * GitHub: https://github.com/ogarciarevett
  */
 
