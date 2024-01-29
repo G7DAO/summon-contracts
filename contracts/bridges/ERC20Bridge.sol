@@ -21,19 +21,13 @@ pragma solidity 0.8.17;
 // MMNx'.dWMMK;.:0WMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMM
 // MMMM0cdNMM0cdNMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMM
 
-import "../../../interfaces/IERC20Decimals.sol";
-import "@openzeppelin/contracts/security/PausableUpgradeable.sol";
-import "@openzeppelin/contracts/security/ReentrancyGuardUpgradeable.sol";
-import "@openzeppelin/contracts/proxy/utils/Initializable.sol";
+import "../interfaces/IERC20Decimals.sol";
+import "@openzeppelin/contracts/security/Pausable.sol";
+import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
 import { AccessControl } from "@openzeppelin/contracts/access/AccessControl.sol";
 import { ERCWhitelistSignature } from "../ercs/ERCWhitelistSignature.sol";
 
-contract ERC20Bridge is
-    Pausable,
-    ReentrancyGuard,
-    AccessControl,
-    ERCWhitelistSignature
-{
+contract ERC20Bridge is Pausable, ReentrancyGuard, AccessControl, ERCWhitelistSignature {
     bytes32 public constant MINTER_ROLE = keccak256("MINTER_ROLE");
     bytes32 public constant MANAGER_ROLE = keccak256("MANAGER_ROLE");
     bytes32 public constant DEV_CONFIG_ROLE = keccak256("DEV_CONFIG_ROLE");
@@ -95,7 +89,7 @@ contract ERC20Bridge is
         bytes calldata data,
         bytes calldata signature,
         address token,
-        uint256 amount,
+        uint256 amount
     ) external nonReentrant {
         require(_verifySignature(_msgSender(), nonce, data, signature), "Invalid signature");
         require(allowUnlock, "Unlock is currently disabled");
@@ -116,7 +110,13 @@ contract ERC20Bridge is
     }
 
     function _checkDecodeData(string[] memory decodedData) private view {
-        require(decodedData[1] == address(this), "SignatureInvalidDecodedData");
-        require(decodedData[2] == chainIdFrom, "SignatureInvalidDecodedData");
+        require(
+            keccak256(abi.encodePacked(decodedData[0])) == keccak256(abi.encodePacked(address(this))),
+            "SignatureInvalidDecodedData"
+        );
+        require(
+            keccak256(abi.encodePacked(decodedData[1])) == keccak256(abi.encodePacked(chainIdFrom)),
+            "SignatureInvalidDecodedData"
+        );
     }
 }

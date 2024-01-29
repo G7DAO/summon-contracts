@@ -21,11 +21,11 @@ pragma solidity 0.8.17;
 // MMNx'.dWMMK;.:0WMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMM
 // MMMM0cdNMM0cdNMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMM
 
-import "../../../interfaces/IERC20Decimals.sol";
+import "../../interfaces/IERC20Decimals.sol";
 import "@openzeppelin/contracts-upgradeable/security/PausableUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/security/ReentrancyGuardUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
-import { ERCWhitelistSignatureUpgradeable } from "../../ercs/ERCWhitelistSignatureUpgradeable.sol";
+import { ERCWhitelistSignatureUpgradeable } from "../ercs/ERCWhitelistSignatureUpgradeable.sol";
 import { AccessControlUpgradeable } from "@openzeppelin/contracts-upgradeable/access/AccessControlUpgradeable.sol";
 
 contract ERC20BridgeV1 is
@@ -105,7 +105,7 @@ contract ERC20BridgeV1 is
         bytes calldata data,
         bytes calldata signature,
         address token,
-        uint256 amount,
+        uint256 amount
     ) external nonReentrant {
         require(_verifySignature(_msgSender(), nonce, data, signature), "Invalid signature");
         require(allowUnlock, "Unlock is currently disabled");
@@ -126,8 +126,14 @@ contract ERC20BridgeV1 is
     }
 
     function _checkDecodeData(string[] memory decodedData) private view {
-        require(decodedData[1] == address(this), "SignatureInvalidDecodedData");
-        require(decodedData[2] == chainIdFrom, "SignatureInvalidDecodedData");
+        require(
+            keccak256(abi.encodePacked(decodedData[0])) == keccak256(abi.encodePacked(address(this))),
+            "SignatureInvalidDecodedData"
+        );
+        require(
+            keccak256(abi.encodePacked(decodedData[1])) == keccak256(abi.encodePacked(chainIdFrom)),
+            "SignatureInvalidDecodedData"
+        );
     }
 
     // Reserved storage space to allow for layout changes in the future.
