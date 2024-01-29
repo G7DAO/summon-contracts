@@ -2,8 +2,8 @@
 pragma solidity 0.8.17;
 
 /**
- * Author: Omar <omar@game7.io>(https://github.com/ogarciarevett)
- * Co-Authors:
+ * Author: Omar <ogarciarevett>(https://github.com/ogarciarevett)
+ * Co-Authors: Max <vasinl124>(https://github.com/vasinl124)
  */
 
 // MMMMNkc. .,oKWMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMM
@@ -81,10 +81,10 @@ contract ERC20BridgeV1 is
         bytes calldata signature,
         address token,
         uint256 amount
-    ) external nonReentrant {
-        require(_verifySignature(_msgSender(), nonce, data, signature), "Invalid signature");
-        require(allowLock, "Lock is currently disabled");
-        require(!disabledTokens[token], "lock: disabled token");
+    ) external nonReentrant whenNotPaused {
+        require(_verifySignature(_msgSender(), nonce, data, signature), "InvalidSignature");
+        require(allowLock, "LockDisabled");
+        require(!disabledTokens[token], "DisabledToken");
         require(amount > 0, "InvalidAmount");
 
         string[] memory decodedValues = _decodeStringData(data);
@@ -106,10 +106,10 @@ contract ERC20BridgeV1 is
         bytes calldata signature,
         address token,
         uint256 amount
-    ) external nonReentrant {
-        require(_verifySignature(_msgSender(), nonce, data, signature), "Invalid signature");
-        require(allowUnlock, "Unlock is currently disabled");
-        require(!disabledTokens[token], "unlock: disabled token");
+    ) external nonReentrant whenNotPaused {
+        require(_verifySignature(_msgSender(), nonce, data, signature), "InvalidSignature");
+        require(allowLock, "LockDisabled");
+        require(!disabledTokens[token], "DisabledToken");
         require(amount > 0, "InvalidAmount");
 
         string[] memory decodedValues = _decodeStringData(data);
