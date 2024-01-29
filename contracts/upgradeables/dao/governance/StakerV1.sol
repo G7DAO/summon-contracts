@@ -2,7 +2,7 @@
 pragma solidity 0.8.17;
 
 /**
- * Author: Omar <omar@game7.io>(https://github.com/ogarciarevett)
+ * Author: Omar ogarciarevett(https://github.com/ogarciarevett)
  * Co-Authors:
  */
 
