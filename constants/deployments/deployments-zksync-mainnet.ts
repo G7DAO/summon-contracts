@@ -10,6 +10,7 @@ import {
     ERC20ChainlinkPaymasterArgs,
     BadgeBoundArgs,
     BridgeZkSyncV1Args,
+    BurnableTokenV1Args,
 } from '@constants/constructor-args';
 import {
     CONTRACT_FILE_NAME,
@@ -422,5 +423,18 @@ export const ZKSYNC_MAINNET_CONTRACTS: DeploymentContract[] = [
         dependencies: [],
         functionCalls: [],
         args: BridgeZkSyncV1Args.MAINNET,
+    },
+    {
+        contractFileName: CONTRACT_UPGRADABLE_FILE_NAME.BurnableToken,
+        type: CONTRACT_TYPE.Token,
+        name: CONTRACT_UPGRADABLE_NAME.ZkSpork,
+        chain,
+        networkType,
+        tenants: [TENANT.ETHDenver],
+        verify: true,
+        upgradable: true,
+        dependencies: [],
+        functionCalls: [],
+        args: BurnableTokenV1Args.MAINNET,
     },
 ];
