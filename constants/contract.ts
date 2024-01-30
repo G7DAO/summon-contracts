@@ -9,6 +9,7 @@ export enum CONTRACT_TYPE {
     ERC20 = 'ERC20',
     Staker = 'Staker',
     Badge = 'Badge',
+    Bridge = 'Bridge',
 }
 
 export enum CONTRACT_FILE_NAME {
@@ -29,6 +30,7 @@ export enum CONTRACT_UPGRADABLE_FILE_NAME {
     ERC20ChainlinkPaymaster = 'ERC20ChainlinkPaymasterV1',
     ERC1155Soulbound = 'ERC1155SoulboundV1',
     Staker = 'StakerV1',
+    Bridge = 'ERC20BridgeV1',
 }
 
 export enum CONTRACT_UPGRADABLE_FILE_NAME_V2 {
@@ -60,5 +62,6 @@ export enum CONTRACT_UPGRADABLE_NAME {
     ERC20 = 'ERC20Upgradable',
     Staker = 'StakerUpgradable',
     Badge = 'BadgeUpgradable',
-    Bridge = 'BridgeUpgradable',
+    BridgePolygon = 'BridgeUpgradeablePolygon',
+    BridgeZkSync = 'BridgeUpgradeableZkSync',
 }

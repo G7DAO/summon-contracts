@@ -9,6 +9,7 @@ import {
     ERC20PythPaymasterArgs,
     ERC20ChainlinkPaymasterArgs,
     BadgeBoundArgs,
+    BridgeZkSyncV1Args,
 } from '@constants/constructor-args';
 import {
     CONTRACT_FILE_NAME,
@@ -408,5 +409,18 @@ export const ZKSYNC_MAINNET_CONTRACTS: DeploymentContract[] = [
         dependencies: [],
         functionCalls: [],
         args: BadgeBoundArgs.MAINNET,
+    },
+    {
+        contractFileName: CONTRACT_UPGRADABLE_FILE_NAME.Bridge,
+        type: CONTRACT_TYPE.Bridge,
+        name: CONTRACT_UPGRADABLE_NAME.BridgeZkSync,
+        chain,
+        networkType,
+        tenants: [TENANT.ETHDenver],
+        verify: true,
+        upgradable: true,
+        dependencies: [],
+        functionCalls: [],
+        args: BridgeZkSyncV1Args.MAINNET,
     },
 ];
