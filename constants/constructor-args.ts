@@ -277,6 +277,21 @@ export const BridgeZkSyncV1Args = {
     },
 };
 
+export const BurnableTokenV1Args = {
+    MAINNET: {
+        name: 'SPORK',
+        symbol: 'SPORK',
+        decimals: 18,
+        developerAdmin: 'DEPLOYER_WALLET',
+    },
+    TESTNET: {
+        name: 'SPORK',
+        symbol: 'SPORK',
+        decimals: 18,
+        developerAdmin: 'DEPLOYER_WALLET',
+    },
+};
+
 export const BadgeBoundArgs: Soulbound1155Args = {
     MAINNET: {
         name: 'Item',
