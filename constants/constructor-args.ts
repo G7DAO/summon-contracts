@@ -1,4 +1,5 @@
 import { CONTRACT_NAME, CONTRACT_UPGRADABLE_NAME } from './contract';
+import { ChainId } from './network';
 
 export interface ConstructorArgs {
     name: string;
@@ -244,11 +245,38 @@ export const StakerV1Args = {
         regularToken: '0x9ca6a77c8b38159fd2da9bd25bc3e259c33f5e39',
     },
     TESTNET: {
-        developerAdmin: 'FILL_ME',
+        developerAdmin: 'DEPLOYER_WALLET',
         stakeToken: 'FILL_ME',
         regularToken: 'FILL_ME',
     },
 };
+
+export const BridgePolygonV1Args = {
+    MAINNET: {
+        developerAdmin: 'DEPLOYER_WALLET',
+        chainIdFrom: ChainId.Polygon,
+        chainIdTo: ChainId.ZkSync,
+    },
+    TESTNET: {
+        developerAdmin: 'DEPLOYER_WALLET',
+        chainIdFrom: ChainId.PolygonMumbai,
+        chainIdTo: ChainId.ZkSyncSepolia,
+    },
+};
+
+export const BridgeZkSyncV1Args = {
+    MAINNET: {
+        developerAdmin: 'DEPLOYER_WALLET',
+        chainIdFrom: ChainId.ZkSync,
+        chainIdTo: ChainId.Polygon,
+    },
+    TESTNET: {
+        developerAdmin: 'DEPLOYER_WALLET',
+        chainIdFrom: ChainId.ZkSyncSepolia,
+        chainIdTo: ChainId.PolygonMumbai,
+    },
+};
+
 export const BadgeBoundArgs: Soulbound1155Args = {
     MAINNET: {
         name: 'Item',
