@@ -41,6 +41,7 @@ contract BurnableTokenV1 is Initializable, ERC20BurnableUpgradeable, AccessContr
         __AccessControl_init();
         __ERC20_init(name_, symbol_);
         __ERC20Burnable_init();
+        _grantRole(DEFAULT_ADMIN_ROLE, developerAdmin);
         _grantRole(MINTER_ROLE, developerAdmin);
 
         _decimals = decimals_;
