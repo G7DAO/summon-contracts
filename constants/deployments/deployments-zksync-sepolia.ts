@@ -1,6 +1,7 @@
 import {
     AvatarBoundArgs,
     AvatarBoundV1Args,
+    BUIDLArgs,
     BadgeBoundArgs,
     ERC20ChainlinkPaymasterArgs,
     ERC20PythPaymasterArgs,
@@ -408,5 +409,18 @@ export const ZKSYNC_SEPOLIA_CONTRACTS: DeploymentContract[] = [
         dependencies: [],
         functionCalls: [],
         args: BadgeBoundArgs.TESTNET,
+    },
+    {
+        contractFileName: CONTRACT_UPGRADABLE_FILE_NAME.BurnableToken,
+        type: CONTRACT_TYPE.ERC20,
+        name: CONTRACT_NAME.BUIDL,
+        chain,
+        networkType,
+        tenants: [TENANT.ETHDenver],
+        verify: true,
+        upgradable: true,
+        dependencies: [],
+        functionCalls: [],
+        args: BUIDLArgs.TESTNET,
     },
 ];
