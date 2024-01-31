@@ -72,9 +72,19 @@ contract ERC20BridgeV1 is
         _unpause();
     }
 
-    function lock(address token, uint256 amount) external nonReentrant whenNotPaused {
+    function lock(
+        uint256 nonce,
+        bytes calldata data,
+        bytes calldata signature,
+        address token,
+        uint256 amount
+    ) external nonReentrant whenNotPaused {
+        require(_verifySignature(_msgSender(), nonce, data, signature), "InvalidSignature");
         require(!disabledTokens[token], "DisabledToken");
         require(amount > 0, "InvalidAmount");
+
+        string[] memory decodedValues = _decodeStringData(data);
+        _checkDecodeData(decodedValues);
 
         // check allowance
         uint256 allowance = IERC20(token).allowance(_msgSender(), address(this));
