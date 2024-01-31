@@ -128,4 +128,7 @@ contract ERC721SoulboundV1 is
     {
         return super.supportsInterface(interfaceId);
     }
+
+    // Reserved storage space to allow for layout changes in the future.
+    uint256[45] private __gap;
 }

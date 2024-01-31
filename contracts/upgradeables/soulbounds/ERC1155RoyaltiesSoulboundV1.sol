@@ -477,4 +477,7 @@ contract ERC1155RoyaltiesSoulboundV1 is
     function removeWhitelistSigner(address signer) external onlyRole(DEV_CONFIG_ROLE) {
         _removeWhitelistSigner(signer);
     }
+
+    // Reserved storage space to allow for layout changes in the future.
+    uint256[37] private __gap;
 }

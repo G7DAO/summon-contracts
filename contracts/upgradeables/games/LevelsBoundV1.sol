@@ -177,4 +177,7 @@ contract LevelsBoundV1 is
     function removeWhitelistSigner(address signer) external onlyRole(DEV_CONFIG_ROLE) {
         _removeWhitelistSigner(signer);
     }
+
+    // Reserved storage space to allow for layout changes in the future.
+    uint256[43] private __gap;
 }

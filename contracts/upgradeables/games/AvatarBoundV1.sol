@@ -447,4 +447,7 @@ contract AvatarBoundV1 is
     function decodeData(bytes calldata _data) public view onlyRole(DEV_CONFIG_ROLE) returns (uint256[] memory) {
         return _decodeData(_data);
     }
+
+    // Reserved storage space to allow for layout changes in the future.
+    uint256[31] private __gap;
 }
