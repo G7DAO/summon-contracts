@@ -277,6 +277,15 @@ export const BridgeZkSyncV1Args = {
     },
 };
 
+export const WhitelistArgs = {
+    MAINNET: {
+        developerAdmin: 'DEPLOYER_WALLET',
+    },
+    TESTNET: {
+        developerAdmin: 'DEPLOYER_WALLET',
+    },
+};
+
 export const BurnableTokenV1Args = {
     MAINNET: {
         name: 'SPORK',

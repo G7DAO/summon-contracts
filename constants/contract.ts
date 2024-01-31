@@ -11,6 +11,7 @@ export enum CONTRACT_TYPE {
     Badge = 'Badge',
     Bridge = 'Bridge',
     Token = 'Token',
+    Whitelist = 'Whitelist',
 }
 
 export enum CONTRACT_FILE_NAME {
@@ -23,6 +24,8 @@ export enum CONTRACT_FILE_NAME {
     ERC20PythPaymaster = 'ERC20PythPaymaster',
     ERC20ChainlinkPaymaster = 'ERC20ChainlinkPaymaster',
     ERC1155Soulbound = 'ERC1155Soulbound',
+    Bridge = 'ERC20Bridge',
+    Whitelist = 'Whitelist',
 }
 export enum CONTRACT_UPGRADABLE_FILE_NAME {
     Avatars = 'AvatarBoundV1',
@@ -54,6 +57,8 @@ export enum CONTRACT_NAME {
     GameSummary = 'GameSummary',
     ERC20 = 'ERC20',
     Badge = 'Badge',
+    Bridge = 'BridgePolygon',
+    Whitelist = 'Whitelist',
 }
 
 export enum CONTRACT_UPGRADABLE_NAME {
