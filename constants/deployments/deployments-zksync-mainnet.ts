@@ -11,6 +11,7 @@ import {
     BadgeBoundArgs,
     BridgeZkSyncV1Args,
     BurnableTokenV1Args,
+    WhitelistArgs,
 } from '@constants/constructor-args';
 import {
     CONTRACT_FILE_NAME,
@@ -436,5 +437,18 @@ export const ZKSYNC_MAINNET_CONTRACTS: DeploymentContract[] = [
         dependencies: [],
         functionCalls: [],
         args: BurnableTokenV1Args.MAINNET,
+    },
+    {
+        contractFileName: CONTRACT_FILE_NAME.Whitelist,
+        type: CONTRACT_TYPE.Whitelist,
+        name: CONTRACT_NAME.Whitelist,
+        chain,
+        networkType,
+        tenants: [TENANT.ETHDenver],
+        verify: true,
+        upgradable: false,
+        dependencies: [],
+        functionCalls: [],
+        args: WhitelistArgs.MAINNET,
     },
 ];

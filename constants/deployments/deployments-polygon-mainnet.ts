@@ -1,5 +1,11 @@
 import { BridgePolygonV1Args, StakerV1Args } from '@constants/constructor-args';
-import { CONTRACT_UPGRADABLE_FILE_NAME, CONTRACT_UPGRADABLE_NAME, CONTRACT_TYPE } from '@constants/contract';
+import {
+    CONTRACT_UPGRADABLE_FILE_NAME,
+    CONTRACT_UPGRADABLE_NAME,
+    CONTRACT_TYPE,
+    CONTRACT_FILE_NAME,
+    CONTRACT_NAME,
+} from '@constants/contract';
 import { TENANT } from '@constants/tenant';
 
 import { DeploymentContract } from '../../types/deployment-type';
@@ -21,6 +27,19 @@ export const POLYGON_MAINNET_CONTRACTS: DeploymentContract[] = [
         dependencies: [],
         functionCalls: [],
         args: StakerV1Args.MAINNET,
+    },
+    {
+        contractFileName: CONTRACT_FILE_NAME.Bridge,
+        type: CONTRACT_TYPE.Bridge,
+        name: CONTRACT_NAME.Bridge,
+        chain,
+        networkType,
+        tenants: [TENANT.ETHDenver],
+        verify: false,
+        upgradable: false,
+        dependencies: [],
+        functionCalls: [],
+        args: BridgePolygonV1Args.MAINNET,
     },
     {
         contractFileName: CONTRACT_UPGRADABLE_FILE_NAME.Bridge,

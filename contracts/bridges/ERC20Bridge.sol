@@ -33,8 +33,6 @@ contract ERC20Bridge is Pausable, ReentrancyGuard, AccessControl, ERCWhitelistSi
     bytes32 public constant DEV_CONFIG_ROLE = keccak256("DEV_CONFIG_ROLE");
 
     mapping(address => bool) public disabledTokens;
-    bool public allowLock;
-    bool public allowUnlock;
     uint256 public chainIdFrom;
     uint256 public chainIdTo;
 
@@ -68,7 +66,6 @@ contract ERC20Bridge is Pausable, ReentrancyGuard, AccessControl, ERCWhitelistSi
         uint256 amount
     ) external nonReentrant whenNotPaused {
         require(_verifySignature(_msgSender(), nonce, data, signature), "InvalidSignature");
-        require(allowLock, "LockDisabled");
         require(!disabledTokens[token], "DisabledToken");
         require(amount > 0, "InvalidAmount");
 
@@ -92,7 +89,6 @@ contract ERC20Bridge is Pausable, ReentrancyGuard, AccessControl, ERCWhitelistSi
         uint256 amount
     ) external nonReentrant whenNotPaused {
         require(_verifySignature(_msgSender(), nonce, data, signature), "InvalidSignature");
-        require(allowLock, "LockDisabled");
         require(!disabledTokens[token], "DisabledToken");
         require(amount > 0, "InvalidAmount");
 
