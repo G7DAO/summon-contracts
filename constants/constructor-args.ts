@@ -321,3 +321,18 @@ export const BadgeBoundArgs: Soulbound1155Args = {
         devWallet: 'DEPLOYER_WALLET',
     },
 };
+
+export const BUIDLArgs = {
+    MAINNET: {
+        name: 'BUIDL',
+        symbol: 'BUIDL',
+        decimals: 18,
+        developerAdmin: 'DEPLOYER_WALLET',
+    },
+    TESTNET: {
+        name: 'MOCKERC20',
+        symbol: 'ERC20',
+        decimals: 18,
+        developerAdmin: 'DEPLOYER_WALLET',
+    },
+};

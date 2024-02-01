@@ -59,6 +59,7 @@ export enum CONTRACT_NAME {
     Badge = 'Badge',
     Bridge = 'BridgePolygon',
     Whitelist = 'Whitelist',
+    BUIDL = 'BUIDL',
 }
 
 export enum CONTRACT_UPGRADABLE_NAME {
