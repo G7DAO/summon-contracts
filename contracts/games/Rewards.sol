@@ -43,10 +43,13 @@ contract NFTDeposits is ERC721Holder, ERC1155Holder, ERCWhitelistSignature, Paus
     // Mapping for ERC1155 deposits: tokenId => owner address
     mapping(uint256 => address) public _erc1155Deposits;
 
-    constructor(address adminWallet, address devWallet) {
+    uint256 public chainId;
+
+    constructor(address adminWallet, address devWallet, uint256 chainId) {
         _addWhitelistSigner(adminWallet);
         _setupRole(DEFAULT_ADMIN_ROLE, adminWallet);
         _setupRole(DEV_CONFIG_ROLE, devWallet);
+        chainId = chainId;
     }
 
     // Deposit an ERC721 token
@@ -145,6 +148,7 @@ contract NFTDeposits is ERC721Holder, ERC1155Holder, ERCWhitelistSignature, Paus
         address _to,
         uint256 _amount,
         address erc20Address,
+        uint256 nonce,
         bytes calldata data,
         bytes calldata signature
     ) external onlyRole(MANAGER_ROLE) nonReentrant whenNotPaused {
@@ -182,7 +186,7 @@ contract NFTDeposits is ERC721Holder, ERC1155Holder, ERCWhitelistSignature, Paus
             "SignatureInvalidDecodedData"
         );
         require(
-            keccak256(abi.encodePacked(decodedData[1])) == keccak256(abi.encodePacked(chainIdFrom)),
+            keccak256(abi.encodePacked(decodedData[1])) == keccak256(abi.encodePacked(chainId)),
             "SignatureInvalidDecodedData"
         );
     }
