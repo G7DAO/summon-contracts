@@ -43,10 +43,13 @@ contract NFTDeposits is ERC721Holder, ERC1155Holder, ERCWhitelistSignature, Paus
     // Mapping for ERC1155 deposits: tokenId => owner address
     mapping(uint256 => address) public _erc1155Deposits;
 
-    constructor(address adminWallet, address devWallet) {
+    uint256 public chainId;
+
+    constructor(address adminWallet, address devWallet, uint256 chainId) {
         _addWhitelistSigner(adminWallet);
         _setupRole(DEFAULT_ADMIN_ROLE, adminWallet);
         _setupRole(DEV_CONFIG_ROLE, devWallet);
+        chainId = chainId;
     }
 
     // Deposit an ERC721 token
@@ -58,6 +61,9 @@ contract NFTDeposits is ERC721Holder, ERC1155Holder, ERCWhitelistSignature, Paus
         bytes calldata signature
     ) external nonReentrant whenNotPaused {
         require(_verifySignature(_msgSender(), nonce, data, signature), "Invalid signature");
+        string[] memory decodedValues = _decodeStringData(data);
+        _checkDecodeData(decodedValues);
+
         IERC721 nft = IERC721(nftAddress);
         require(nft.ownerOf(tokenId) == _msgSender(), "Not the token owner");
         nft.safeTransferFrom(_msgSender(), address(this), tokenId);
@@ -74,6 +80,9 @@ contract NFTDeposits is ERC721Holder, ERC1155Holder, ERCWhitelistSignature, Paus
         bytes calldata signature
     ) external nonReentrant whenNotPaused {
         require(_verifySignature(_msgSender(), nonce, data, signature), "Invalid signature");
+        string[] memory decodedValues = _decodeStringData(data);
+        _checkDecodeData(decodedValues);
+
         IERC1155 nft = IERC1155(nftAddress);
         require(nft.balanceOf(_msgSender(), tokenId) >= amount, "Insufficient token balance");
         nft.safeTransferFrom(_msgSender(), address(this), tokenId, amount, "");
@@ -89,6 +98,9 @@ contract NFTDeposits is ERC721Holder, ERC1155Holder, ERCWhitelistSignature, Paus
         bytes calldata signature
     ) external onlyRole(MANAGER_ROLE) nonReentrant whenNotPaused {
         require(_verifySignature(_msgSender(), nonce, data, signature), "Invalid signature");
+        string[] memory decodedValues = _decodeStringData(data);
+        _checkDecodeData(decodedValues);
+
         require(_erc721Deposits[tokenId] == _msgSender(), "Not the token depositor");
         IERC721(nftAddress).safeTransferFrom(address(this), _msgSender(), tokenId);
         delete _erc721Deposits[tokenId];
@@ -104,6 +116,9 @@ contract NFTDeposits is ERC721Holder, ERC1155Holder, ERCWhitelistSignature, Paus
         bytes calldata signature
     ) external onlyRole(MANAGER_ROLE) nonReentrant whenNotPaused {
         require(_verifySignature(_msgSender(), nonce, data, signature), "Invalid signature");
+        string[] memory decodedValues = _decodeStringData(data);
+        _checkDecodeData(decodedValues);
+
         require(_erc1155Deposits[tokenId] == _msgSender(), "Not the token depositor");
         IERC1155(nftAddress).safeTransferFrom(address(this), _msgSender(), tokenId, amount, "");
         delete _erc1155Deposits[tokenId];
@@ -118,6 +133,9 @@ contract NFTDeposits is ERC721Holder, ERC1155Holder, ERCWhitelistSignature, Paus
         bytes calldata signature
     ) external onlyRole(MANAGER_ROLE) nonReentrant whenNotPaused {
         require(_verifySignature(_msgSender(), nonce, data, signature), "Invalid signature");
+        string[] memory decodedValues = _decodeStringData(data);
+        _checkDecodeData(decodedValues);
+
         IERC1155 nft = IERC1155(nftAddress);
         for (uint256 i = 0; i < tokenIds.length; i++) {
             require(_erc1155Deposits[tokenIds[i]] == _msgSender(), "Not the token depositor");
@@ -130,13 +148,19 @@ contract NFTDeposits is ERC721Holder, ERC1155Holder, ERCWhitelistSignature, Paus
         address _to,
         uint256 _amount,
         address erc20Address,
+        uint256 nonce,
         bytes calldata data,
         bytes calldata signature
     ) external onlyRole(MANAGER_ROLE) nonReentrant whenNotPaused {
+        require(_verifySignature(_msgSender(), nonce, data, signature), "Invalid signature");
+        string[] memory decodedValues = _decodeStringData(data);
+        _checkDecodeData(decodedValues);
+
         // send paymaster funds to the owner
         IERC20 token = IERC20(erc20Address);
         uint256 balance = token.balanceOf(address(this));
-        require(balance >= _amount, "Insufficient balance");
+        require(balance >= _amount, "InsufficientBalance");
+
         token.transfer(_to, _amount);
     }
 
@@ -154,6 +178,17 @@ contract NFTDeposits is ERC721Holder, ERC1155Holder, ERCWhitelistSignature, Paus
 
     function removeWhitelistSigner(address signer) external onlyRole(DEFAULT_ADMIN_ROLE) {
         _removeWhitelistSigner(signer);
+    }
+
+    function _checkDecodeData(string[] memory decodedData) private view {
+        require(
+            keccak256(abi.encodePacked(decodedData[0])) == keccak256(abi.encodePacked(address(this))),
+            "SignatureInvalidDecodedData"
+        );
+        require(
+            keccak256(abi.encodePacked(decodedData[1])) == keccak256(abi.encodePacked(chainId)),
+            "SignatureInvalidDecodedData"
+        );
     }
 
     function supportsInterface(bytes4 interfaceId) public view override(ERC1155Receiver, AccessControl) returns (bool) {

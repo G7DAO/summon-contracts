@@ -69,9 +69,6 @@ contract ERC20Bridge is Pausable, ReentrancyGuard, AccessControl, ERCWhitelistSi
         require(!disabledTokens[token], "DisabledToken");
         require(amount > 0, "InvalidAmount");
 
-        string[] memory decodedValues = _decodeStringData(data);
-        _checkDecodeData(decodedValues);
-
         // check allowance
         uint256 allowance = IERC20(token).allowance(_msgSender(), address(this));
         require(allowance >= amount, "InsufficientAllowance");
@@ -92,9 +89,6 @@ contract ERC20Bridge is Pausable, ReentrancyGuard, AccessControl, ERCWhitelistSi
         require(!disabledTokens[token], "DisabledToken");
         require(amount > 0, "InvalidAmount");
 
-        string[] memory decodedValues = _decodeStringData(data);
-        _checkDecodeData(decodedValues);
-
         // check balance
         uint256 balance = IERC20(token).balanceOf(address(this));
         require(balance >= amount, "InsufficientBalance");
@@ -103,16 +97,5 @@ contract ERC20Bridge is Pausable, ReentrancyGuard, AccessControl, ERCWhitelistSi
         require(success, "TransferFailed");
 
         emit Unlock(_msgSender(), token, amount, IERC20Decimals(token).decimals());
-    }
-
-    function _checkDecodeData(string[] memory decodedData) private view {
-        require(
-            keccak256(abi.encodePacked(decodedData[0])) == keccak256(abi.encodePacked(address(this))),
-            "SignatureInvalidDecodedData"
-        );
-        require(
-            keccak256(abi.encodePacked(decodedData[1])) == keccak256(abi.encodePacked(chainIdFrom)),
-            "SignatureInvalidDecodedData"
-        );
     }
 }
