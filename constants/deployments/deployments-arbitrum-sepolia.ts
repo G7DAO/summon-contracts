@@ -1,23 +1,23 @@
-import { CONTRACT_UPGRADABLE_FILE_NAME, CONTRACT_UPGRADABLE_NAME, CONTRACT_TYPE } from '@constants/contract';
+import { CONTRACT_TYPE, CONTRACT_FILE_NAME, CONTRACT_NAME } from '@constants/contract';
 import { TENANT } from '@constants/tenant';
 
 import { DeploymentContract } from '../../types/deployment-type';
 import { NETWORK_TYPE, NetworkName } from '../network';
-import { BadgeBoundArgs, ItemBoundAzerothArgs } from '@constants/constructor-args';
+import { ItemBoundAzerothArgs } from '@constants/constructor-args';
 
 const chain = NetworkName.ArbitrumSepolia;
 const networkType = NETWORK_TYPE.TESTNET;
 
 export const ARBITRUM_SEPOLIA_CONTRACTS: DeploymentContract[] = [
     {
-        contractFileName: CONTRACT_UPGRADABLE_FILE_NAME.ERC1155Soulbound,
+        contractFileName: CONTRACT_FILE_NAME.ERC1155Soulbound,
         type: CONTRACT_TYPE.Items,
-        name: CONTRACT_UPGRADABLE_NAME.Items,
+        name: CONTRACT_NAME.Items,
         chain,
         networkType,
         tenants: [TENANT.Azeroth],
         verify: false,
-        upgradable: true,
+        upgradable: false,
         dependencies: [],
         functionCalls: [],
         args: ItemBoundAzerothArgs.MAINNET,
