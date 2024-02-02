@@ -1,4 +1,4 @@
-import { BridgePolygonV1Args, ERC20StakeV1Args } from '@constants/constructor-args';
+import { BridgePolygonV1Args } from '@constants/constructor-args';
 import {
     CONTRACT_UPGRADABLE_FILE_NAME,
     CONTRACT_UPGRADABLE_NAME,

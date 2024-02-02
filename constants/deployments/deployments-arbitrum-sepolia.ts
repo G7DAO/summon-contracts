@@ -5,10 +5,10 @@ import { DeploymentContract } from '../../types/deployment-type';
 import { NETWORK_TYPE, NetworkName } from '../network';
 import { ItemBoundAzerothArgs } from '@constants/constructor-args';
 
-const chain = NetworkName.PolygonMumbai;
+const chain = NetworkName.ArbitrumSepolia;
 const networkType = NETWORK_TYPE.TESTNET;
 
-export const POLYGON_MUMBAI_CONTRACTS: DeploymentContract[] = [
+export const ARBITRUM_SEPOLIA_CONTRACTS: DeploymentContract[] = [
     {
         contractFileName: CONTRACT_FILE_NAME.ERC1155Soulbound,
         type: CONTRACT_TYPE.Items,
@@ -16,7 +16,7 @@ export const POLYGON_MUMBAI_CONTRACTS: DeploymentContract[] = [
         chain,
         networkType,
         tenants: [TENANT.Azeroth],
-        verify: false,
+        verify: true,
         upgradable: false,
         dependencies: [],
         functionCalls: [],

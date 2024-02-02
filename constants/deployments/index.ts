@@ -4,8 +4,12 @@ import { POLYGON_MUMBAI_CONTRACTS } from './deployments-polygon-mumbai';
 import { SEPOLIA_CONTRACTS } from './deployments-sepolia';
 import { ZKSYNC_MAINNET_CONTRACTS } from './deployments-zksync-mainnet';
 import { ZKSYNC_SEPOLIA_CONTRACTS } from './deployments-zksync-sepolia';
+import { ARBITRUM_SEPOLIA_CONTRACTS } from '@constants/deployments/deployments-arbitrum-sepolia';
+import { ARBITRUM_ONE_CONTRACTS } from '@constants/deployments/deployments-arbitrum-one';
 
 export const CONTRACTS = [
+    ...ARBITRUM_ONE_CONTRACTS,
+    ...ARBITRUM_SEPOLIA_CONTRACTS,
     ...POLYGON_MAINNET_CONTRACTS,
     ...POLYGON_MUMBAI_CONTRACTS,
     ...ZKSYNC_MAINNET_CONTRACTS,

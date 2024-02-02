@@ -20,6 +20,8 @@ export enum ChainId {
     Sepolia = 11155111,
     ZkSync = 324,
     ZkSyncSepolia = 300,
+    ArbitrumOne = 42161,
+    ArbitrumSepolia = 421614,
 }
 
 export enum NetworkName {
@@ -34,6 +36,8 @@ export enum NetworkName {
     MantleWadsley = 'mantleWadsley',
     ZkSync = 'zkSync',
     ZkSyncSepolia = 'zkSyncSepolia',
+    ArbitrumOne = 'arbitrumOne',
+    ArbitrumSepolia = 'arbitrumSepolia',
 }
 
 export enum Currency {
@@ -47,6 +51,8 @@ export enum Currency {
     MantleWadsley = 'MNT',
     ZkSync = 'ETH',
     ZkSyncSepolia = 'ETH',
+    ArbitrumOne = 'ETH',
+    ArbitrumSepolia = 'ETH',
 }
 
 export enum NetworkExplorer {
@@ -61,10 +67,12 @@ export enum NetworkExplorer {
     MantleWadsley = 'https://explorer.testnet.mantle.xyz',
     ZkSync = 'https://explorer.zksync.io',
     ZkSyncSepolia = 'https://sepolia.explorer.zksync.io',
+    ArbitrumOne = 'https://arbiscan.io',
+    ArbitrumSepolia = 'https://sepolia.arbiscan.io',
 }
 
 export function getTransactionUrl(txHash: string, network: NetworkName): string {
-    const explorerUrl = NetworkExplorer[network as keyof typeof NetworkExplorer];
+    const explorerUrl = NetworkExplorer[network as unknown as keyof typeof NetworkExplorer];
 
     if (!explorerUrl) throw new Error(`Unsupported network: ${network}`);
 
@@ -81,4 +89,6 @@ export const rpcUrls = {
     [ChainId.MantleWadsley]: 'https://rpc.testnet.mantle.xyz',
     [ChainId.ZkSync]: 'https://mainnet.era.zksync.io',
     [ChainId.ZkSyncSepolia]: 'https://sepolia.era.zksync.dev',
+    [ChainId.ArbitrumOne]: 'https://arb1.arbitrum.io/rpc',
+    [ChainId.ArbitrumSepolia]: 'https://sepolia-rollup.arbitrum.io/rpc',
 };
