@@ -12,6 +12,7 @@ import {
     BridgeZkSyncV1Args,
     BurnableTokenV1Args,
     WhitelistArgs,
+    ZKSSPorkV1Args,
 } from '@constants/constructor-args';
 import {
     CONTRACT_FILE_NAME,
@@ -450,5 +451,18 @@ export const ZKSYNC_MAINNET_CONTRACTS: DeploymentContract[] = [
         dependencies: [],
         functionCalls: [],
         args: WhitelistArgs.MAINNET,
+    },
+    {
+        contractFileName: CONTRACT_UPGRADABLE_FILE_NAME.Staker,
+        type: CONTRACT_TYPE.Staker,
+        name: CONTRACT_UPGRADABLE_NAME.Staker,
+        chain,
+        networkType,
+        tenants: [TENANT.ETHDenver],
+        verify: true,
+        upgradable: true,
+        dependencies: [],
+        functionCalls: [],
+        args: ZKSSPorkV1Args.MAINNET,
     },
 ];

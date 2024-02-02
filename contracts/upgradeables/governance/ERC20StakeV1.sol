@@ -22,15 +22,16 @@ pragma solidity 0.8.17;
 // MMMM0cdNMM0cdNMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMM
 
 import "../../interfaces/IERC20Decimals.sol";
-import "../../interfaces/IERC20Burnable.sol";
 import "@openzeppelin/contracts-upgradeable/security/PausableUpgradeable.sol";
+import "@openzeppelin/contracts-upgradeable/token/ERC20/ERC20Upgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/security/ReentrancyGuardUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
 import { ERCWhitelistSignatureUpgradeable } from "../ercs/ERCWhitelistSignatureUpgradeable.sol";
 import { AccessControlUpgradeable } from "@openzeppelin/contracts-upgradeable/access/AccessControlUpgradeable.sol";
 
-contract StakerV1 is
+contract ERC20StakeV1 is
     Initializable,
+    ERC20Upgradeable,
     PausableUpgradeable,
     ReentrancyGuardUpgradeable,
     AccessControlUpgradeable,
@@ -40,8 +41,8 @@ contract StakerV1 is
     bytes32 public constant MANAGER_ROLE = keccak256("MANAGER_ROLE");
     bytes32 public constant DEV_CONFIG_ROLE = keccak256("DEV_CONFIG_ROLE");
 
-    IERC20Burnable public stakeToken;
     IERC20Decimals public regularToken;
+    uint8 private _decimals;
 
     event Staked(address indexed user, uint256 amount);
     event Unstaked(address indexed user, uint256 amount);
@@ -52,21 +53,24 @@ contract StakerV1 is
     }
 
     function initialize(
+        string memory name_,
+        string memory symbol_,
         address developerAdmin,
-        IERC20Burnable _stakeToken,
+        uint8 decimals_,
         IERC20Decimals _regularToken
     ) public initializer {
+        __ERC20_init(name_, symbol_);
         __ReentrancyGuard_init();
         __AccessControl_init();
         __ERCWhitelistSignatureUpgradeable_init();
-
+        __Pausable_init();
         _grantRole(DEFAULT_ADMIN_ROLE, developerAdmin);
         _grantRole(MINTER_ROLE, developerAdmin);
         _grantRole(DEV_CONFIG_ROLE, developerAdmin);
         _addWhitelistSigner(_msgSender());
 
-        stakeToken = _stakeToken;
         regularToken = _regularToken;
+        _decimals = decimals_;
     }
 
     function pause() public onlyRole(MANAGER_ROLE) {
@@ -77,42 +81,59 @@ contract StakerV1 is
         _unpause();
     }
 
-    function withdrawERC20(address tokenAddress, address to, uint256 amount) public onlyRole(MANAGER_ROLE) {
-        IERC20(tokenAddress).transfer(to, amount);
+    function transferRegularTokens(address to, uint256 amount) private {
+        require(amount > 0, "InvalidAmount");
+
+        uint256 providedAllowance = IERC20Decimals(regularToken).allowance(_msgSender(), address(this));
+        require(providedAllowance >= amount, "InsufficientAllowance");
+
+        bool success = regularToken.transferFrom(_msgSender(), address(this), amount);
+        require(success, "TransferFailed");
     }
 
-    function stake(uint256 nonce, bytes calldata data, bytes calldata signature, uint256 _amount) public nonReentrant {
+    function stake(uint256 nonce, bytes calldata data, bytes calldata signature, uint256 amount) public nonReentrant whenNotPaused {
         require(_verifySignature(_msgSender(), nonce, data, signature), "Invalid signature");
-        require(_amount > 0, "InvalidAmount");
-        bool success = regularToken.transferFrom(_msgSender(), address(this), _amount);
-        require(success, "TransferFailed");
+        transferRegularTokens(_msgSender(), amount);
+        _mint(_msgSender(), amount);
+        emit Staked(_msgSender(), amount);
+    }
 
-        stakeToken.mint(_msgSender(), _amount);
-        emit Staked(_msgSender(), _amount);
+    // This function is usually used from the bridge to mint staked tokens from the lock tokens
+    function adminStake(address userAddress, uint256 amount) public onlyRole(MINTER_ROLE) whenNotPaused {
+        transferRegularTokens(_msgSender(), amount);
+        _mint(userAddress, amount);
+        emit Staked(userAddress, amount);
     }
 
     function unstake(
         uint256 nonce,
         bytes calldata data,
         bytes calldata signature,
-        uint256 _amount
-    ) public nonReentrant {
+        uint256 amount
+    ) public nonReentrant whenNotPaused {
         require(_verifySignature(_msgSender(), nonce, data, signature), "Invalid signature");
-        require(_amount > 0, "InvalidAmount");
-        stakeToken.burnFrom(_msgSender(), _amount);
-        bool success = regularToken.transfer(_msgSender(), _amount);
+        require(amount > 0, "InvalidAmount");
+        _burn(_msgSender(), amount);
+        bool success = regularToken.transfer(_msgSender(), amount);
         require(success, "TransferFailed");
-        emit Unstaked(_msgSender(), _amount);
+        emit Unstaked(_msgSender(), amount);
     }
 
-    function changeStakeToken(IERC20Burnable _stakeToken) public onlyRole(DEV_CONFIG_ROLE) {
-        stakeToken = _stakeToken;
+    function _beforeTokenTransfer(
+        address from,
+        address to,
+        uint256 amount
+    ) internal virtual override(ERC20Upgradeable) {
+        if(from != address(0) && to != address(0)) {
+            revert("TransfersNotAllowed");
+        }
+        super._beforeTokenTransfer(from, to, amount);
     }
 
-    function changeRegularToken(IERC20Decimals _regularToken) public onlyRole(DEV_CONFIG_ROLE) {
-        regularToken = _regularToken;
+    function decimals() public view virtual override returns (uint8) {
+        return _decimals;
     }
 
     // Reserved storage space to allow for layout changes in the future.
-    uint256[45] private __gap;
+    uint256[46] private __gap;
 }

@@ -59,15 +59,8 @@ export default async function (
         wallet = getZkWallet(PRIVATE_KEY);
         const deployer = new Deployer(hre, wallet);
         artifact = await deployer.loadArtifact(contract.contractFileName);
-
-        if (!name) {
-            achievoContract = await hre.zkUpgrades.deployProxy(deployer.zkWallet as any, artifact, [...restArgs]);
-        } else {
-            achievoContract = await hre.zkUpgrades.deployProxy(deployer.zkWallet as any, artifact, [
-                `${tenant}${name}`,
-                ...restArgs,
-            ]);
-        }
+        const args = Object.values(constructorArgs);
+        achievoContract = await hre.zkUpgrades.deployProxy(deployer.zkWallet as any, artifact, [...args]);
     } else {
         // @ts-ignore
         wallet = new EthersWallet(PRIVATE_KEY, hre.ethers.provider);

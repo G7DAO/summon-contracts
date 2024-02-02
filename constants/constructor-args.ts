@@ -238,15 +238,19 @@ export const GameSummaryArgs = {
     },
 };
 
-export const StakerV1Args = {
+export const ZKSSPorkV1Args = {
     MAINNET: {
+        name: 'ZkSSpork',
+        symbol: 'ZkSS',
         developerAdmin: 'DEPLOYER_WALLET',
-        stakeToken: '0x058d96BAa6f9D16853970b333ed993aCC0c35aDd',
-        regularToken: '0x9ca6a77c8b38159fd2da9bd25bc3e259c33f5e39',
+        decimals: 18,
+        regularToken: '0x8A9074144C5041f90330Fef6E2fE96A0593Ebc3f',
     },
     TESTNET: {
+        name: 'ZkSSpork',
+        symbol: 'ZkSS',
         developerAdmin: 'DEPLOYER_WALLET',
-        stakeToken: 'FILL_ME',
+        decimals: 18,
         regularToken: 'FILL_ME',
     },
 };
