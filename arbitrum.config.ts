@@ -45,9 +45,4 @@ defaultConfig.etherscan = {
         },
     ],
 };
-
-defaultConfig.sourcify = {
-    enabled: false,
-};
-
 export default defaultConfig;
