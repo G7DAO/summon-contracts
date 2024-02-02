@@ -240,16 +240,16 @@ export const GameSummaryArgs = {
 
 export const ZKSSPorkV1Args = {
     MAINNET: {
-        developerAdmin: 'DEPLOYER_WALLET',
         name: 'ZkSSpork',
         symbol: 'ZkSS',
+        developerAdmin: 'DEPLOYER_WALLET',
         decimals: 18,
         regularToken: '0x8A9074144C5041f90330Fef6E2fE96A0593Ebc3f',
     },
     TESTNET: {
-        developerAdmin: 'DEPLOYER_WALLET',
         name: 'ZkSSpork',
         symbol: 'ZkSS',
+        developerAdmin: 'DEPLOYER_WALLET',
         decimals: 18,
         regularToken: 'FILL_ME',
     },

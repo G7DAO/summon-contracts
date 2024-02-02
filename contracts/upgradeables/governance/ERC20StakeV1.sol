@@ -53,9 +53,9 @@ contract ERC20StakeV1 is
     }
 
     function initialize(
-        address developerAdmin,
         string memory name_,
         string memory symbol_,
+        address developerAdmin,
         uint8 decimals_,
         IERC20Decimals _regularToken
     ) public initializer {
