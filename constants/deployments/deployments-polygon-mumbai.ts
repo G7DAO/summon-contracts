@@ -1,4 +1,3 @@
-import { ERC20StakeV1Args } from '@constants/constructor-args';
 import { CONTRACT_UPGRADABLE_FILE_NAME, CONTRACT_UPGRADABLE_NAME, CONTRACT_TYPE } from '@constants/contract';
 import { TENANT } from '@constants/tenant';
 

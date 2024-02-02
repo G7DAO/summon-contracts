@@ -20,6 +20,8 @@ export enum ChainId {
     Sepolia = 11155111,
     ZkSync = 324,
     ZkSyncSepolia = 300,
+    ArbitrumOne = 42161,
+    ArbitrumSepolia = 421614,
 }
 
 export enum NetworkName {
@@ -34,6 +36,8 @@ export enum NetworkName {
     MantleWadsley = 'mantleWadsley',
     ZkSync = 'zkSync',
     ZkSyncSepolia = 'zkSyncSepolia',
+    ArbitrumOne = 'arbitrumOne',
+    ArbitrumSepolia = 'arbitrumSepolia',
 }
 
 export enum Currency {
@@ -64,7 +68,7 @@ export enum NetworkExplorer {
 }
 
 export function getTransactionUrl(txHash: string, network: NetworkName): string {
-    const explorerUrl = NetworkExplorer[network as keyof typeof NetworkExplorer];
+    const explorerUrl = NetworkExplorer[network as unknown as keyof typeof NetworkExplorer];
 
     if (!explorerUrl) throw new Error(`Unsupported network: ${network}`);
 
