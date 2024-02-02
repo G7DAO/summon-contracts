@@ -19,6 +19,7 @@
         "upgrade:ZkSync:sepolia": "pnpm compile:zkSync && hardhat --config zkSync.config.ts upgrade --network zkSyncSepolia",
         "deployBridge:polygon:mainnet": "pnpm deploy:polygon:mainnet --name BridgePolygon",
         "deployBridge:ZkSync:mainnet": "pnpm deploy:ZkSync:mainnet --name BridgeZkSync",
+        "deployERC20StakeUpgradeable:ZkSync:mainnet": "pnpm deploy:ZkSync:mainnet --name ERC20StakeV1",
         "deployWhitelist:ZkSync:mainnet": "pnpm deploy:ZkSync:mainnet --name Whitelist",
         "deployBridgeUpgradeable:polygon:mainnet": "pnpm deploy:polygon:mainnet --name BridgeUpgradeablePolygon",
         "deployBridgeUpgradeable:zksync:mainnet": "pnpm deploy:ZkSync:mainnet --name BridgeUpgradeableZkSync",
