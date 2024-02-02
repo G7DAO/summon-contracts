@@ -8,7 +8,7 @@ if (!PRIVATE_KEY) {
     throw new Error('MantleConfig: The private key is required');
 }
 
-log(`Using Polygon config`);
+log(`Using Arbitrum config`);
 
 defaultConfig.networks = {
     ...defaultConfig.networks,

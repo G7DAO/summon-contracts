@@ -22,7 +22,7 @@ export const ARBITRUM_ONE_CONTRACTS: DeploymentContract[] = [
         chain,
         networkType,
         tenants: [TENANT.Azeroth],
-        verify: true,
+        verify: false,
         upgradable: false,
         dependencies: [],
         functionCalls: [],

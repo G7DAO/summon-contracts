@@ -59,6 +59,27 @@ export const ItemBoundArgs: Soulbound1155Args = {
     },
 };
 
+export const ItemBoundAzerothArgs: Soulbound1155Args = {
+    MAINNET: {
+        name: 'AzerothItems',
+        symbol: 'AItems',
+        baseURI: 'https://achievo.mypinata.cloud/ipfs',
+        contractURI: '',
+        maxPerMint: 1,
+        isPaused: false,
+        devWallet: 'DEPLOYER_WALLET',
+    },
+    TESTNET: {
+        name: 'AzerothItems',
+        symbol: 'AItems',
+        baseURI: 'https://achievo.mypinata.cloud/ipfs',
+        contractURI: '',
+        maxPerMint: 1,
+        isPaused: false,
+        devWallet: 'DEPLOYER_WALLET',
+    },
+};
+
 export const ItemsRewardBoundArgs = {
     MAINNET: {
         name: 'AchievoItemsReward',

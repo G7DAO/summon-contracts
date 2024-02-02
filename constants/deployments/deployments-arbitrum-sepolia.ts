@@ -3,7 +3,7 @@ import { TENANT } from '@constants/tenant';
 
 import { DeploymentContract } from '../../types/deployment-type';
 import { NETWORK_TYPE, NetworkName } from '../network';
-import { BadgeBoundArgs } from '@constants/constructor-args';
+import { BadgeBoundArgs, ItemBoundAzerothArgs } from '@constants/constructor-args';
 
 const chain = NetworkName.ArbitrumSepolia;
 const networkType = NETWORK_TYPE.TESTNET;
@@ -11,15 +11,15 @@ const networkType = NETWORK_TYPE.TESTNET;
 export const ARBITRUM_SEPOLIA_CONTRACTS: DeploymentContract[] = [
     {
         contractFileName: CONTRACT_UPGRADABLE_FILE_NAME.ERC1155Soulbound,
-        type: CONTRACT_TYPE.Badge,
-        name: CONTRACT_UPGRADABLE_NAME.Badge,
+        type: CONTRACT_TYPE.Items,
+        name: CONTRACT_UPGRADABLE_NAME.Items,
         chain,
         networkType,
         tenants: [TENANT.Azeroth],
-        verify: true,
+        verify: false,
         upgradable: true,
         dependencies: [],
         functionCalls: [],
-        args: BadgeBoundArgs.TESTNET,
+        args: ItemBoundAzerothArgs.MAINNET,
     },
 ];
