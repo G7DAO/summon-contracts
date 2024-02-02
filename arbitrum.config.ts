@@ -1,4 +1,4 @@
-import { ChainId, NetworkName } from '@constants/network';
+import { ChainId, NetworkExplorer, NetworkName } from '@constants/network';
 
 import defaultConfig from './hardhat.config';
 import { log } from './helpers/logger';
@@ -26,6 +26,24 @@ defaultConfig.networks = {
 
 defaultConfig.etherscan = {
     apiKey: ARBISCAN_API_KEY,
+    customChains: [
+        {
+            network: NetworkName.ArbitrumOne,
+            chainId: ChainId.ArbitrumOne,
+            urls: {
+                apiURL: `${NetworkExplorer.ArbitrumOne}/api`,
+                browserURL: NetworkExplorer.ArbitrumOne,
+            },
+        },
+        {
+            network: NetworkName.ArbitrumSepolia,
+            chainId: ChainId.ArbitrumSepolia,
+            urls: {
+                apiURL: `${NetworkExplorer.ArbitrumSepolia}/api`,
+                browserURL: NetworkExplorer.ArbitrumSepolia,
+            },
+        },
+    ],
 };
 
 defaultConfig.sourcify = {
