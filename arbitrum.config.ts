@@ -31,7 +31,7 @@ defaultConfig.etherscan = {
             network: NetworkName.ArbitrumOne,
             chainId: ChainId.ArbitrumOne,
             urls: {
-                apiURL: `${NetworkExplorer.ArbitrumOne}/api`,
+                apiURL: 'https://api.arbiscan.io/api',
                 browserURL: NetworkExplorer.ArbitrumOne,
             },
         },
@@ -39,7 +39,7 @@ defaultConfig.etherscan = {
             network: NetworkName.ArbitrumSepolia,
             chainId: ChainId.ArbitrumSepolia,
             urls: {
-                apiURL: `${NetworkExplorer.ArbitrumSepolia}/api`,
+                apiURL: 'https://api-sepolia.arbiscan.io/api',
                 browserURL: NetworkExplorer.ArbitrumSepolia,
             },
         },

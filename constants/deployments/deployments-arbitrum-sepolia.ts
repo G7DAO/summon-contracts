@@ -16,7 +16,7 @@ export const ARBITRUM_SEPOLIA_CONTRACTS: DeploymentContract[] = [
         chain,
         networkType,
         tenants: [TENANT.Azeroth],
-        verify: false,
+        verify: true,
         upgradable: false,
         dependencies: [],
         functionCalls: [],
