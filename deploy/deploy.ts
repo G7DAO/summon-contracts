@@ -104,9 +104,7 @@ export default async function (
         contractAbi,
         contractAddress,
         type: contract.type,
-        networkType: contract.networkType,
         name: contract.name,
-        active: false,
         networkName,
         chainId,
         rpcUrl,
@@ -117,8 +115,6 @@ export default async function (
         paymasterAddresses: [],
         fakeContractAddress: '',
         explorerUrl: `${blockExplorerBaseUrl}/address/${contractAddress}#contract`,
-        upgradable: false,
-        createdAt: new Date(),
     };
 
     log(`*****************************************************`);

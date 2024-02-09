@@ -78,7 +78,7 @@ export async function populateParam(
             }
 
             // @ts-ignore-next-line
-            writeChecksumToFile(contract?.contractFileName, tenant);
+            writeChecksumToFile(contract?.contractFileName, contract.name as unknown as string, tenant);
 
             // Convert deployments to JSON
             const deploymentsJson = JSON.stringify(deploymentPayload, null, 2);

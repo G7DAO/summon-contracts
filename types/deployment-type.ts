@@ -6,8 +6,7 @@ export interface Deployment {
     contractAbi: any;
     contractAddress: string;
     type: string;
-    networkType: NETWORK_TYPE;
-    active: boolean;
+    name: string;
     networkName: string;
     chainId: number;
     rpcUrl: string;
@@ -18,7 +17,6 @@ export interface Deployment {
     paymasterAddresses: string[];
     fakeContractAddress: string;
     explorerUrl: string;
-    upgradable: boolean;
 }
 
 export interface DeploymentContract {
