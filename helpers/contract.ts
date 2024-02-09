@@ -7,7 +7,7 @@ axios.defaults.headers.post['Content-Type'] = 'application/json';
 
 export const submitContractDeploymentsToDB = async (deployments: Deployment[], tenant: string) => {
     try {
-        await axios.post('/v1/admin/contracts', {
+        await axios.post('/v1/tenants/self/contracts', {
             deployments,
             tenant,
         });
