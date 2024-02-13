@@ -2,7 +2,7 @@
 
 ![Version](https://img.shields.io/badge/version-0.15.1-brightgreen)
 
-![Achievo](https://achievo.xyz/hero.png)
+![Achievo](https://docs.achievo.xyz/assets/images/achievo_hero-c6f48974170f838b624d0b30ef52735f.png)
 
 This is a EIP-2535 diamond implementation for the Achievo project - Achievement system.
 
