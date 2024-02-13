@@ -74,6 +74,10 @@ contract ERC1155SoulboundV1 is
 
     mapping(address => mapping(uint256 => bool)) private tokenIdProcessed;
 
+    event Mint(address indexed to, uint256[] tokenIds, uint256 amount, bool soulbound);
+    event MintId(address indexed to, uint256 indexed tokenId, uint256 amount, bool soulbound);
+    event TokenAdded(uint256 indexed tokenId);
+
     modifier maxPerMintCheck(uint256 amount) {
         if (amount > MAX_PER_MINT) {
             revert("ExceedMaxMint");
@@ -208,6 +212,7 @@ contract ERC1155SoulboundV1 is
         tokenExists[_token.tokenId] = true;
 
         itemIds.push(_token.tokenId);
+        emit TokenAdded(_token.tokenId);
     }
 
     function addNewTokens(LibItems.TokenCreate[] calldata _tokens) external onlyRole(DEV_CONFIG_ROLE) {
@@ -250,6 +255,7 @@ contract ERC1155SoulboundV1 is
 
             _mint(to, _id, amount, "");
         }
+        emit Mint(to, _tokenIds, amount, soulbound);
     }
 
     function mint(
@@ -285,6 +291,7 @@ contract ERC1155SoulboundV1 is
         }
 
         _mint(to, id, amount, "");
+        emit MintId(to, id, amount, soulbound);
     }
 
     function _beforeTokenTransfer(

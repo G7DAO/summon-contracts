@@ -36,11 +36,8 @@ import {
 import {
     ERC721EnumerableUpgradeable
 } from "@openzeppelin/contracts-upgradeable/token/ERC721/extensions/ERC721EnumerableUpgradeable.sol";
-
-// import "@openzeppelin/contracts-upgradeable/utils/cryptography/ECDSA.sol";
 import { Achievo721SoulboundUpgradeable } from "../ercs/extensions/Achievo721SoulboundUpgradeable.sol";
 
-import { IItemBound } from "../../interfaces/IItemBound.sol";
 
 contract ERC721SoulboundV1 is
     Initializable,
