@@ -65,8 +65,8 @@ contract ERC1155Soulbound is
 
     mapping(address => mapping(uint256 => bool)) private tokenIdProcessed;
 
-    event Mint(address indexed to, uint256[] tokenIds, uint256 amount, bool soulbound);
-    event MintId(address indexed to, uint256 indexed tokenId, uint256 amount, bool soulbound);
+    event Minted(address indexed to, uint256[] tokenIds, uint256 amount, bool soulbound);
+    event MintedId(address indexed to, uint256 indexed tokenId, uint256 amount, bool soulbound);
     event TokenAdded(uint256 indexed tokenId);
 
     modifier maxPerMintCheck(uint256 amount) {
@@ -235,7 +235,7 @@ contract ERC1155Soulbound is
 
             _mint(to, _id, amount, "");
         }
-        emit Mint(to, _tokenIds, amount, soulbound);
+        emit Minted(to, _tokenIds, amount, soulbound);
     }
 
     function mint(
@@ -271,7 +271,7 @@ contract ERC1155Soulbound is
         }
 
         _mint(to, id, amount, "");
-        emit MintId(to, id, amount, soulbound);
+        emit MintedId(to, id, amount, soulbound);
     }
 
     function _beforeTokenTransfer(

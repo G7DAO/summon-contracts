@@ -82,8 +82,8 @@ contract ERC1155RoyaltiesSoulboundV1 is
         _;
     }
 
-    event Mint(address indexed to, uint256[] tokenIds, uint256 amount, bool soulbound);
-    event MintId(address indexed to, uint256 indexed tokenId, uint256 amount, bool soulbound);
+    event Minted(address indexed to, uint256[] tokenIds, uint256 amount, bool soulbound);
+    event MintedId(address indexed to, uint256 indexed tokenId, uint256 amount, bool soulbound);
     event TokenAdded(uint256 indexed tokenId);
 
     /// @custom:oz-upgrades-unsafe-allow constructor
@@ -280,7 +280,7 @@ contract ERC1155RoyaltiesSoulboundV1 is
 
             _mint(to, _id, amount, "");
         }
-        emit Mint(to, _tokenIds, amount, soulbound);
+        emit Minted(to, _tokenIds, amount, soulbound);
     }
 
     function mint(
@@ -316,7 +316,7 @@ contract ERC1155RoyaltiesSoulboundV1 is
         }
 
         _mint(to, id, amount, "");
-        emit MintId(to, id, amount, soulbound);
+        emit MintedId(to, id, amount, soulbound);
     }
 
     function _beforeTokenTransfer(
