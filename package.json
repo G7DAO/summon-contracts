@@ -1,6 +1,6 @@
 {
-    "name": "achievo-contracts",
-    "version": "0.19.0",
+    "name": "@achievo/contracts",
+    "version": "0.20.0",
     "description": "Smart contracts for achievo.xyz",
     "scripts": {
         "localChain": "hardhat --config hardhat.config.ts node",
@@ -19,7 +19,6 @@
         "deploy:ZkSync:mainnet": "pnpm compile:zkSync && hardhat --config zkSync.config.ts deploy --network zkSync",
         "deploy:ZkSync:sepolia": "pnpm compile:zkSync && hardhat --config zkSync.config.ts deploy --network zkSyncSepolia",
         "upgrade:ZkSync:sepolia": "pnpm compile:zkSync && hardhat --config zkSync.config.ts upgrade --network zkSyncSepolia",
-
         "deployBridge:polygon:mainnet": "pnpm deploy:polygon:mainnet --name BridgePolygon",
         "deployBridge:ZkSync:mainnet": "pnpm deploy:ZkSync:mainnet --name BridgeZkSync",
         "deployERC20StakeUpgradeable:ZkSync:mainnet": "pnpm deploy:ZkSync:mainnet --name ERC20StakeV1",
@@ -41,6 +40,8 @@
         "deployItems:polygon:mumbai": "pnpm deploy:polygon:mumbai --name Items",
         "deployItems:ZkSync:mainnet": "pnpm deploy:ZkSync:mainnet --name Items",
         "deployItems:ZkSync:sepolia": "pnpm deploy:ZkSync:sepolia --name Items",
+        "deployItemsUpgradeable:arbitrum:one": "pnpm deploy:arbitrum:one --name ItemsUpgradable",
+        "deployItemsUpgradeable:arbitrum:sepolia": "pnpm deploy:arbitrum:sepolia --name ItemsUpgradable",
         "deployItemsUpgradeable:ZkSync:mainnet": "pnpm deploy:ZkSync:mainnet --name ItemsUpgradable",
         "deployItemsUpgradeable:ZkSync:sepolia": "pnpm deploy:ZkSync:sepolia --name ItemsUpgradable",
         "upgradeItem:ZkSync:mainnet": "pnpm compile:zkSync && hardhat run deploy/upgrades/upgradeItem.mainnet.ts --config zkSync.config.ts --network zkSync",

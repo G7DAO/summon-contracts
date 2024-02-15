@@ -4,5 +4,5 @@ export enum TENANT {
     HyperPlay = 'HyperPlay',
     Summon = 'Summon',
     ETHDenver = 'ETHDenver',
-    Azeroth = 'Azeroth',
+    IronWorks = 'IronWorks',
 }
