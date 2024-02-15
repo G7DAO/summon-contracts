@@ -1,9 +1,9 @@
+import { ItemBoundIronWorksArgs } from '@constants/constructor-args';
 import { CONTRACT_TYPE, CONTRACT_FILE_NAME, CONTRACT_NAME } from '@constants/contract';
 import { TENANT } from '@constants/tenant';
 
 import { DeploymentContract } from '../../types/deployment-type';
 import { NETWORK_TYPE, NetworkName } from '../network';
-import { ItemBoundIronWorksArgs } from '@constants/constructor-args';
 
 const chain = NetworkName.PolygonMumbai;
 const networkType = NETWORK_TYPE.TESTNET;
