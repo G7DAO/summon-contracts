@@ -22,7 +22,7 @@ export const ARBITRUM_SEPOLIA_CONTRACTS: DeploymentContract[] = [
         chain,
         networkType,
         tenants: [TENANT.IronWorks],
-        verify: true,
+        verify: false,
         upgradable: true,
         dependencies: [],
         functionCalls: [],
