@@ -63,6 +63,10 @@ contract ERC1155RewardSoulbound is
 
     mapping(address => mapping(uint256 => bool)) private tokenIdProcessed;
 
+    event Minted(address indexed to, uint256[] tokenIds, uint256 amount, bool soulbound);
+    event MintedId(address indexed to, uint256 indexed tokenId, uint256 amount, bool soulbound);
+    event TokenAdded(uint256 indexed tokenId);
+
     constructor(
         string memory _name,
         string memory _symbol,
@@ -116,6 +120,7 @@ contract ERC1155RewardSoulbound is
         tokenRewards[_token.tokenId] = _token;
         tokenExists[_token.tokenId] = true;
         itemIds.push(_token.tokenId);
+        emit TokenAdded(_token.tokenId);
     }
 
     function addNewTokens(LibItems.TokenReward[] calldata _tokens) external onlyRole(DEV_CONFIG_ROLE) {
@@ -255,6 +260,7 @@ contract ERC1155RewardSoulbound is
 
             _mint(to, _id, amount, "");
         }
+        emit Minted(to, _tokenIds, amount, soulbound);
     }
 
     function mint(
@@ -310,6 +316,7 @@ contract ERC1155RewardSoulbound is
         }
 
         _mint(to, id, amount, "");
+        emit MintedId(to, id, amount, soulbound);
     }
 
     function setDefaultRewardId(uint256 _defaultRewardId) external onlyRole(DEV_CONFIG_ROLE) {

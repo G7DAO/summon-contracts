@@ -82,6 +82,10 @@ contract ERC1155RoyaltiesSoulboundV1 is
         _;
     }
 
+    event Minted(address indexed to, uint256[] tokenIds, uint256 amount, bool soulbound);
+    event MintedId(address indexed to, uint256 indexed tokenId, uint256 amount, bool soulbound);
+    event TokenAdded(uint256 indexed tokenId);
+
     /// @custom:oz-upgrades-unsafe-allow constructor
     constructor() {
         _disableInitializers();
@@ -209,6 +213,7 @@ contract ERC1155RoyaltiesSoulboundV1 is
         tokenExists[_token.tokenId] = true;
 
         itemIds.push(_token.tokenId);
+        emit TokenAdded(_token.tokenId);
     }
 
     function addNewTokens(LibItems.TokenCreate[] calldata _tokens) external onlyRole(DEV_CONFIG_ROLE) {
@@ -275,6 +280,7 @@ contract ERC1155RoyaltiesSoulboundV1 is
 
             _mint(to, _id, amount, "");
         }
+        emit Minted(to, _tokenIds, amount, soulbound);
     }
 
     function mint(
@@ -310,6 +316,7 @@ contract ERC1155RoyaltiesSoulboundV1 is
         }
 
         _mint(to, id, amount, "");
+        emit MintedId(to, id, amount, soulbound);
     }
 
     function _beforeTokenTransfer(

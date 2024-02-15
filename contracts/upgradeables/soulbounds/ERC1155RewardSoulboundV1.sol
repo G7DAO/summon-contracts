@@ -41,7 +41,6 @@ import {
 } from "@openzeppelin/contracts-upgradeable/token/ERC1155/extensions/ERC1155SupplyUpgradeable.sol";
 
 import { StringsUpgradeable } from "@openzeppelin/contracts-upgradeable/utils/StringsUpgradeable.sol";
-// import { ECDSAUpgradeable } from "@openzeppelin/contracts-upgradeable/utils/cryptography/ECDSAUpgradeable.sol";
 
 import { Achievo1155SoulboundUpgradeable } from "../ercs/extensions/Achievo1155SoulboundUpgradeable.sol";
 
@@ -75,6 +74,10 @@ contract ERC1155RewardSoulboundV1 is
     uint256[] public itemIds;
 
     mapping(address => mapping(uint256 => bool)) private tokenIdProcessed;
+
+    event Minted(address indexed to, uint256[] tokenIds, uint256 amount, bool soulbound);
+    event MintedId(address indexed to, uint256 indexed tokenId, uint256 amount, bool soulbound);
+    event TokenAdded(uint256 indexed tokenId);
 
     /// @custom:oz-upgrades-unsafe-allow constructor
     constructor() {
@@ -140,6 +143,7 @@ contract ERC1155RewardSoulboundV1 is
         tokenRewards[_token.tokenId] = _token;
         tokenExists[_token.tokenId] = true;
         itemIds.push(_token.tokenId);
+        emit TokenAdded(_token.tokenId);
     }
 
     function addNewTokens(LibItems.TokenReward[] calldata _tokens) external onlyRole(DEV_CONFIG_ROLE) {
@@ -279,6 +283,7 @@ contract ERC1155RewardSoulboundV1 is
 
             _mint(to, _id, amount, "");
         }
+        emit Minted(to, _tokenIds, amount, soulbound);
     }
 
     function mint(
@@ -334,6 +339,7 @@ contract ERC1155RewardSoulboundV1 is
         }
 
         _mint(to, id, amount, "");
+        emit MintedId(to, id, amount, soulbound);
     }
 
     function setDefaultRewardId(uint256 _defaultRewardId) external onlyRole(DEV_CONFIG_ROLE) {

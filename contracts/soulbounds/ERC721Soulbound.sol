@@ -30,7 +30,6 @@ import "@openzeppelin/contracts/security/Pausable.sol";
 import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
 import "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
 import { Achievo721Soulbound } from "../ercs/extensions/Achievo721Soulbound.sol";
-import { IItemBound } from "../interfaces/IItemBound.sol";
 
 contract ERC721Soulbound is
     ERC721URIStorage,
