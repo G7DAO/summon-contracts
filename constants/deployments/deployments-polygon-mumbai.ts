@@ -3,7 +3,7 @@ import { TENANT } from '@constants/tenant';
 
 import { DeploymentContract } from '../../types/deployment-type';
 import { NETWORK_TYPE, NetworkName } from '../network';
-import { ItemBoundAzerothArgs } from '@constants/constructor-args';
+import { ItemBoundIronWorksArgs } from '@constants/constructor-args';
 
 const chain = NetworkName.PolygonMumbai;
 const networkType = NETWORK_TYPE.TESTNET;
@@ -15,11 +15,11 @@ export const POLYGON_MUMBAI_CONTRACTS: DeploymentContract[] = [
         name: CONTRACT_NAME.Items,
         chain,
         networkType,
-        tenants: [TENANT.Azeroth],
+        tenants: [TENANT.IronWorks],
         verify: false,
         upgradable: false,
         dependencies: [],
         functionCalls: [],
-        args: ItemBoundAzerothArgs.MAINNET,
+        args: ItemBoundIronWorksArgs.MAINNET,
     },
 ];

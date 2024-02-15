@@ -3,7 +3,7 @@ import { TENANT } from '@constants/tenant';
 
 import { DeploymentContract } from '../../types/deployment-type';
 import { NETWORK_TYPE, NetworkName } from '../network';
-import { ItemBoundAzerothArgs } from '@constants/constructor-args';
+import { ItemBoundIronWorksArgs } from '@constants/constructor-args';
 
 const chain = NetworkName.ArbitrumOne;
 const networkType = NETWORK_TYPE.MAINNET;
@@ -15,11 +15,11 @@ export const ARBITRUM_ONE_CONTRACTS: DeploymentContract[] = [
         name: CONTRACT_NAME.Items,
         chain,
         networkType,
-        tenants: [TENANT.Azeroth],
-        verify: true,
-        upgradable: false,
+        tenants: [TENANT.IronWorks],
+        verify: false,
+        upgradable: true,
         dependencies: [],
         functionCalls: [],
-        args: ItemBoundAzerothArgs.TESTNET,
+        args: ItemBoundIronWorksArgs.MAINNET,
     },
 ];
