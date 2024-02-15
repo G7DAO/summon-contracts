@@ -2,7 +2,7 @@ import fs from 'fs';
 import { exec } from 'node:child_process';
 import path from 'path';
 
-import { ChainId, NetworkName, Currency, NetworkExplorer, rpcUrls } from '@constants/network';
+import { ChainId, NetworkName, Currency, NetworkExplorer, rpcUrls, NetworkConfigFile } from '@constants/network';
 import { encryptPrivateKey } from '@helpers/encrypt';
 import { log } from '@helpers/logger';
 import { Deployer } from '@matterlabs/hardhat-zksync-deploy';
@@ -83,25 +83,11 @@ export default async function (
     log(`VERIFY: ${contract.verify}`);
     log('=====================================================');
 
-    if (contract.verify && isZkSync) {
+    if (contract.verify) {
         await new Promise((resolve, reject) => {
+            const networkConfigFile = NetworkConfigFile[networkNameKey as keyof typeof NetworkConfigFile];
             exec(
-                `npx hardhat verify --network ${contract.chain} ${contractAddress} --config zkSync.config.ts`,
-                (error, stdout, stderr) => {
-                    if (error) {
-                        console.warn(error);
-                        reject(error);
-                    }
-                    resolve(stdout ? stdout : stderr);
-                }
-            );
-        });
-    }
-
-    if (contract.verify && !isZkSync) {
-        await new Promise((resolve, reject) => {
-            exec(
-                `npx hardhat verify --network ${contract.chain} ${contractAddress} --config ${networkName}.config.ts`,
+                `npx hardhat verify --network ${contract.chain} ${contractAddress} --config ${networkConfigFile}`,
                 (error, stdout, stderr) => {
                     if (error) {
                         console.warn(error);

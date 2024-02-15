@@ -40,6 +40,23 @@ export enum NetworkName {
     ArbitrumSepolia = 'arbitrumSepolia',
 }
 
+export enum NetworkConfigFile {
+    DEFAULT = 'hardhat.config.ts',
+    Localhost = 'hardhat.config.ts',
+    Ganache = 'hardhat.config.ts',
+    Polygon = 'polygon.config.ts',
+    PolygonMumbai = 'polygon.config.ts',
+    Ethereum = 'hardhat.config.ts',
+    Goerli = 'hardhat.config.ts',
+    Sepolia = 'hardhat.config.ts',
+    Mantle = 'mantle.config.ts',
+    MantleWadsley = 'mantle.config.ts',
+    ZkSync = 'zkSync.config.ts',
+    ZkSyncSepolia = 'zkSync.config.ts',
+    ArbitrumOne = 'arbitrum.config.ts',
+    ArbitrumSepolia = 'arbitrum.config.ts',
+}
+
 export enum Currency {
     Localhost = 'ETH',
     Ganache = 'ETH',
