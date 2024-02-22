@@ -7,7 +7,7 @@ import { createDefaultFolders, getABIFilePath } from '@helpers/folder';
 import { log } from '@helpers/logger';
 import { task, types } from 'hardhat/config';
 import { HardhatRuntimeEnvironment } from 'hardhat/types';
-import { Deployment, DeploymentContract, FunctionCall } from 'types/deployment-type';
+import { Deployment, DeploymentContract } from 'types/deployment-type';
 
 import upgrade from '../deploy/upgrade';
 
@@ -16,19 +16,35 @@ const upgradeOne = async (
     contract: DeploymentContract,
     tenant: string
 ): Promise<Deployment> => {
-    const abiPath = getABIFilePath(hre.network.zksync, contract.contractName);
+    // const abiPath = getABIFilePath(hre.network.zksync, contract.contractFileName);
+    // console.log('abiPath> ', abiPath);
     const filePathDeploymentLatest = path.resolve(
         `${ACHIEVO_TMP_DIR}/${contract.chain}/${contract.upgradable ? 'upgradeables/' : ''}deployments-${
-            contract.type
+            contract.name
         }-${tenant}-latest.json`
     );
 
-    const upgradePayload = await upgrade(hre, contract, abiPath as string, tenant);
+    const deploymentPayloadContent = fs.readFileSync(filePathDeploymentLatest, 'utf8');
+    const { contractAddress } = JSON.parse(deploymentPayloadContent);
+    // get the contract deployment and get proxy contract address
 
-    writeChecksumToFile(contract.contractName as unknown as string, tenant);
+    if (!contractAddress) {
+        throw new Error(`Contract address not found for ${contract.name} on ${contract.chain}`);
+    }
+
+    const upgradePayload = await upgrade(
+        hre,
+        contract,
+        // abiPath as string,
+        tenant,
+        contractAddress
+    );
+
+    writeChecksumToFile(contract.contractFileName as unknown as string, contract.name as unknown as string, tenant);
 
     // Convert deployments to JSON
     const upgradeJson = JSON.stringify(upgradePayload, null, 2);
+
     // Write to the file
     // fs.writeFileSync(filePathDeploymentLatest, upgradeJson);
     // log(`Deployments saved to ${filePathDeploymentLatest}`);
