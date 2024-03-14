@@ -347,6 +347,27 @@ export const BadgeBoundArgs: Soulbound1155Args = {
     },
 };
 
+export const SkillTreeArgs: Soulbound1155Args = {
+    MAINNET: {
+        name: 'SkillTree',
+        symbol: 'STSB',
+        baseURI: 'https://achievo.mypinata.cloud/ipfs',
+        contractURI: 'https://achievo.mypinata.cloud/ipfs/QmSDbeNWVY2CGUuLHni689L5eSrSG3iZHyTRZJWXX7GpjS',
+        maxPerMint: 1,
+        isPaused: false,
+        devWallet: 'DEPLOYER_WALLET',
+    },
+    TESTNET: {
+        name: 'SkillTree',
+        symbol: 'STSB',
+        baseURI: 'https://achievo.mypinata.cloud/ipfs',
+        contractURI: 'https://achievo.mypinata.cloud/ipfs/QmSDbeNWVY2CGUuLHni689L5eSrSG3iZHyTRZJWXX7GpjS',
+        maxPerMint: 1,
+        isPaused: false,
+        devWallet: 'DEPLOYER_WALLET',
+    },
+};
+
 export const BUIDLArgs = {
     MAINNET: {
         name: 'BUIDL',

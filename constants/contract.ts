@@ -12,6 +12,7 @@ export enum CONTRACT_TYPE {
     Bridge = 'Bridge',
     Token = 'Token',
     Whitelist = 'Whitelist',
+    SkillTree = 'SkillTree',
 }
 
 export enum CONTRACT_FILE_NAME {
@@ -60,6 +61,7 @@ export enum CONTRACT_NAME {
     Bridge = 'BridgePolygon',
     Whitelist = 'Whitelist',
     BUIDL = 'BUIDL',
+    SkillTree = 'SkillTree',
 }
 
 export enum CONTRACT_UPGRADABLE_NAME {
@@ -73,4 +75,5 @@ export enum CONTRACT_UPGRADABLE_NAME {
     BridgePolygon = 'BridgeUpgradeablePolygon',
     BridgeZkSync = 'BridgeUpgradeableZkSync',
     ZkSpork = 'ZkSpork',
+    SkillTree = 'SkillTreeUpgradable',
 }
