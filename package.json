@@ -74,6 +74,8 @@
         "deployBadgeUpgradeable:ZkSync:sepolia": "pnpm deploy:ZkSync:sepolia --name BadgeUpgradable",
         "upgradeBadge:ZkSync:mainnet": "pnpm compile:zkSync && hardhat run deploy/upgrades/upgradeBadge.mainnet.ts --config zkSync.config.ts --network zkSync",
         "upgradeBadge:ZkSync:sepolia": "pnpm compile:zkSync && hardhat run deploy/upgrades/upgradeBadge.testnet.ts --config zkSync.config.ts --network zkSyncSepolia",
+        "deploySkillTreeUpgradable:ZkSync:mainnet": "pnpm deploy:ZkSync:mainnet --name SkillTreeUpgradable",
+        "deploySkillTreeUpgradable:ZkSync:sepolia": "pnpm deploy:ZkSync:sepolia --name SkillTreeUpgradable",
         "test": "REPORT_GAS=true hardhat --config hardhat.config.ts test test/hardhatTests/*.ts --network hardhat",
         "test:ci": "hardhat --config hardhat.config.ts test test/hardhatTests/*.ts  --network hardhat ",
         "test:zkSyncLocal": "hardhat --config zkSync.config.ts test test/zkSync/*.ts --network zkSyncLocal",
