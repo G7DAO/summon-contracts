@@ -85,7 +85,8 @@
         "format:check": "yarn prettier -c ./deploy/**/*.ts ./tasks/**/*.ts ./tests/**/*.ts ./helpers/**/*.ts ./contracts/**/*.sol ",
         "coverage": "pnpm dlx hardhat coverage",
         "coverage:foundry": "forge coverage --report lcov && genhtml lcov.info --branch-coverage --output-dir coverage",
-        "generate:types": "pnpm dlx hardhat typechain"
+        "generate:types": "pnpm dlx hardhat typechain",
+        "deploy:create2": "npx hardhat run deploy/deployCreate2.ts --config zkSync.config.ts --network zkSyncSepolia"
     },
     "repository": {
         "type": "git",
@@ -108,7 +109,7 @@
         "@types/chai": "^4.3.11",
         "@types/debug": "^4.1.12",
         "@types/mocha": "^10.0.6",
-        "@types/node": "^18.19.8",
+        "@types/node": "^18.19.26",
         "@typescript-eslint/eslint-plugin": "^5.62.0",
         "@typescript-eslint/parser": "^5.62.0",
         "chai": "^4.4.1",
