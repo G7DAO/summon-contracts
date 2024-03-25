@@ -4,6 +4,7 @@ pragma solidity ^0.8.9;
 contract DeterministicDeployFactory {
     event Deployed(address addr);
 
+    // TODO * Need to gate the access to this contract so only us can deploy the contract from this contract
     function deploy(bytes memory bytecode, uint _salt) external {
         address addr;
         assembly {
