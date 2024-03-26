@@ -2,7 +2,7 @@ import fs from 'fs';
 import path from 'path';
 
 import { CONTRACT_FILE_NAME } from '@constants/contract';
-import { ChainId, Currency, NetworkExplorer, NetworkName, rpcUrls } from '@constants/network';
+import { ChainId, Currency, NetworkConfigFile, NetworkExplorer, NetworkName, rpcUrls } from '@constants/network';
 import { TENANT } from '@constants/tenant';
 import { submitContractDeploymentsToDB } from '@helpers/contract';
 import { encryptPrivateKey } from '@helpers/encrypt';
@@ -12,10 +12,12 @@ import { task, types } from 'hardhat/config';
 import { HardhatRuntimeEnvironment } from 'hardhat/types';
 import { Deployment } from 'types/deployment-type';
 import { Provider as zkProvider, Wallet as zkWallet, ContractFactory as zkContractFactory } from 'zksync-ethers';
+import * as ethers from 'ethers';
+import { exec } from 'node:child_process';
 
-const { DETERMINISTIC_DEPLOYER_PRIVATE_KEY = '' } = process.env;
+const { DETERMINISTIC_DEPLOYER_PRIVATE_KEY = '', PRIVATE_KEY = '' } = process.env;
 
-if (!DETERMINISTIC_DEPLOYER_PRIVATE_KEY) {
+if (!DETERMINISTIC_DEPLOYER_PRIVATE_KEY && PRIVATE_KEY) {
     throw new Error('Private key not detected! Add it to the .env file!');
 }
 
@@ -37,7 +39,11 @@ const deployOne = async (
     const currency = Currency[networkNameKey as keyof typeof Currency];
 
     let achievoContract;
-    let deployerWallet;
+    let deployerWallet: zkWallet | ethers.ethers.Wallet;
+    let managerWallet: zkWallet | ethers.ethers.Wallet;
+
+    const abiContent = fs.readFileSync(path.resolve(abiPath), 'utf8');
+    const { abi: contractAbi, bytecode } = JSON.parse(abiContent);
 
     if (isZkSync) {
         const ethNetworkName = networkName.split('zkSync')[1].toLowerCase() || 'mainnet';
@@ -49,17 +55,15 @@ const deployOne = async (
         const ethProvider = hre.ethers.getDefaultProvider(ethRpcUrl);
 
         deployerWallet = new zkWallet(DETERMINISTIC_DEPLOYER_PRIVATE_KEY, provider, ethProvider);
-        const abiContent = fs.readFileSync(path.resolve(abiPath), 'utf8');
-        const { abi: contractAbi, bytecode } = JSON.parse(abiContent);
+        managerWallet = new zkWallet(PRIVATE_KEY, provider, ethProvider);
 
         const factory = new zkContractFactory(contractAbi, bytecode, deployerWallet);
-        achievoContract = await factory.deploy();
-        console.log('Factory deployed to:', achievoContract.target);
+        achievoContract = await factory.deploy(managerWallet.address);
     } else {
         const provider = new hre.ethers.JsonRpcProvider(rpcUrl);
         deployerWallet = new hre.ethers.Wallet(DETERMINISTIC_DEPLOYER_PRIVATE_KEY, provider);
-        achievoContract = await hre.ethers.deployContract(contractFileName, deployerWallet);
-        console.log('Factory deployed to:', achievoContract.target);
+        managerWallet = new hre.ethers.Wallet(PRIVATE_KEY, provider);
+        achievoContract = await hre.ethers.deployContract(contractFileName, [managerWallet.address], deployerWallet);
     }
 
     await achievoContract.waitForDeployment();
@@ -67,31 +71,17 @@ const deployOne = async (
     // Show the contract info.
     const contractAddress = await achievoContract.getAddress();
 
-    const contractPath = getFilePath('contracts', `${contractFileName}.sol`);
+    console.log('Factory deployed to:', networkName, '::', contractAddress);
 
-    if (!contractPath) {
-        throw new Error(`File ${contractFileName}.sol not found`);
-    }
-
-    // const relativeContractPath = path.relative('', contractPath);
-
-    // if (contract.verify) {
-    //     log('Waiting for contract to be confirmed...');
-    //     await achievoContract.deploymentTransaction()?.wait(5); // wait for 5 confirmations
-
-    //     log('=====================================================');
-    //     log(`Verifying ${contract.type}(${contract.name}) for ${tenant} on ${networkName}`);
-    //     log('=====================================================');
-    //     await hre.run('verify:verify', {
-    //         address: contractAddress,
-    //         contract: `${relativeContractPath}:${contract.contractFileName}`,
-    //         constructorArguments: name ? [`${name}${tenant}`, ...restArgs] : restArgs,
-    //     });
-    // }
-
-    // Read the file content
-    const abiContent = fs.readFileSync(path.resolve(abiPath), 'utf8');
-    const { abi: contractAbi } = JSON.parse(abiContent);
+    const networkConfigFile = NetworkConfigFile[networkNameKey as keyof typeof NetworkConfigFile];
+    exec(
+        `npx hardhat verify ${contractAddress} ${managerWallet.address} --network ${networkName} --config ${networkConfigFile}`,
+        (error) => {
+            if (error) {
+                console.warn(error.message);
+            }
+        }
+    );
 
     const deploymentPayload: Deployment = {
         contractAbi,
@@ -148,7 +138,7 @@ task('deploy-create2', 'Deploys Create2 Smart contracts')
 
                 const balance = hre.ethers.formatEther(await provider.getBalance(wallet.address));
 
-                console.log('chain', chainId, 'nonce', nonce);
+                console.log(networkName, 'chain', chainId, 'nonce', nonce);
                 return { chainId, nonce, balance };
             })
         );
@@ -158,9 +148,9 @@ task('deploy-create2', 'Deploys Create2 Smart contracts')
         const isSameNonce = walletData.every(({ nonce }) => nonce === walletData[0].nonce);
 
         console.log('isSameNonce', isSameNonce);
-        if (!isSameNonce) {
-            throw new Error('Nonces are not the same in each chain');
-        }
+        // if (!isSameNonce) {
+        //     throw new Error('Nonces are not the same in each chain');
+        // }
 
         // check balance across all chains
         const minBalance = hre.ethers.parseEther('0.06'); // should have at least 0.06 eth
@@ -192,7 +182,9 @@ task('deploy-create2', 'Deploys Create2 Smart contracts')
                 deployments.push(deployment);
 
                 log('=====================================================');
-                log(`[DONE] ${name} contract deployment on ${networkName} for [[${tenant}]] is DONE!`);
+                log(
+                    `[DONE] ${name} contract deployment <${deployment.contractAddress}> on ${networkName} for [[${tenant}]] is DONE!`
+                );
                 log('=====================================================');
                 log('\n');
             })

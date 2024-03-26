@@ -5,10 +5,10 @@ import { TENANT } from '@constants/tenant';
 import { DeploymentContract } from '../../types/deployment-type';
 import { NETWORK_TYPE, NetworkName } from '../network';
 
-const chain = NetworkName.MantleWadsley;
+const chain = NetworkName.MantleSepolia;
 const networkType = NETWORK_TYPE.TESTNET;
 
-export const MANTLE_WADSLEY_CONTRACTS: DeploymentContract[] = [
+export const MANTLE_SEPOLIA_CONTRACTS: DeploymentContract[] = [
     {
         contractFileName: CONTRACT_FILE_NAME.GameSummary,
         type: CONTRACT_TYPE.GameSummary,

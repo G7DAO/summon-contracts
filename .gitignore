@@ -42,6 +42,8 @@ docs/
 deployments.json
 deployments-*.json
 
+deployments-zk
+
 # macos
 .DS_Store
 

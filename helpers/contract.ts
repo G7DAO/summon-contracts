@@ -1,3 +1,5 @@
+import { CONTRACT_NAME } from '@constants/contract';
+import { TENANT } from '@constants/tenant';
 import axios from 'axios';
 import { Deployment, FunctionCall } from 'types/deployment-type';
 
@@ -5,7 +7,7 @@ axios.defaults.baseURL = process.env.ACHIEVO_BASE_URL;
 axios.defaults.headers.common['Authorization'] = process.env.ACHIEVO_AUTH_TOKEN;
 axios.defaults.headers.post['Content-Type'] = 'application/json';
 
-export const submitContractDeploymentsToDB = async (deployments: Deployment[], tenant: string) => {
+export const submitContractDeploymentsToDB = async (deployments: Deployment[], tenant: TENANT) => {
     try {
         await axios.post('/v1/tenants/self/contracts', {
             deployments,
@@ -16,12 +18,23 @@ export const submitContractDeploymentsToDB = async (deployments: Deployment[], t
     }
 };
 
-export const executeFunctionCallBatch = async (calls: FunctionCall[], tenant: string) => {
+export const executeFunctionCallBatch = async (calls: FunctionCall[], tenant: TENANT) => {
     try {
         await axios.post('/v1/admin/contracts/functions', {
             calls,
             tenant,
         });
+    } catch (error) {
+        throw error;
+    }
+};
+
+export const getContractFromDB = async (name: CONTRACT_NAME, chainId: number) => {
+    try {
+        const { data } = await axios.get(`/v1/tenants/self/contracts/${name}${chainId ? `?chainId=${chainId}` : ''}`);
+        if (data.status === 200) {
+            return data.data;
+        }
     } catch (error) {
         throw error;
     }

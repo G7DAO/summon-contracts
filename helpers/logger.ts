@@ -21,11 +21,11 @@ export const logExplorerAddress = (chainId: number, address: string) => {
             break;
         }
         case ChainId.Mantle: {
-            log('https://explorer.testnet.mantle.xyz/address/' + address);
+            log('https://explorer.mantle.xyz/address/' + address);
             break;
         }
-        case ChainId.MantleWadsley: {
-            log('https://explorer.testnet.mantle.xyz/address/' + address);
+        case ChainId.MantleSepolia: {
+            log('https://explorer.sepolia.mantle.xyz/address/' + address);
             break;
         }
         case ChainId.ZkSync: {
