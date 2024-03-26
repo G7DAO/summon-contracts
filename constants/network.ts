@@ -64,6 +64,7 @@ export enum Currency {
     PolygonMumbai = 'MATIC',
     Ethereum = 'ETH',
     Goerli = 'ETH',
+    Sepolia = 'ETH',
     Mantle = 'MNT',
     MantleWadsley = 'MNT',
     ZkSync = 'ETH',

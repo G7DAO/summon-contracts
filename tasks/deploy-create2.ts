@@ -1,7 +1,9 @@
 import fs from 'fs';
 import path from 'path';
 
+import { CONTRACT_FILE_NAME } from '@constants/contract';
 import { ChainId, Currency, NetworkExplorer, NetworkName, rpcUrls } from '@constants/network';
+import { TENANT } from '@constants/tenant';
 import { submitContractDeploymentsToDB } from '@helpers/contract';
 import { encryptPrivateKey } from '@helpers/encrypt';
 import { createDefaultFolders, getABIFilePath, getFilePath } from '@helpers/folder';
@@ -12,7 +14,6 @@ import { Deployment } from 'types/deployment-type';
 import { Provider as zkProvider, Wallet as zkWallet, ContractFactory as zkContractFactory } from 'zksync-ethers';
 
 const { DETERMINISTIC_DEPLOYER_PRIVATE_KEY = '' } = process.env;
-const DETERMINISTIC_FACTORY_CONTRACT = 'DeterministicDeployFactory';
 
 if (!DETERMINISTIC_DEPLOYER_PRIVATE_KEY) {
     throw new Error('Private key not detected! Add it to the .env file!');
@@ -114,23 +115,26 @@ const deployOne = async (
 
 task('deploy-create2', 'Deploys Create2 Smart contracts')
     .addParam('tenant', 'Tenant you want to deploy', undefined, types.string)
-    .setAction(async (_args: { tenant: string; force: boolean }, hre: HardhatRuntimeEnvironment) => {
-        const { tenant } = _args;
-        const name = DETERMINISTIC_FACTORY_CONTRACT;
+    .addParam('chains', 'Chains in this order chain1,chain2,chain3', undefined, types.string)
+    .setAction(async (_args: { tenant: TENANT; chains: string; force: boolean }, hre: HardhatRuntimeEnvironment) => {
+        const { tenant, chains } = _args;
+        const name = CONTRACT_FILE_NAME.DETERMINISTIC_FACTORY_CONTRACT;
         log('└─ args :\n');
-        log(`   └─ contractFileName : ${name}\n`);
+        log(`   ├─ tenant : ${tenant}\n`);
+        log(`   ├─ contractFileName : ${name}\n`);
+        log(`   └─ chains : ${chains}\n`);
 
-        const networksToDeploy = [
-            NetworkName.ZkSyncSepolia,
-            NetworkName.ArbitrumSepolia,
-            NetworkName.Sepolia,
-            // NetworkName.PolygonMumbai,
-            // NetworkName.MantleWadsley,
-        ] as NetworkName[];
-
-        if (networksToDeploy.length === 0) {
-            throw new Error('No chains to deploy');
+        if (!Object.values(TENANT).includes(tenant)) {
+            throw new Error(`Invalid tenant: ${tenant}`);
         }
+
+        const networksToDeploy: NetworkName[] = chains.split(',').map((chain) => {
+            if (Object.values(NetworkName).includes(chain as NetworkName)) {
+                return chain as NetworkName;
+            } else {
+                throw new Error(`Invalid chain: ${chain}`);
+            }
+        });
 
         const walletData = await Promise.all(
             networksToDeploy.map(async (networkName: NetworkName) => {
@@ -193,9 +197,6 @@ task('deploy-create2', 'Deploys Create2 Smart contracts')
                 log('\n');
             })
         );
-
-        console.log('deployments', JSON.stringify(deployments, null, 2));
-        console.log('deployments', deployments.length);
 
         // submit to db
         try {
