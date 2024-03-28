@@ -14,7 +14,7 @@ export enum ChainId {
     Polygon = 137,
     PolygonMumbai = 80001,
     Mantle = 5000,
-    MantleWadsley = 5001,
+    MantleSepolia = 5003,
     Ethereum = 1,
     Goerli = 5,
     Sepolia = 11155111,
@@ -22,6 +22,10 @@ export enum ChainId {
     ZkSyncSepolia = 300,
     ArbitrumOne = 42161,
     ArbitrumSepolia = 421614,
+    OPMainnet = 10,
+    OPSepolia = 11155420,
+    Base = 8453,
+    BaseSepolia = 84532,
 }
 
 export enum NetworkName {
@@ -33,11 +37,15 @@ export enum NetworkName {
     Goerli = 'goerli',
     Sepolia = 'sepolia',
     Mantle = 'mantle',
-    MantleWadsley = 'mantleWadsley',
+    MantleSepolia = 'mantleSepolia',
     ZkSync = 'zkSync',
     ZkSyncSepolia = 'zkSyncSepolia',
     ArbitrumOne = 'arbitrumOne',
     ArbitrumSepolia = 'arbitrumSepolia',
+    OPMainnet = 'OPMainnet',
+    OPSepolia = 'OPSepolia',
+    Base = 'base',
+    BaseSepolia = 'baseSepolia',
 }
 
 export enum NetworkConfigFile {
@@ -50,11 +58,15 @@ export enum NetworkConfigFile {
     Goerli = 'hardhat.config.ts',
     Sepolia = 'hardhat.config.ts',
     Mantle = 'mantle.config.ts',
-    MantleWadsley = 'mantle.config.ts',
+    MantleSepolia = 'mantle.config.ts',
     ZkSync = 'zkSync.config.ts',
     ZkSyncSepolia = 'zkSync.config.ts',
     ArbitrumOne = 'arbitrum.config.ts',
     ArbitrumSepolia = 'arbitrum.config.ts',
+    OPMainnet = 'op.config.ts',
+    OPSepolia = 'op.config.ts',
+    Base = 'base.config.ts',
+    BaseSepolia = 'base.config.ts',
 }
 
 export enum Currency {
@@ -64,12 +76,17 @@ export enum Currency {
     PolygonMumbai = 'MATIC',
     Ethereum = 'ETH',
     Goerli = 'ETH',
+    Sepolia = 'ETH',
     Mantle = 'MNT',
-    MantleWadsley = 'MNT',
+    MantleSepolia = 'MNT',
     ZkSync = 'ETH',
     ZkSyncSepolia = 'ETH',
     ArbitrumOne = 'ETH',
     ArbitrumSepolia = 'ETH',
+    OPMainnet = 'ETH',
+    OPSepolia = 'ETH',
+    Base = 'ETH',
+    BaseSepolia = 'ETH',
 }
 
 export enum NetworkExplorer {
@@ -80,12 +97,16 @@ export enum NetworkExplorer {
     Ethereum = 'https://etherscan.io',
     Goerli = 'https://goerli.etherscan.io',
     Sepolia = 'https://sepolia.etherscan.io',
-    Mantle = 'https://explorer.testnet.mantle.xyz',
-    MantleWadsley = 'https://explorer.testnet.mantle.xyz',
+    Mantle = 'https://explorer.mantle.xyz',
+    MantleSepolia = 'https://explorer.sepolia.mantle.xyz',
     ZkSync = 'https://explorer.zksync.io',
     ZkSyncSepolia = 'https://sepolia.explorer.zksync.io',
     ArbitrumOne = 'https://arbiscan.io',
     ArbitrumSepolia = 'https://sepolia.arbiscan.io',
+    OPMainnet = 'https://optimistic.etherscan.io',
+    OPSepolia = 'https://sepolia-optimistic.etherscan.io',
+    Base = 'https://basescan.org',
+    BaseSepolia = 'https://base-sepolia.blockscout.com',
 }
 
 export function getTransactionUrl(txHash: string, network: NetworkName): string {
@@ -103,9 +124,13 @@ export const rpcUrls = {
     [ChainId.Polygon]: 'https://polygon.llamarpc.com',
     [ChainId.PolygonMumbai]: 'https://rpc.ankr.com/polygon_mumbai',
     [ChainId.Mantle]: 'https://rpc.mantle.xyz',
-    [ChainId.MantleWadsley]: 'https://rpc.testnet.mantle.xyz',
+    [ChainId.MantleSepolia]: 'https://rpc.sepolia.mantle.xyz',
     [ChainId.ZkSync]: 'https://mainnet.era.zksync.io',
     [ChainId.ZkSyncSepolia]: 'https://sepolia.era.zksync.dev',
     [ChainId.ArbitrumOne]: 'https://arb1.arbitrum.io/rpc',
     [ChainId.ArbitrumSepolia]: 'https://sepolia-rollup.arbitrum.io/rpc',
+    [ChainId.OPMainnet]: 'https://mainnet.optimism.io',
+    [ChainId.OPSepolia]: 'https://sepolia.optimism.io',
+    [ChainId.Base]: 'https://mainnet.base.org',
+    [ChainId.BaseSepolia]: 'https://sepolia.base.org',
 };

@@ -1,4 +1,4 @@
-import { ChainId, NetworkExplorer, NetworkName } from '@constants/network';
+import { ChainId, NetworkExplorer, NetworkName, rpcUrls } from '@constants/network';
 
 import defaultConfig from './hardhat.config';
 import { log } from './helpers/logger';
@@ -13,12 +13,12 @@ log(`Using Arbitrum config`);
 defaultConfig.networks = {
     ...defaultConfig.networks,
     [NetworkName.ArbitrumOne]: {
-        url: 'https://arb1.arbitrum.io/rpc',
+        url: rpcUrls[ChainId.ArbitrumOne],
         accounts: [PRIVATE_KEY],
         chainId: ChainId.ArbitrumOne,
     },
     [NetworkName.ArbitrumSepolia]: {
-        url: 'https://sepolia-rollup.arbitrum.io/rpc',
+        url: rpcUrls[ChainId.ArbitrumSepolia],
         accounts: [PRIVATE_KEY],
         chainId: ChainId.ArbitrumSepolia,
     },

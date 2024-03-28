@@ -382,3 +382,21 @@ export const BUIDLArgs = {
         developerAdmin: 'DEPLOYER_WALLET',
     },
 };
+
+export const LootDropArgs = {
+    MAINNET: {
+        _uri: 'FILL_ME',
+    },
+    TESTNET: {
+        _uri: 'FILL_ME',
+    },
+};
+
+export const HelloWorldArgs = {
+    MAINNET: {
+        randomNumber: 12312,
+    },
+    TESTNET: {
+        randomNumber: 232323,
+    },
+};

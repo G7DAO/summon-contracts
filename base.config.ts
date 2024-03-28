@@ -8,19 +8,19 @@ if (!PRIVATE_KEY) {
     throw new Error('MantleConfig: The private key is required');
 }
 
-log(`Using Mantle config`);
+log(`Using Base config`);
 
 defaultConfig.networks = {
     ...defaultConfig.networks,
-    [NetworkName.Mantle]: {
-        url: rpcUrls[ChainId.Mantle],
+    [NetworkName.Base]: {
+        url: rpcUrls[ChainId.Base],
         accounts: [PRIVATE_KEY],
-        chainId: ChainId.Mantle,
+        chainId: ChainId.Base,
     },
-    [NetworkName.MantleSepolia]: {
-        url: rpcUrls[ChainId.MantleSepolia],
+    [NetworkName.BaseSepolia]: {
+        url: rpcUrls[ChainId.BaseSepolia],
         accounts: [PRIVATE_KEY],
-        chainId: ChainId.MantleSepolia,
+        chainId: ChainId.BaseSepolia,
     },
 };
 
@@ -28,19 +28,19 @@ defaultConfig.etherscan = {
     apiKey: ETHSCAN_API_KEY,
     customChains: [
         {
-            network: NetworkName.Mantle,
-            chainId: ChainId.Mantle,
+            network: NetworkName.Base,
+            chainId: ChainId.Base,
             urls: {
-                apiURL: `${NetworkExplorer.Mantle}/api`,
-                browserURL: NetworkExplorer.Mantle,
+                apiURL: `${NetworkExplorer.Base}/api`,
+                browserURL: NetworkExplorer.Base,
             },
         },
         {
-            network: NetworkName.MantleSepolia,
-            chainId: ChainId.MantleSepolia,
+            network: NetworkName.BaseSepolia,
+            chainId: ChainId.BaseSepolia,
             urls: {
-                apiURL: `${NetworkExplorer.MantleSepolia}/api`,
-                browserURL: NetworkExplorer.MantleSepolia,
+                apiURL: `${NetworkExplorer.BaseSepolia}/api`,
+                browserURL: NetworkExplorer.BaseSepolia,
             },
         },
     ],
