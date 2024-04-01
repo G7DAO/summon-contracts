@@ -32,6 +32,7 @@ import { Pausable } from "@openzeppelin/contracts/security/Pausable.sol";
 import { Strings } from "@openzeppelin/contracts/utils/Strings.sol";
 import { ECDSA } from "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
 import { ReentrancyGuard } from "@openzeppelin/contracts/security/ReentrancyGuard.sol";
+import { Initializable } from "@openzeppelin/contracts/proxy/utils/Initializable.sol";
 
 import { Achievo1155Soulbound } from "../ercs/extensions/Achievo1155Soulbound.sol";
 import { ERCWhitelistSignature } from "../ercs/ERCWhitelistSignature.sol";
@@ -44,14 +45,13 @@ contract ERC1155RewardSoulbound is
     ERCWhitelistSignature,
     AccessControl,
     Pausable,
-    ReentrancyGuard
+    ReentrancyGuard,
+    Initializable
 {
     bytes32 public constant MINTER_ROLE = keccak256("MINTER_ROLE");
     bytes32 public constant MANAGER_ROLE = keccak256("MANAGER_ROLE");
     bytes32 public constant DEV_CONFIG_ROLE = keccak256("DEV_CONFIG_ROLE");
 
-    string public name;
-    string public symbol;
     using Strings for uint256;
 
     mapping(uint256 => bool) private tokenExists;
@@ -65,13 +65,15 @@ contract ERC1155RewardSoulbound is
     event Minted(address indexed to, uint256[] tokenIds, uint256[] amounts, bool soulbound);
     event MintedById(address indexed to, uint256 indexed tokenId, uint256 amount, bool soulbound);
     event TokenAdded(uint256 indexed tokenId);
+    event TokenURIUpdated(uint256 indexed tokenId);
+    event TokenRewardUpdated(uint256 indexed tokenId);
+    event TokenGatingUpdated(uint256 indexed tokenId);
 
-    constructor(
-        string memory _name,
-        string memory _symbol,
-        bool _isPaused,
-        address devWallet
-    ) ERC1155("") {
+    constructor(address devWallet) ERC1155("") {
+        _grantRole(DEFAULT_ADMIN_ROLE, devWallet);
+    }
+
+    function initialize(address devWallet) external initializer onlyRole(DEFAULT_ADMIN_ROLE) {
         require(devWallet != address(0), "AddressIsZero");
 
         _grantRole(DEFAULT_ADMIN_ROLE, devWallet);
@@ -79,12 +81,6 @@ contract ERC1155RewardSoulbound is
         _grantRole(MINTER_ROLE, devWallet);
         _grantRole(MANAGER_ROLE, devWallet);
         _addWhitelistSigner(devWallet);
-
-        name = _name;
-        symbol = _symbol;
-        defaultRewardId = _defaultRewardId;
-
-        if (_isPaused) _pause();
     }
 
     function isTokenExist(uint256 _tokenId) public view returns (bool) {
@@ -94,13 +90,15 @@ contract ERC1155RewardSoulbound is
         return true;
     }
 
-    function decodeData(bytes calldata _data) public view onlyRole(DEV_CONFIG_ROLE) returns (uint256[] memory) {
+    function decodeData(
+        bytes calldata _data
+    ) public view onlyRole(DEV_CONFIG_ROLE) returns (uint256[] memory, uint256[] memory) {
         return _decodeData(_data);
     }
 
-    function _decodeData(bytes calldata _data) private view returns (uint256[] memory, uint256[] memory) {
-        (uint256[] memory itemIds, uint256[] memory amounts) = abi.decode(_data, (uint256[], uint256[]));
-        return (itemIds, amounts);
+    function _decodeData(bytes calldata _data) private pure returns (uint256[] memory, uint256[] memory) {
+        (uint256[] memory tokenIds, uint256[] memory amounts) = abi.decode(_data, (uint256[], uint256[]));
+        return (tokenIds, amounts);
     }
 
     function pause() external onlyRole(MANAGER_ROLE) {
@@ -114,6 +112,7 @@ contract ERC1155RewardSoulbound is
     function addNewToken(LibItems.RewardToken calldata _token) public onlyRole(DEV_CONFIG_ROLE) {
         require(bytes(_token.tokenUri).length > 0, "InvalidTokenUri");
         require(_token.tokenId != 0, "InvalidTokenId");
+        require(_token.tokenId != 0, "InvalidTokenId");
         require(_token.rewards.length > 0, "InvalidRewards");
 
         for (uint256 i = 0; i < _token.rewards.length; i++) {
@@ -122,17 +121,16 @@ contract ERC1155RewardSoulbound is
                 require(reward.rewardTokenAddress != address(0), "InvalidTokenAddress");
             }
 
-            if (reward.rewardType == LibItems.RewardType.ERC721 || 
-                reward.rewardType == LibItems.RewardType.ERC1155) {
+            if (reward.rewardType == LibItems.RewardType.ERC721 || reward.rewardType == LibItems.RewardType.ERC1155) {
                 require(reward.rewardTokenId != 0, "InvalidRewardTokenId");
             }
 
-            require(reward.rewardAmount > 0, "InvalidRewardAmount")
+            require(reward.rewardAmount > 0, "InvalidRewardAmount");
         }
 
-        if (_token.gatingTokenRequied) {
+        if (_token.gatingTokenRequired) {
             require(_token.gatingTokenAddress != address(0), "InvalidGatingTokenAddress");
-            require(_token.gatingTokenId, "InvalidGatingTokenAddress");
+            require(_token.gatingTokenId != 0, "InvalidGatingTokenAddress");
         }
 
         tokenRewards[_token.tokenId] = _token;
@@ -150,7 +148,9 @@ contract ERC1155RewardSoulbound is
     function updateTokenUri(uint256 _tokenId, string calldata _tokenUri) public onlyRole(DEV_CONFIG_ROLE) {
         require(bytes(_tokenUri).length > 0, "InvalidTokenUri");
         require(_tokenId != 0, "InvalidTokenId");
+        isTokenExist(_tokenId);
         tokenRewards[_tokenId].tokenUri = _tokenUri;
+        emit TokenURIUpdated(_tokenId);
     }
 
     function batchUpdateTokenUri(
@@ -164,47 +164,111 @@ contract ERC1155RewardSoulbound is
         }
     }
 
-    function changeRewardAmount(uint256 _tokenId, uint256 _newAmount) external onlyRole(DEV_CONFIG_ROLE) {
-        // require(tokenExists[_tokenId], "TokenNotExist");
-        // require(tokenRewards[_tokenId].rewardAmount != _newAmount, "InvalidAmount");
-        // tokenRewards[_tokenId].rewardAmount = _newAmount;
+    function updateReward(uint256 _tokenId, LibItems.Reward[] calldata _rewards) public onlyRole(DEV_CONFIG_ROLE) {
+        require(_tokenId != 0, "InvalidTokenId");
+        isTokenExist(_tokenId);
+
+        for (uint256 i = 0; i < _rewards.length; i++) {
+            LibItems.Reward memory reward = _rewards[i];
+            if (reward.rewardType != LibItems.RewardType.ETHER) {
+                require(reward.rewardTokenAddress != address(0), "InvalidTokenAddress");
+            }
+
+            if (reward.rewardType == LibItems.RewardType.ERC721 || reward.rewardType == LibItems.RewardType.ERC1155) {
+                require(reward.rewardTokenId != 0, "InvalidRewardTokenId");
+            }
+
+            require(reward.rewardAmount > 0, "InvalidRewardAmount");
+        }
+
+        tokenRewards[_tokenId].rewards = _rewards;
+
+        emit TokenRewardUpdated(_tokenId);
     }
 
-    function updateReward() {
-        //
+    function updateGatingToken(
+        uint256 _tokenId,
+        bool _gatingTokenRequired,
+        address _gatingTokenAddress,
+        uint256 _gatingTokenId
+    ) public onlyRole(DEV_CONFIG_ROLE) {
+        require(_tokenId != 0, "InvalidTokenId");
+        isTokenExist(_tokenId);
+
+        if (_gatingTokenRequired) {
+            require(_gatingTokenAddress != address(0), "InvalidGatingTokenAddress");
+            require(_gatingTokenId != 0, "InvalidGatingTokenAddress");
+        }
+
+        tokenRewards[_tokenId].gatingTokenRequired = _gatingTokenRequired;
+        tokenRewards[_tokenId].gatingTokenAddress = _gatingTokenAddress;
+        tokenRewards[_tokenId].gatingTokenId = _gatingTokenId;
+
+        emit TokenGatingUpdated(_tokenId);
+    }
+
+    function batchUpdateGatingToken(
+        uint256[] calldata _tokenIds,
+        bool[] calldata _gatingTokenRequireds,
+        address[] calldata _gatingTokenAddreseses,
+        uint256[] calldata _gatingTokenIds
+    ) public onlyRole(DEV_CONFIG_ROLE) {
+        require(_tokenIds.length > 0, "InvalidInput");
+        require(_tokenIds.length == _gatingTokenRequireds.length, "InvalidInput");
+        require(_tokenIds.length == _gatingTokenAddreseses.length, "InvalidInput");
+        require(_tokenIds.length == _gatingTokenIds.length, "InvalidInput");
+
+        for (uint256 i = 0; i < _tokenIds.length; i++) {
+            updateGatingToken(_tokenIds[i], _gatingTokenRequireds[i], _gatingTokenAddreseses[i], _gatingTokenIds[i]);
+        }
     }
 
     function updateTokenMintPaused(uint256 _tokenId, bool _isTokenMintPaused) public onlyRole(MANAGER_ROLE) {
         isTokenMintPaused[_tokenId] = _isTokenMintPaused;
     }
 
-    function withdrawAssets(Libitems.RewardType _rewardType, address _tokenAddress, address _to, uint256[] _amounts, uint256 _tokenIds) external onlyRole(MANAGER_ROLE) {
+    /**
+     * @dev Allows the contract owner to withdraw all available assets from the contract.
+     * @param _rewardType The type of reward to withdraw.
+     * @param _to The address to send the assets to.
+     * @param _tokenAddress The address of the token to withdraw. (required for ERC20, ERC721, and ERC1155 tokens)
+     * @param _tokenIds The token IDs to withdraw. (required for ERC721 and ERC1155 tokens)
+     * @param _amounts The amounts to withdraw. (required for ETHER, ERC20, and ERC1155 tokens)
+     */
+    function withdrawAssets(
+        LibItems.RewardType _rewardType,
+        address _to,
+        address _tokenAddress,
+        uint256[] calldata _tokenIds,
+        uint256[] calldata _amounts
+    ) external onlyRole(MANAGER_ROLE) {
         require(_to != address(0), "InvalidToAddress");
-        require(_amount > 0, "InvalidAmount");
 
-        if (_rewardType != RewardType.ETHER) {
+        if (_rewardType != LibItems.RewardType.ETHER) {
             require(_tokenAddress != address(0), "InvalidTokenAddress");
         }
 
-        if (_rewardType == RewardType.ERC20) {
+        if (_rewardType == LibItems.RewardType.ERC20) {
             // ignore _tokenIds
             uint256 _amount = _amounts[0];
+            require(_amount > 0, "InvalidAmount");
+
             IERC20 token = IERC20(_tokenAddress);
             uint256 balanceInContract = token.balanceOf(address(this));
             require(balanceInContract >= _amount, "InsufficientContractBalance");
             token.transfer(_to, _amount);
-        } else if (_rewardType == RewardType.ERC721) {
+        } else if (_rewardType == LibItems.RewardType.ERC721) {
             // ignore _amounts
             IERC721 token = IERC721(_tokenAddress);
             for (uint256 i = 0; i < _tokenIds.length; i++) {
                 uint256 tokenId = _tokenIds[i];
                 token.safeTransferFrom(address(this), _to, tokenId);
             }
-        } else if (_rewardType == RewardType.ERC1155) {
+        } else if (_rewardType == LibItems.RewardType.ERC1155) {
             // use both _tokenIds and _amounts
             IERC1155 token = IERC1155(_tokenAddress);
             token.safeBatchTransferFrom(address(this), _to, _tokenIds, _amounts, "");
-        } else if (_rewardType == RewardType.ETHER) {
+        } else if (_rewardType == LibItems.RewardType.ETHER) {
             // ignore _tokenIds
             uint256 _amount = _amounts[0];
             require(address(this).balance >= _amount, "InsufficientContractBalance");
@@ -214,7 +278,7 @@ contract ERC1155RewardSoulbound is
     }
 
     function _distributeReward(address to, LibItems.RewardToken memory rewardToken) private {
-        Reward[] rewards = rewardToken.rewards;
+        LibItems.Reward[] memory rewards = rewardToken.rewards;
 
         for (uint256 i = 0; i < rewards.length; i++) {
             LibItems.Reward memory reward = rewards[i];
@@ -238,124 +302,115 @@ contract ERC1155RewardSoulbound is
         }
     }
 
-    function adminClaimERC20Reward(
-        address to,
-        bytes calldata data,
-        bytes calldata signature,
-        uint256 nonce
-    ) public signatureCheck(to, nonce, data, signature) onlyRole(MANAGER_ROLE) {
-        require(to != address(0), "InvalidToAddress");
-        (uint256[] memory _tokenIds, uint256[] memory _amounts) = _decodeData(data);
+    function claimReward(uint256 _tokenId) public nonReentrant {
+        address _to = _msgSender();
+        _claimReward(_to, _tokenId);
+    }
+
+    function adminClaimReward(address _to, uint256[] calldata _tokenIds) public onlyRole(MANAGER_ROLE) {
+        require(_to != address(0), "InvalidToAddress");
 
         for (uint256 i = 0; i < _tokenIds.length; i++) {
-            uint256 _id = _tokenIds[i];
-            uint256 amount = _amounts[i];
-            LibItems.RewardToken memory rewardToken = tokenRewards[_id];
-
-            if (rewardToken.gatingTokenRequied) {
-                require(balanceOf(to, rewardToken.gatingTokenId) >= 1, "InsufficientGatingTokenBalance");
-                _burn(to, rewardToken.gatingTokenId, 1);
-            }
-
-            _distributeReward(to, rewardToken);
+            _claimReward(_to, _tokenIds[i]);
         }
     }
 
-    function claimReward(uint256 _tokenId ) public nonReentrant {
-        require(balanceOf(_msgSender(), _tokenId) > 0, "InsufficientBalance");
-        require(tokenRewards[_tokenId].rewardAmount > 0, "InvalidRewardAmount");
+    function _claimReward(address _to, uint256 _tokenId) private {
+        require(balanceOf(_to, _tokenId) > 0, "InsufficientBalance");
+        LibItems.RewardToken memory _rewardToken = tokenRewards[_tokenId];
 
-        LibItems.RewardToken memory rewardToken = tokenRewards[_tokenId];
-
-        if (rewardToken.gatingTokenRequied) {
-            require(balanceOf(to, rewardToken.gatingTokenId) >= 1, "InsufficientGatingTokenBalance");
-            _burn(to, rewardToken.gatingTokenId, 1);
+        if (_rewardToken.gatingTokenRequired) {
+            require(balanceOf(_to, _rewardToken.gatingTokenId) >= 1, "InsufficientGatingTokenBalance");
+            _burn(_to, _rewardToken.gatingTokenId, 1);
         }
 
-        _distributeReward(_msgSender(), rewardToken);
+        _distributeReward(_to, _rewardToken);
     }
 
-    function _mintReward(
+    function _mintAndClaimRewardTokenBatch(
         address to,
         uint256[] memory _tokenIds,
         uint256[] memory _amounts,
-        bool soulbound
+        bool soulbound,
+        bool claimReward
     ) private {
         require(_tokenIds.length > 0, "InvalidInput");
         require(_amounts.length > 0, "InvalidInput");
 
         for (uint256 i = 0; i < _tokenIds.length; i++) {
-            uint256 _id = _tokenIds[i];
-            uint256 amount = _amounts[i];
-            isTokenExist(_id);        
-            if (isTokenMintPaused[_id]) {
-                revert("TokenMintPaused");
-            }
-
-            require(amount > 0, "InvalidAmount");
-
-            LibItems.RewardToken memory rewardToken = tokenRewards[_id];
-            if (rewardToken.gatingTokenRequied) {
-                require(balanceOf(to, rewardToken.gatingTokenId) >= 1, "InsufficientGatingTokenBalance");
-                _burn(to, rewardToken.gatingTokenId, 1);
-            }
-
-            if (soulbound) {
-                _soulbound(to, _id, amount);
-            }
-
-            _mint(to, _id, amount, "");
+            _mintAndClaimRewardToken(to, _tokenIds[i], _amounts[i], soulbound, claimReward);
         }
+
         emit Minted(to, _tokenIds, _amounts, soulbound);
+    }
+
+    function _mintAndClaimRewardToken(
+        address to,
+        uint256 _tokenId,
+        uint256 _amount,
+        bool soulbound,
+        bool claimReward
+    ) private {
+        isTokenExist(_tokenId);
+        if (isTokenMintPaused[_tokenId]) {
+            revert("TokenMintPaused");
+        }
+
+        require(_amount > 0, "InvalidAmount");
+
+        LibItems.RewardToken memory rewardToken = tokenRewards[_tokenId];
+        if (rewardToken.gatingTokenRequired) {
+            require(balanceOf(to, rewardToken.gatingTokenId) >= 1, "InsufficientGatingTokenBalance");
+            _burn(to, rewardToken.gatingTokenId, 1);
+        }
+
+        if (soulbound) {
+            _soulbound(to, _tokenId, _amount);
+        }
+
+        // mint reward token
+        _mint(to, _tokenId, _amount, "");
+
+        // burn and claim the reward
+        if (claimReward) {
+            _claimReward(to, _tokenId);
+        }
     }
 
     function mint(
         bytes calldata data,
         bool soulbound,
-        bool claimReward,
         uint256 nonce,
-        bytes calldata signature
+        bytes calldata signature,
+        bool claimReward
     ) external nonReentrant signatureCheck(_msgSender(), nonce, data, signature) whenNotPaused {
         (uint256[] memory _tokenIds, uint256[] memory _amounts) = _decodeData(data);
-        _mintReward(_msgSender(), _tokenIds, _amounts, soulbound);
+        _mintAndClaimRewardTokenBatch(_msgSender(), _tokenIds, _amounts, soulbound, claimReward);
     }
 
     function adminMint(address to, bytes calldata data, bool soulbound) external onlyRole(MINTER_ROLE) whenNotPaused {
         (uint256[] memory _tokenIds, uint256[] memory _amounts) = _decodeData(data);
-        _mintReward(to, _tokenIds, _amounts, soulbound);
-    }
-
-    function adminBatchMintById(
-        address[] calldata addresses,
-        uint256 id,
-        uint256[] calldata amounts,
-        bool[] calldata soulbounds
-    ) public onlyRole(MINTER_ROLE) whenNotPaused {
-        require(addresses.length == amounts.length, "InvalidInput");
-        require(addresses.length == soulbounds.length, "InvalidInput");
-        for (uint256 i = 0; i < addresses.length; i++) {
-            adminMintById(addresses[i], defaultRewardId, amounts[i], soulbounds[i]);
-        }
+        _mintAndClaimRewardTokenBatch(to, _tokenIds, _amounts, soulbound, false);
     }
 
     function adminMintById(
-        address to,
-        uint256 id,
-        uint256 amount,
-        bool soulbound
+        address _to,
+        uint256 _tokenId,
+        uint256 _amount,
+        bool _soulbound
     ) public onlyRole(MINTER_ROLE) whenNotPaused {
-        isTokenExist(id);
+        _mintAndClaimRewardToken(_to, _tokenId, _amount, _soulbound, false);
+    }
 
-        if (isTokenMintPaused[id]) {
-            revert("TokenMintPaused");
+    function adminBatchMintByIds(
+        address[] calldata toAddresses,
+        uint256 _tokenId,
+        uint256[] memory _amounts,
+        bool _soulbound
+    ) public onlyRole(MINTER_ROLE) whenNotPaused {
+        for (uint256 i = 0; i < toAddresses.length; i++) {
+            _mintAndClaimRewardToken(toAddresses[i], _tokenId, _amounts[i], _soulbound, false);
         }
-
-        if (soulbound) {
-            _soulbound(to, id, amount);
-        }
-
-        _mint(to, id, amount, "");
-        emit MintedById(to, id, amount, soulbound);
     }
 
     function _beforeTokenTransfer(

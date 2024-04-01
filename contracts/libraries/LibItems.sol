@@ -31,8 +31,8 @@ library LibItems {
         ETHER,
         ERC20,
         ERC721,
-        ERC1155
-        // ERC404 // TODO * support this later
+        ERC1155,
+        ERC404
     }
 
     struct Reward {
@@ -45,8 +45,8 @@ library LibItems {
     struct RewardToken {
         uint256 tokenId;
         string tokenUri;
-        Rewards[] rewards;
-        bool gatingTokenRequied;
+        Reward[] rewards;
+        bool gatingTokenRequired;
         address gatingTokenAddress;
         uint256 gatingTokenId;
     }
