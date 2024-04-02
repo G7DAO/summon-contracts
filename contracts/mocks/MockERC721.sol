@@ -18,7 +18,7 @@ pragma solidity 0.8.17;
 
 import "@openzeppelin/contracts/token/ERC721/ERC721.sol";
 
-contract Mock721ERC721 is ERC721 {
+contract MockERC721 is ERC721 {
     uint256 private _tokenIdCounter;
 
     constructor() ERC721("MockERC721", "ERC721") {}

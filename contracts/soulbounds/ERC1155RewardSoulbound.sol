@@ -33,6 +33,8 @@ import { Strings } from "@openzeppelin/contracts/utils/Strings.sol";
 import { ECDSA } from "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
 import { ReentrancyGuard } from "@openzeppelin/contracts/security/ReentrancyGuard.sol";
 import { Initializable } from "@openzeppelin/contracts/proxy/utils/Initializable.sol";
+import { ERC721Holder } from "@openzeppelin/contracts/token/ERC721/utils/ERC721Holder.sol";
+import { ERC1155Receiver } from "@openzeppelin/contracts/token/ERC1155/utils/ERC1155Receiver.sol";
 
 import { Achievo1155Soulbound } from "../ercs/extensions/Achievo1155Soulbound.sol";
 import { ERCWhitelistSignature } from "../ercs/ERCWhitelistSignature.sol";
@@ -46,7 +48,9 @@ contract ERC1155RewardSoulbound is
     AccessControl,
     Pausable,
     ReentrancyGuard,
-    Initializable
+    Initializable,
+    ERC721Holder,
+    ERC1155Receiver
 {
     bytes32 public constant MINTER_ROLE = keccak256("MINTER_ROLE");
     bytes32 public constant MANAGER_ROLE = keccak256("MANAGER_ROLE");
@@ -285,19 +289,19 @@ contract ERC1155RewardSoulbound is
 
             if (reward.rewardType == LibItems.RewardType.ETHER) {
                 require(address(this).balance >= reward.rewardAmount, "InsufficientContractBalance");
-                (bool success, ) = address(_msgSender()).call{ value: reward.rewardAmount }("");
+                (bool success, ) = address(to).call{ value: reward.rewardAmount }("");
                 require(success, "Transfer failed.");
             } else if (reward.rewardType == LibItems.RewardType.ERC20) {
                 IERC20 token = IERC20(reward.rewardTokenAddress);
                 uint256 contractBalance = token.balanceOf(address(this));
                 require(contractBalance >= reward.rewardAmount, "InsufficientContractBalance");
-                token.transfer(_msgSender(), reward.rewardAmount);
+                token.transfer(to, reward.rewardAmount);
             } else if (reward.rewardType == LibItems.RewardType.ERC721) {
                 IERC721 token = IERC721(reward.rewardTokenAddress);
-                token.safeTransferFrom(address(this), _msgSender(), reward.rewardTokenId);
+                token.safeTransferFrom(address(this), to, reward.rewardTokenId);
             } else if (reward.rewardType == LibItems.RewardType.ERC1155) {
                 IERC1155 token = IERC1155(reward.rewardTokenAddress);
-                token.safeTransferFrom(address(this), _msgSender(), reward.rewardTokenId, reward.rewardAmount, "");
+                token.safeTransferFrom(address(this), to, reward.rewardTokenId, reward.rewardAmount, "");
             }
         }
     }
@@ -332,13 +336,13 @@ contract ERC1155RewardSoulbound is
         uint256[] memory _tokenIds,
         uint256[] memory _amounts,
         bool soulbound,
-        bool claimReward
+        bool isClaimReward
     ) private {
         require(_tokenIds.length > 0, "InvalidInput");
         require(_amounts.length > 0, "InvalidInput");
 
         for (uint256 i = 0; i < _tokenIds.length; i++) {
-            _mintAndClaimRewardToken(to, _tokenIds[i], _amounts[i], soulbound, claimReward);
+            _mintAndClaimRewardToken(to, _tokenIds[i], _amounts[i], soulbound, isClaimReward);
         }
 
         emit Minted(to, _tokenIds, _amounts, soulbound);
@@ -349,7 +353,7 @@ contract ERC1155RewardSoulbound is
         uint256 _tokenId,
         uint256 _amount,
         bool soulbound,
-        bool claimReward
+        bool isClaimReward
     ) private {
         isTokenExist(_tokenId);
         if (isTokenMintPaused[_tokenId]) {
@@ -372,20 +376,20 @@ contract ERC1155RewardSoulbound is
         _mint(to, _tokenId, _amount, "");
 
         // burn and claim the reward
-        if (claimReward) {
+        if (isClaimReward) {
             _claimReward(to, _tokenId);
         }
     }
 
     function mint(
         bytes calldata data,
-        bool soulbound,
+        bool isSoulbound,
         uint256 nonce,
         bytes calldata signature,
-        bool claimReward
+        bool isClaimReward
     ) external nonReentrant signatureCheck(_msgSender(), nonce, data, signature) whenNotPaused {
         (uint256[] memory _tokenIds, uint256[] memory _amounts) = _decodeData(data);
-        _mintAndClaimRewardTokenBatch(_msgSender(), _tokenIds, _amounts, soulbound, claimReward);
+        _mintAndClaimRewardTokenBatch(_msgSender(), _tokenIds, _amounts, isSoulbound, isClaimReward);
     }
 
     function adminMint(address to, bytes calldata data, bool soulbound) external onlyRole(MINTER_ROLE) whenNotPaused {
@@ -402,7 +406,7 @@ contract ERC1155RewardSoulbound is
         _mintAndClaimRewardToken(_to, _tokenId, _amount, _soulbound, false);
     }
 
-    function adminBatchMintByIds(
+    function adminBatchMintById(
         address[] calldata toAddresses,
         uint256 _tokenId,
         uint256[] memory _amounts,
@@ -522,8 +526,30 @@ contract ERC1155RewardSoulbound is
         }
     }
 
-    function supportsInterface(bytes4 interfaceId) public view override(ERC1155, AccessControl) returns (bool) {
+    function supportsInterface(
+        bytes4 interfaceId
+    ) public view override(ERC1155, AccessControl, ERC1155Receiver) returns (bool) {
         return super.supportsInterface(interfaceId);
+    }
+
+    function onERC1155Received(
+        address operator,
+        address from,
+        uint256 id,
+        uint256 value,
+        bytes calldata data
+    ) public override returns (bytes4) {
+        return this.onERC1155Received.selector;
+    }
+
+    function onERC1155BatchReceived(
+        address operator,
+        address from,
+        uint256[] calldata ids,
+        uint256[] calldata values,
+        bytes calldata data
+    ) public override returns (bytes4) {
+        return this.onERC1155BatchReceived.selector;
     }
 
     function uri(uint256 tokenId) public view override returns (string memory) {
