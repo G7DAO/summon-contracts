@@ -27,6 +27,7 @@ import { IERC721 } from "@openzeppelin/contracts/token/ERC721/IERC721.sol";
 import { IERC20 } from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import { ERC1155Burnable } from "@openzeppelin/contracts/token/ERC1155/extensions/ERC1155Burnable.sol";
 import { ERC1155Supply } from "@openzeppelin/contracts/token/ERC1155/extensions/ERC1155Supply.sol";
+import { ERC1155Receiver } from "@openzeppelin/contracts/token/ERC1155/utils/ERC1155Receiver.sol";
 import { AccessControl } from "@openzeppelin/contracts/access/AccessControl.sol";
 import { Pausable } from "@openzeppelin/contracts/security/Pausable.sol";
 import { Strings } from "@openzeppelin/contracts/utils/Strings.sol";
@@ -57,7 +58,8 @@ contract ERC1155RewardSoulbound is
     AccessControl,
     Pausable,
     ReentrancyGuard,
-    Initializable
+    Initializable,
+    ERC1155Receiver
 {
     bytes32 public constant MINTER_ROLE = keccak256("MINTER_ROLE");
     bytes32 public constant MANAGER_ROLE = keccak256("MANAGER_ROLE");
@@ -260,6 +262,10 @@ contract ERC1155RewardSoulbound is
     }
 
     function _claimReward(address _to, uint256 _tokenId) private {
+        if (isTokenMintPaused[_tokenId]) {
+            revert MintPaused();
+        }
+
         if (_to == address(0)) {
             revert AddressIsZero();
         }
@@ -320,11 +326,16 @@ contract ERC1155RewardSoulbound is
         LibItems.RewardToken memory rewardToken = tokenRewards[_tokenId];
 
         if (rewardToken.gatingTokenRequired) {
+            // TODO check if already claimed or not...
+
             // check if the user has the gating token to mint the reward token or not
             if (balanceOf(to, rewardToken.gatingTokenId) == 0) {
                 revert InsufficientBalance();
             }
-            _burn(to, rewardToken.gatingTokenId, 1);
+
+            if (rewardToken.requireToBurnGatingToken) {
+                _burn(to, rewardToken.gatingTokenId, 1);
+            }
         }
 
         if (soulbound) {
@@ -443,6 +454,20 @@ contract ERC1155RewardSoulbound is
         return batchBalances;
     }
 
+    function burn(
+        address to,
+        uint256 tokenId,
+        uint256 amount
+    )
+        public
+        virtual
+        override
+        nonReentrant
+        soulboundCheckAndSync(to, address(0), tokenId, amount, balanceOf(to, tokenId))
+    {
+        ERC1155Burnable.burn(to, tokenId, amount);
+    }
+
     function burnBatch(
         address to,
         uint256[] memory tokenIds,
@@ -473,42 +498,41 @@ contract ERC1155RewardSoulbound is
         }
     }
 
-    function supportsInterface(bytes4 interfaceId) public view override(ERC1155, AccessControl) returns (bool) {
+    function supportsInterface(
+        bytes4 interfaceId
+    ) public view override(ERC1155, AccessControl, ERC1155Receiver) returns (bool) {
         return super.supportsInterface(interfaceId);
     }
+
+    function onERC1155Received(
+        address operator,
+        address from,
+        uint256 id,
+        uint256 value,
+        bytes calldata data
+    ) public override returns (bytes4) {
+        return this.onERC1155Received.selector;
+    }
+
+    function onERC1155BatchReceived(
+        address operator,
+        address from,
+        uint256[] calldata ids,
+        uint256[] calldata values,
+        bytes calldata data
+    ) public override returns (bytes4) {
+        return this.onERC1155BatchReceived.selector;
+    }
+
+    // Function to receive Ether. msg.data must be empty
+    receive() external payable {}
+
+    // Fallback function is called when msg.data is not empty
+    fallback() external payable {}
 
     function uri(uint256 tokenId) public view override returns (string memory) {
         isTokenExist(tokenId);
         return tokenRewards[tokenId].tokenUri;
-    }
-
-    function getAllItems() public view returns (LibItems.TokenReturn[] memory) {
-        uint256 totalTokens = itemIds.length;
-        LibItems.TokenReturn[] memory tokenReturns = new LibItems.TokenReturn[](totalTokens);
-
-        uint index;
-        for (uint i = 0; i < totalTokens; i++) {
-            uint256 tokenId = itemIds[i];
-            uint256 amount = balanceOf(_msgSender(), tokenId);
-
-            if (amount > 0) {
-                LibItems.TokenReturn memory tokenReturn = LibItems.TokenReturn({
-                    tokenId: tokenId,
-                    tokenUri: uri(tokenId),
-                    amount: amount
-                });
-                tokenReturns[index] = tokenReturn;
-                index++;
-            }
-        }
-
-        // truncate the array
-        LibItems.TokenReturn[] memory returnsTruncated = new LibItems.TokenReturn[](index);
-        for (uint i = 0; i < index; i++) {
-            returnsTruncated[i] = tokenReturns[i];
-        }
-
-        return returnsTruncated;
     }
 
     function updateWhitelistAddress(address _address, bool _isWhitelisted) external onlyRole(DEV_CONFIG_ROLE) {

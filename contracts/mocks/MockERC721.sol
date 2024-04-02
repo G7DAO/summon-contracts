@@ -25,7 +25,7 @@ contract MockERC721 is ERC721 {
 
     function mint(address to) public {
         uint256 tokenId = _tokenIdCounter++;
-        _safeMint(to, tokenId);
+        _mint(to, tokenId);
     }
 
     function reveal(uint256 tokenId, string memory newURI) public view {}

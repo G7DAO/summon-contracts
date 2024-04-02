@@ -49,6 +49,7 @@ library LibItems {
         bool gatingTokenRequired;
         address gatingTokenAddress;
         uint256 gatingTokenId;
+        bool requireToBurnGatingToken;
     }
 
     struct TokenCreateWithRoyalty {

@@ -3,15 +3,28 @@ pragma solidity 0.8.17;
 
 import "forge-std/Test.sol";
 import "forge-std/StdCheats.sol";
+import "forge-std/console.sol";
+
 import { Strings } from "@openzeppelin/contracts/utils/Strings.sol";
 import { ECDSA } from "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
 
 import { ERC1155RewardSoulbound } from "../contracts/soulbounds/ERC1155RewardSoulbound.sol";
 import { MockERC1155Receiver } from "../contracts/mocks/MockERC1155Receiver.sol";
-import { MockERC20 } from "../contracts/mocks/MockErc20.sol";
+import { MockERC20 } from "../contracts/mocks/MockERC20.sol";
 import { MockERC721 } from "../contracts/mocks/MockErc721.sol";
 import { MockERC1155 } from "../contracts/mocks/MockErc1155.sol";
 import { LibItems, TestLibItems } from "../contracts/libraries/LibItems.sol";
+
+error AddressIsZero();
+error InvalidTokenId();
+error InvalidAmount();
+error InvalidLength();
+error TokenNotExist();
+error InvalidInput();
+error InsufficientBalance();
+error TransferFailed();
+error MintPaused();
+error DupTokenId();
 
 contract ItemsRewardBoundTest is StdCheats, Test {
     using Strings for uint256;
@@ -55,6 +68,9 @@ contract ItemsRewardBoundTest is StdCheats, Test {
     LibItems.Reward[] public _rewards;
     uint256[] public _tokenIds;
     uint256[] public _amounts;
+
+    address[] public wallets;
+    uint256[] public amounts;
 
     function getWallet(string memory walletLabel) public returns (Wallet memory) {
         (address addr, uint256 privateKey) = makeAddrAndKey(walletLabel);
@@ -118,6 +134,12 @@ contract ItemsRewardBoundTest is StdCheats, Test {
         erc721FakeRewardAddress = address(mockERC721);
         erc1155FakeRewardAddress = address(mockERC1155);
 
+        wallets = new address[](1);
+        wallets[0] = playerWallet.addr;
+
+        amounts = new uint256[](1);
+        amounts[0] = 1;
+
         for (uint256 i = 0; i < 200; i++) {
             uint256 _tokenId = generateRandomItemId(); // totally random
             uint256 _amount = generateRandomAmount();
@@ -140,7 +162,8 @@ contract ItemsRewardBoundTest is StdCheats, Test {
                 rewards: _rewards,
                 gatingTokenRequired: false,
                 gatingTokenAddress: address(0),
-                gatingTokenId: 0
+                gatingTokenId: 0,
+                requireToBurnGatingToken: true
             });
 
             _tokens.push(_token);
@@ -183,14 +206,19 @@ contract ItemsRewardBoundTest is StdCheats, Test {
         mockERC1155.mint(address(itemBound), 456, 10, "");
     }
 
+    function testInitializeTwiceShouldFail() public {
+        vm.expectRevert("Initializable: contract is already initialized");
+        itemBound.initialize(address(this));
+    }
+
     function testTokenExists() public {
         uint256 _tokenId = generateRandomItemId();
 
-        vm.expectRevert("TokenNotExist");
+        vm.expectRevert(TokenNotExist.selector);
         itemBound.isTokenExist(_tokenId);
 
-        vm.expectRevert("TokenNotExist");
-        itemBound.adminMintById(playerWallet.addr, _tokenId, 1, true);
+        vm.expectRevert(TokenNotExist.selector);
+        itemBound.adminBatchMintById(wallets, _tokenId, amounts, true);
 
         delete _rewards; // reset rewards
         for (uint256 j = 0; j < 10; j++) {
@@ -210,12 +238,49 @@ contract ItemsRewardBoundTest is StdCheats, Test {
             rewards: _rewards,
             gatingTokenRequired: false,
             gatingTokenAddress: address(0),
-            gatingTokenId: 0
+            gatingTokenId: 0,
+            requireToBurnGatingToken: true
         });
 
         itemBound.addNewToken(_token);
         itemBound.isTokenExist(_tokenId);
-        itemBound.adminMintById(playerWallet.addr, _tokenId, 1, true);
+        itemBound.adminBatchMintById(wallets, _tokenId, amounts, true);
+    }
+
+    function testAddNewTokensNotDEV_CONFIG_ROLEShouldFail() public {
+        LibItems.RewardToken[] memory _tokens = new LibItems.RewardToken[](3);
+
+        skip(36000);
+        for (uint256 i = 0; i < 3; i++) {
+            delete _rewards; // reset rewards
+            LibItems.Reward memory _etherReward = LibItems.Reward({
+                rewardType: LibItems.RewardType.ETHER,
+                rewardAmount: 100000000000000000,
+                rewardTokenAddress: address(0),
+                rewardTokenId: 456
+            });
+
+            _rewards.push(_etherReward);
+
+            uint256 _tokenId = generateRandomItemId(); // totally random
+            LibItems.RewardToken memory _token = LibItems.RewardToken({
+                tokenId: _tokenId,
+                tokenUri: string(abi.encodePacked("https://something.com", "/", _tokenId.toString())),
+                rewards: _rewards,
+                gatingTokenRequired: false,
+                gatingTokenAddress: address(0),
+                gatingTokenId: 0,
+                requireToBurnGatingToken: true
+            });
+
+            _tokens[i] = _token;
+        }
+
+        vm.expectRevert(
+            "AccessControl: account 0x44e97af4418b7a17aabd8090bea0a471a366305c is missing role 0x3b359cf0b4471a5de84269135285268e64ac56f52d3161392213003a780ad63b"
+        );
+        vm.prank(playerWallet.addr);
+        itemBound.addNewTokens(_tokens);
     }
 
     function testAddNewTokens() public {
@@ -265,7 +330,8 @@ contract ItemsRewardBoundTest is StdCheats, Test {
                 rewards: _rewards,
                 gatingTokenRequired: false,
                 gatingTokenAddress: address(0),
-                gatingTokenId: 0
+                gatingTokenId: 0,
+                requireToBurnGatingToken: true
             });
 
             _tokens[i] = _token;
@@ -274,16 +340,117 @@ contract ItemsRewardBoundTest is StdCheats, Test {
         itemBound.addNewTokens(_tokens);
     }
 
+    function testAddNewTokensWithGatingTokenRequireShouldPass() public {
+        LibItems.RewardToken[] memory _tokens = new LibItems.RewardToken[](3);
+
+        skip(36000);
+        for (uint256 i = 0; i < 3; i++) {
+            delete _rewards; // reset rewards
+            LibItems.Reward memory _etherReward = LibItems.Reward({
+                rewardType: LibItems.RewardType.ETHER,
+                rewardAmount: 100000000000000000,
+                rewardTokenAddress: address(0),
+                rewardTokenId: 456
+            });
+
+            _rewards.push(_etherReward);
+
+            uint256 _tokenId = generateRandomItemId(); // totally random
+            LibItems.RewardToken memory _token = LibItems.RewardToken({
+                tokenId: _tokenId,
+                tokenUri: string(abi.encodePacked("https://something.com", "/", _tokenId.toString())),
+                rewards: _rewards,
+                gatingTokenRequired: true,
+                gatingTokenAddress: erc1155FakeRewardAddress,
+                gatingTokenId: 10,
+                requireToBurnGatingToken: true
+            });
+
+            _tokens[i] = _token;
+        }
+
+        itemBound.addNewTokens(_tokens);
+    }
+
+    function testAddNewTokensWithGatingTokenRequireShouldFail() public {
+        LibItems.RewardToken[] memory _tokens = new LibItems.RewardToken[](3);
+
+        skip(36000);
+        for (uint256 i = 0; i < 3; i++) {
+            delete _rewards; // reset rewards
+            LibItems.Reward memory _etherReward = LibItems.Reward({
+                rewardType: LibItems.RewardType.ETHER,
+                rewardAmount: 100000000000000000,
+                rewardTokenAddress: address(0),
+                rewardTokenId: 456
+            });
+
+            _rewards.push(_etherReward);
+
+            uint256 _tokenId = generateRandomItemId(); // totally random
+            LibItems.RewardToken memory _token = LibItems.RewardToken({
+                tokenId: _tokenId,
+                tokenUri: string(abi.encodePacked("https://something.com", "/", _tokenId.toString())),
+                rewards: _rewards,
+                gatingTokenRequired: true,
+                gatingTokenAddress: address(0),
+                gatingTokenId: 10,
+                requireToBurnGatingToken: true
+            });
+
+            _tokens[i] = _token;
+        }
+
+        vm.expectRevert(InvalidInput.selector);
+        itemBound.addNewTokens(_tokens);
+
+        for (uint256 i = 0; i < 3; i++) {
+            delete _rewards; // reset rewards
+            LibItems.Reward memory _etherReward = LibItems.Reward({
+                rewardType: LibItems.RewardType.ETHER,
+                rewardAmount: 100000000000000000,
+                rewardTokenAddress: address(0),
+                rewardTokenId: 456
+            });
+
+            _rewards.push(_etherReward);
+
+            uint256 _tokenId = generateRandomItemId(); // totally random
+            LibItems.RewardToken memory _token = LibItems.RewardToken({
+                tokenId: _tokenId,
+                tokenUri: string(abi.encodePacked("https://something.com", "/", _tokenId.toString())),
+                rewards: _rewards,
+                gatingTokenRequired: true,
+                gatingTokenAddress: erc1155FakeRewardAddress,
+                gatingTokenId: 0,
+                requireToBurnGatingToken: true
+            });
+
+            _tokens[i] = _token;
+        }
+
+        vm.expectRevert(InvalidInput.selector);
+        itemBound.addNewTokens(_tokens);
+    }
+
     function testPauseUnpause() public {
         uint256 _tokenId = _tokenIds[0];
 
+        address[] memory _wallets = new address[](2);
+        _wallets[0] = address(this);
+        _wallets[1] = address(mockERC1155Receiver);
+
+        uint256[] memory _amounts = new uint256[](2);
+        _amounts[0] = 1;
+        _amounts[1] = 2;
+
         itemBound.pause();
         vm.expectRevert("Pausable: paused");
-        itemBound.adminMintById(address(this), _tokenId, 1, true);
+        itemBound.adminBatchMintById(_wallets, _tokenId, _amounts, true);
         itemBound.unpause();
 
-        itemBound.adminMintById(address(mockERC1155Receiver), _tokenId, 1, true);
-        assertEq(itemBound.balanceOf(address(mockERC1155Receiver), _tokenId), 1);
+        itemBound.adminMintById(address(mockERC1155Receiver), _tokenId, 2, true);
+        assertEq(itemBound.balanceOf(address(mockERC1155Receiver), _tokenId), 2);
     }
 
     function testPauseUnpauseSpecificToken() public {
@@ -291,13 +458,13 @@ contract ItemsRewardBoundTest is StdCheats, Test {
 
         itemBound.updateTokenMintPaused(_tokenId, true);
 
-        vm.expectRevert("TokenMintPaused");
+        vm.expectRevert(MintPaused.selector);
         itemBound.adminMintById(address(mockERC1155Receiver), _tokenId, 1, true);
 
-        vm.expectRevert("TokenMintPaused");
+        vm.expectRevert(MintPaused.selector);
         itemBound.adminMint(address(mockERC1155Receiver), encodedItems1, true);
 
-        vm.expectRevert("TokenMintPaused");
+        vm.expectRevert(MintPaused.selector);
         vm.prank(playerWallet.addr);
         itemBound.mint(encodedItems1, true, nonce, signature, false);
 
@@ -309,7 +476,17 @@ contract ItemsRewardBoundTest is StdCheats, Test {
         assertEq(itemBound.balanceOf(playerWallet.addr, _tokenId), 1);
     }
 
-    // testVerifySignature
+    function testDecodeDataShouldPass() public {
+        bytes memory encodedItems = encode(_tokenIds, _amounts);
+
+        (uint256[] memory ids, uint256[] memory amounts) = itemBound.decodeData(encodedItems);
+
+        for (uint256 i = 0; i < ids.length; i++) {
+            assertEq(ids[i], _tokenIds[i]);
+            assertEq(amounts[i], _amounts[i]);
+        }
+    }
+
     function testInvalidSignature() public {
         vm.prank(playerWallet.addr);
         vm.expectRevert("InvalidSignature");
@@ -362,7 +539,7 @@ contract ItemsRewardBoundTest is StdCheats, Test {
 
         (uint256 _nonce, bytes memory _signature) = generateSignature(playerWallet.addr, encodedItems3, minterLabel);
 
-        vm.expectRevert("TokenNotExist");
+        vm.expectRevert(TokenNotExist.selector);
         vm.prank(playerWallet.addr);
         itemBound.mint(encodedItems3, true, _nonce, _signature, false);
     }
@@ -409,7 +586,7 @@ contract ItemsRewardBoundTest is StdCheats, Test {
     // function testClaimMint() public {
     //     uint256 rewardTokenAmount = itemBound.balanceOf(playerWallet.addr, defaultRewardId);
     //     vm.prank(playerWallet.addr);
-    //     itemBound.mint(encodedItems1, true, true, nonce, signature);
+    //     itemBound.mint(encodedItems1, true, nonce, signature, true);
     //     assertEq(itemBound.balanceOf(playerWallet.addr, defaultRewardId), 0);
     //     assertEq(itemBound.balanceOf(playerWallet.addr, _tokenIds[0]), 1);
     //     assertEq(itemBound.balanceOf(playerWallet.addr, _tokenIds[1]), 1);
@@ -585,7 +762,7 @@ contract ItemsRewardBoundTest is StdCheats, Test {
         _amount3[0] = 1;
         _amount3[1] = 1;
 
-        vm.expectRevert("ERC1155: duplicate ID");
+        vm.expectRevert(DupTokenId.selector);
         vm.prank(playerWallet.addr);
         itemBound.safeBatchTransferFrom(playerWallet.addr, minterWallet.addr, _itemIds3, _amount3, "");
 
@@ -597,27 +774,39 @@ contract ItemsRewardBoundTest is StdCheats, Test {
     }
 
     function testTokenURIIfTokenIdNotExist() public {
-        vm.expectRevert("TokenNotExist");
+        vm.expectRevert(TokenNotExist.selector);
         itemBound.uri(1);
     }
 
-    // function testTokenURIIfTokenIdExistWithSpeficTokenURI() public {
-    //     uint256 _tokenId = generateRandomItemId(); // totally random
-    //     uint256 _level = generateRandomLevel(); // level 1-10
-    //     TestLibItems.Tier _tier = generateRandomTier(); // tier 0-4
+    function testTokenURIIfTokenIdExistWithSpeficTokenURI() public {
+        uint256 _tokenId = generateRandomItemId(); // totally random
 
-    //     LibItems.RewardToken memory _token = LibItems.RewardToken({
-    //         tokenId: _tokenId,
-    //         rewardAmount: 2000,
-    //         rewardERC20: erc20FakeRewardAddress,
-    //         isEther: false,
-    //         tokenUri: "ipfs://specific-token-uri.com"
-    //     });
+        delete _rewards; // reset rewards
+        for (uint256 j = 0; j < 10; j++) {
+            LibItems.Reward memory _reward = LibItems.Reward({
+                rewardType: LibItems.RewardType.ERC20,
+                rewardAmount: 2000,
+                rewardTokenAddress: erc20FakeRewardAddress,
+                rewardTokenId: 0
+            });
 
-    //     itemBound.addNewToken(_token);
+            _rewards.push(_reward);
+        }
 
-    //     assertEq(itemBound.uri(_tokenId), "ipfs://specific-token-uri.com");
-    // }
+        LibItems.RewardToken memory _token = LibItems.RewardToken({
+            tokenId: _tokenId,
+            tokenUri: "ipfs://specific-token-uri.com",
+            rewards: _rewards,
+            gatingTokenRequired: false,
+            gatingTokenAddress: address(0),
+            gatingTokenId: 0,
+            requireToBurnGatingToken: true
+        });
+
+        itemBound.addNewToken(_token);
+
+        assertEq(itemBound.uri(_tokenId), "ipfs://specific-token-uri.com");
+    }
 
     // function testUpdateTokenURIFailNoDevConfigRole() public {
     //     string memory newTokenUri = "https://something-new.com/232";
@@ -631,15 +820,27 @@ contract ItemsRewardBoundTest is StdCheats, Test {
 
     // function testUpdateTokenURIPass() public {
     //     uint256 _tokenId = generateRandomItemId(); // totally random
-    //     uint256 _level = generateRandomLevel(); // level 1-10
-    //     TestLibItems.Tier _tier = generateRandomTier(); // tier 0-4
+
+    //     delete _rewards; // reset rewards
+    //     for (uint256 j = 0; j < 10; j++) {
+    //         LibItems.Reward memory _reward = LibItems.Reward({
+    //             rewardType: LibItems.RewardType.ERC20,
+    //             rewardAmount: 2000,
+    //             rewardTokenAddress: erc20FakeRewardAddress,
+    //             rewardTokenId: 0
+    //         });
+
+    //         _rewards.push(_reward);
+    //     }
 
     //     LibItems.RewardToken memory _token = LibItems.RewardToken({
     //         tokenId: _tokenId,
     //         tokenUri: "123",
-    //         rewardAmount: 2000,
-    //         rewardERC20: erc20FakeRewardAddress,
-    //         isEther: false
+    //         rewards: _rewards,
+    //         gatingTokenRequired: false,
+    //         gatingTokenAddress: address(0),
+    //         gatingTokenId: 0,
+    // requireToBurnGatingToken: true
     //     });
 
     //     itemBound.addNewToken(_token);
@@ -649,6 +850,88 @@ contract ItemsRewardBoundTest is StdCheats, Test {
     //     assertEq(itemBound.uri(_tokenId), "123");
     //     itemBound.updateTokenUri(_tokenId, newTokenUri);
     //     assertEq(itemBound.uri(_tokenId), "https://something-new.com/232");
+    // }
+
+    // function testBatchUpdateTokenUriShouldFail() public {
+    //     LibItems.RewardToken[] memory _tokens = new LibItems.RewardToken[](3);
+    //     uint256[] memory _tokenIds = new uint256[](3);
+    //     skip(36000);
+    //     for (uint256 i = 0; i < 3; i++) {
+    //         delete _rewards; // reset rewards
+    //         LibItems.Reward memory _etherReward = LibItems.Reward({
+    //             rewardType: LibItems.RewardType.ETHER,
+    //             rewardAmount: 100000000000000000,
+    //             rewardTokenAddress: address(0),
+    //             rewardTokenId: 456
+    //         });
+
+    //         _rewards.push(_etherReward);
+
+    //         uint256 _tokenId = generateRandomItemId(); // totally random
+    //         LibItems.RewardToken memory _token = LibItems.RewardToken({
+    //             tokenId: _tokenId,
+    //             tokenUri: string(abi.encodePacked("https://something.com", "/", _tokenId.toString())),
+    //             rewards: _rewards,
+    //             gatingTokenRequired: true,
+    //             gatingTokenAddress: erc1155FakeRewardAddress,
+    //             gatingTokenId: 10,
+    // requireToBurnGatingToken: true
+    //         });
+
+    //         _tokens[i] = _token;
+    //         _tokenIds[i] = _tokenId;
+    //     }
+
+    //     itemBound.addNewTokens(_tokens);
+
+    //     string[] memory _newTokenUris = new string[](2);
+    //     _newTokenUris[0] = "https://something-new.com/232";
+    //     _newTokenUris[1] = "https://something-new.com/232";
+
+    //     vm.expectRevert("InvalidInput");
+    //     itemBound.batchUpdateTokenUri(_tokenIds, _newTokenUris);
+    // }
+
+    // function testBatchUpdateTokenUriShouldPass() public {
+    //     LibItems.RewardToken[] memory _tokens = new LibItems.RewardToken[](3);
+    //     uint256[] memory _tokenIds = new uint256[](3);
+    //     skip(36000);
+    //     for (uint256 i = 0; i < 3; i++) {
+    //         delete _rewards; // reset rewards
+    //         LibItems.Reward memory _etherReward = LibItems.Reward({
+    //             rewardType: LibItems.RewardType.ETHER,
+    //             rewardAmount: 100000000000000000,
+    //             rewardTokenAddress: address(0),
+    //             rewardTokenId: 456
+    //         });
+
+    //         _rewards.push(_etherReward);
+
+    //         uint256 _tokenId = generateRandomItemId(); // totally random
+    //         LibItems.RewardToken memory _token = LibItems.RewardToken({
+    //             tokenId: _tokenId,
+    //             tokenUri: string(abi.encodePacked("https://something.com", "/", _tokenId.toString())),
+    //             rewards: _rewards,
+    //             gatingTokenRequired: true,
+    //             gatingTokenAddress: erc1155FakeRewardAddress,
+    //             gatingTokenId: 10,
+    // requireToBurnGatingToken: true
+    //         });
+
+    //         _tokens[i] = _token;
+    //         _tokenIds[i] = _tokenId;
+    //     }
+
+    //     itemBound.addNewTokens(_tokens);
+
+    //     string[] memory _newTokenUris = new string[](3);
+    //     _newTokenUris[0] = "https://something-new.com/1";
+    //     _newTokenUris[1] = "https://something-new.com/2";
+    //     _newTokenUris[2] = "https://something-new.com/2";
+
+    //     itemBound.batchUpdateTokenUri(_tokenIds, _newTokenUris);
+
+    //     assertEq(itemBound.uri(_tokenIds[0]), _newTokenUris[0]);
     // }
 
     function testNonSoulboundTokenTransfer() public {
@@ -702,44 +985,5 @@ contract ItemsRewardBoundTest is StdCheats, Test {
         );
         vm.prank(playerWallet.addr);
         itemBound.safeTransferFrom(playerWallet.addr, playerWallet3.addr, _tokenId, 1, "");
-    }
-
-    function testGetAllItems() public {
-        bytes memory encodedItemsAll = encode(_tokenIds, _amounts);
-        itemBound.adminMint(playerWallet.addr, encodedItemsAll, false);
-
-        string memory newTokenUri = "https://something-new.com/232";
-        itemBound.updateTokenUri(_tokenIds[23], newTokenUri);
-        assertEq(itemBound.uri(_tokenIds[23]), "https://something-new.com/232");
-
-        vm.prank(playerWallet.addr);
-        LibItems.TokenReturn[] memory allTokensInfo = itemBound.getAllItems();
-        assertEq(allTokensInfo.length, 1300);
-
-        vm.prank(playerWallet.addr);
-        itemBound.safeTransferFrom(playerWallet.addr, minterWallet.addr, _tokenIds[24], 1, "");
-
-        vm.prank(playerWallet.addr);
-        LibItems.TokenReturn[] memory allTokensInfo2 = itemBound.getAllItems();
-        assertEq(allTokensInfo2.length, 1299);
-
-        for (uint256 i = 0; i < allTokensInfo.length; i++) {
-            assertEq(allTokensInfo[i].tokenId, _tokenIds[i]);
-
-            if (i == 23) {
-                assertEq(allTokensInfo[i].tokenUri, newTokenUri);
-                assertEq(allTokensInfo[i].amount, 1);
-            } else {
-                assertEq(allTokensInfo[i].amount, 1);
-                assertEq(
-                    allTokensInfo[i].tokenUri,
-                    string(abi.encodePacked("https://something.com", "/", _tokenIds[i].toString()))
-                );
-            }
-        }
-
-        vm.prank(minterWallet.addr);
-        LibItems.TokenReturn[] memory allTokensInfo3 = itemBound.getAllItems();
-        assertEq(allTokensInfo3.length, 1);
     }
 }
