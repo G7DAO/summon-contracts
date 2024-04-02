@@ -356,16 +356,25 @@ contract ERC1155RewardSoulbound is
         _mintAndClaimRewardTokenBatch(to, _tokenIds, _amounts, soulbound, false);
     }
 
+    function adminMintById(
+        address toAddress,
+        uint256 _tokenId,
+        uint256 _amount,
+        bool isSoulbound
+    ) public onlyRole(MINTER_ROLE) whenNotPaused {
+        _mintAndClaimRewardToken(toAddress, _tokenId, _amount, isSoulbound, false);
+        emit MintedById(toAddress, _tokenId, _amount, isSoulbound);
+    }
+
     function adminBatchMintById(
         address[] calldata toAddresses,
         uint256 _tokenId,
-        uint256[] memory _amounts,
-        bool _soulbound
+        uint256[] calldata _amounts,
+        bool isSoulbound
     ) public onlyRole(MINTER_ROLE) whenNotPaused {
         for (uint256 i = 0; i < toAddresses.length; i++) {
-            _mintAndClaimRewardToken(toAddresses[i], _tokenId, _amounts[i], _soulbound, false);
-
-            emit MintedById(toAddresses[i], _tokenId, _amounts[i], _soulbound);
+            _mintAndClaimRewardToken(toAddresses[i], _tokenId, _amounts[i], isSoulbound, false);
+            emit MintedById(toAddresses[i], _tokenId, _amounts[i], isSoulbound);
         }
     }
 
