@@ -14,6 +14,7 @@ export const submitContractDeploymentsToDB = async (deployments: Deployment[], t
             tenant,
         });
     } catch (error) {
+        console.error((error as Error).message);
         throw error;
     }
 };
