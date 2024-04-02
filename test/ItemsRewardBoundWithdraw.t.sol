@@ -220,8 +220,6 @@ contract ItemsRewardBoundWithdrawTest is StdCheats, Test {
         address ownerAddress = mockERC721.ownerOf(10);
         assertEq(ownerAddress, playerWallet3.addr);
 
-        console.log("ownerAddress-->", ownerAddress);
-
         uint256[] memory _tokenIds1 = new uint256[](1);
         _tokenIds1[0] = 10; // tokenId 10
 
@@ -261,7 +259,6 @@ contract ItemsRewardBoundWithdrawTest is StdCheats, Test {
     // withdraw ERC721 - pass
     function testWithdrawERC721ShouldPass() public {
         address ownerAddress = mockERC721.ownerOf(0);
-        console.log(ownerAddress);
         assertEq(ownerAddress, address(itemBound));
 
         uint256[] memory _tokenIds1 = new uint256[](1);
@@ -282,53 +279,71 @@ contract ItemsRewardBoundWithdrawTest is StdCheats, Test {
     }
 
     // withdraw ERC1155 - fail
-    // function testWithdrawERC1155NotOwnedShouldFail() public {
-    //     mockERC721.mint(playerWallet3.addr);
+    // own but amount is 0
+    function testWithdrawERC1155TooMuchShouldFail() public {
+        address[] memory _accounts = new address[](3);
+        _accounts[0] = address(itemBound);
+        _accounts[1] = address(itemBound);
+        _accounts[2] = address(itemBound);
 
-    //     address ownerAddress = mockERC721.ownerOf(10);
-    //     assertEq(ownerAddress, playerWallet3.addr);
+        uint256[] memory _tokenIds = new uint256[](3);
+        _tokenIds[0] = 123;
+        _tokenIds[1] = 456;
+        _tokenIds[2] = 789;
 
-    //     console.log("ownerAddress-->", ownerAddress);
+        uint256[] memory _amounts = new uint256[](3);
+        _amounts[0] = 2;
+        _amounts[1] = 11;
+        _amounts[2] = 4;
 
-    //     uint256[] memory _tokenIds1 = new uint256[](1);
-    //     _tokenIds1[0] = 10; // tokenId 10
+        uint256[] memory balances = mockERC1155.balanceOfBatch(_accounts, _tokenIds);
 
-    //     uint256[] memory _amount1 = new uint256[](1);
-    //     _amount1[0] = 0; // ignore amount
+        for (uint256 i = 0; i < balances.length; i++) {
+            assertEq(balances[i], 10);
+        }
 
-    //     vm.expectRevert("ERC721: caller is not token owner or approved");
-    //     itemBound.withdrawAssets(
-    //         LibItems.RewardType.ERC721,
-    //         playerWallet2.addr,
-    //         address(mockERC721),
-    //         _tokenIds1,
-    //         _amount1
-    //     );
-    // }
+        vm.expectRevert("ERC1155: insufficient balance for transfer");
+        itemBound.withdrawAssets(
+            LibItems.RewardType.ERC1155,
+            playerWallet2.addr,
+            address(mockERC1155),
+            _tokenIds,
+            _amounts
+        );
 
-    // mockERC1155.mint(address(itemBound), 123, 10, "");
-    // mockERC1155.mint(address(itemBound), 456, 10, "");
-    // mockERC1155.mint(address(itemBound), 789, 10, "");
+        uint256[] memory balancesAfter = mockERC1155.balanceOfBatch(_accounts, _tokenIds);
 
-    // function testWithdrawERC1155InvalidTokenIdShouldFail() public {
-    //     vm.expectRevert("ERC721: invalid token ID");
-    //     address ownerAddress = mockERC721.ownerOf(20);
+        for (uint256 i = 0; i < balancesAfter.length; i++) {
+            assertEq(balancesAfter[i], balances[i]);
+        }
+    }
 
-    //     uint256[] memory _tokenIds1 = new uint256[](1);
-    //     _tokenIds1[0] = 20; // tokenId 20
+    // token not owned
+    function testWithdrawERC1155NotOwnedShouldFail() public {
+        address[] memory _accounts = new address[](1);
+        _accounts[0] = address(itemBound);
 
-    //     uint256[] memory _amount1 = new uint256[](1);
-    //     _amount1[0] = 0; // ignore amount
+        uint256[] memory _tokenIds = new uint256[](1);
+        _tokenIds[0] = 888;
 
-    //     vm.expectRevert("ERC721: invalid token ID");
-    //     itemBound.withdrawAssets(
-    //         LibItems.RewardType.ERC721,
-    //         playerWallet2.addr,
-    //         address(mockERC721),
-    //         _tokenIds1,
-    //         _amount1
-    //     );
-    // }
+        uint256[] memory _amounts = new uint256[](1);
+        _amounts[0] = 2;
+
+        uint256[] memory balances = mockERC1155.balanceOfBatch(_accounts, _tokenIds);
+
+        for (uint256 i = 0; i < balances.length; i++) {
+            assertEq(balances[i], 0);
+        }
+
+        vm.expectRevert("ERC1155: insufficient balance for transfer");
+        itemBound.withdrawAssets(
+            LibItems.RewardType.ERC1155,
+            playerWallet2.addr,
+            address(mockERC1155),
+            _tokenIds,
+            _amounts
+        );
+    }
 
     // withdraw ERC1155 - pass
     function testWithdrawERC1155ShouldPass() public {
@@ -351,7 +366,6 @@ contract ItemsRewardBoundWithdrawTest is StdCheats, Test {
 
         for (uint256 i = 0; i < balances.length; i++) {
             assertEq(balances[i], 10);
-            console.log("before - balances:", balances[i]);
         }
 
         itemBound.withdrawAssets(
@@ -365,7 +379,6 @@ contract ItemsRewardBoundWithdrawTest is StdCheats, Test {
         uint256[] memory balancesAfter = mockERC1155.balanceOfBatch(_accounts, _tokenIds);
 
         for (uint256 i = 0; i < balancesAfter.length; i++) {
-            console.log("balancesAfter:", balancesAfter[i]);
             assertEq(balancesAfter[i], 10 - _amounts[i]);
         }
     }
