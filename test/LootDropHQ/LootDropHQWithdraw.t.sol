@@ -9,7 +9,7 @@ import { Strings } from "@openzeppelin/contracts/utils/Strings.sol";
 import { ECDSA } from "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
 
 import { LootDropHQ } from "../../contracts/soulbounds/LootDropHQ.sol";
-import { LeanERC1155Soulbound } from "../../contracts/soulbounds/LeanERC1155Soulbound.sol";
+import { AdminERC1155Soulbound } from "../../contracts/soulbounds/AdminERC1155Soulbound.sol";
 import { MockERC1155Receiver } from "../../contracts/mocks/MockERC1155Receiver.sol";
 import { MockERC20 } from "../../contracts/mocks/MockERC20.sol";
 import { MockERC721 } from "../../contracts/mocks/MockErc721.sol";
@@ -33,7 +33,7 @@ contract LootDropHQWithdrawTest is StdCheats, Test {
     using Strings for uint256;
 
     LootDropHQ public lootDropHQ;
-    LeanERC1155Soulbound public itemBound;
+    AdminERC1155Soulbound public itemBound;
     MockERC1155Receiver public mockERC1155Receiver;
     MockERC20 public mockERC20;
     MockERC721 public mockERC721;
@@ -85,18 +85,11 @@ contract LootDropHQWithdrawTest is StdCheats, Test {
         playerWallet3 = getWallet(player3Label);
         minterWallet = getWallet(minterLabel);
 
-        itemBound = new LeanERC1155Soulbound(address(this));
+        itemBound = new AdminERC1155Soulbound(address(this));
         lootDropHQ = new LootDropHQ(address(this));
         lootDropHQ.initialize(address(this), address(itemBound));
 
-        itemBound.initialize(
-            "Test1155",
-            "T1155",
-            "MISSING_BASE_URL",
-            "MISSING_CONTRACT_URL",
-            address(this),
-            address(lootDropHQ)
-        );
+        itemBound.initialize("Test1155", "T1155", "MISSING_BASE_URL", address(this), address(lootDropHQ));
 
         mockERC20 = new MockERC20("oUSDC", "oUSDC");
         mockERC721 = new MockERC721();

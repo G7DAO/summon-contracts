@@ -25,22 +25,20 @@ import { ERC1155 } from "@openzeppelin/contracts/token/ERC1155/ERC1155.sol";
 import { ERC1155Burnable } from "@openzeppelin/contracts/token/ERC1155/extensions/ERC1155Burnable.sol";
 import { ERC1155Supply } from "@openzeppelin/contracts/token/ERC1155/extensions/ERC1155Supply.sol";
 import { AccessControl } from "@openzeppelin/contracts/access/AccessControl.sol";
-import { Pausable } from "@openzeppelin/contracts/security/Pausable.sol";
 import { Strings } from "@openzeppelin/contracts/utils/Strings.sol";
-import { ECDSA } from "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
 import { ReentrancyGuard } from "@openzeppelin/contracts/security/ReentrancyGuard.sol";
 import { Initializable } from "@openzeppelin/contracts/proxy/utils/Initializable.sol";
 
 import { Achievo1155Soulbound } from "../ercs/extensions/Achievo1155Soulbound.sol";
-import { ERCWhitelistSignature } from "../ercs/ERCWhitelistSignature.sol";
 import { LibItems } from "../libraries/LibItems.sol";
 
-contract LeanERC1155Soulbound is
+error AddressIsZero();
+
+contract AdminERC1155Soulbound is
     ERC1155Burnable,
     ERC1155Supply,
     Achievo1155Soulbound,
     AccessControl,
-    Pausable,
     ReentrancyGuard,
     Initializable
 {
@@ -50,16 +48,13 @@ contract LeanERC1155Soulbound is
     bytes32 public constant MANAGER_ROLE = keccak256("MANAGER_ROLE");
     bytes32 public constant DEV_CONFIG_ROLE = keccak256("DEV_CONFIG_ROLE");
 
-    string public contractURI;
-    string private baseURI;
     string public name;
     string public symbol;
+    string public defaultTokenURI;
+
     using Strings for uint256;
 
     mapping(uint256 => bool) private tokenExists;
-    mapping(uint256 => string) public tokenUris; // tokenId => tokenUri
-    mapping(uint256 => bool) public isTokenMintPaused; // tokenId => bool - default is false
-
     uint256[] public itemIds;
 
     mapping(address => mapping(uint256 => bool)) private tokenIdProcessed;
@@ -75,13 +70,13 @@ contract LeanERC1155Soulbound is
     function initialize(
         string memory _name,
         string memory _symbol,
-        string memory _initBaseURI,
-        string memory _contractURI,
+        string memory _defaultTokenURI,
         address devWallet,
         address lootDropAddress
     ) external initializer onlyRole(DEFAULT_ADMIN_ROLE) {
-        require(devWallet != address(0), "AddressIsZero");
-        require(lootDropAddress != address(0), "AddressIsZero");
+        if (devWallet == address(0) || lootDropAddress == address(0)) {
+            revert AddressIsZero();
+        }
 
         _grantRole(DEFAULT_ADMIN_ROLE, devWallet);
         _grantRole(MANAGER_ROLE, devWallet);
@@ -89,39 +84,11 @@ contract LeanERC1155Soulbound is
         _grantRole(DEV_CONFIG_ROLE, lootDropAddress);
         _grantRole(MINTER_ROLE, lootDropAddress);
 
+        _updateWhitelistAddress(lootDropAddress, true);
+
         name = _name;
         symbol = _symbol;
-        baseURI = _initBaseURI;
-        contractURI = _contractURI;
-    }
-
-    function getAllItems() public view returns (LibItems.TokenReturn[] memory) {
-        uint256 totalTokens = itemIds.length;
-        LibItems.TokenReturn[] memory tokenReturns = new LibItems.TokenReturn[](totalTokens);
-
-        uint index;
-        for (uint i = 0; i < totalTokens; i++) {
-            uint256 tokenId = itemIds[i];
-            uint256 amount = balanceOf(_msgSender(), tokenId);
-
-            if (amount > 0) {
-                LibItems.TokenReturn memory tokenReturn = LibItems.TokenReturn({
-                    tokenId: tokenId,
-                    tokenUri: uri(tokenId),
-                    amount: amount
-                });
-                tokenReturns[index] = tokenReturn;
-                index++;
-            }
-        }
-
-        // truncate the array
-        LibItems.TokenReturn[] memory returnsTruncated = new LibItems.TokenReturn[](index);
-        for (uint i = 0; i < index; i++) {
-            returnsTruncated[i] = tokenReturns[i];
-        }
-
-        return returnsTruncated;
+        defaultTokenURI = _defaultTokenURI;
     }
 
     function getAllItemsAdmin(
@@ -160,62 +127,14 @@ contract LeanERC1155Soulbound is
         return true;
     }
 
-    function pause() external onlyRole(MANAGER_ROLE) {
-        _pause();
+    function addNewToken(uint256 _tokenId) public onlyRole(DEV_CONFIG_ROLE) {
+        tokenExists[_tokenId] = true;
+        itemIds.push(_tokenId);
+        emit TokenAdded(_tokenId);
     }
 
-    function unpause() external onlyRole(MANAGER_ROLE) {
-        _unpause();
-    }
-
-    function addNewToken(LibItems.TokenCreate calldata _token) public onlyRole(DEV_CONFIG_ROLE) {
-        if (bytes(_token.tokenUri).length > 0) {
-            tokenUris[_token.tokenId] = _token.tokenUri;
-        }
-
-        tokenExists[_token.tokenId] = true;
-
-        itemIds.push(_token.tokenId);
-        emit TokenAdded(_token.tokenId);
-    }
-
-    function addNewTokens(LibItems.TokenCreate[] calldata _tokens) external onlyRole(DEV_CONFIG_ROLE) {
-        for (uint256 i = 0; i < _tokens.length; i++) {
-            addNewToken(_tokens[i]);
-        }
-    }
-
-    function updateTokenUri(uint256 _tokenId, string calldata _tokenUri) public onlyRole(DEV_CONFIG_ROLE) {
-        tokenUris[_tokenId] = _tokenUri;
-    }
-
-    function batchUpdateTokenUri(
-        uint256[] calldata _tokenIds,
-        string[] calldata _tokenUris
-    ) public onlyRole(DEV_CONFIG_ROLE) {
-        if (_tokenIds.length != _tokenUris.length) {
-            revert("InvalidInput");
-        }
-        for (uint256 i = 0; i < _tokenIds.length; i++) {
-            updateTokenUri(_tokenIds[i], _tokenUris[i]);
-        }
-    }
-
-    function updateTokenMintPaused(uint256 _tokenId, bool _isTokenMintPaused) public onlyRole(MANAGER_ROLE) {
-        isTokenMintPaused[_tokenId] = _isTokenMintPaused;
-    }
-
-    function adminMintId(
-        address to,
-        uint256 id,
-        uint256 amount,
-        bool isSoulbound
-    ) public onlyRole(MINTER_ROLE) whenNotPaused {
+    function adminMintId(address to, uint256 id, uint256 amount, bool isSoulbound) public onlyRole(MINTER_ROLE) {
         isTokenExist(id);
-
-        if (isTokenMintPaused[id]) {
-            revert("TokenMintPaused");
-        }
 
         if (isSoulbound) {
             _soulbound(to, id, amount);
@@ -230,7 +149,7 @@ contract LeanERC1155Soulbound is
         uint256 _tokenId,
         uint256[] calldata _amounts,
         bool isSoulbound
-    ) external onlyRole(MINTER_ROLE) whenNotPaused {
+    ) external onlyRole(MINTER_ROLE) {
         for (uint256 i = 0; i < toAddresses.length; i++) {
             adminMintId(toAddresses[i], _tokenId, _amounts[i], isSoulbound);
         }
@@ -351,23 +270,14 @@ contract LeanERC1155Soulbound is
 
     function uri(uint256 tokenId) public view override returns (string memory) {
         isTokenExist(tokenId);
-        if (bytes(tokenUris[tokenId]).length > 0) {
-            return tokenUris[tokenId];
-        } else {
-            return string(abi.encodePacked(baseURI, "/", tokenId.toString()));
-        }
+        return defaultTokenURI;
     }
 
-    function updateBaseUri(string memory _baseURI) external onlyRole(DEV_CONFIG_ROLE) {
-        baseURI = _baseURI;
+    function updateDefaultTokenURI(string memory _defaultTokenURI) external onlyRole(DEV_CONFIG_ROLE) {
+        defaultTokenURI = _defaultTokenURI;
     }
 
     function updateWhitelistAddress(address _address, bool _isWhitelisted) external onlyRole(DEV_CONFIG_ROLE) {
         _updateWhitelistAddress(_address, _isWhitelisted);
-    }
-
-    function setContractURI(string memory _contractURI) public onlyRole(DEV_CONFIG_ROLE) {
-        contractURI = _contractURI;
-        emit ContractURIChanged(_contractURI);
     }
 }

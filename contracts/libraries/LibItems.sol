@@ -34,12 +34,6 @@ library LibItems {
         ERC1155
     }
 
-    enum GatingTokenType {
-        NONE,
-        ERC721,
-        ERC1155
-    }
-
     struct Reward {
         RewardType rewardType; // 4 = ether 1 = erc20, 2 = erc721, 3 = erc1155, 4 = erc404
         uint256 rewardAmount; // depending of the erc20 token decimal
@@ -52,11 +46,6 @@ library LibItems {
         uint256 tokenId;
         string tokenUri;
         Reward[] rewards;
-        bool gatingTokenRequired;
-        address gatingTokenAddress;
-        uint256 gatingTokenId;
-        GatingTokenType gatingTokenType;
-        bool requireToBurnGatingToken;
         uint256 maxSupply; // 0 mean unlimited
     }
 
