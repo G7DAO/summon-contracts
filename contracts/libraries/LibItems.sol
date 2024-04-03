@@ -31,15 +31,21 @@ library LibItems {
         ETHER,
         ERC20,
         ERC721,
-        ERC1155,
-        ERC404
+        ERC1155
+    }
+
+    enum GatingTokenType {
+        NONE,
+        ERC721,
+        ERC1155
     }
 
     struct Reward {
         RewardType rewardType; // 4 = ether 1 = erc20, 2 = erc721, 3 = erc1155, 4 = erc404
         uint256 rewardAmount; // depending of the erc20 token decimal
-        address rewardTokenAddress; // ether is 0x0, USDC, USDT, DAI, etc
-        uint256 rewardTokenId; // erc721, erc1155
+        address rewardTokenAddress; // ether is 0x0, USDC, USDT, DAI, NFT, etc
+        uint256[] rewardTokenIds; // erc721
+        uint256 rewardTokenId; // erc1155
     }
 
     struct RewardToken {
@@ -49,7 +55,9 @@ library LibItems {
         bool gatingTokenRequired;
         address gatingTokenAddress;
         uint256 gatingTokenId;
+        GatingTokenType gatingTokenType;
         bool requireToBurnGatingToken;
+        uint256 maxSupply; // 0 mean unlimited
     }
 
     struct TokenCreateWithRoyalty {
