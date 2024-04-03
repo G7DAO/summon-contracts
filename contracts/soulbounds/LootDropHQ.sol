@@ -165,33 +165,40 @@ contract LootDropHQ is
         }
     }
 
-    function createTokenAndDepositRewards(LibItems.RewardToken calldata _token) public payable onlyRole(MANAGER_ROLE) {
+    function _calculateETHRequiredForToken(LibItems.RewardToken calldata _token) private pure returns (uint256) {
+        uint256 totalETHRequired;
+        for (uint256 i = 0; i < _token.rewards.length; i++) {
+            LibItems.Reward memory reward = _token.rewards[i];
+            if (reward.rewardType == LibItems.RewardType.ETHER) {
+                totalETHRequired += reward.rewardAmount;
+            }
+        }
+        return totalETHRequired;
+    }
+
+    function _createTokenAndDepositRewards(LibItems.RewardToken calldata _token) private {
         // have to approve all the assets first
+        // Validate token inputs
         _validateTokenInputs(_token);
         tokenRewards[_token.tokenId] = _token;
         tokenExists[_token.tokenId] = true;
         itemIds.push(_token.tokenId);
-
         LibItems.TokenCreate memory tokenCreate = LibItems.TokenCreate(_token.tokenId, _token.tokenUri);
         rewardTokenContract.addNewToken(_token.tokenId);
 
+        // Transfer rewards
         address _from = _msgSender();
         address _to = address(this);
 
-        // transfer all assets in the rewards
         for (uint256 i = 0; i < _token.rewards.length; i++) {
             LibItems.Reward memory reward = _token.rewards[i];
-            if (reward.rewardType == LibItems.RewardType.ETHER) {
-                if (msg.value < reward.rewardAmount) {
-                    revert InsufficientBalance();
-                }
-            } else if (reward.rewardType == LibItems.RewardType.ERC20) {
+            if (reward.rewardType == LibItems.RewardType.ERC20) {
                 IERC20 token = IERC20(reward.rewardTokenAddress);
                 token.transferFrom(_from, _to, reward.rewardAmount);
             } else if (reward.rewardType == LibItems.RewardType.ERC721) {
                 IERC721 token = IERC721(reward.rewardTokenAddress);
-                for (uint256 i = 0; i < reward.rewardTokenIds.length; i++) {
-                    _transferERC721(token, _from, _to, reward.rewardTokenIds[i]);
+                for (uint256 j = 0; j < reward.rewardTokenIds.length; j++) {
+                    _transferERC721(token, _from, _to, reward.rewardTokenIds[j]);
                 }
             } else if (reward.rewardType == LibItems.RewardType.ERC1155) {
                 IERC1155 token = IERC1155(reward.rewardTokenAddress);
@@ -202,11 +209,34 @@ contract LootDropHQ is
         emit TokenAdded(_token.tokenId);
     }
 
+    function createTokenAndDepositRewards(LibItems.RewardToken calldata _token) public payable onlyRole(MANAGER_ROLE) {
+        uint256 _ethRequired = _calculateETHRequiredForToken(_token);
+
+        if (msg.value < _ethRequired) {
+            revert InsufficientBalance();
+        }
+
+        _createTokenAndDepositRewards(_token);
+    }
+
     function createMultipleTokensAndDepositRewards(
         LibItems.RewardToken[] calldata _tokens
-    ) external onlyRole(MANAGER_ROLE) {
+    ) external payable onlyRole(MANAGER_ROLE) {
+        uint256 totalETHRequired;
+
+        // Calculate the total ETH required for all tokens
         for (uint256 i = 0; i < _tokens.length; i++) {
-            createTokenAndDepositRewards(_tokens[i]);
+            totalETHRequired += _calculateETHRequiredForToken(_tokens[i]);
+        }
+
+        // Check if the provided ETH is enough
+        if (msg.value < totalETHRequired) {
+            revert InsufficientBalance();
+        }
+
+        // Create tokens and deposit rewards
+        for (uint256 i = 0; i < _tokens.length; i++) {
+            _createTokenAndDepositRewards(_tokens[i]);
         }
     }
 

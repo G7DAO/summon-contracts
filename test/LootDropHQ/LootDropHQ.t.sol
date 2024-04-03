@@ -268,4 +268,24 @@ contract LootDropHQTest is StdCheats, Test {
         vm.expectRevert("AlreadyUsedSignature");
         lootDropHQ.mint(encodedItems1, true, nonce, signature, false);
     }
+
+    function testUpdateRewardTokenContractAddressZeroShouldFail() public {
+        vm.expectRevert(AddressIsZero.selector);
+        lootDropHQ.updateRewardTokenContract(address(0));
+    }
+
+    function testUpdateRewardTokenContractNotAuthorizedShouldFail() public {
+        address _newRewardTokenAddress = address(mockERC20);
+
+        vm.prank(playerWallet.addr);
+        vm.expectRevert(
+            "AccessControl: account 0x44e97af4418b7a17aabd8090bea0a471a366305c is missing role 0x3b359cf0b4471a5de84269135285268e64ac56f52d3161392213003a780ad63b"
+        );
+        lootDropHQ.updateRewardTokenContract(_newRewardTokenAddress);
+    }
+
+    function testUpdateRewardTokenContractShouldPass() public {
+        address _newRewardTokenAddress = address(mockERC20);
+        lootDropHQ.updateRewardTokenContract(_newRewardTokenAddress);
+    }
 }
