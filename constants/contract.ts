@@ -16,6 +16,7 @@ export enum CONTRACT_TYPE {
     DETERMINISTIC_FACTORY_CONTRACT = 'DeterministicDeployFactory',
     LootDrop = 'LootDrop',
     HelloWorld = 'HelloWorld',
+    RewardToken = 'RewardToken',
 }
 
 export enum CONTRACT_FILE_NAME {
@@ -33,6 +34,7 @@ export enum CONTRACT_FILE_NAME {
     DETERMINISTIC_FACTORY_CONTRACT = 'DeterministicDeployFactory',
     LootDrop = 'LootDrop',
     HelloWorld = 'HelloWorld',
+    AdminERC1155Soulbound = 'AdminERC1155Soulbound',
 }
 export enum CONTRACT_UPGRADABLE_FILE_NAME {
     Avatars = 'AvatarBoundV1',
@@ -71,6 +73,7 @@ export enum CONTRACT_NAME {
     DETERMINISTIC_FACTORY_CONTRACT = 'DeterministicDeployFactory',
     LootDrop = 'LootDrop',
     HelloWorld = 'HelloWorld',
+    RewardToken = 'RewardToken',
 }
 
 export enum CONTRACT_UPGRADABLE_NAME {

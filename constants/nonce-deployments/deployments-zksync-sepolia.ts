@@ -1,4 +1,4 @@
-import { HelloWorldArgs, LootDropArgs } from '@constants/constructor-args';
+import { HelloWorldArgs, LootDropArgs, RewardTokenArgs } from '@constants/constructor-args';
 import { CONTRACT_TYPE, CONTRACT_NAME, CONTRACT_FILE_NAME } from '@constants/contract';
 import { TENANT } from '@constants/tenant';
 
@@ -21,6 +21,21 @@ export const ZKSYNC_SEPOLIA_CONTRACTS: DeploymentContract[] = [
         dependencies: [],
         functionCalls: [],
         args: LootDropArgs.TESTNET,
+        skipCallInitializeFn: true,
+    },
+    {
+        contractFileName: CONTRACT_FILE_NAME.AdminERC1155Soulbound,
+        type: CONTRACT_TYPE.RewardToken,
+        name: CONTRACT_NAME.RewardToken,
+        chain,
+        networkType,
+        tenants: [TENANT.Game7],
+        verify: true,
+        upgradable: false,
+        dependencies: [],
+        functionCalls: [],
+        args: RewardTokenArgs.TESTNET,
+        skipCallInitializeFn: true,
     },
     {
         contractFileName: CONTRACT_FILE_NAME.HelloWorld,

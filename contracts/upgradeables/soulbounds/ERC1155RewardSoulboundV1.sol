@@ -68,7 +68,7 @@ contract ERC1155RewardSoulboundV1 is
     uint256 public defaultRewardId;
 
     mapping(uint256 => bool) private tokenExists;
-    mapping(uint256 => LibItems.TokenReward) public tokenRewards;
+    mapping(uint256 => LibItems.RewardTokenOld) public tokenRewards;
     mapping(uint256 => bool) public isTokenMintPaused; // tokenId => bool - default is false
 
     uint256[] public itemIds;
@@ -136,7 +136,7 @@ contract ERC1155RewardSoulboundV1 is
         _unpause();
     }
 
-    function addNewToken(LibItems.TokenReward calldata _token) public onlyRole(DEV_CONFIG_ROLE) {
+    function addNewToken(LibItems.RewardTokenOld calldata _token) public onlyRole(DEV_CONFIG_ROLE) {
         require(bytes(_token.tokenUri).length > 0, "InvalidTokenUri");
         require(_token.tokenId != 0, "InvalidTokenId");
         require(_token.rewardERC20 != address(0), "InvalidRewardERC20");
@@ -146,7 +146,7 @@ contract ERC1155RewardSoulboundV1 is
         emit TokenAdded(_token.tokenId);
     }
 
-    function addNewTokens(LibItems.TokenReward[] calldata _tokens) external onlyRole(DEV_CONFIG_ROLE) {
+    function addNewTokens(LibItems.RewardTokenOld[] calldata _tokens) external onlyRole(DEV_CONFIG_ROLE) {
         for (uint256 i = 0; i < _tokens.length; i++) {
             addNewToken(_tokens[i]);
         }
@@ -262,7 +262,7 @@ contract ERC1155RewardSoulboundV1 is
             }
 
             if (claimReward) {
-                LibItems.TokenReward memory tokenReward = tokenRewards[_id];
+                LibItems.RewardTokenOld memory tokenReward = tokenRewards[_id];
 
                 if (!tokenReward.isEther) {
                     IERC20Upgradeable token = IERC20Upgradeable(tokenReward.rewardERC20);

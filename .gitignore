@@ -8,6 +8,8 @@ typechain-types
 
 # Hardhat files
 cache
+cache_forge
+cache-zk
 artifacts
 /generated/**/*
 
