@@ -26,7 +26,7 @@ contract MockERC1155Receiver is ERC1155Receiver {
         uint256 id,
         uint256 value,
         bytes calldata data
-    ) public override returns (bytes4) {
+    ) public pure override returns (bytes4) {
         return this.onERC1155Received.selector;
     }
 
@@ -36,7 +36,7 @@ contract MockERC1155Receiver is ERC1155Receiver {
         uint256[] calldata ids,
         uint256[] calldata values,
         bytes calldata data
-    ) public override returns (bytes4) {
+    ) public pure override returns (bytes4) {
         return this.onERC1155BatchReceived.selector;
     }
 }

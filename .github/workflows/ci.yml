@@ -1,53 +1,53 @@
 name: Smart Contract CI
 
 on:
-  - push
-
+    - push
 
 env:
-  PRIVATE_KEY: ${{ secrets.PRIVATE_KEY }}
-  FOUNDRY_PROFILE: ci
-  NODE_AUTH_TOKEN: ${{secrets.GITHUB_TOKEN}}
+    PRIVATE_KEY: ${{ secrets.PRIVATE_KEY }}
+    DETERMINISTIC_DEPLOYER_PRIVATE_KEY: ${{ secrets.DETERMINISTIC_DEPLOYER_PRIVATE_KEY }}
+    FOUNDRY_PROFILE: ci
+    NODE_AUTH_TOKEN: ${{secrets.GITHUB_TOKEN}}
 
 jobs:
-  tests:
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v3
+    tests:
+        runs-on: ubuntu-latest
+        steps:
+            - name: Checkout
+              uses: actions/checkout@v3
 
-      - name: Install Node.js
-        uses: actions/setup-node@v3
-        with:
-          node-version: 18.18.0
+            - name: Install Node.js
+              uses: actions/setup-node@v3
+              with:
+                  node-version: 18.18.0
 
-      - uses: pnpm/action-setup@v2
-        name: Install pnpm
-        with:
-          version: 8
-          run_install: false
+            - uses: pnpm/action-setup@v2
+              name: Install pnpm
+              with:
+                  version: 8
+                  run_install: false
 
-      - name: Get pnpm store directory
-        shell: bash
-        run: |
-          echo "STORE_PATH=$(pnpm store path --silent)" >> $GITHUB_ENV
+            - name: Get pnpm store directory
+              shell: bash
+              run: |
+                  echo "STORE_PATH=$(pnpm store path --silent)" >> $GITHUB_ENV
 
-      - uses: actions/cache@v3
-        name: Setup pnpm cache
-        with:
-          path: ${{ env.STORE_PATH }}
-          key: ${{ runner.os }}-pnpm-store-${{ hashFiles('**/pnpm-lock.yaml') }}
-          restore-keys: |
-            ${{ runner.os }}-pnpm-store-
+            - uses: actions/cache@v3
+              name: Setup pnpm cache
+              with:
+                  path: ${{ env.STORE_PATH }}
+                  key: ${{ runner.os }}-pnpm-store-${{ hashFiles('**/pnpm-lock.yaml') }}
+                  restore-keys: |
+                      ${{ runner.os }}-pnpm-store-
 
-      - name: Install dependencies
-        run: pnpm install
+            - name: Install dependencies
+              run: pnpm install
 
-      - name: Install Foundry
-        uses: foundry-rs/foundry-toolchain@v1
+            - name: Install Foundry
+              uses: foundry-rs/foundry-toolchain@v1
 
-      - name: Run Foundry tests
-        run: forge test -vvv
+            - name: Run Foundry tests
+              run: forge test --via-ir -vvv
 
-      - name: Run Hardhat tests
-        run: pnpm test:ci
+            - name: Run Hardhat tests
+              run: pnpm test:ci

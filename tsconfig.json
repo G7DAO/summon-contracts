@@ -24,6 +24,7 @@
         "scripts",
         "tests",
         "helpers",
+        "./arbitrum.config.ts",
         "./zkSync.config.ts",
         "./polygon.config.ts",
         "./hardhat.config.ts",

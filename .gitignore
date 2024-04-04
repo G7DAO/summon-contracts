@@ -8,11 +8,13 @@ typechain-types
 
 # Hardhat files
 cache
+cache_forge
+cache-zk
 artifacts
 /generated/**/*
 
 .idea
-
+.zed
 out
 
 .flat
@@ -42,6 +44,8 @@ docs/
 deployments.json
 deployments-*.json
 
+deployments-zk
+
 # macos
 .DS_Store
 
@@ -53,3 +57,4 @@ lcov.info
 
 .achievo
 cache_hardhat
+.openzeppelin

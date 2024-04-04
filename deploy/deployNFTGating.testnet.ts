@@ -1,13 +1,14 @@
 import fs from 'fs';
 import path from 'path';
 
+import { NFTGatingArgs } from '@constants/constructor-args';
+import { ChainId, NetworkExplorer, NetworkName } from '@constants/network';
+import { encryptPrivateKey } from '@helpers/encrypt';
 import { log } from '@helpers/logger';
 import { Deployer } from '@matterlabs/hardhat-zksync-deploy';
 import { HardhatRuntimeEnvironment } from 'hardhat/types';
-import { NFTGatingArgs } from '@constants/constructor-args';
+
 import getWallet from './getWallet';
-import { ChainId, NetworkExplorer, NetworkName } from '@constants/network';
-import { encryptPrivateKey } from '@helpers/encrypt';
 
 const { name, symbol, baseURI, superAdminTokenURI, adminTokenURI } = NFTGatingArgs.TESTNET;
 

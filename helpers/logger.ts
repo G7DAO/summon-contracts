@@ -1,4 +1,4 @@
-import { ChainId } from '../constants';
+import { ChainId } from '@constants/network';
 import debug from 'debug';
 
 const logger: debug.Debugger = debug('Achievo:log');
@@ -21,19 +21,15 @@ export const logExplorerAddress = (chainId: number, address: string) => {
             break;
         }
         case ChainId.Mantle: {
-            log('https://explorer.testnet.mantle.xyz/address/' + address);
+            log('https://explorer.mantle.xyz/address/' + address);
             break;
         }
-        case ChainId.MantleWadsley: {
-            log('https://explorer.testnet.mantle.xyz/address/' + address);
+        case ChainId.MantleSepolia: {
+            log('https://explorer.sepolia.mantle.xyz/address/' + address);
             break;
         }
         case ChainId.ZkSync: {
             log('https://explorer.zksync.io/address/' + address);
-            break;
-        }
-        case ChainId.ZkSyncGoerli: {
-            log('https://goerli.explorer.zksync.io/address/' + address);
             break;
         }
         case ChainId.ZkSyncSepolia: {

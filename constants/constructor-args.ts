@@ -1,20 +1,5 @@
-export enum TENANT {
-    Game7 = 'Game7',
-    ZkSync = 'zkSync',
-    HyperPlay = 'HyperPlay',
-    Summon = 'Summon',
-}
-
-export enum CONTRACT_TYPE {
-    Avatars = 'Avatars',
-    Items = 'Items',
-    RewardItems = 'RewardItems',
-    Levels = 'Levels',
-    OpenMint = 'OpenMint',
-    Paymaster = 'Paymaster',
-    GameSummary = 'GameSummary',
-    ERC20 = 'ERC20',
-}
+import { CONTRACT_NAME, CONTRACT_UPGRADABLE_NAME } from './contract';
+import { ChainId } from './network';
 
 export interface ConstructorArgs {
     name: string;
@@ -74,7 +59,26 @@ export const ItemBoundArgs: Soulbound1155Args = {
     },
 };
 
-export const ItemBoundV1Args: Soulbound1155Args = ItemBoundArgs;
+export const ItemBoundIronWorksArgs: Soulbound1155Args = {
+    MAINNET: {
+        name: 'IronWorksItems',
+        symbol: 'AItems',
+        baseURI: 'https://achievo.mypinata.cloud/ipfs',
+        contractURI: 'FILL_ME',
+        maxPerMint: 1,
+        isPaused: false,
+        devWallet: 'DEPLOYER_WALLET',
+    },
+    TESTNET: {
+        name: 'IronWorksItems',
+        symbol: 'AItems',
+        baseURI: 'https://achievo.mypinata.cloud/ipfs',
+        contractURI: 'FILL_ME',
+        maxPerMint: 1,
+        isPaused: false,
+        devWallet: 'DEPLOYER_WALLET',
+    },
+};
 
 export const ItemsRewardBoundArgs = {
     MAINNET: {
@@ -119,7 +123,7 @@ export const AvatarBoundArgs = {
         revealURI: 'Qmdk4zHamwCyqSzuWNNYypuz4FXAGdApbky7SHNsXYYQg7',
         devWallet: 'DEPLOYER_WALLET',
         gatingNftAddress: '0xD07180c423F9B8CF84012aA28cC174F3c433EE29',
-        itemsNftAddress: 'CONTRACT_ItemBound',
+        itemsNftAddress: `CONTRACT_${CONTRACT_NAME.Items}`,
         mintNftGatingEnabled: true,
         mintNFtWithoutGatingEnabled: true,
         mintRandomItemEnabled: true,
@@ -133,7 +137,7 @@ export const AvatarBoundArgs = {
         revealURI: 'QmZnvSyeKRQxWwcofVmq41BNCtHbBmomk8Ny8mtGRTjtzS',
         devWallet: 'DEPLOYER_WALLET',
         gatingNftAddress: '0x6E03Ea6c9aBBb78Dd761b9c71c06176c508488C3',
-        itemsNftAddress: 'CONTRACT_ItemBound',
+        itemsNftAddress: `CONTRACT_${CONTRACT_NAME.Items}`,
         mintNftGatingEnabled: true,
         mintNFtWithoutGatingEnabled: true,
         mintRandomItemEnabled: true,
@@ -144,11 +148,11 @@ export const AvatarBoundArgs = {
 export const AvatarBoundV1Args = {
     MAINNET: {
         ...AvatarBoundArgs.MAINNET,
-        itemsNftAddress: 'CONTRACT_ItemBoundV1',
+        itemsNftAddress: `CONTRACT_${CONTRACT_UPGRADABLE_NAME.Items}`,
     },
     TESTNET: {
         ...AvatarBoundArgs.TESTNET,
-        itemsNftAddress: 'CONTRACT_ItemBoundV1',
+        itemsNftAddress: `CONTRACT_${CONTRACT_UPGRADABLE_NAME.Items}`,
     },
 };
 
@@ -158,25 +162,25 @@ export const LevelsBoundArgs = {
         symbol: 'LVL',
         developerAdmin: 'DEPLOYER_WALLET',
         mintRandomItemEnabled: true,
-        itemsNFTAddress: 'CONTRACT_ItemBound',
+        itemsNFTAddress: `CONTRACT_${CONTRACT_NAME.Items}`,
     },
     TESTNET: {
         name: 'LevelsBound',
         symbol: 'LVL',
         developerAdmin: 'DEPLOYER_WALLET',
         mintRandomItemEnabled: true,
-        itemsNFTAddress: 'CONTRACT_ItemBound',
+        itemsNFTAddress: `CONTRACT_${CONTRACT_NAME.Items}`,
     },
 };
 
 export const LevelsBoundV1Args = {
     MAINNET: {
         ...LevelsBoundArgs.MAINNET,
-        itemsNFTAddress: 'CONTRACT_ItemBoundV1',
+        itemsNFTAddress: `CONTRACT_${CONTRACT_UPGRADABLE_NAME.Items}`,
     },
     TESTNET: {
         ...LevelsBoundArgs.TESTNET,
-        itemsNFTAddress: 'CONTRACT_ItemBoundV1',
+        itemsNFTAddress: `CONTRACT_${CONTRACT_UPGRADABLE_NAME.Items}`,
     },
 };
 
@@ -246,9 +250,158 @@ export const ERC20ChainlinkPaymasterArgs = {
     },
 };
 
-export const ERC20ChainlinkPaymasterV1Args = ERC20ChainlinkPaymasterArgs;
-
 export const GameSummaryArgs = {
+    MAINNET: {
+        _uri: 'FILL_ME',
+    },
+    TESTNET: {
+        _uri: 'FILL_ME',
+    },
+};
+
+export const ZKSSPorkV1Args = {
+    MAINNET: {
+        name: 'ZkSSpork',
+        symbol: 'ZkSS',
+        developerAdmin: 'DEPLOYER_WALLET',
+        decimals: 18,
+        regularToken: '0x8A9074144C5041f90330Fef6E2fE96A0593Ebc3f',
+    },
+    TESTNET: {
+        name: 'ZkSSpork',
+        symbol: 'ZkSS',
+        developerAdmin: 'DEPLOYER_WALLET',
+        decimals: 18,
+        regularToken: 'FILL_ME',
+    },
+};
+
+export const BridgePolygonV1Args = {
+    MAINNET: {
+        developerAdmin: 'DEPLOYER_WALLET',
+        chainIdFrom: ChainId.Polygon,
+        chainIdTo: ChainId.ZkSync,
+    },
+    TESTNET: {
+        developerAdmin: 'DEPLOYER_WALLET',
+        chainIdFrom: ChainId.PolygonMumbai,
+        chainIdTo: ChainId.ZkSyncSepolia,
+    },
+};
+
+export const BridgeZkSyncV1Args = {
+    MAINNET: {
+        developerAdmin: 'DEPLOYER_WALLET',
+        chainIdFrom: ChainId.ZkSync,
+        chainIdTo: ChainId.Polygon,
+    },
+    TESTNET: {
+        developerAdmin: 'DEPLOYER_WALLET',
+        chainIdFrom: ChainId.ZkSyncSepolia,
+        chainIdTo: ChainId.PolygonMumbai,
+    },
+};
+
+export const WhitelistArgs = {
+    MAINNET: {
+        developerAdmin: 'DEPLOYER_WALLET',
+    },
+    TESTNET: {
+        developerAdmin: 'DEPLOYER_WALLET',
+    },
+};
+
+export const BurnableTokenV1Args = {
+    MAINNET: {
+        name: 'SPORK',
+        symbol: 'SPORK',
+        decimals: 18,
+        developerAdmin: 'DEPLOYER_WALLET',
+    },
+    TESTNET: {
+        name: 'SPORK',
+        symbol: 'SPORK',
+        decimals: 18,
+        developerAdmin: 'DEPLOYER_WALLET',
+    },
+};
+
+export const BadgeBoundArgs: Soulbound1155Args = {
+    MAINNET: {
+        name: 'Item',
+        symbol: 'ISB',
+        baseURI: 'https://achievo.mypinata.cloud/ipfs',
+        contractURI: 'https://achievo.mypinata.cloud/ipfs/QmSDbeNWVY2CGUuLHni689L5eSrSG3iZHyTRZJWXX7GpjS',
+        maxPerMint: 1,
+        isPaused: false,
+        devWallet: 'DEPLOYER_WALLET',
+    },
+    TESTNET: {
+        name: 'Badge',
+        symbol: 'BADGE',
+        baseURI: 'https://achievo.mypinata.cloud/ipfs',
+        contractURI: 'https://achievo.mypinata.cloud/ipfs/QmSDbeNWVY2CGUuLHni689L5eSrSG3iZHyTRZJWXX7GpjS',
+        maxPerMint: 1,
+        isPaused: false,
+        devWallet: 'DEPLOYER_WALLET',
+    },
+};
+
+export const SkillTreeArgs: Soulbound1155Args = {
+    MAINNET: {
+        name: 'SkillTree',
+        symbol: 'STSB',
+        baseURI: 'https://achievo.mypinata.cloud/ipfs',
+        contractURI: 'https://achievo.mypinata.cloud/ipfs/QmSDbeNWVY2CGUuLHni689L5eSrSG3iZHyTRZJWXX7GpjS',
+        maxPerMint: 1,
+        isPaused: false,
+        devWallet: 'DEPLOYER_WALLET',
+    },
+    TESTNET: {
+        name: 'SkillTree',
+        symbol: 'STSB',
+        baseURI: 'https://achievo.mypinata.cloud/ipfs',
+        contractURI: 'https://achievo.mypinata.cloud/ipfs/QmSDbeNWVY2CGUuLHni689L5eSrSG3iZHyTRZJWXX7GpjS',
+        maxPerMint: 1,
+        isPaused: false,
+        devWallet: 'DEPLOYER_WALLET',
+    },
+};
+
+export const BUIDLArgs = {
+    MAINNET: {
+        name: 'BUIDL',
+        symbol: 'BUIDL',
+        decimals: 18,
+        developerAdmin: 'DEPLOYER_WALLET',
+    },
+    TESTNET: {
+        name: 'MOCKERC20',
+        symbol: 'ERC20',
+        decimals: 18,
+        developerAdmin: 'DEPLOYER_WALLET',
+    },
+};
+
+export const LootDropArgs = {
+    MAINNET: {
+        _uri: 'FILL_ME',
+    },
+    TESTNET: {
+        _uri: 'FILL_ME',
+    },
+};
+
+export const HelloWorldArgs = {
+    MAINNET: {
+        randomNumber: 12312,
+    },
+    TESTNET: {
+        randomNumber: 232323,
+    },
+};
+
+export const RewardTokenArgs = {
     MAINNET: {
         _uri: 'FILL_ME',
     },

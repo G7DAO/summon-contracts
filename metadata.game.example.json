@@ -1,0 +1,54 @@
+{
+    "image": "https://achievo.mypinata.cloud/ipfs/QmTYwnxqjaRPVswG3ieuiuhHV3to8ZBKQjoFbcQhg4yujQ",
+    "animation_url": "https://achievo.mypinata.cloud/ipfs/QmZkwqr7v9viMAzzj9gqjCDX4563aayuTCNzBqmKWmhc2E",
+    "name": "G7 TACO#1",
+    "description": "TACO",
+    "game": {
+        "game_audio_url": "MISSING_FILE",
+        "game_model_url": "MISSING_FILE",
+        "game_image_url": "https://achievo.mypinata.cloud/ipfs/QmadkMFF4ohE18VoFv8NgTYY3RpVxWkgH4sJHw7QUANvmM"
+    },
+    "attributes": [
+        {
+            "trait_type": "Base Color",
+            "value": "Gold"
+        },
+        {
+            "trait_type": "Toppings",
+            "value": "Lettuce, Tomato, Cheese"
+        },
+        {
+            "trait_type": "Taco Shell",
+            "value": "Hard Shell"
+        },
+        {
+            "trait_type": "Accent",
+            "value": "Red Stripe"
+        },
+        {
+            "trait_type": "Glow",
+            "value": "Stardust"
+        },
+        {
+            "trait_type": "Background",
+            "value": "Space"
+        },
+        {
+            "trait_type": "Embellishments",
+            "value": "Chili Flakes"
+        },
+        {
+            "trait_type": "Expression",
+            "value": "Happy"
+        },
+        {
+            "trait_type": "Animation",
+            "value": "Floating"
+        },
+        {
+            "trait_type": "Theme",
+            "value": "Cosmic Fiesta"
+        }
+    ]
+}
+

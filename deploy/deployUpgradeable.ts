@@ -1,14 +1,18 @@
 import fs from 'fs';
-import path from 'path';
 import { exec } from 'node:child_process';
+import path from 'path';
 
-import { ChainId, NetworkName, Currency, NetworkExplorer, rpcUrls } from '@constants/network';
+import { ChainId, NetworkName, Currency, NetworkExplorer, rpcUrls, NetworkConfigFile } from '@constants/network';
 import { encryptPrivateKey } from '@helpers/encrypt';
 import { log } from '@helpers/logger';
 import { Deployer } from '@matterlabs/hardhat-zksync-deploy';
+import * as ethers from 'ethers';
 import { HardhatRuntimeEnvironment } from 'hardhat/types';
+import { Wallet } from 'zksync-ethers';
 
-import getWallet from './getWallet';
+import getZkWallet from './getWallet';
+
+const { Wallet: EthersWallet } = ethers;
 
 // load wallet private key from env file
 const PRIVATE_KEY = process.env.PRIVATE_KEY || '';
@@ -30,7 +34,7 @@ export default async function (
     const blockExplorerBaseUrl = NetworkExplorer[networkNameKey as keyof typeof NetworkExplorer];
 
     log('=====================================================');
-    log(`[DEPLOYING] deploying ${contract.contractName} UPGRADEABLE contract for [[${tenant}]] on ${networkName}`);
+    log(`[DEPLOYING] deploying ${contract.name} UPGRADEABLE contract for [[${tenant}]] on ${networkName}`);
     log('=====================================================');
 
     log('=====================================================');
@@ -44,19 +48,30 @@ export default async function (
     log(`Args ${restArgs}`);
     log('=====================================================');
 
-    const wallet = getWallet(PRIVATE_KEY);
-    const deployer = new Deployer(hre, wallet);
-    // TODO: THIS ONLY WORK FOR ZKSYNC ... NEED TO BE FIXED
-    const artifact = await deployer.loadArtifact(contract.contractName);
-
+    // @ts-ignore
+    let wallet: Wallet | EthersWallet;
     let achievoContract;
-    if (!name) {
-        achievoContract = await hre.zkUpgrades.deployProxy(deployer.zkWallet as any, artifact, [...restArgs]);
+    let artifact;
+
+    const isZkSync = hre.network.zksync;
+
+    if (isZkSync) {
+        wallet = getZkWallet(PRIVATE_KEY);
+        const deployer = new Deployer(hre, wallet);
+        artifact = await deployer.loadArtifact(contract.contractFileName);
+        const args = Object.values(constructorArgs);
+        achievoContract = await hre.zkUpgrades.deployProxy(deployer.zkWallet as any, artifact, [...args]);
     } else {
-        achievoContract = await hre.zkUpgrades.deployProxy(deployer.zkWallet as any, artifact, [
-            `${tenant}${name}`,
-            ...restArgs,
-        ]);
+        // @ts-ignore
+        wallet = new EthersWallet(PRIVATE_KEY, hre.ethers.provider);
+        artifact = await hre.ethers.getContractFactory(contract.contractFileName);
+        if (!name) {
+            // @ts-ignore
+            achievoContract = await hre.upgrades.deployProxy(artifact, [...restArgs]);
+        } else {
+            // @ts-ignore
+            achievoContract = await hre.upgrades.deployProxy(artifact, [`${tenant}${name}`, ...restArgs]);
+        }
     }
 
     await achievoContract.waitForDeployment();
@@ -70,8 +85,9 @@ export default async function (
 
     if (contract.verify) {
         await new Promise((resolve, reject) => {
+            const networkConfigFile = NetworkConfigFile[networkNameKey as keyof typeof NetworkConfigFile];
             exec(
-                `npx hardhat verify --network ${contract.chain} ${contractAddress} --config zkSync.config.ts`,
+                `npx hardhat verify --network ${contract.chain} ${contractAddress} --config ${networkConfigFile}`,
                 (error, stdout, stderr) => {
                     if (error) {
                         console.warn(error);
@@ -91,8 +107,7 @@ export default async function (
         contractAbi,
         contractAddress,
         type: contract.type,
-        networkType: contract.networkType,
-        active: false,
+        name: contract.name,
         networkName,
         chainId,
         rpcUrl,
@@ -103,12 +118,11 @@ export default async function (
         paymasterAddresses: [],
         fakeContractAddress: '',
         explorerUrl: `${blockExplorerBaseUrl}/address/${contractAddress}#contract`,
-        upgradable: true,
     };
 
     log(`*****************************************************`);
     log(
-        `Deployed ${contract.type}(${artifact.contractName}) for ${tenant} to :\n ${blockExplorerBaseUrl}/address/${contractAddress}#contract`
+        `Deployed ${contract.name}(${contract.contractFileName}) for ${tenant} to :\n ${blockExplorerBaseUrl}/address/${contractAddress}#contract`
     );
     log(`*****************************************************`);
 

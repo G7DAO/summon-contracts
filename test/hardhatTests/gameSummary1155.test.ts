@@ -14,7 +14,7 @@ describe('GameSummary', function () {
     const DEFAULT_GAME_ID = 11;
     const DEFAULT_STORE_ID = 22;
     const DEFAULT_TOKEN_ID = hashIds(DEFAULT_STORE_ID, DEFAULT_GAME_ID);
-    const defaultBaseURI = 'https://summon.mypinata.cloud/ipfs/';
+    const defaultBaseURI = 'https://achievo.mypinata.cloud/ipfs/';
     let defaultCommonGameSummary: GameSummary.GameSummaryStruct;
     beforeEach(async function () {
         const contract = (await ethers.getContractFactory('GameSummary')) as unknown as GameSummary;
@@ -515,7 +515,7 @@ describe('GameSummary', function () {
     });
 
     it('should return the correct uri for a given token ID', async function () {
-        expect(await GameSummary.uri(123)).to.equal('https://summon.mypinata.cloud/ipfs/123.json');
+        expect(await GameSummary.uri(123)).to.equal('https://achievo.mypinata.cloud/ipfs/123.json');
     });
 
     it('should allow batch burning of tokens', async function () {

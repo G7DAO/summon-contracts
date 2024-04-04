@@ -4,14 +4,14 @@ import { HardhatUserConfig } from 'hardhat/config';
 import '@nomicfoundation/hardhat-toolbox';
 import '@nomicfoundation/hardhat-foundry';
 import '@typechain/hardhat';
+import 'hardhat-contract-sizer';
 // This adds support for typescript paths mappings
 import 'tsconfig-paths/register';
 import '@openzeppelin/hardhat-upgrades';
 import { log } from '@helpers/logger';
 import './tasks';
-import { NetworkName, rpcUrls } from './constants';
+import { ChainId, NetworkName, rpcUrls } from '@constants/network';
 
-import { ChainId } from './constants';
 dotenv.config();
 log(`Using Default Hardhat config`);
 
@@ -27,8 +27,9 @@ const config: HardhatUserConfig = {
         settings: {
             optimizer: {
                 enabled: true,
-                runs: 200,
+                runs: 1,
             },
+            viaIR: true,
         },
     },
     defaultNetwork: 'hardhat',
@@ -58,8 +59,5 @@ const config: HardhatUserConfig = {
         apiKey: ETHSCAN_API_KEY,
     },
 };
-
-// @ts-ignore
-config.solidity.settings.viaIR = true;
 
 export default config;

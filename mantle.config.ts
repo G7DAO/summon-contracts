@@ -1,4 +1,5 @@
-import { ChainId, NetworkExplorer, NetworkName, rpcUrls } from './constants';
+import { ChainId, NetworkExplorer, NetworkName, rpcUrls } from '@constants/network';
+
 import defaultConfig from './hardhat.config';
 import { log } from './helpers/logger';
 
@@ -16,10 +17,10 @@ defaultConfig.networks = {
         accounts: [PRIVATE_KEY],
         chainId: ChainId.Mantle,
     },
-    [NetworkName.MantleWadsley]: {
-        url: rpcUrls[ChainId.MantleWadsley],
+    [NetworkName.MantleSepolia]: {
+        url: rpcUrls[ChainId.MantleSepolia],
         accounts: [PRIVATE_KEY],
-        chainId: ChainId.MantleWadsley,
+        chainId: ChainId.MantleSepolia,
     },
 };
 
@@ -35,11 +36,11 @@ defaultConfig.etherscan = {
             },
         },
         {
-            network: NetworkName.MantleWadsley,
-            chainId: ChainId.MantleWadsley,
+            network: NetworkName.MantleSepolia,
+            chainId: ChainId.MantleSepolia,
             urls: {
-                apiURL: `${NetworkExplorer.MantleWadsley}/api`,
-                browserURL: NetworkExplorer.MantleWadsley,
+                apiURL: `${NetworkExplorer.MantleSepolia}/api`,
+                browserURL: NetworkExplorer.MantleSepolia,
             },
         },
     ],

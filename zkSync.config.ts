@@ -3,9 +3,10 @@ import '@matterlabs/hardhat-zksync-deploy';
 import '@matterlabs/hardhat-zksync-verify';
 import '@matterlabs/hardhat-zksync-upgradable';
 
-import defaultConfig from './hardhat.config';
-import { ChainId, NetworkName, rpcUrls } from './constants';
+import { ChainId, NetworkName, rpcUrls } from '@constants/network';
 import { log } from '@helpers/logger';
+
+import defaultConfig from './hardhat.config';
 
 const { PRIVATE_KEY } = process.env;
 if (!PRIVATE_KEY) {
@@ -28,13 +29,6 @@ defaultConfig.networks = {
         zksync: true,
         accounts: [PRIVATE_KEY],
         verifyURL: 'https://zksync2-mainnet-explorer.zksync.io/contract_verification',
-    },
-    [NetworkName.ZkSyncGoerli]: {
-        url: rpcUrls[ChainId.ZkSyncGoerli],
-        ethNetwork: NetworkName.Goerli,
-        zksync: true,
-        accounts: [PRIVATE_KEY],
-        verifyURL: 'https://zksync2-testnet-explorer.zksync.dev/contract_verification',
     },
     [NetworkName.ZkSyncSepolia]: {
         url: rpcUrls[ChainId.ZkSyncSepolia],

@@ -14,10 +14,10 @@ async function main() {
     const provider = ethers.provider;
     const signer = new ethers.Wallet(PRIVATE_KEY, provider);
     const achievements = new ethers.Contract(DIAMOND_ADDRESS, abi, signer) as AchievementFacet;
-    const tx = await achievements.safeTransferFrom('0xa0FDB2F6cf2Bf189db73B294A60088feF751bfCd', PUBLIC_KEY, 3, 245, ethers.utils.randomBytes(0));
+    const tx = await achievements.safeTransferFrom('X', PUBLIC_KEY, 3, 245, ethers.utils.randomBytes(0));
     await tx.wait();
 
-    log(`Achievement transfered from ${PUBLIC_KEY} to : 0xa0FDB2F6cf2Bf189db73B294A60088feF751bfCd`);
+    log(`Achievement transfered from ${PUBLIC_KEY} to : X`);
 }
 
 main().catch((error) => {

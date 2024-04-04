@@ -138,13 +138,13 @@ contract ERC20ChainlinkPaymaster is IPaymaster, Pausable, AccessControl {
 
                 // Calculate the required ERC20 tokens to be sent to the paymaster
                 // (Equal to the value of requiredETH)
-                uint256 requiredERC20 = (requiredETH * ETHUSDPrice / ERC20USDPrice) / 1e12;
+                uint256 requiredERC20 = ((requiredETH * ETHUSDPrice) / ERC20USDPrice) / 1e12;
 
                 // Convert from wei (18 decimals) to the ERC20 token's decimals
                 uint256 decimalFactor = 18 - uint256(tokenDecimals);
 
                 // Adjust for token decimals
-                requiredERC20 = requiredERC20 / (10**decimalFactor);
+                requiredERC20 = requiredERC20 / (10 ** decimalFactor);
 
                 require(providedAllowance >= requiredERC20, "Min paying allowance too low");
 

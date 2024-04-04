@@ -13,7 +13,7 @@ async function main() {
     const signer = new ethers.Wallet(PRIVATE_KEY, provider);
     const RandomRequesterContract = await ethers.getContractFactory('RandomRequester', signer);
 
-    const RandomRequester = (await RandomRequesterContract.deploy('0xf833bf9f93c4497f6b2aefdc0728ee18a32263b2')) as unknown as RandomRequester;
+    const RandomRequester = (await RandomRequesterContract.deploy('X')) as unknown as RandomRequester;
     await RandomRequester.waitForDeployment();
     log('RandomRequester deployed:', await RandomRequester.getAddress());
 }
