@@ -108,11 +108,6 @@ contract LootDropHQAddTokenTest is StdCheats, Test, MockERC1155Receiver, ERC721H
         return _seed;
     }
 
-    function generateRandomAmount() internal returns (uint256) {
-        _seed = uint256(keccak256(abi.encodePacked(blockhash(block.number - 1), _seed)));
-        return (_seed % 10) + 1;
-    }
-
     function encode(uint256[] memory itemIds) public pure returns (bytes memory) {
         return (abi.encode(itemIds));
     }
@@ -127,7 +122,14 @@ contract LootDropHQAddTokenTest is StdCheats, Test, MockERC1155Receiver, ERC721H
         lootDropHQ = new LootDropHQ(address(this));
         lootDropHQ.initialize(address(this), address(itemBound));
 
-        itemBound.initialize("Test1155", "T1155", "MISSING_BASE_URL", address(this), address(lootDropHQ));
+        itemBound.initialize(
+            "Test1155",
+            "T1155",
+            "MISSING_BASE_URL",
+            "MISSING_CONTRACT_URL",
+            address(this),
+            address(lootDropHQ)
+        );
         mockERC20 = new MockERC20("oUSDC", "oUSDC");
         mockERC721 = new MockERC721();
         mockERC1155 = new MockERC1155();

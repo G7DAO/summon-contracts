@@ -26,6 +26,7 @@ import { ERC1155Burnable } from "@openzeppelin/contracts/token/ERC1155/extension
 import { ERC1155Supply } from "@openzeppelin/contracts/token/ERC1155/extensions/ERC1155Supply.sol";
 import { AccessControl } from "@openzeppelin/contracts/access/AccessControl.sol";
 import { Strings } from "@openzeppelin/contracts/utils/Strings.sol";
+import { ERC2981 } from "@openzeppelin/contracts/token/common/ERC2981.sol";
 import { ReentrancyGuard } from "@openzeppelin/contracts/security/ReentrancyGuard.sol";
 import { Initializable } from "@openzeppelin/contracts/proxy/utils/Initializable.sol";
 
@@ -33,12 +34,14 @@ import { Achievo1155Soulbound } from "../ercs/extensions/Achievo1155Soulbound.so
 import { LibItems } from "../libraries/LibItems.sol";
 
 error AddressIsZero();
+error NotOwnerOrApproved();
 
 contract AdminERC1155Soulbound is
     ERC1155Burnable,
     ERC1155Supply,
     Achievo1155Soulbound,
     AccessControl,
+    ERC2981,
     ReentrancyGuard,
     Initializable
 {
@@ -51,6 +54,7 @@ contract AdminERC1155Soulbound is
     string public name;
     string public symbol;
     string public defaultTokenURI;
+    string public contractURI;
 
     using Strings for uint256;
 
@@ -71,6 +75,7 @@ contract AdminERC1155Soulbound is
         string memory _name,
         string memory _symbol,
         string memory _defaultTokenURI,
+        string memory _contractURI,
         address devWallet,
         address lootDropAddress
     ) external initializer onlyRole(DEFAULT_ADMIN_ROLE) {
@@ -89,6 +94,7 @@ contract AdminERC1155Soulbound is
         name = _name;
         symbol = _symbol;
         defaultTokenURI = _defaultTokenURI;
+        contractURI = _contractURI;
     }
 
     function getAllItemsAdmin(
@@ -220,6 +226,18 @@ contract AdminERC1155Soulbound is
         return batchBalances;
     }
 
+    function whitelistBurn(
+        address to,
+        uint256 tokenId,
+        uint256 amount
+    ) public nonReentrant soulboundCheckAndSync(to, address(0), tokenId, amount, balanceOf(to, tokenId)) {
+        if (!_getWhitelistAddress(_msgSender())) {
+            revert();
+        }
+
+        _burn(to, tokenId, amount);
+    }
+
     function burn(
         address to,
         uint256 tokenId,
@@ -264,7 +282,9 @@ contract AdminERC1155Soulbound is
         }
     }
 
-    function supportsInterface(bytes4 interfaceId) public view override(ERC1155, AccessControl) returns (bool) {
+    function supportsInterface(
+        bytes4 interfaceId
+    ) public view override(ERC1155, ERC2981, AccessControl) returns (bool) {
         return super.supportsInterface(interfaceId);
     }
 
@@ -279,5 +299,26 @@ contract AdminERC1155Soulbound is
 
     function updateWhitelistAddress(address _address, bool _isWhitelisted) external onlyRole(DEV_CONFIG_ROLE) {
         _updateWhitelistAddress(_address, _isWhitelisted);
+    }
+
+    function setRoyaltyInfo(address receiver, uint96 feeBasisPoints) external onlyRole(MANAGER_ROLE) {
+        _setDefaultRoyalty(receiver, feeBasisPoints);
+    }
+
+    function setTokenRoyalty(
+        uint256 tokenId,
+        address receiver,
+        uint256 feeBasisPoints
+    ) external onlyRole(MANAGER_ROLE) {
+        _setTokenRoyalty(tokenId, receiver, uint96(feeBasisPoints));
+    }
+
+    function resetTokenRoyalty(uint256 tokenId) external onlyRole(MANAGER_ROLE) {
+        _resetTokenRoyalty(tokenId);
+    }
+
+    function setContractURI(string memory _contractURI) public onlyRole(DEV_CONFIG_ROLE) {
+        contractURI = _contractURI;
+        emit ContractURIChanged(_contractURI);
     }
 }

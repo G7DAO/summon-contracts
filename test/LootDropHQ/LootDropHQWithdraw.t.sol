@@ -89,7 +89,14 @@ contract LootDropHQWithdrawTest is StdCheats, Test {
         lootDropHQ = new LootDropHQ(address(this));
         lootDropHQ.initialize(address(this), address(itemBound));
 
-        itemBound.initialize("Test1155", "T1155", "MISSING_BASE_URL", address(this), address(lootDropHQ));
+        itemBound.initialize(
+            "Test1155",
+            "T1155",
+            "MISSING_BASE_URL",
+            "MISSING_CONTRACT_URL",
+            address(this),
+            address(lootDropHQ)
+        );
 
         mockERC20 = new MockERC20("oUSDC", "oUSDC");
         mockERC721 = new MockERC721();

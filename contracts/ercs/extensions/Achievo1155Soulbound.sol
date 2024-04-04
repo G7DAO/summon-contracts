@@ -79,6 +79,10 @@ contract Achievo1155Soulbound {
         return _soulboundAddresses[to];
     }
 
+    function _getWhitelistAddress(address _address) internal view returns (bool) {
+        return whitelistAddresses[_address];
+    }
+
     function _updateWhitelistAddress(address _address, bool _isWhitelisted) internal {
         whitelistAddresses[_address] = _isWhitelisted;
     }
@@ -92,7 +96,7 @@ contract Achievo1155Soulbound {
     ) private view {
         require(amount > 0, "Achievo1155Soulbound: can't be zero amount");
         // check if from or to whitelist addresses let it through
-        if (whitelistAddresses[from] || whitelistAddresses[to]) {
+        if (whitelistAddresses[from] || whitelistAddresses[to] || whitelistAddresses[msg.sender]) {
             return;
         }
 

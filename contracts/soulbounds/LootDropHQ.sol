@@ -357,11 +357,8 @@ contract LootDropHQ is
             revert InsufficientBalance();
         }
 
-        // to avoid the user to approve the contract to spend the token and call 2txs
-        // transfer token to the contract first
-        rewardTokenContract.safeTransferFrom(_to, address(this), _rewardTokenId, 1, "");
         // then burn the reward token
-        rewardTokenContract.burn(address(this), _rewardTokenId, 1);
+        rewardTokenContract.whitelistBurn(_to, _rewardTokenId, 1);
 
         _distributeReward(_to, _rewardTokenId);
     }
@@ -381,11 +378,13 @@ contract LootDropHQ is
             } else if (reward.rewardType == LibItems.RewardType.ERC721) {
                 uint256 currentIndex = erc721RewardCurrentIndex[_rewardTokenId][i];
                 uint256[] memory tokenIds = reward.rewardTokenIds;
-                if (currentIndex >= tokenIds.length) {
-                    revert InsufficientBalance();
+                for (uint256 j = 0; j < reward.rewardAmount; j++) {
+                    if (currentIndex >= tokenIds.length) {
+                        revert InsufficientBalance();
+                    }
+                    _transferERC721(IERC721(reward.rewardTokenAddress), _from, _to, tokenIds[currentIndex]);
+                    erc721RewardCurrentIndex[_rewardTokenId][i]++;
                 }
-                _transferERC721(IERC721(reward.rewardTokenAddress), _from, _to, tokenIds[currentIndex]);
-                erc721RewardCurrentIndex[_rewardTokenId][i]++;
             } else if (reward.rewardType == LibItems.RewardType.ERC1155) {
                 _transferERC1155(
                     IERC1155(reward.rewardTokenAddress),
