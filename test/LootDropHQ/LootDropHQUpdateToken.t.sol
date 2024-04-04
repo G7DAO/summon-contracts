@@ -27,7 +27,7 @@ error TransferFailed();
 error MintPaused();
 error DupTokenId();
 
-contract LootDropTransferTest is StdCheats, Test {
+contract LootDropUpdateTokenTest is StdCheats, Test {
     using Strings for uint256;
 
     LootDrop public LootDrop;
@@ -200,102 +200,135 @@ contract LootDropTransferTest is StdCheats, Test {
         LootDrop.createMultipleTokensAndDepositRewards(_tokens);
     }
 
-    function testBatchTransferFrom() public {
-        uint256[] memory _itemIds1 = new uint256[](3);
-        _itemIds1[0] = _tokenIds[0];
-        _itemIds1[1] = _tokenIds[1];
-        _itemIds1[2] = _tokenIds[2];
-
-        uint256[] memory _itemIds2 = new uint256[](3);
-        _itemIds2[0] = _tokenIds[3];
-        _itemIds2[1] = _tokenIds[4];
-        _itemIds2[2] = _tokenIds[5];
-
-        uint256[] memory _amount1 = new uint256[](3);
-        _amount1[0] = 1;
-        _amount1[1] = 1;
-        _amount1[2] = 1;
-
-        vm.prank(playerWallet.addr);
-        LootDrop.mint(encodedItems1, true, nonce, signature, false);
-        assertEq(itemBound.balanceOf(playerWallet.addr, _tokenIds[0]), 1);
-
-        LootDrop.adminMint(playerWallet2.addr, encodedItems1, false, false);
-
-        vm.prank(playerWallet2.addr);
-        itemBound.safeTransferFrom(playerWallet2.addr, playerWallet.addr, _tokenIds[0], 1, "");
-
-        assertEq(itemBound.balanceOf(playerWallet.addr, _tokenIds[0]), 2);
-
-        uint256[] memory _itemIds3 = new uint256[](2);
-        _itemIds3[0] = _tokenIds[0];
-        _itemIds3[1] = _tokenIds[0];
-
-        uint256[] memory _amount3 = new uint256[](2);
-        _amount3[0] = 1;
-        _amount3[1] = 1;
-
-        vm.expectRevert("ERC1155: duplicate ID");
-        vm.prank(playerWallet.addr);
-        itemBound.safeBatchTransferFrom(playerWallet.addr, minterWallet.addr, _itemIds3, _amount3, "");
-
-        assertEq(itemBound.balanceOf(minterWallet.addr, _tokenIds[0]), 0);
-
-        vm.prank(playerWallet.addr);
-        itemBound.safeTransferFrom(playerWallet.addr, minterWallet.addr, _tokenIds[0], 1, "");
-        assertEq(itemBound.balanceOf(minterWallet.addr, _tokenIds[0]), 1);
+    function testTokenURIIfTokenIdNotExist() public {
+        vm.expectRevert("TokenNotExist");
+        itemBound.uri(1);
     }
 
-    function testNonSoulboundTokenTransfer() public {
-        uint256 _tokenId = _tokenIds[0];
-        LootDrop.adminMintById(playerWallet.addr, _tokenId, 1, false);
+    // function testUpdateTokenURIFailNoDevConfigRole() public {
+    //     string memory newTokenUri = "https://something-new.com/232";
 
-        vm.prank(playerWallet.addr);
-        itemBound.safeTransferFrom(playerWallet.addr, minterWallet.addr, _tokenId, 1, "");
+    //     vm.expectRevert(
+    //         "AccessControl: account 0x44e97af4418b7a17aabd8090bea0a471a366305c is missing role 0x3b359cf0b4471a5de84269135285268e64ac56f52d3161392213003a780ad63b"
+    //     );
+    //     vm.prank(playerWallet.addr);
+    //     LootDrop.updateTokenUri(0, newTokenUri);
+    // }
 
-        assertEq(itemBound.balanceOf(playerWallet.addr, _tokenId), 0);
-        assertEq(itemBound.balanceOf(minterWallet.addr, _tokenId), 1);
-    }
+    // function testUpdateTokenURIPass() public {
+    //     uint256 _tokenId = generateRandomItemId(); // totally random
 
-    function testSoulboundTokenNotTransfer() public {
-        uint256 _tokenId = _tokenIds[0];
-        LootDrop.adminMintById(playerWallet.addr, _tokenId, 1, true);
+    //     delete _rewards; // reset rewards
+    //     for (uint256 j = 0; j < 10; j++) {
+    //         LibItems.Reward memory _reward = LibItems.Reward({
+    //             rewardType: LibItems.RewardType.ERC20,
+    //             rewardAmount: 2000,
+    //             rewardTokenAddress: erc20FakeRewardAddress,
+    //             rewardTokenId: 0,
+    // rewardTokenIds: new uint256[](0),
+    //         });
 
-        vm.expectRevert(
-            "Achievo1155Soulbound: The amount of soulbounded tokens is more than the amount of tokens to be transferred"
-        );
-        vm.prank(playerWallet.addr);
-        itemBound.safeTransferFrom(playerWallet.addr, minterWallet.addr, _tokenId, 1, "");
+    //         _rewards.push(_reward);
+    //     }
 
-        vm.expectRevert("Achievo1155Soulbound: can't be zero amount");
-        vm.prank(playerWallet.addr);
-        itemBound.safeTransferFrom(playerWallet.addr, minterWallet.addr, _tokenId, 0, "");
-    }
+    //     LibItems.RewardToken memory _token = LibItems.RewardToken({
+    //         tokenId: _tokenId,
+    //         tokenUri: "123",
+    //         rewards: _rewards,
+    //         gatingTokenRequired: false,
+    //         gatingTokenAddress: address(0),
+    //         gatingTokenId: 0,
+    // requireToBurnGatingToken: true
+    //     });
 
-    function testSoulboundTokenTransferOnlyWhitelistAddresses() public {
-        uint256 _tokenId = _tokenIds[0];
-        LootDrop.adminMintById(playerWallet.addr, _tokenId, 1, true);
+    //     LootDrop.createTokenAndDepositRewards(_token);
 
-        vm.expectRevert(
-            "Achievo1155Soulbound: The amount of soulbounded tokens is more than the amount of tokens to be transferred"
-        );
-        vm.prank(playerWallet.addr);
-        itemBound.safeTransferFrom(playerWallet.addr, playerWallet3.addr, _tokenId, 1, "");
+    //     string memory newTokenUri = "https://something-new.com/232";
 
-        itemBound.updateWhitelistAddress(playerWallet3.addr, true);
+    //     assertEq(LootDrop.uri(_tokenId), "123");
+    //     LootDrop.updateTokenUri(_tokenId, newTokenUri);
+    //     assertEq(LootDrop.uri(_tokenId), "https://something-new.com/232");
+    // }
 
-        vm.prank(playerWallet.addr);
-        itemBound.safeTransferFrom(playerWallet.addr, playerWallet3.addr, _tokenId, 1, "");
+    // function testBatchUpdateTokenUriShouldFail() public {
+    //     LibItems.RewardToken[] memory _tokens = new LibItems.RewardToken[](3);
+    //     uint256[] memory _tokenIds = new uint256[](3);
+    //     skip(36000);
+    //     for (uint256 i = 0; i < 3; i++) {
+    //         delete _rewards; // reset rewards
+    //         LibItems.Reward memory _etherReward = LibItems.Reward({
+    //             rewardType: LibItems.RewardType.ETHER,
+    //             rewardAmount: 100000000000000000,
+    //             rewardTokenAddress: address(0),
+    //             rewardTokenId: 456
+    //         });
 
-        vm.prank(playerWallet3.addr);
-        itemBound.safeTransferFrom(playerWallet3.addr, playerWallet.addr, _tokenId, 1, "");
+    //         _rewards.push(_etherReward);
 
-        itemBound.updateWhitelistAddress(playerWallet3.addr, false);
+    //         uint256 _tokenId = generateRandomItemId(); // totally random
+    //         LibItems.RewardToken memory _token = LibItems.RewardToken({
+    //             tokenId: _tokenId,
+    //             tokenUri: string(abi.encodePacked("https://something.com", "/", _tokenId.toString())),
+    //             rewards: _rewards,
+    //             gatingTokenRequired: true,
+    //             gatingTokenAddress: erc1155FakeRewardAddress,
+    //             gatingTokenId: 10,
+    // requireToBurnGatingToken: true
+    //         });
 
-        vm.expectRevert(
-            "Achievo1155Soulbound: The amount of soulbounded tokens is more than the amount of tokens to be transferred"
-        );
-        vm.prank(playerWallet.addr);
-        itemBound.safeTransferFrom(playerWallet.addr, playerWallet3.addr, _tokenId, 1, "");
-    }
+    //         _tokens[i] = _token;
+    //         _tokenIds[i] = _tokenId;
+    //     }
+
+    //     LootDrop.createMultipleTokensAndDepositRewards(_tokens);
+
+    //     string[] memory _newTokenUris = new string[](2);
+    //     _newTokenUris[0] = "https://something-new.com/232";
+    //     _newTokenUris[1] = "https://something-new.com/232";
+
+    //     vm.expectRevert("InvalidInput");
+    //     LootDrop.batchUpdateTokenUri(_tokenIds, _newTokenUris);
+    // }
+
+    // function testBatchUpdateTokenUriShouldPass() public {
+    //     LibItems.RewardToken[] memory _tokens = new LibItems.RewardToken[](3);
+    //     uint256[] memory _tokenIds = new uint256[](3);
+    //     skip(36000);
+    //     for (uint256 i = 0; i < 3; i++) {
+    //         delete _rewards; // reset rewards
+    //         LibItems.Reward memory _etherReward = LibItems.Reward({
+    //             rewardType: LibItems.RewardType.ETHER,
+    //             rewardAmount: 100000000000000000,
+    //             rewardTokenAddress: address(0),
+    //             rewardTokenId: 456
+    //         });
+
+    //         _rewards.push(_etherReward);
+
+    //         uint256 _tokenId = generateRandomItemId(); // totally random
+    //         LibItems.RewardToken memory _token = LibItems.RewardToken({
+    //             tokenId: _tokenId,
+    //             tokenUri: string(abi.encodePacked("https://something.com", "/", _tokenId.toString())),
+    //             rewards: _rewards,
+    //             gatingTokenRequired: true,
+    //             gatingTokenAddress: erc1155FakeRewardAddress,
+    //             gatingTokenId: 10,
+    // requireToBurnGatingToken: true
+    //         });
+
+    //         _tokens[i] = _token;
+    //         _tokenIds[i] = _tokenId;
+    //     }
+
+    //     LootDrop.createMultipleTokensAndDepositRewards(_tokens);
+
+    //     string[] memory _newTokenUris = new string[](3);
+    //     _newTokenUris[0] = "https://something-new.com/1";
+    //     _newTokenUris[1] = "https://something-new.com/2";
+    //     _newTokenUris[2] = "https://something-new.com/2";
+
+    //     LootDrop.batchUpdateTokenUri(_tokenIds, _newTokenUris);
+
+    //     assertEq(LootDrop.uri(_tokenIds[0]), _newTokenUris[0]);
+    // }
 }

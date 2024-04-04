@@ -32,6 +32,7 @@ export interface DeploymentContract {
     functionCalls?: FunctionCall[];
     args?: Record<string, any>;
     version?: number;
+    skipCallInitializeFn?: boolean;
 }
 
 export interface FunctionCall {

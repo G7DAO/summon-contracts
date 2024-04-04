@@ -8,7 +8,7 @@ import "forge-std/console.sol";
 import { Strings } from "@openzeppelin/contracts/utils/Strings.sol";
 import { ECDSA } from "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
 
-import { LootDropHQ } from "../../contracts/soulbounds/LootDropHQ.sol";
+import { LootDrop } from "../../contracts/soulbounds/LootDrop.sol";
 import { AdminERC1155Soulbound } from "../../contracts/soulbounds/AdminERC1155Soulbound.sol";
 import { MockERC1155Receiver } from "../../contracts/mocks/MockERC1155Receiver.sol";
 import { MockERC20 } from "../../contracts/mocks/MockERC20.sol";
@@ -27,10 +27,10 @@ error TransferFailed();
 error MintPaused();
 error DupTokenId();
 
-contract LootDropHQBurnTest is StdCheats, Test {
+contract LootDropBurnTest is StdCheats, Test {
     using Strings for uint256;
 
-    LootDropHQ public lootDropHQ;
+    LootDrop public LootDrop;
     AdminERC1155Soulbound public itemBound;
     MockERC1155Receiver public mockERC1155Receiver;
     MockERC20 public mockERC20;
@@ -117,8 +117,8 @@ contract LootDropHQBurnTest is StdCheats, Test {
         minterWallet = getWallet(minterLabel);
 
         itemBound = new AdminERC1155Soulbound(address(this));
-        lootDropHQ = new LootDropHQ(address(this));
-        lootDropHQ.initialize(address(this), address(itemBound));
+        LootDrop = new LootDrop(address(this));
+        LootDrop.initialize(address(this), address(itemBound));
 
         itemBound.initialize(
             "Test1155",
@@ -126,13 +126,13 @@ contract LootDropHQBurnTest is StdCheats, Test {
             "MISSING_BASE_URL",
             "MISSING_CONTRACT_URL",
             address(this),
-            address(lootDropHQ)
+            address(LootDrop)
         );
         mockERC20 = new MockERC20("oUSDC", "oUSDC");
         mockERC721 = new MockERC721();
         mockERC1155 = new MockERC1155();
 
-        lootDropHQ.addWhitelistSigner(minterWallet.addr);
+        LootDrop.addWhitelistSigner(minterWallet.addr);
 
         mockERC1155Receiver = new MockERC1155Receiver();
 
@@ -192,17 +192,17 @@ contract LootDropHQBurnTest is StdCheats, Test {
 
         mockERC20.mint(address(this), 20000000000000000000);
         for (uint256 i = 0; i < 10; i++) {
-            mockERC721.mint(address(lootDropHQ));
+            mockERC721.mint(address(LootDrop));
         }
-        mockERC1155.mint(address(lootDropHQ), 456, 10, "");
+        mockERC1155.mint(address(LootDrop), 456, 10, "");
 
-        mockERC20.approve(address(lootDropHQ), type(uint256).max);
-        lootDropHQ.createMultipleTokensAndDepositRewards(_tokens);
+        mockERC20.approve(address(LootDrop), type(uint256).max);
+        LootDrop.createMultipleTokensAndDepositRewards(_tokens);
     }
 
     function testBurnNotOwnerShouldFail() public {
         vm.prank(playerWallet.addr);
-        lootDropHQ.mint(encodedItems1, false, nonce, signature, false);
+        LootDrop.mint(encodedItems1, false, nonce, signature, false);
         assertEq(itemBound.balanceOf(playerWallet.addr, _tokenIds[0]), 1);
 
         vm.expectRevert("ERC1155: caller is not token owner or approved");
@@ -212,7 +212,7 @@ contract LootDropHQBurnTest is StdCheats, Test {
 
     function testBurn() public {
         vm.prank(playerWallet.addr);
-        lootDropHQ.mint(encodedItems1, true, nonce, signature, false);
+        LootDrop.mint(encodedItems1, true, nonce, signature, false);
         assertEq(itemBound.balanceOf(playerWallet.addr, _tokenIds[0]), 1);
 
         vm.expectRevert(
@@ -228,7 +228,7 @@ contract LootDropHQBurnTest is StdCheats, Test {
         itemBound.burn(playerWallet.addr, _tokenIds[0], 1);
 
         vm.prank(playerWallet2.addr);
-        lootDropHQ.mint(encodedItems2, false, nonce2, signature2, false);
+        LootDrop.mint(encodedItems2, false, nonce2, signature2, false);
 
         vm.prank(playerWallet2.addr);
         itemBound.safeTransferFrom(playerWallet2.addr, playerWallet3.addr, _tokenIds[3], 1, "");
@@ -244,9 +244,9 @@ contract LootDropHQBurnTest is StdCheats, Test {
 
     function testBurnIfHoldBothNonSoulboundAndSouldbound() public {
         vm.prank(playerWallet.addr);
-        lootDropHQ.mint(encodedItems1, true, nonce, signature, false);
+        LootDrop.mint(encodedItems1, true, nonce, signature, false);
 
-        lootDropHQ.adminMint(playerWallet2.addr, encodedItems1, false, false);
+        LootDrop.adminMint(playerWallet2.addr, encodedItems1, false, false);
 
         vm.prank(playerWallet2.addr);
         itemBound.safeTransferFrom(playerWallet2.addr, playerWallet.addr, _tokenIds[0], 1, "");
@@ -275,7 +275,7 @@ contract LootDropHQBurnTest is StdCheats, Test {
         _amount1[2] = 1;
 
         vm.prank(playerWallet.addr);
-        lootDropHQ.mint(encodedItems1, false, nonce, signature, false);
+        LootDrop.mint(encodedItems1, false, nonce, signature, false);
         assertEq(itemBound.balanceOf(playerWallet.addr, _tokenIds[0]), 1);
 
         vm.expectRevert("ERC1155: caller is not token owner or approved");
@@ -300,7 +300,7 @@ contract LootDropHQBurnTest is StdCheats, Test {
         _amount1[2] = 1;
 
         vm.prank(playerWallet.addr);
-        lootDropHQ.mint(encodedItems1, true, nonce, signature, false);
+        LootDrop.mint(encodedItems1, true, nonce, signature, false);
         assertEq(itemBound.balanceOf(playerWallet.addr, _tokenIds[0]), 1);
 
         vm.expectRevert(
@@ -316,7 +316,7 @@ contract LootDropHQBurnTest is StdCheats, Test {
         itemBound.burnBatch(playerWallet.addr, _itemIds1, _amount1);
 
         vm.prank(playerWallet2.addr);
-        lootDropHQ.mint(encodedItems2, false, nonce2, signature2, false);
+        LootDrop.mint(encodedItems2, false, nonce2, signature2, false);
 
         vm.prank(playerWallet2.addr);
         itemBound.safeTransferFrom(playerWallet2.addr, playerWallet3.addr, _tokenIds[3], 1, "");

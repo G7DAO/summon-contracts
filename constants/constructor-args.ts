@@ -400,3 +400,12 @@ export const HelloWorldArgs = {
         randomNumber: 232323,
     },
 };
+
+export const RewardTokenArgs = {
+    MAINNET: {
+        _uri: 'FILL_ME',
+    },
+    TESTNET: {
+        _uri: 'FILL_ME',
+    },
+};

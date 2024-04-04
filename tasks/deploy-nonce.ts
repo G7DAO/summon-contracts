@@ -122,17 +122,22 @@ const deployOne = async (
         console.log('Contract deployed to:', networkName, '::', contractAddress);
     }
 
-    // call initialize() function
-    // check if contract has initialize function
-    const hasInitializeFunction = contractAbi.some((abi: any) => abi.type === 'function' && abi.name === 'initialize');
-    if (hasInitializeFunction) {
-        const contractInstance = new hre.ethers.Contract(contractAddress, contractAbi, deployerWallet);
-        const initializeArgs = contract.args ? [...Object.values(contract.args)] : []; // Add any arguments required for the initialize function
-        console.log('initializeArgs', networkName, initializeArgs);
-        const initializeTx = await contractInstance.initialize(...initializeArgs);
-        await initializeTx.wait();
+    if (contract.skipCallInitializeFn) {
+        console.log('skipCallInitializeFn', networkName, contract.skipCallInitializeFn);
     } else {
-        console.log('Contract does not have an initialize function');
+        // check if contract has initialize function
+        const hasInitializeFunction = contractAbi.some(
+            (abi: any) => abi.type === 'function' && abi.name === 'initialize'
+        );
+        if (hasInitializeFunction) {
+            const contractInstance = new hre.ethers.Contract(contractAddress, contractAbi, deployerWallet);
+            const initializeArgs = contract.args ? [...Object.values(contract.args)] : []; // Add any arguments required for the initialize function
+            console.log('initializeArgs', networkName, initializeArgs);
+            const initializeTx = await contractInstance.initialize(...initializeArgs);
+            await initializeTx.wait();
+        } else {
+            console.log('Contract does not have an initialize function');
+        }
     }
 
     // verify
@@ -180,9 +185,9 @@ task('deploy-nonce', 'Deploys Smart contracts to same address across chain')
         ) => {
             const { name, tenant, chains, salt } = _args;
             log('└─ args :\n');
-            log(`   ├─ tenant : ${tenant}\n`);
-            log(`   ├─ contractFileName : ${name}\n`);
-            log(`   └─ chains : ${chains}\n`);
+            log(`   ├─ Tenant : ${tenant}\n`);
+            log(`   ├─ Contract name : ${name}\n`);
+            log(`   └─ Chains : ${chains}\n`);
 
             const networksToDeploy: NetworkName[] = chains.split(',').map((chain) => {
                 if (Object.values(NetworkName).includes(chain as NetworkName)) {
@@ -259,19 +264,21 @@ task('deploy-nonce', 'Deploys Smart contracts to same address across chain')
                 })
             );
 
-            // submit to db
-            try {
-                log('*******************************************');
-                log('[SUBMITTING] Deployments to db');
-                log('*******************************************');
-                await submitContractDeploymentsToDB(deployments, tenant);
-                log('*******************************************');
-                log('*** Deployments submitted to db ***');
-                log('*******************************************');
-            } catch (error: any) {
-                log('*******************************************');
-                log('***', error.message, '***');
-                log('*******************************************');
-            }
+            // // submit to db
+            // try {
+            //     log('*******************************************');
+            //     log('[SUBMITTING] Deployments to db');
+            //     log('*******************************************');
+            //     await submitContractDeploymentsToDB(deployments, tenant);
+            //     log('*******************************************');
+            //     log('*** Deployments submitted to db ***');
+            //     log('*******************************************');
+            // } catch (error: any) {
+            //     log('*******************************************');
+            //     log('***', error.message, '***');
+            //     log('*******************************************');
+            // }
+
+            return 'askdjflasdjfksdfl';
         }
     );

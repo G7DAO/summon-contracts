@@ -9,7 +9,7 @@ import { Strings } from "@openzeppelin/contracts/utils/Strings.sol";
 import { ECDSA } from "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
 import { ERC721Holder } from "@openzeppelin/contracts/token/ERC721/utils/ERC721Holder.sol";
 
-import { LootDropHQ } from "../../contracts/soulbounds/LootDropHQ.sol";
+import { LootDrop } from "../../contracts/soulbounds/LootDrop.sol";
 import { AdminERC1155Soulbound } from "../../contracts/soulbounds/AdminERC1155Soulbound.sol";
 import { MockERC1155Receiver } from "../../contracts/mocks/MockERC1155Receiver.sol";
 import { MockERC20 } from "../../contracts/mocks/MockERC20.sol";
@@ -29,10 +29,10 @@ error MintPaused();
 error ClaimRewardPaused();
 error DupTokenId();
 
-contract LootDropHQClaimTest is StdCheats, Test, MockERC1155Receiver, ERC721Holder {
+contract LootDropClaimTest is StdCheats, Test, MockERC1155Receiver, ERC721Holder {
     using Strings for uint256;
 
-    LootDropHQ public lootDropHQ;
+    LootDrop public LootDrop;
     AdminERC1155Soulbound public itemBound;
     MockERC1155Receiver public mockERC1155Receiver;
     MockERC20 public mockERC20;
@@ -119,8 +119,8 @@ contract LootDropHQClaimTest is StdCheats, Test, MockERC1155Receiver, ERC721Hold
         minterWallet = getWallet(minterLabel);
 
         itemBound = new AdminERC1155Soulbound(address(this));
-        lootDropHQ = new LootDropHQ(address(this));
-        lootDropHQ.initialize(address(this), address(itemBound));
+        LootDrop = new LootDrop(address(this));
+        LootDrop.initialize(address(this), address(itemBound));
 
         itemBound.initialize(
             "Test1155",
@@ -128,7 +128,7 @@ contract LootDropHQClaimTest is StdCheats, Test, MockERC1155Receiver, ERC721Hold
             "MISSING_BASE_URL",
             "MISSING_CONTRACT_URL",
             address(this),
-            address(lootDropHQ)
+            address(LootDrop)
         );
 
         mockERC20 = new MockERC20("oUSDC", "oUSDC");
@@ -141,7 +141,7 @@ contract LootDropHQClaimTest is StdCheats, Test, MockERC1155Receiver, ERC721Hold
         erc721FakeRewardAddress = address(mockERC721);
         erc1155FakeRewardAddress = address(mockERC1155);
 
-        lootDropHQ.addWhitelistSigner(minterWallet.addr);
+        LootDrop.addWhitelistSigner(minterWallet.addr);
 
         _tokens = new LibItems.RewardToken[](1);
 
@@ -207,23 +207,23 @@ contract LootDropHQClaimTest is StdCheats, Test, MockERC1155Receiver, ERC721Hold
         }
         mockERC1155.mint(address(this), 456, 10, "");
 
-        mockERC20.approve(address(lootDropHQ), type(uint256).max);
-        mockERC721.setApprovalForAll(address(lootDropHQ), true);
-        mockERC1155.setApprovalForAll(address(lootDropHQ), true);
+        mockERC20.approve(address(LootDrop), type(uint256).max);
+        mockERC721.setApprovalForAll(address(LootDrop), true);
+        mockERC1155.setApprovalForAll(address(LootDrop), true);
 
-        lootDropHQ.createMultipleTokensAndDepositRewards{ value: 300000000000000000 }(_tokens);
+        LootDrop.createMultipleTokensAndDepositRewards{ value: 300000000000000000 }(_tokens);
     }
 
     // Test cases
     function testClaimRewardShouldPass() public {
         // mint
         uint256 _tokenId = 888;
-        lootDropHQ.adminMintById(playerWallet.addr, _tokenId, 1, true);
+        LootDrop.adminMintById(playerWallet.addr, _tokenId, 1, true);
         assertEq(itemBound.balanceOf(playerWallet.addr, _tokenId), 1);
 
         // Claim
         vm.prank(playerWallet.addr);
-        lootDropHQ.claimReward(_tokenId);
+        LootDrop.claimReward(_tokenId);
 
         // Check if the reward token is burned
         assertEq(itemBound.balanceOf(playerWallet.addr, _tokenId), 0);
@@ -237,14 +237,14 @@ contract LootDropHQClaimTest is StdCheats, Test, MockERC1155Receiver, ERC721Hold
     function testAdminClaimRewardShouldPass() public {
         // mint
         uint256 _tokenId = 888;
-        lootDropHQ.adminMintById(playerWallet.addr, _tokenId, 1, true);
+        LootDrop.adminMintById(playerWallet.addr, _tokenId, 1, true);
         assertEq(itemBound.balanceOf(playerWallet.addr, _tokenId), 1);
 
         uint256[] memory _tokenIds = new uint256[](1);
         _tokenIds[0] = _tokenId;
 
         // Claim
-        lootDropHQ.adminClaimReward(playerWallet.addr, _tokenIds);
+        LootDrop.adminClaimReward(playerWallet.addr, _tokenIds);
 
         // Check if the reward token is burned
         assertEq(itemBound.balanceOf(playerWallet.addr, _tokenId), 0);
@@ -259,20 +259,20 @@ contract LootDropHQClaimTest is StdCheats, Test, MockERC1155Receiver, ERC721Hold
     function testAdminClaimRewardClaimPausedShouldFail() public {
         // mint
         uint256 _tokenId = 888;
-        lootDropHQ.adminMintById(playerWallet.addr, _tokenId, 1, true);
+        LootDrop.adminMintById(playerWallet.addr, _tokenId, 1, true);
         assertEq(itemBound.balanceOf(playerWallet.addr, _tokenId), 1);
 
         uint256[] memory _tokenIds = new uint256[](1);
         _tokenIds[0] = _tokenId;
 
-        lootDropHQ.updateClaimRewardPaused(_tokenId, true);
+        LootDrop.updateClaimRewardPaused(_tokenId, true);
         // Claim
         vm.expectRevert(ClaimRewardPaused.selector);
-        lootDropHQ.adminClaimReward(playerWallet.addr, _tokenIds);
+        LootDrop.adminClaimReward(playerWallet.addr, _tokenIds);
 
-        lootDropHQ.updateClaimRewardPaused(_tokenId, false);
+        LootDrop.updateClaimRewardPaused(_tokenId, false);
 
-        lootDropHQ.adminClaimReward(playerWallet.addr, _tokenIds);
+        LootDrop.adminClaimReward(playerWallet.addr, _tokenIds);
 
         // Check if the reward token is burned
         assertEq(itemBound.balanceOf(playerWallet.addr, _tokenId), 0);
@@ -292,7 +292,7 @@ contract LootDropHQClaimTest is StdCheats, Test, MockERC1155Receiver, ERC721Hold
         encodedItems1 = encode(_itemIds1);
         (nonce, signature) = generateSignature(playerWallet.addr, encodedItems1, minterLabel);
         vm.prank(playerWallet.addr);
-        lootDropHQ.mint(encodedItems1, true, nonce, signature, true);
+        LootDrop.mint(encodedItems1, true, nonce, signature, true);
 
         assertEq(itemBound.balanceOf(playerWallet.addr, _tokenId), 0);
 
@@ -305,7 +305,7 @@ contract LootDropHQClaimTest is StdCheats, Test, MockERC1155Receiver, ERC721Hold
 
     // ETH - fail
     function testAdminMintAndClaimNotEnoughETHShouldFail() public {
-        uint256 ethBalance = address(lootDropHQ).balance;
+        uint256 ethBalance = address(LootDrop).balance;
         assertEq(ethBalance, 300000000000000000);
 
         uint256[] memory _tokenIds1 = new uint256[](1);
@@ -314,10 +314,10 @@ contract LootDropHQClaimTest is StdCheats, Test, MockERC1155Receiver, ERC721Hold
         uint256[] memory _amount1 = new uint256[](1);
         _amount1[0] = 200000000000000001;
 
-        lootDropHQ.withdrawAssets(LibItems.RewardType.ETHER, playerWallet2.addr, address(0), _tokenIds1, _amount1);
+        LootDrop.withdrawAssets(LibItems.RewardType.ETHER, playerWallet2.addr, address(0), _tokenIds1, _amount1);
 
         uint256 _tokenId = 888;
-        lootDropHQ.adminMintById(playerWallet.addr, _tokenId, 1, true);
+        LootDrop.adminMintById(playerWallet.addr, _tokenId, 1, true);
         assertEq(itemBound.balanceOf(playerWallet.addr, _tokenId), 1);
 
         uint256[] memory _tokenIds = new uint256[](1);
@@ -325,7 +325,7 @@ contract LootDropHQClaimTest is StdCheats, Test, MockERC1155Receiver, ERC721Hold
 
         // Claim
         vm.expectRevert(InsufficientBalance.selector);
-        lootDropHQ.adminClaimReward(playerWallet.addr, _tokenIds);
+        LootDrop.adminClaimReward(playerWallet.addr, _tokenIds);
 
         assertEq(itemBound.balanceOf(playerWallet.addr, _tokenId), 1);
     }

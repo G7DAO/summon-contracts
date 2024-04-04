@@ -8,7 +8,7 @@ import "forge-std/console.sol";
 import { Strings } from "@openzeppelin/contracts/utils/Strings.sol";
 import { ECDSA } from "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
 
-import { LootDropHQ } from "../../contracts/soulbounds/LootDropHQ.sol";
+import { LootDrop } from "../../contracts/soulbounds/LootDrop.sol";
 import { AdminERC1155Soulbound } from "../../contracts/soulbounds/AdminERC1155Soulbound.sol";
 import { MockERC1155Receiver } from "../../contracts/mocks/MockERC1155Receiver.sol";
 import { MockERC20 } from "../../contracts/mocks/MockERC20.sol";
@@ -27,10 +27,10 @@ error TransferFailed();
 error MintPaused();
 error DupTokenId();
 
-contract LootDropHQTest is StdCheats, Test {
+contract LootDropTest is StdCheats, Test {
     using Strings for uint256;
 
-    LootDropHQ public lootDropHQ;
+    LootDrop public LootDrop;
     AdminERC1155Soulbound public itemBound;
     MockERC1155Receiver public mockERC1155Receiver;
     MockERC20 public mockERC20;
@@ -116,8 +116,8 @@ contract LootDropHQTest is StdCheats, Test {
         minterWallet = getWallet(minterLabel);
 
         itemBound = new AdminERC1155Soulbound(address(this));
-        lootDropHQ = new LootDropHQ(address(this));
-        lootDropHQ.initialize(address(this), address(itemBound));
+        LootDrop = new LootDrop(address(this));
+        LootDrop.initialize(address(this), address(itemBound));
 
         itemBound.initialize(
             "Test1155",
@@ -125,13 +125,13 @@ contract LootDropHQTest is StdCheats, Test {
             "MISSING_BASE_URL",
             "MISSING_CONTRACT_URL",
             address(this),
-            address(lootDropHQ)
+            address(LootDrop)
         );
         mockERC20 = new MockERC20("oUSDC", "oUSDC");
         mockERC721 = new MockERC721();
         mockERC1155 = new MockERC1155();
 
-        lootDropHQ.addWhitelistSigner(minterWallet.addr);
+        LootDrop.addWhitelistSigner(minterWallet.addr);
 
         mockERC1155Receiver = new MockERC1155Receiver();
 
@@ -191,17 +191,17 @@ contract LootDropHQTest is StdCheats, Test {
 
         mockERC20.mint(address(this), 20000000000000000000);
         for (uint256 i = 0; i < 10; i++) {
-            mockERC721.mint(address(lootDropHQ));
+            mockERC721.mint(address(LootDrop));
         }
-        mockERC1155.mint(address(lootDropHQ), 456, 10, "");
+        mockERC1155.mint(address(LootDrop), 456, 10, "");
 
-        mockERC20.approve(address(lootDropHQ), type(uint256).max);
-        lootDropHQ.createMultipleTokensAndDepositRewards(_tokens);
+        mockERC20.approve(address(LootDrop), type(uint256).max);
+        LootDrop.createMultipleTokensAndDepositRewards(_tokens);
     }
 
     function testInitializeTwiceShouldFail() public {
         vm.expectRevert("Initializable: contract is already initialized");
-        lootDropHQ.initialize(address(this), address(itemBound));
+        LootDrop.initialize(address(this), address(itemBound));
     }
 
     function testPauseUnpause() public {
@@ -215,34 +215,34 @@ contract LootDropHQTest is StdCheats, Test {
         _amounts[0] = 1;
         _amounts[1] = 2;
 
-        lootDropHQ.pause();
+        LootDrop.pause();
         vm.expectRevert("Pausable: paused");
-        lootDropHQ.adminBatchMintById(_wallets, _tokenId, _amounts, true);
-        lootDropHQ.unpause();
+        LootDrop.adminBatchMintById(_wallets, _tokenId, _amounts, true);
+        LootDrop.unpause();
 
-        lootDropHQ.adminMintById(address(mockERC1155Receiver), _tokenId, 2, true);
+        LootDrop.adminMintById(address(mockERC1155Receiver), _tokenId, 2, true);
         assertEq(itemBound.balanceOf(address(mockERC1155Receiver), _tokenId), 2);
     }
 
     function testPauseUnpauseSpecificToken() public {
         uint256 _tokenId = _tokenIds[0];
 
-        lootDropHQ.updateTokenMintPaused(_tokenId, true);
+        LootDrop.updateTokenMintPaused(_tokenId, true);
 
         vm.expectRevert(MintPaused.selector);
-        lootDropHQ.adminMintById(address(mockERC1155Receiver), _tokenId, 1, true);
+        LootDrop.adminMintById(address(mockERC1155Receiver), _tokenId, 1, true);
 
         vm.expectRevert(MintPaused.selector);
-        lootDropHQ.adminMint(address(mockERC1155Receiver), encodedItems1, true, false);
+        LootDrop.adminMint(address(mockERC1155Receiver), encodedItems1, true, false);
 
         vm.expectRevert(MintPaused.selector);
         vm.prank(playerWallet.addr);
-        lootDropHQ.mint(encodedItems1, true, nonce, signature, false);
+        LootDrop.mint(encodedItems1, true, nonce, signature, false);
 
-        lootDropHQ.updateTokenMintPaused(_tokenId, false);
+        LootDrop.updateTokenMintPaused(_tokenId, false);
 
         vm.prank(playerWallet.addr);
-        lootDropHQ.mint(encodedItems1, true, nonce, signature, false);
+        LootDrop.mint(encodedItems1, true, nonce, signature, false);
 
         assertEq(itemBound.balanceOf(playerWallet.addr, _tokenId), 1);
     }
@@ -250,7 +250,7 @@ contract LootDropHQTest is StdCheats, Test {
     function testDecodeDataShouldPass() public {
         bytes memory encodedItems = encode(_tokenIds);
 
-        uint256[] memory ids = lootDropHQ.decodeData(encodedItems);
+        uint256[] memory ids = LootDrop.decodeData(encodedItems);
 
         for (uint256 i = 0; i < ids.length; i++) {
             assertEq(ids[i], _tokenIds[i]);
@@ -260,20 +260,20 @@ contract LootDropHQTest is StdCheats, Test {
     function testInvalidSignature() public {
         vm.prank(playerWallet.addr);
         vm.expectRevert("InvalidSignature");
-        lootDropHQ.mint(encodedItems1, true, nonce, signature2, false);
+        LootDrop.mint(encodedItems1, true, nonce, signature2, false);
     }
 
     function testReuseSignatureMint() public {
         vm.prank(playerWallet.addr);
-        lootDropHQ.mint(encodedItems1, true, nonce, signature, false);
+        LootDrop.mint(encodedItems1, true, nonce, signature, false);
         vm.prank(playerWallet.addr);
         vm.expectRevert("AlreadyUsedSignature");
-        lootDropHQ.mint(encodedItems1, true, nonce, signature, false);
+        LootDrop.mint(encodedItems1, true, nonce, signature, false);
     }
 
     function testUpdateRewardTokenContractAddressZeroShouldFail() public {
         vm.expectRevert(AddressIsZero.selector);
-        lootDropHQ.updateRewardTokenContract(address(0));
+        LootDrop.updateRewardTokenContract(address(0));
     }
 
     function testUpdateRewardTokenContractNotAuthorizedShouldFail() public {
@@ -283,11 +283,11 @@ contract LootDropHQTest is StdCheats, Test {
         vm.expectRevert(
             "AccessControl: account 0x44e97af4418b7a17aabd8090bea0a471a366305c is missing role 0x3b359cf0b4471a5de84269135285268e64ac56f52d3161392213003a780ad63b"
         );
-        lootDropHQ.updateRewardTokenContract(_newRewardTokenAddress);
+        LootDrop.updateRewardTokenContract(_newRewardTokenAddress);
     }
 
     function testUpdateRewardTokenContractShouldPass() public {
         address _newRewardTokenAddress = address(mockERC20);
-        lootDropHQ.updateRewardTokenContract(_newRewardTokenAddress);
+        LootDrop.updateRewardTokenContract(_newRewardTokenAddress);
     }
 }
