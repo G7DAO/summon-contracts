@@ -53,7 +53,7 @@ error MintPaused();
 error ClaimRewardPaused();
 error DupTokenId();
 
-contract LootDropHQ is
+contract LootDrop is
     ERCWhitelistSignature,
     AccessControl,
     Pausable,
@@ -237,26 +237,6 @@ contract LootDropHQ is
         // Create tokens and deposit rewards
         for (uint256 i = 0; i < _tokens.length; i++) {
             _createTokenAndDepositRewards(_tokens[i]);
-        }
-    }
-
-    function updateRewardToken(
-        uint256 _tokenId,
-        LibItems.RewardToken calldata _updatedToken
-    ) public onlyRole(DEV_CONFIG_ROLE) {
-        isTokenExist(_tokenId);
-        _validateTokenInputs(_updatedToken);
-        tokenRewards[_tokenId] = _updatedToken;
-
-        emit TokenUpdated(_tokenId);
-    }
-
-    function updateRewardTokens(
-        uint256[] calldata _tokenIds,
-        LibItems.RewardToken[] calldata _updatedTokens
-    ) external onlyRole(DEV_CONFIG_ROLE) {
-        for (uint256 i = 0; i < _updatedTokens.length; i++) {
-            updateRewardToken(_tokenIds[i], _updatedTokens[i]);
         }
     }
 

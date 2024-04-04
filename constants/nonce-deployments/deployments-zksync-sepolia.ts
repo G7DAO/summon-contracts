@@ -1,4 +1,4 @@
-import { HelloWorldArgs, LootDropArgs } from '@constants/constructor-args';
+import { HelloWorldArgs, LootDropHQArgs } from '@constants/constructor-args';
 import { CONTRACT_TYPE, CONTRACT_NAME, CONTRACT_FILE_NAME } from '@constants/contract';
 import { TENANT } from '@constants/tenant';
 
@@ -10,9 +10,9 @@ const networkType = NETWORK_TYPE.TESTNET;
 
 export const ZKSYNC_SEPOLIA_CONTRACTS: DeploymentContract[] = [
     {
-        contractFileName: CONTRACT_FILE_NAME.LootDrop,
-        type: CONTRACT_TYPE.LootDrop,
-        name: CONTRACT_NAME.LootDrop,
+        contractFileName: CONTRACT_FILE_NAME.LootDropHQ,
+        type: CONTRACT_TYPE.LootDropHQ,
+        name: CONTRACT_NAME.LootDropHQ,
         chain,
         networkType,
         tenants: [TENANT.Game7],
@@ -20,7 +20,7 @@ export const ZKSYNC_SEPOLIA_CONTRACTS: DeploymentContract[] = [
         upgradable: false,
         dependencies: [],
         functionCalls: [],
-        args: LootDropArgs.TESTNET,
+        args: LootDropHQArgs.TESTNET,
     },
     {
         contractFileName: CONTRACT_FILE_NAME.HelloWorld,

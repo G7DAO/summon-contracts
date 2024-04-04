@@ -14,7 +14,7 @@ export enum CONTRACT_TYPE {
     Whitelist = 'Whitelist',
     SkillTree = 'SkillTree',
     DETERMINISTIC_FACTORY_CONTRACT = 'DeterministicDeployFactory',
-    LootDrop = 'LootDrop',
+    LootDropHQ = 'LootDropHQ',
     HelloWorld = 'HelloWorld',
 }
 
@@ -31,7 +31,7 @@ export enum CONTRACT_FILE_NAME {
     Bridge = 'ERC20Bridge',
     Whitelist = 'Whitelist',
     DETERMINISTIC_FACTORY_CONTRACT = 'DeterministicDeployFactory',
-    LootDrop = 'LootDrop',
+    LootDropHQ = 'LootDropHQ',
     HelloWorld = 'HelloWorld',
 }
 export enum CONTRACT_UPGRADABLE_FILE_NAME {
@@ -69,7 +69,7 @@ export enum CONTRACT_NAME {
     BUIDL = 'BUIDL',
     SkillTree = 'SkillTree',
     DETERMINISTIC_FACTORY_CONTRACT = 'DeterministicDeployFactory',
-    LootDrop = 'LootDrop',
+    LootDropHQ = 'LootDropHQ',
     HelloWorld = 'HelloWorld',
 }
 
