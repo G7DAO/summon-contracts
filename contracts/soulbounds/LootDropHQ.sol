@@ -122,8 +122,8 @@ contract LootDropHQ is
     }
 
     function _decodeData(bytes calldata _data) private view returns (uint256[] memory) {
-        uint256[] memory itemIds = abi.decode(_data, (uint256[]));
-        return itemIds;
+        uint256[] memory _itemIds = abi.decode(_data, (uint256[]));
+        return _itemIds;
     }
 
     function pause() external onlyRole(MANAGER_ROLE) {
