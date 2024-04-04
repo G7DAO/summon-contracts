@@ -34,6 +34,14 @@ library LibItems {
         ERC1155
     }
 
+    struct RewardTokenOld {
+        uint256 tokenId;
+        string tokenUri;
+        uint256 rewardAmount; // depending of the erc20 token decimal
+        address rewardERC20; // USDC, USDT, DAI, etc
+        bool isEther;
+    }
+
     struct Reward {
         RewardType rewardType; // 4 = ether 1 = erc20, 2 = erc721, 3 = erc1155, 4 = erc404
         uint256 rewardAmount; // depending of the erc20 token decimal
