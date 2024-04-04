@@ -9,7 +9,7 @@ import { Strings } from "@openzeppelin/contracts/utils/Strings.sol";
 import { ECDSA } from "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
 import { ERC721Holder } from "@openzeppelin/contracts/token/ERC721/utils/ERC721Holder.sol";
 
-import { LootDrop } from "../../contracts/soulbounds/LootDrop.sol";
+import { LootDrop } from "../../contracts/soulbounds/lootDrop.sol";
 import { AdminERC1155Soulbound } from "../../contracts/soulbounds/AdminERC1155Soulbound.sol";
 import { MockERC1155Receiver } from "../../contracts/mocks/MockERC1155Receiver.sol";
 import { MockERC20 } from "../../contracts/mocks/MockERC20.sol";
@@ -33,7 +33,7 @@ error DupTokenId();
 contract LootDropAddTokenTest is StdCheats, Test, MockERC1155Receiver, ERC721Holder {
     using Strings for uint256;
 
-    LootDrop public LootDrop;
+    LootDrop public lootDrop;
     AdminERC1155Soulbound public itemBound;
     MockERC1155Receiver public mockERC1155Receiver;
     MockERC20 public mockERC20;
@@ -119,8 +119,8 @@ contract LootDropAddTokenTest is StdCheats, Test, MockERC1155Receiver, ERC721Hol
         minterWallet = getWallet(minterLabel);
 
         itemBound = new AdminERC1155Soulbound(address(this));
-        LootDrop = new LootDrop(address(this));
-        LootDrop.initialize(address(this), address(itemBound));
+        lootDrop = new LootDrop(address(this));
+        lootDrop.initialize(address(this), address(itemBound));
 
         itemBound.initialize(
             "Test1155",
@@ -128,13 +128,13 @@ contract LootDropAddTokenTest is StdCheats, Test, MockERC1155Receiver, ERC721Hol
             "MISSING_BASE_URL",
             "MISSING_CONTRACT_URL",
             address(this),
-            address(LootDrop)
+            address(lootDrop)
         );
         mockERC20 = new MockERC20("oUSDC", "oUSDC");
         mockERC721 = new MockERC721();
         mockERC1155 = new MockERC1155();
 
-        LootDrop.addWhitelistSigner(minterWallet.addr);
+        lootDrop.addWhitelistSigner(minterWallet.addr);
 
         mockERC1155Receiver = new MockERC1155Receiver();
 
@@ -198,10 +198,10 @@ contract LootDropAddTokenTest is StdCheats, Test, MockERC1155Receiver, ERC721Hol
         }
         mockERC1155.mint(address(this), 456, 10, "");
 
-        mockERC20.approve(address(LootDrop), type(uint256).max);
-        mockERC721.setApprovalForAll(address(LootDrop), true);
-        mockERC1155.setApprovalForAll(address(LootDrop), true);
-        LootDrop.createMultipleTokensAndDepositRewards(_tokens);
+        mockERC20.approve(address(lootDrop), type(uint256).max);
+        mockERC721.setApprovalForAll(address(lootDrop), true);
+        mockERC1155.setApprovalForAll(address(lootDrop), true);
+        lootDrop.createMultipleTokensAndDepositRewards(_tokens);
     }
 
     function testTokenExists() public {
@@ -214,10 +214,10 @@ contract LootDropAddTokenTest is StdCheats, Test, MockERC1155Receiver, ERC721Hol
         _amounts[0] = 1;
 
         vm.expectRevert(TokenNotExist.selector);
-        LootDrop.isTokenExist(_tokenId);
+        lootDrop.isTokenExist(_tokenId);
 
         vm.expectRevert(TokenNotExist.selector);
-        LootDrop.adminBatchMintById(_wallets, _tokenId, _amounts, true);
+        lootDrop.adminBatchMintById(_wallets, _tokenId, _amounts, true);
 
         delete _rewards; // reset rewards
         for (uint256 j = 0; j < 10; j++) {
@@ -239,9 +239,9 @@ contract LootDropAddTokenTest is StdCheats, Test, MockERC1155Receiver, ERC721Hol
             maxSupply: 0
         });
 
-        LootDrop.createTokenAndDepositRewards(_token);
-        LootDrop.isTokenExist(_tokenId);
-        LootDrop.adminBatchMintById(_wallets, _tokenId, _amounts, true);
+        lootDrop.createTokenAndDepositRewards(_token);
+        lootDrop.isTokenExist(_tokenId);
+        lootDrop.adminBatchMintById(_wallets, _tokenId, _amounts, true);
     }
 
     function testAddNewTokensNotDEV_CONFIG_ROLEShouldFail() public {
@@ -275,7 +275,7 @@ contract LootDropAddTokenTest is StdCheats, Test, MockERC1155Receiver, ERC721Hol
             "AccessControl: account 0x44e97af4418b7a17aabd8090bea0a471a366305c is missing role 0x241ecf16d79d0f8dbfb92cbc07fe17840425976cf0667f022fe9877caa831b08"
         );
         vm.prank(playerWallet.addr);
-        LootDrop.createMultipleTokensAndDepositRewards(_tokens);
+        lootDrop.createMultipleTokensAndDepositRewards(_tokens);
     }
 
     // should fail not enough ETH
@@ -340,7 +340,7 @@ contract LootDropAddTokenTest is StdCheats, Test, MockERC1155Receiver, ERC721Hol
         }
 
         vm.expectRevert(InsufficientBalance.selector);
-        LootDrop.createMultipleTokensAndDepositRewards{ value: 299999999999999999 }(_tokens);
+        lootDrop.createMultipleTokensAndDepositRewards{ value: 299999999999999999 }(_tokens);
     }
     // should fail not enough ERC20
     function testAddNewTokensNotEnoughERC20ShouldFail() public {
@@ -404,8 +404,8 @@ contract LootDropAddTokenTest is StdCheats, Test, MockERC1155Receiver, ERC721Hol
         }
 
         vm.expectRevert("ERC20: transfer amount exceeds balance");
-        LootDrop.createMultipleTokensAndDepositRewards{ value: 300000000000000000 }(_tokens);
-        assertEq(mockERC20.balanceOf(address(LootDrop)), 4000000);
+        lootDrop.createMultipleTokensAndDepositRewards{ value: 300000000000000000 }(_tokens);
+        assertEq(mockERC20.balanceOf(address(lootDrop)), 4000000);
     }
     // should fail not enough ERC721
     function testAddNtestAddNewTokensNotEnoughERC721ShouldFail() public {
@@ -469,7 +469,7 @@ contract LootDropAddTokenTest is StdCheats, Test, MockERC1155Receiver, ERC721Hol
         }
 
         vm.expectRevert("ERC721: invalid token ID");
-        LootDrop.createMultipleTokensAndDepositRewards{ value: 300000000000000000 }(_tokens);
+        lootDrop.createMultipleTokensAndDepositRewards{ value: 300000000000000000 }(_tokens);
     }
 
     // should fail not enough ERC1155
@@ -534,7 +534,7 @@ contract LootDropAddTokenTest is StdCheats, Test, MockERC1155Receiver, ERC721Hol
         }
 
         vm.expectRevert("ERC1155: insufficient balance for transfer");
-        LootDrop.createMultipleTokensAndDepositRewards{ value: 300000000000000000 }(_tokens);
+        lootDrop.createMultipleTokensAndDepositRewards{ value: 300000000000000000 }(_tokens);
     }
 
     function testAddNtestAddNewTokensDontOwnedERC1155ShouldFail() public {
@@ -598,7 +598,7 @@ contract LootDropAddTokenTest is StdCheats, Test, MockERC1155Receiver, ERC721Hol
         }
 
         vm.expectRevert("ERC1155: insufficient balance for transfer");
-        LootDrop.createMultipleTokensAndDepositRewards{ value: 300000000000000000 }(_tokens);
+        lootDrop.createMultipleTokensAndDepositRewards{ value: 300000000000000000 }(_tokens);
     }
 
     function testAddNewTokensShouldPass() public {
@@ -661,11 +661,11 @@ contract LootDropAddTokenTest is StdCheats, Test, MockERC1155Receiver, ERC721Hol
             _tokens[i] = _token;
         }
 
-        LootDrop.createMultipleTokensAndDepositRewards{ value: 300000000000000000 }(_tokens);
+        lootDrop.createMultipleTokensAndDepositRewards{ value: 300000000000000000 }(_tokens);
 
-        assertEq(address(LootDrop).balance, 300000000000000000);
-        assertEq(mockERC20.balanceOf(address(LootDrop)), 4002000);
-        assertEq(mockERC721.balanceOf(address(LootDrop)), 3);
-        assertEq(mockERC1155.balanceOf(address(LootDrop), 456), 2);
+        assertEq(address(lootDrop).balance, 300000000000000000);
+        assertEq(mockERC20.balanceOf(address(lootDrop)), 4002000);
+        assertEq(mockERC721.balanceOf(address(lootDrop)), 3);
+        assertEq(mockERC1155.balanceOf(address(lootDrop), 456), 2);
     }
 }

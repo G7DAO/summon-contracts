@@ -8,7 +8,7 @@ import "forge-std/console.sol";
 import { Strings } from "@openzeppelin/contracts/utils/Strings.sol";
 import { ECDSA } from "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
 
-import { LootDrop } from "../../contracts/soulbounds/LootDrop.sol";
+import { LootDrop } from "../../contracts/soulbounds/lootDrop.sol";
 import { AdminERC1155Soulbound } from "../../contracts/soulbounds/AdminERC1155Soulbound.sol";
 import { MockERC1155Receiver } from "../../contracts/mocks/MockERC1155Receiver.sol";
 import { MockERC20 } from "../../contracts/mocks/MockERC20.sol";
@@ -30,7 +30,7 @@ error DupTokenId();
 contract LootDropUpdateTokenTest is StdCheats, Test {
     using Strings for uint256;
 
-    LootDrop public LootDrop;
+    LootDrop public lootDrop;
     AdminERC1155Soulbound public itemBound;
     MockERC1155Receiver public mockERC1155Receiver;
     MockERC20 public mockERC20;
@@ -117,8 +117,8 @@ contract LootDropUpdateTokenTest is StdCheats, Test {
         minterWallet = getWallet(minterLabel);
 
         itemBound = new AdminERC1155Soulbound(address(this));
-        LootDrop = new LootDrop(address(this));
-        LootDrop.initialize(address(this), address(itemBound));
+        lootDrop = new LootDrop(address(this));
+        lootDrop.initialize(address(this), address(itemBound));
 
         itemBound.initialize(
             "Test1155",
@@ -126,13 +126,13 @@ contract LootDropUpdateTokenTest is StdCheats, Test {
             "MISSING_BASE_URL",
             "MISSING_CONTRACT_URL",
             address(this),
-            address(LootDrop)
+            address(lootDrop)
         );
         mockERC20 = new MockERC20("oUSDC", "oUSDC");
         mockERC721 = new MockERC721();
         mockERC1155 = new MockERC1155();
 
-        LootDrop.addWhitelistSigner(minterWallet.addr);
+        lootDrop.addWhitelistSigner(minterWallet.addr);
 
         mockERC1155Receiver = new MockERC1155Receiver();
 
@@ -192,12 +192,12 @@ contract LootDropUpdateTokenTest is StdCheats, Test {
 
         mockERC20.mint(address(this), 20000000000000000000);
         for (uint256 i = 0; i < 10; i++) {
-            mockERC721.mint(address(LootDrop));
+            mockERC721.mint(address(lootDrop));
         }
-        mockERC1155.mint(address(LootDrop), 456, 10, "");
+        mockERC1155.mint(address(lootDrop), 456, 10, "");
 
-        mockERC20.approve(address(LootDrop), type(uint256).max);
-        LootDrop.createMultipleTokensAndDepositRewards(_tokens);
+        mockERC20.approve(address(lootDrop), type(uint256).max);
+        lootDrop.createMultipleTokensAndDepositRewards(_tokens);
     }
 
     function testTokenURIIfTokenIdNotExist() public {
@@ -212,7 +212,7 @@ contract LootDropUpdateTokenTest is StdCheats, Test {
     //         "AccessControl: account 0x44e97af4418b7a17aabd8090bea0a471a366305c is missing role 0x3b359cf0b4471a5de84269135285268e64ac56f52d3161392213003a780ad63b"
     //     );
     //     vm.prank(playerWallet.addr);
-    //     LootDrop.updateTokenUri(0, newTokenUri);
+    //     lootDrop.updateTokenUri(0, newTokenUri);
     // }
 
     // function testUpdateTokenURIPass() public {
@@ -241,13 +241,13 @@ contract LootDropUpdateTokenTest is StdCheats, Test {
     // requireToBurnGatingToken: true
     //     });
 
-    //     LootDrop.createTokenAndDepositRewards(_token);
+    //     lootDrop.createTokenAndDepositRewards(_token);
 
     //     string memory newTokenUri = "https://something-new.com/232";
 
-    //     assertEq(LootDrop.uri(_tokenId), "123");
-    //     LootDrop.updateTokenUri(_tokenId, newTokenUri);
-    //     assertEq(LootDrop.uri(_tokenId), "https://something-new.com/232");
+    //     assertEq(lootDrop.uri(_tokenId), "123");
+    //     lootDrop.updateTokenUri(_tokenId, newTokenUri);
+    //     assertEq(lootDrop.uri(_tokenId), "https://something-new.com/232");
     // }
 
     // function testBatchUpdateTokenUriShouldFail() public {
@@ -280,14 +280,14 @@ contract LootDropUpdateTokenTest is StdCheats, Test {
     //         _tokenIds[i] = _tokenId;
     //     }
 
-    //     LootDrop.createMultipleTokensAndDepositRewards(_tokens);
+    //     lootDrop.createMultipleTokensAndDepositRewards(_tokens);
 
     //     string[] memory _newTokenUris = new string[](2);
     //     _newTokenUris[0] = "https://something-new.com/232";
     //     _newTokenUris[1] = "https://something-new.com/232";
 
     //     vm.expectRevert("InvalidInput");
-    //     LootDrop.batchUpdateTokenUri(_tokenIds, _newTokenUris);
+    //     lootDrop.batchUpdateTokenUri(_tokenIds, _newTokenUris);
     // }
 
     // function testBatchUpdateTokenUriShouldPass() public {
@@ -320,15 +320,15 @@ contract LootDropUpdateTokenTest is StdCheats, Test {
     //         _tokenIds[i] = _tokenId;
     //     }
 
-    //     LootDrop.createMultipleTokensAndDepositRewards(_tokens);
+    //     lootDrop.createMultipleTokensAndDepositRewards(_tokens);
 
     //     string[] memory _newTokenUris = new string[](3);
     //     _newTokenUris[0] = "https://something-new.com/1";
     //     _newTokenUris[1] = "https://something-new.com/2";
     //     _newTokenUris[2] = "https://something-new.com/2";
 
-    //     LootDrop.batchUpdateTokenUri(_tokenIds, _newTokenUris);
+    //     lootDrop.batchUpdateTokenUri(_tokenIds, _newTokenUris);
 
-    //     assertEq(LootDrop.uri(_tokenIds[0]), _newTokenUris[0]);
+    //     assertEq(lootDrop.uri(_tokenIds[0]), _newTokenUris[0]);
     // }
 }

@@ -9,7 +9,7 @@ import { Strings } from "@openzeppelin/contracts/utils/Strings.sol";
 import { ECDSA } from "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
 import { ERC721Holder } from "@openzeppelin/contracts/token/ERC721/utils/ERC721Holder.sol";
 
-import { LootDrop } from "../../contracts/soulbounds/LootDrop.sol";
+import { LootDrop } from "../../contracts/soulbounds/lootDrop.sol";
 import { AdminERC1155Soulbound } from "../../contracts/soulbounds/AdminERC1155Soulbound.sol";
 import { MockERC1155Receiver } from "../../contracts/mocks/MockERC1155Receiver.sol";
 import { MockERC20 } from "../../contracts/mocks/MockERC20.sol";
@@ -32,7 +32,7 @@ error ExceedMaxSupply();
 contract LootDropMintTest is StdCheats, Test, MockERC1155Receiver, ERC721Holder {
     using Strings for uint256;
 
-    LootDrop public LootDrop;
+    LootDrop public lootDrop;
     AdminERC1155Soulbound public itemBound;
     MockERC1155Receiver public mockERC1155Receiver;
     MockERC20 public mockERC20;
@@ -119,8 +119,8 @@ contract LootDropMintTest is StdCheats, Test, MockERC1155Receiver, ERC721Holder 
         minterWallet = getWallet(minterLabel);
 
         itemBound = new AdminERC1155Soulbound(address(this));
-        LootDrop = new LootDrop(address(this));
-        LootDrop.initialize(address(this), address(itemBound));
+        lootDrop = new LootDrop(address(this));
+        lootDrop.initialize(address(this), address(itemBound));
 
         itemBound.initialize(
             "Test1155",
@@ -128,13 +128,13 @@ contract LootDropMintTest is StdCheats, Test, MockERC1155Receiver, ERC721Holder 
             "MISSING_BASE_URL",
             "MISSING_CONTRACT_URL",
             address(this),
-            address(LootDrop)
+            address(lootDrop)
         );
         mockERC20 = new MockERC20("oUSDC", "oUSDC");
         mockERC721 = new MockERC721();
         mockERC1155 = new MockERC1155();
 
-        LootDrop.addWhitelistSigner(minterWallet.addr);
+        lootDrop.addWhitelistSigner(minterWallet.addr);
 
         mockERC1155Receiver = new MockERC1155Receiver();
 
@@ -198,15 +198,15 @@ contract LootDropMintTest is StdCheats, Test, MockERC1155Receiver, ERC721Holder 
         }
         mockERC1155.mint(address(this), 456, 10, "");
 
-        mockERC20.approve(address(LootDrop), type(uint256).max);
-        mockERC721.setApprovalForAll(address(LootDrop), true);
-        mockERC1155.setApprovalForAll(address(LootDrop), true);
-        LootDrop.createMultipleTokensAndDepositRewards(_tokens);
+        mockERC20.approve(address(lootDrop), type(uint256).max);
+        mockERC721.setApprovalForAll(address(lootDrop), true);
+        mockERC1155.setApprovalForAll(address(lootDrop), true);
+        lootDrop.createMultipleTokensAndDepositRewards(_tokens);
     }
 
     function testMintShouldPass() public {
         vm.prank(playerWallet.addr);
-        LootDrop.mint(encodedItems1, true, nonce, signature, false);
+        lootDrop.mint(encodedItems1, true, nonce, signature, false);
 
         vm.expectRevert(
             "Achievo1155Soulbound: The amount of soulbounded tokens is more than the amount of tokens to be transferred"
@@ -219,7 +219,7 @@ contract LootDropMintTest is StdCheats, Test, MockERC1155Receiver, ERC721Holder 
         itemBound.safeTransferFrom(playerWallet.addr, minterWallet.addr, _tokenIds[0], 0, "");
 
         vm.prank(playerWallet2.addr);
-        LootDrop.mint(encodedItems2, false, nonce2, signature2, false);
+        lootDrop.mint(encodedItems2, false, nonce2, signature2, false);
 
         vm.prank(playerWallet2.addr);
         itemBound.safeTransferFrom(playerWallet2.addr, minterWallet.addr, _tokenIds[3], 1, "");
@@ -240,7 +240,7 @@ contract LootDropMintTest is StdCheats, Test, MockERC1155Receiver, ERC721Holder 
 
         vm.expectRevert(TokenNotExist.selector);
         vm.prank(playerWallet.addr);
-        LootDrop.mint(encodedItems3, true, _nonce, _signature, false);
+        lootDrop.mint(encodedItems3, true, _nonce, _signature, false);
     }
 
     function testAdminMintNotMinterRole() public {
@@ -248,7 +248,7 @@ contract LootDropMintTest is StdCheats, Test, MockERC1155Receiver, ERC721Holder 
             "AccessControl: account 0x44e97af4418b7a17aabd8090bea0a471a366305c is missing role 0x9f2df0fed2c77648de5860a4cc508cd0818c85b8b8a1ab4ceeef8d981c8956a6"
         );
         vm.prank(playerWallet.addr);
-        LootDrop.adminMint(playerWallet.addr, encodedItems1, true, false);
+        lootDrop.adminMint(playerWallet.addr, encodedItems1, true, false);
     }
 
     function testadminMintByIdNotMinterRole() public {
@@ -257,11 +257,11 @@ contract LootDropMintTest is StdCheats, Test, MockERC1155Receiver, ERC721Holder 
             "AccessControl: account 0x44e97af4418b7a17aabd8090bea0a471a366305c is missing role 0x9f2df0fed2c77648de5860a4cc508cd0818c85b8b8a1ab4ceeef8d981c8956a6"
         );
         vm.prank(playerWallet.addr);
-        LootDrop.adminMintById(playerWallet.addr, _tokenId, 1, true);
+        lootDrop.adminMintById(playerWallet.addr, _tokenId, 1, true);
     }
 
     function testAdminMint() public {
-        LootDrop.adminMint(playerWallet.addr, encodedItems1, true, false);
+        lootDrop.adminMint(playerWallet.addr, encodedItems1, true, false);
         assertEq(itemBound.balanceOf(playerWallet.addr, _tokenIds[0]), 1);
         assertEq(itemBound.balanceOf(playerWallet.addr, _tokenIds[1]), 1);
         assertEq(itemBound.balanceOf(playerWallet.addr, _tokenIds[2]), 1);
@@ -269,7 +269,7 @@ contract LootDropMintTest is StdCheats, Test, MockERC1155Receiver, ERC721Holder 
 
     function testadminMintById() public {
         uint256 _tokenId = _tokenIds[0];
-        LootDrop.adminMintById(playerWallet.addr, _tokenId, 1, true);
+        lootDrop.adminMintById(playerWallet.addr, _tokenId, 1, true);
         assertEq(itemBound.balanceOf(playerWallet.addr, _tokenIds[0]), 1);
     }
 
@@ -331,14 +331,14 @@ contract LootDropMintTest is StdCheats, Test, MockERC1155Receiver, ERC721Holder 
         });
         _tokens[0] = _token;
 
-        LootDrop.createMultipleTokensAndDepositRewards{ value: 300000000000000000 }(_tokens);
+        lootDrop.createMultipleTokensAndDepositRewards{ value: 300000000000000000 }(_tokens);
 
-        LootDrop.adminMintById(playerWallet.addr, _tokens[0].tokenId, 1, true);
+        lootDrop.adminMintById(playerWallet.addr, _tokens[0].tokenId, 1, true);
         assertEq(itemBound.balanceOf(playerWallet.addr, _tokens[0].tokenId), 1);
 
-        LootDrop.adminMintById(playerWallet2.addr, _tokens[0].tokenId, 1, true);
+        lootDrop.adminMintById(playerWallet2.addr, _tokens[0].tokenId, 1, true);
 
         vm.expectRevert(ExceedMaxSupply.selector);
-        LootDrop.adminMintById(playerWallet3.addr, _tokens[0].tokenId, 1, true);
+        lootDrop.adminMintById(playerWallet3.addr, _tokens[0].tokenId, 1, true);
     }
 }

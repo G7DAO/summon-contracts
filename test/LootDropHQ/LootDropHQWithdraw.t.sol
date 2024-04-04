@@ -8,7 +8,7 @@ import "forge-std/console.sol";
 import { Strings } from "@openzeppelin/contracts/utils/Strings.sol";
 import { ECDSA } from "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
 
-import { LootDrop } from "../../contracts/soulbounds/LootDrop.sol";
+import { LootDrop } from "../../contracts/soulbounds/lootDrop.sol";
 import { AdminERC1155Soulbound } from "../../contracts/soulbounds/AdminERC1155Soulbound.sol";
 import { MockERC1155Receiver } from "../../contracts/mocks/MockERC1155Receiver.sol";
 import { MockERC20 } from "../../contracts/mocks/MockERC20.sol";
@@ -32,7 +32,7 @@ error DupTokenId();
 contract LootDropWithdrawTest is StdCheats, Test {
     using Strings for uint256;
 
-    LootDrop public LootDrop;
+    LootDrop public lootDrop;
     AdminERC1155Soulbound public itemBound;
     MockERC1155Receiver public mockERC1155Receiver;
     MockERC20 public mockERC20;
@@ -86,8 +86,8 @@ contract LootDropWithdrawTest is StdCheats, Test {
         minterWallet = getWallet(minterLabel);
 
         itemBound = new AdminERC1155Soulbound(address(this));
-        LootDrop = new LootDrop(address(this));
-        LootDrop.initialize(address(this), address(itemBound));
+        lootDrop = new LootDrop(address(this));
+        lootDrop.initialize(address(this), address(itemBound));
 
         itemBound.initialize(
             "Test1155",
@@ -95,7 +95,7 @@ contract LootDropWithdrawTest is StdCheats, Test {
             "MISSING_BASE_URL",
             "MISSING_CONTRACT_URL",
             address(this),
-            address(LootDrop)
+            address(lootDrop)
         );
 
         mockERC20 = new MockERC20("oUSDC", "oUSDC");
@@ -108,20 +108,20 @@ contract LootDropWithdrawTest is StdCheats, Test {
         erc721FakeRewardAddress = address(mockERC721);
         erc1155FakeRewardAddress = address(mockERC1155);
 
-        (bool success, ) = payable(address(LootDrop)).call{ value: 2000000000000000000 }("");
+        (bool success, ) = payable(address(lootDrop)).call{ value: 2000000000000000000 }("");
 
-        mockERC20.mint(address(LootDrop), 20000000000000000000);
+        mockERC20.mint(address(lootDrop), 20000000000000000000);
         for (uint256 i = 0; i < 10; i++) {
-            mockERC721.mint(address(LootDrop));
+            mockERC721.mint(address(lootDrop));
         }
-        mockERC1155.mint(address(LootDrop), 123, 10, "");
-        mockERC1155.mint(address(LootDrop), 456, 10, "");
-        mockERC1155.mint(address(LootDrop), 789, 10, "");
+        mockERC1155.mint(address(lootDrop), 123, 10, "");
+        mockERC1155.mint(address(lootDrop), 456, 10, "");
+        mockERC1155.mint(address(lootDrop), 789, 10, "");
     }
 
     // withdrawAssets
     function testWithdrawNotManagerRoleShouldFail() public {
-        uint256 ethBalance = address(LootDrop).balance;
+        uint256 ethBalance = address(lootDrop).balance;
         assertEq(ethBalance, 2000000000000000000);
 
         uint256[] memory _tokenIds1 = new uint256[](1);
@@ -134,11 +134,11 @@ contract LootDropWithdrawTest is StdCheats, Test {
             "AccessControl: account 0x44e97af4418b7a17aabd8090bea0a471a366305c is missing role 0x241ecf16d79d0f8dbfb92cbc07fe17840425976cf0667f022fe9877caa831b08"
         );
         vm.prank(playerWallet.addr);
-        LootDrop.withdrawAssets(LibItems.RewardType.ETHER, address(0), address(0), _tokenIds1, _amount1);
+        lootDrop.withdrawAssets(LibItems.RewardType.ETHER, address(0), address(0), _tokenIds1, _amount1);
     }
 
     function testWithdrawAddressZeroShouldFail() public {
-        uint256 ethBalance = address(LootDrop).balance;
+        uint256 ethBalance = address(lootDrop).balance;
         assertEq(ethBalance, 2000000000000000000);
 
         uint256[] memory _tokenIds1 = new uint256[](1);
@@ -148,12 +148,12 @@ contract LootDropWithdrawTest is StdCheats, Test {
         _amount1[0] = 1000000000000000000;
 
         vm.expectRevert(AddressIsZero.selector);
-        LootDrop.withdrawAssets(LibItems.RewardType.ETHER, address(0), address(0), _tokenIds1, _amount1);
+        lootDrop.withdrawAssets(LibItems.RewardType.ETHER, address(0), address(0), _tokenIds1, _amount1);
     }
 
     // withdraw ETH - fail
     function testWithdrawETHTooMuchShouldFail() public {
-        uint256 ethBalance = address(LootDrop).balance;
+        uint256 ethBalance = address(lootDrop).balance;
         assertEq(ethBalance, 2000000000000000000);
 
         uint256[] memory _tokenIds1 = new uint256[](1);
@@ -163,14 +163,14 @@ contract LootDropWithdrawTest is StdCheats, Test {
         _amount1[0] = 2000000000000000001;
 
         vm.expectRevert(InsufficientBalance.selector);
-        LootDrop.withdrawAssets(LibItems.RewardType.ETHER, playerWallet2.addr, address(0), _tokenIds1, _amount1);
+        lootDrop.withdrawAssets(LibItems.RewardType.ETHER, playerWallet2.addr, address(0), _tokenIds1, _amount1);
 
-        assertEq(address(LootDrop).balance, 2000000000000000000);
+        assertEq(address(lootDrop).balance, 2000000000000000000);
     }
 
     // withdraw ETH - pass
     function testWithdrawETHShouldPass() public {
-        uint256 ethBalance = address(LootDrop).balance;
+        uint256 ethBalance = address(lootDrop).balance;
         assertEq(ethBalance, 2000000000000000000);
 
         uint256[] memory _tokenIds1 = new uint256[](1);
@@ -179,14 +179,14 @@ contract LootDropWithdrawTest is StdCheats, Test {
         uint256[] memory _amount1 = new uint256[](1);
         _amount1[0] = 1000000000000000000;
 
-        LootDrop.withdrawAssets(LibItems.RewardType.ETHER, playerWallet2.addr, address(0), _tokenIds1, _amount1);
+        lootDrop.withdrawAssets(LibItems.RewardType.ETHER, playerWallet2.addr, address(0), _tokenIds1, _amount1);
 
-        assertEq(address(LootDrop).balance, 1000000000000000000);
+        assertEq(address(lootDrop).balance, 1000000000000000000);
     }
 
     // withdraw ERC20 - fail
     function testWithdrawERC20TooMuchShouldFail() public {
-        uint256 erc20Balance = mockERC20.balanceOf(address(LootDrop));
+        uint256 erc20Balance = mockERC20.balanceOf(address(lootDrop));
         assertEq(erc20Balance, 20000000000000000000);
 
         uint256[] memory _tokenIds1 = new uint256[](1);
@@ -196,7 +196,7 @@ contract LootDropWithdrawTest is StdCheats, Test {
         _amount1[0] = 20000000000000000001;
 
         vm.expectRevert(InsufficientBalance.selector);
-        LootDrop.withdrawAssets(
+        lootDrop.withdrawAssets(
             LibItems.RewardType.ERC20,
             playerWallet2.addr,
             address(mockERC20),
@@ -207,7 +207,7 @@ contract LootDropWithdrawTest is StdCheats, Test {
 
     // withdraw ERC20 - pass
     function testWithdrawERC20ShouldPass() public {
-        uint256 erc20Balance = mockERC20.balanceOf(address(LootDrop));
+        uint256 erc20Balance = mockERC20.balanceOf(address(lootDrop));
         assertEq(erc20Balance, 20000000000000000000);
 
         uint256[] memory _tokenIds1 = new uint256[](1);
@@ -216,7 +216,7 @@ contract LootDropWithdrawTest is StdCheats, Test {
         uint256[] memory _amount1 = new uint256[](1);
         _amount1[0] = 1000000000000000000;
 
-        LootDrop.withdrawAssets(
+        lootDrop.withdrawAssets(
             LibItems.RewardType.ERC20,
             playerWallet2.addr,
             address(mockERC20),
@@ -224,7 +224,7 @@ contract LootDropWithdrawTest is StdCheats, Test {
             _amount1
         );
 
-        assertEq(mockERC20.balanceOf(address(LootDrop)), 19000000000000000000);
+        assertEq(mockERC20.balanceOf(address(lootDrop)), 19000000000000000000);
     }
 
     // withdraw ERC721 - fail
@@ -241,7 +241,7 @@ contract LootDropWithdrawTest is StdCheats, Test {
         _amount1[0] = 0; // ignore amount
 
         vm.expectRevert("ERC721: caller is not token owner or approved");
-        LootDrop.withdrawAssets(
+        lootDrop.withdrawAssets(
             LibItems.RewardType.ERC721,
             playerWallet2.addr,
             address(mockERC721),
@@ -261,7 +261,7 @@ contract LootDropWithdrawTest is StdCheats, Test {
         _amount1[0] = 0; // ignore amount
 
         vm.expectRevert("ERC721: invalid token ID");
-        LootDrop.withdrawAssets(
+        lootDrop.withdrawAssets(
             LibItems.RewardType.ERC721,
             playerWallet2.addr,
             address(mockERC721),
@@ -273,7 +273,7 @@ contract LootDropWithdrawTest is StdCheats, Test {
     // withdraw ERC721 - pass
     function testWithdrawERC721ShouldPass() public {
         address ownerAddress = mockERC721.ownerOf(0);
-        assertEq(ownerAddress, address(LootDrop));
+        assertEq(ownerAddress, address(lootDrop));
 
         uint256[] memory _tokenIds1 = new uint256[](1);
         _tokenIds1[0] = 0; // tokenId 0
@@ -281,7 +281,7 @@ contract LootDropWithdrawTest is StdCheats, Test {
         uint256[] memory _amount1 = new uint256[](1);
         _amount1[0] = 0; // ignore amount
 
-        LootDrop.withdrawAssets(
+        lootDrop.withdrawAssets(
             LibItems.RewardType.ERC721,
             playerWallet2.addr,
             address(mockERC721),
@@ -296,9 +296,9 @@ contract LootDropWithdrawTest is StdCheats, Test {
     // own but amount is 0
     function testWithdrawERC1155TooMuchShouldFail() public {
         address[] memory _accounts = new address[](3);
-        _accounts[0] = address(LootDrop);
-        _accounts[1] = address(LootDrop);
-        _accounts[2] = address(LootDrop);
+        _accounts[0] = address(lootDrop);
+        _accounts[1] = address(lootDrop);
+        _accounts[2] = address(lootDrop);
 
         uint256[] memory _tokenIds = new uint256[](3);
         _tokenIds[0] = 123;
@@ -317,7 +317,7 @@ contract LootDropWithdrawTest is StdCheats, Test {
         }
 
         vm.expectRevert("ERC1155: insufficient balance for transfer");
-        LootDrop.withdrawAssets(
+        lootDrop.withdrawAssets(
             LibItems.RewardType.ERC1155,
             playerWallet2.addr,
             address(mockERC1155),
@@ -335,7 +335,7 @@ contract LootDropWithdrawTest is StdCheats, Test {
     // token not owned
     function testWithdrawERC1155NotOwnedShouldFail() public {
         address[] memory _accounts = new address[](1);
-        _accounts[0] = address(LootDrop);
+        _accounts[0] = address(lootDrop);
 
         uint256[] memory _tokenIds = new uint256[](1);
         _tokenIds[0] = 888;
@@ -350,7 +350,7 @@ contract LootDropWithdrawTest is StdCheats, Test {
         }
 
         vm.expectRevert("ERC1155: insufficient balance for transfer");
-        LootDrop.withdrawAssets(
+        lootDrop.withdrawAssets(
             LibItems.RewardType.ERC1155,
             playerWallet2.addr,
             address(mockERC1155),
@@ -362,9 +362,9 @@ contract LootDropWithdrawTest is StdCheats, Test {
     // withdraw ERC1155 - pass
     function testWithdrawERC1155ShouldPass() public {
         address[] memory _accounts = new address[](3);
-        _accounts[0] = address(LootDrop);
-        _accounts[1] = address(LootDrop);
-        _accounts[2] = address(LootDrop);
+        _accounts[0] = address(lootDrop);
+        _accounts[1] = address(lootDrop);
+        _accounts[2] = address(lootDrop);
 
         uint256[] memory _tokenIds = new uint256[](3);
         _tokenIds[0] = 123;
@@ -382,7 +382,7 @@ contract LootDropWithdrawTest is StdCheats, Test {
             assertEq(balances[i], 10);
         }
 
-        LootDrop.withdrawAssets(
+        lootDrop.withdrawAssets(
             LibItems.RewardType.ERC1155,
             playerWallet2.addr,
             address(mockERC1155),

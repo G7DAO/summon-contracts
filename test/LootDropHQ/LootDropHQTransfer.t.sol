@@ -8,7 +8,7 @@ import "forge-std/console.sol";
 import { Strings } from "@openzeppelin/contracts/utils/Strings.sol";
 import { ECDSA } from "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
 
-import { LootDrop } from "../../contracts/soulbounds/LootDrop.sol";
+import { LootDrop } from "../../contracts/soulbounds/lootDrop.sol";
 import { AdminERC1155Soulbound } from "../../contracts/soulbounds/AdminERC1155Soulbound.sol";
 import { MockERC1155Receiver } from "../../contracts/mocks/MockERC1155Receiver.sol";
 import { MockERC20 } from "../../contracts/mocks/MockERC20.sol";
@@ -30,7 +30,7 @@ error DupTokenId();
 contract LootDropTransferTest is StdCheats, Test {
     using Strings for uint256;
 
-    LootDrop public LootDrop;
+    LootDrop public lootDrop;
     AdminERC1155Soulbound public itemBound;
     MockERC1155Receiver public mockERC1155Receiver;
     MockERC20 public mockERC20;
@@ -117,8 +117,8 @@ contract LootDropTransferTest is StdCheats, Test {
         minterWallet = getWallet(minterLabel);
 
         itemBound = new AdminERC1155Soulbound(address(this));
-        LootDrop = new LootDrop(address(this));
-        LootDrop.initialize(address(this), address(itemBound));
+        lootDrop = new LootDrop(address(this));
+        lootDrop.initialize(address(this), address(itemBound));
 
         itemBound.initialize(
             "Test1155",
@@ -126,13 +126,13 @@ contract LootDropTransferTest is StdCheats, Test {
             "MISSING_BASE_URL",
             "MISSING_CONTRACT_URL",
             address(this),
-            address(LootDrop)
+            address(lootDrop)
         );
         mockERC20 = new MockERC20("oUSDC", "oUSDC");
         mockERC721 = new MockERC721();
         mockERC1155 = new MockERC1155();
 
-        LootDrop.addWhitelistSigner(minterWallet.addr);
+        lootDrop.addWhitelistSigner(minterWallet.addr);
 
         mockERC1155Receiver = new MockERC1155Receiver();
 
@@ -192,12 +192,12 @@ contract LootDropTransferTest is StdCheats, Test {
 
         mockERC20.mint(address(this), 20000000000000000000);
         for (uint256 i = 0; i < 10; i++) {
-            mockERC721.mint(address(LootDrop));
+            mockERC721.mint(address(lootDrop));
         }
-        mockERC1155.mint(address(LootDrop), 456, 10, "");
+        mockERC1155.mint(address(lootDrop), 456, 10, "");
 
-        mockERC20.approve(address(LootDrop), type(uint256).max);
-        LootDrop.createMultipleTokensAndDepositRewards(_tokens);
+        mockERC20.approve(address(lootDrop), type(uint256).max);
+        lootDrop.createMultipleTokensAndDepositRewards(_tokens);
     }
 
     function testBatchTransferFrom() public {
@@ -217,10 +217,10 @@ contract LootDropTransferTest is StdCheats, Test {
         _amount1[2] = 1;
 
         vm.prank(playerWallet.addr);
-        LootDrop.mint(encodedItems1, true, nonce, signature, false);
+        lootDrop.mint(encodedItems1, true, nonce, signature, false);
         assertEq(itemBound.balanceOf(playerWallet.addr, _tokenIds[0]), 1);
 
-        LootDrop.adminMint(playerWallet2.addr, encodedItems1, false, false);
+        lootDrop.adminMint(playerWallet2.addr, encodedItems1, false, false);
 
         vm.prank(playerWallet2.addr);
         itemBound.safeTransferFrom(playerWallet2.addr, playerWallet.addr, _tokenIds[0], 1, "");
@@ -248,7 +248,7 @@ contract LootDropTransferTest is StdCheats, Test {
 
     function testNonSoulboundTokenTransfer() public {
         uint256 _tokenId = _tokenIds[0];
-        LootDrop.adminMintById(playerWallet.addr, _tokenId, 1, false);
+        lootDrop.adminMintById(playerWallet.addr, _tokenId, 1, false);
 
         vm.prank(playerWallet.addr);
         itemBound.safeTransferFrom(playerWallet.addr, minterWallet.addr, _tokenId, 1, "");
@@ -259,7 +259,7 @@ contract LootDropTransferTest is StdCheats, Test {
 
     function testSoulboundTokenNotTransfer() public {
         uint256 _tokenId = _tokenIds[0];
-        LootDrop.adminMintById(playerWallet.addr, _tokenId, 1, true);
+        lootDrop.adminMintById(playerWallet.addr, _tokenId, 1, true);
 
         vm.expectRevert(
             "Achievo1155Soulbound: The amount of soulbounded tokens is more than the amount of tokens to be transferred"
@@ -274,7 +274,7 @@ contract LootDropTransferTest is StdCheats, Test {
 
     function testSoulboundTokenTransferOnlyWhitelistAddresses() public {
         uint256 _tokenId = _tokenIds[0];
-        LootDrop.adminMintById(playerWallet.addr, _tokenId, 1, true);
+        lootDrop.adminMintById(playerWallet.addr, _tokenId, 1, true);
 
         vm.expectRevert(
             "Achievo1155Soulbound: The amount of soulbounded tokens is more than the amount of tokens to be transferred"
