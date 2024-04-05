@@ -317,9 +317,9 @@ contract LootDrop is
         _claimReward(_msgSender(), _tokenId);
     }
 
-    function claimRewards(uint256[] _tokenIds) external nonReentrant {
+    function claimRewards(uint256[] calldata _tokenIds) external nonReentrant {
         for (uint256 i = 0; i < _tokenIds.length; i++) {
-            _claimReward(_msgSender(), _tokenId);
+            _claimReward(_msgSender(), _tokenIds[i]);
         }
     }
 
