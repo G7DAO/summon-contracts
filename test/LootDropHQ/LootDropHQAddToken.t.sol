@@ -168,7 +168,7 @@ contract LootDropAddTokenTest is StdCheats, Test, MockERC1155Receiver, ERC721Hol
                 tokenId: _tokenId,
                 tokenUri: string(abi.encodePacked("https://something.com", "/", _tokenId.toString())),
                 rewards: _rewards,
-                maxSupply: 0
+                maxSupply: 1
             });
 
             _tokens.push(_token);
@@ -236,7 +236,7 @@ contract LootDropAddTokenTest is StdCheats, Test, MockERC1155Receiver, ERC721Hol
             tokenId: _tokenId,
             tokenUri: string(abi.encodePacked("https://something.com", "/", _tokenId.toString())),
             rewards: _rewards,
-            maxSupply: 0
+            maxSupply: 1
         });
 
         lootDrop.createTokenAndDepositRewards(_token);
@@ -265,7 +265,7 @@ contract LootDropAddTokenTest is StdCheats, Test, MockERC1155Receiver, ERC721Hol
                 tokenId: _tokenId,
                 tokenUri: string(abi.encodePacked("https://something.com", "/", _tokenId.toString())),
                 rewards: _rewards,
-                maxSupply: 0
+                maxSupply: 1
             });
 
             _tokens[i] = _token;
@@ -333,7 +333,7 @@ contract LootDropAddTokenTest is StdCheats, Test, MockERC1155Receiver, ERC721Hol
                 tokenId: _tokenId,
                 tokenUri: string(abi.encodePacked("https://something.com", "/", _tokenId.toString())),
                 rewards: _rewards,
-                maxSupply: 0
+                maxSupply: 1
             });
 
             _tokens[i] = _token;
@@ -398,7 +398,7 @@ contract LootDropAddTokenTest is StdCheats, Test, MockERC1155Receiver, ERC721Hol
                 tokenId: _tokenId,
                 tokenUri: string(abi.encodePacked("https://something.com", "/", _tokenId.toString())),
                 rewards: _rewards,
-                maxSupply: 0
+                maxSupply: 1
             });
             _tokens[i] = _token;
         }
@@ -463,7 +463,7 @@ contract LootDropAddTokenTest is StdCheats, Test, MockERC1155Receiver, ERC721Hol
                 tokenId: _tokenId,
                 tokenUri: string(abi.encodePacked("https://something.com", "/", _tokenId.toString())),
                 rewards: _rewards,
-                maxSupply: 0
+                maxSupply: 1
             });
             _tokens[i] = _token;
         }
@@ -528,7 +528,7 @@ contract LootDropAddTokenTest is StdCheats, Test, MockERC1155Receiver, ERC721Hol
                 tokenId: _tokenId,
                 tokenUri: string(abi.encodePacked("https://something.com", "/", _tokenId.toString())),
                 rewards: _rewards,
-                maxSupply: 0
+                maxSupply: 1
             });
             _tokens[i] = _token;
         }
@@ -592,7 +592,7 @@ contract LootDropAddTokenTest is StdCheats, Test, MockERC1155Receiver, ERC721Hol
                 tokenId: _tokenId,
                 tokenUri: string(abi.encodePacked("https://something.com", "/", _tokenId.toString())),
                 rewards: _rewards,
-                maxSupply: 0
+                maxSupply: 1
             });
             _tokens[i] = _token;
         }
@@ -656,7 +656,7 @@ contract LootDropAddTokenTest is StdCheats, Test, MockERC1155Receiver, ERC721Hol
                 tokenId: _tokenId,
                 tokenUri: string(abi.encodePacked("https://something.com", "/", _tokenId.toString())),
                 rewards: _rewards,
-                maxSupply: 0
+                maxSupply: 1
             });
             _tokens[i] = _token;
         }

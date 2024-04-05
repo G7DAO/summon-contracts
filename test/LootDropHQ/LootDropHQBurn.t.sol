@@ -166,7 +166,7 @@ contract LootDropBurnTest is StdCheats, Test {
                 tokenId: _tokenId,
                 tokenUri: string(abi.encodePacked("https://something.com", "/", _tokenId.toString())),
                 rewards: _rewards,
-                maxSupply: 0
+                maxSupply: 2
             });
 
             _tokens.push(_token);

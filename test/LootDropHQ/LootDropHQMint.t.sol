@@ -168,7 +168,7 @@ contract LootDropMintTest is StdCheats, Test, MockERC1155Receiver, ERC721Holder 
                 tokenId: _tokenId,
                 tokenUri: string(abi.encodePacked("https://something.com", "/", _tokenId.toString())),
                 rewards: _rewards,
-                maxSupply: 0
+                maxSupply: 1
             });
 
             _tokens.push(_token);
@@ -295,10 +295,9 @@ contract LootDropMintTest is StdCheats, Test, MockERC1155Receiver, ERC721Holder 
             rewardTokenIds: new uint256[](0)
         });
 
-        uint256[] memory _erc721TokenIds = new uint256[](3);
+        uint256[] memory _erc721TokenIds = new uint256[](2);
         _erc721TokenIds[0] = 0;
         _erc721TokenIds[1] = 1;
-        _erc721TokenIds[2] = 2;
 
         LibItems.Reward memory _erc721Reward = LibItems.Reward({
             rewardType: LibItems.RewardType.ERC721,
@@ -330,6 +329,9 @@ contract LootDropMintTest is StdCheats, Test, MockERC1155Receiver, ERC721Holder 
             maxSupply: 2
         });
         _tokens[0] = _token;
+
+        console.log("reward.rewardTokenIds.length", _token.rewards[2].rewardTokenIds.length);
+        console.log("reward.rewardAmount * _token.maxSupply", _token.rewards[2].rewardAmount * _token.maxSupply);
 
         lootDrop.createMultipleTokensAndDepositRewards{ value: 300000000000000000 }(_tokens);
 
