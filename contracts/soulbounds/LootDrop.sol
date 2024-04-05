@@ -317,6 +317,12 @@ contract LootDrop is
         _claimReward(_msgSender(), _tokenId);
     }
 
+    function claimRewards(uint256[] calldata _tokenIds) external nonReentrant {
+        for (uint256 i = 0; i < _tokenIds.length; i++) {
+            _claimReward(_msgSender(), _tokenIds[i]);
+        }
+    }
+
     function adminClaimReward(address _to, uint256[] calldata _tokenIds) external onlyRole(MANAGER_ROLE) {
         for (uint256 i = 0; i < _tokenIds.length; i++) {
             _claimReward(_to, _tokenIds[i]);
