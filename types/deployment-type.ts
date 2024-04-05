@@ -1,5 +1,5 @@
 import { CONTRACT_TYPE } from '@constants/contract';
-import { NETWORK_TYPE } from '@constants/network';
+import { NETWORK_TYPE, NetworkName } from '@constants/network';
 import { TENANT } from '@constants/tenant';
 
 export interface Deployment {
@@ -7,7 +7,7 @@ export interface Deployment {
     contractAddress: string;
     type: string;
     name: string;
-    networkName: string;
+    networkName: NetworkName;
     chainId: number;
     rpcUrl: string;
     currency: string;
@@ -17,6 +17,8 @@ export interface Deployment {
     paymasterAddresses: string[];
     fakeContractAddress: string;
     explorerUrl: string;
+    salt?: string;
+    upgradable?: boolean;
 }
 
 export interface DeploymentContract {
