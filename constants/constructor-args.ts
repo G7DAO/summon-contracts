@@ -385,10 +385,12 @@ export const BUIDLArgs = {
 
 export const LootDropArgs = {
     MAINNET: {
-        _uri: 'FILL_ME',
+        _devWallet: 'DEPLOYER_WALLET',
+        _rewardTokenAddress: `CONTRACT_${CONTRACT_NAME.RewardToken}`,
     },
     TESTNET: {
-        _uri: 'FILL_ME',
+        _devWallet: 'DEPLOYER_WALLET',
+        _rewardTokenAddress: `CONTRACT_${CONTRACT_NAME.RewardToken}`,
     },
 };
 
@@ -403,9 +405,19 @@ export const HelloWorldArgs = {
 
 export const RewardTokenArgs = {
     MAINNET: {
-        _uri: 'FILL_ME',
+        _name: 'RewardToken',
+        _symbol: 'RT',
+        _defaultTokenURI: 'FILL_ME',
+        _contractURI: 'FILL_ME',
+        _devWallet: 'DEPLOYER_WALLET',
+        _lootDropAddress: `CONTRACT_${CONTRACT_NAME.LootDrop}`,
     },
     TESTNET: {
-        _uri: 'FILL_ME',
+        _name: 'RainToken',
+        _symbol: 'RT',
+        _defaultTokenURI: 'FILL_ME',
+        _contractURI: 'FILL_ME',
+        _devWallet: 'DEPLOYER_WALLET',
+        _lootDropAddress: `CONTRACT_${CONTRACT_NAME.LootDrop}`,
     },
 };
