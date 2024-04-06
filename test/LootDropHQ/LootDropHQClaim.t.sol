@@ -165,10 +165,9 @@ contract LootDropClaimTest is StdCheats, Test, MockERC1155Receiver, ERC721Holder
                 rewardTokenIds: new uint256[](0)
             });
 
-            uint256[] memory _erc721TokenIds = new uint256[](3);
+            uint256[] memory _erc721TokenIds = new uint256[](2);
             _erc721TokenIds[0] = 0;
             _erc721TokenIds[1] = 1;
-            _erc721TokenIds[2] = 2;
 
             LibItems.Reward memory _erc721Reward = LibItems.Reward({
                 rewardType: LibItems.RewardType.ERC721,
@@ -196,7 +195,7 @@ contract LootDropClaimTest is StdCheats, Test, MockERC1155Receiver, ERC721Holder
                 tokenId: _tokenId,
                 tokenUri: string(abi.encodePacked("https://something.com", "/", _tokenId.toString())),
                 rewards: _rewards,
-                maxSupply: 0
+                maxSupply: 2
             });
             _tokens[i] = _token;
         }
@@ -232,6 +231,64 @@ contract LootDropClaimTest is StdCheats, Test, MockERC1155Receiver, ERC721Holder
         assertEq(mockERC20.balanceOf(playerWallet.addr), 2000);
         assertEq(mockERC721.ownerOf(0), playerWallet.addr);
         assertEq(mockERC1155.balanceOf(playerWallet.addr, 456), 2);
+    }
+
+    function testUserClaimMultipleRewardsShouldPass() public {
+        // mint
+        uint256 _tokenId = 888;
+        lootDrop.adminMintById(playerWallet.addr, _tokenId, 2, true);
+        assertEq(itemBound.balanceOf(playerWallet.addr, _tokenId), 2);
+
+        uint256[] memory _tokenIds = new uint256[](2);
+        _tokenIds[0] = _tokenId;
+        _tokenIds[1] = _tokenId;
+
+        // Claim
+        vm.prank(playerWallet.addr);
+        lootDrop.claimRewards(_tokenIds);
+
+        // Check if the reward token is burned
+        assertEq(itemBound.balanceOf(playerWallet.addr, _tokenId), 0);
+        // Check if the rewards are distributed correctly
+        assertEq(playerWallet.addr.balance, 0.2 ether);
+        assertEq(mockERC20.balanceOf(playerWallet.addr), 4000);
+        assertEq(mockERC721.ownerOf(0), playerWallet.addr);
+        assertEq(mockERC721.ownerOf(1), playerWallet.addr);
+        assertEq(mockERC1155.balanceOf(playerWallet.addr, 456), 4);
+    }
+
+    function testUserClaimMultipleRewardsERC721AllGoneShouldFail() public {
+        // mint
+        uint256 _tokenId = 888;
+        lootDrop.adminMintById(playerWallet.addr, _tokenId, 2, true);
+        assertEq(itemBound.balanceOf(playerWallet.addr, _tokenId), 2);
+
+        uint256[] memory _tokenIds = new uint256[](2);
+        _tokenIds[0] = _tokenId;
+        _tokenIds[1] = _tokenId;
+
+        address ownerAddress = mockERC721.ownerOf(0);
+        assertEq(ownerAddress, address(lootDrop));
+
+        // Transfer all 1 ERC721 out
+        uint256[] memory _tokenIds1 = new uint256[](1);
+        _tokenIds1[0] = 1; // tokenId 0
+
+        uint256[] memory _amount1 = new uint256[](1);
+        _amount1[0] = 0; // ignore amount
+
+        lootDrop.withdrawAssets(
+            LibItems.RewardType.ERC721,
+            playerWallet2.addr,
+            address(mockERC721),
+            _tokenIds1,
+            _amount1
+        );
+
+        // Claim
+        vm.prank(playerWallet.addr);
+        vm.expectRevert("ERC721: caller is not token owner or approved");
+        lootDrop.claimRewards(_tokenIds);
     }
 
     function testAdminClaimRewardShouldPass() public {

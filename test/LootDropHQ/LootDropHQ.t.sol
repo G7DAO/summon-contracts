@@ -165,7 +165,7 @@ contract LootDropTest is StdCheats, Test {
                 tokenId: _tokenId,
                 tokenUri: string(abi.encodePacked("https://something.com", "/", _tokenId.toString())),
                 rewards: _rewards,
-                maxSupply: 0
+                maxSupply: 1
             });
 
             _tokens.push(_token);
@@ -220,8 +220,8 @@ contract LootDropTest is StdCheats, Test {
         lootDrop.adminBatchMintById(_wallets, _tokenId, _amounts, true);
         lootDrop.unpause();
 
-        lootDrop.adminMintById(address(mockERC1155Receiver), _tokenId, 2, true);
-        assertEq(itemBound.balanceOf(address(mockERC1155Receiver), _tokenId), 2);
+        lootDrop.adminMintById(address(mockERC1155Receiver), _tokenId, 1, true);
+        assertEq(itemBound.balanceOf(address(mockERC1155Receiver), _tokenId), 1);
     }
 
     function testPauseUnpauseSpecificToken() public {

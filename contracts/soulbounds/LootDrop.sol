@@ -135,6 +135,10 @@ contract LootDrop is
     }
 
     function _validateTokenInputs(LibItems.RewardToken calldata _token) private pure {
+        if (_token.maxSupply == 0) {
+            revert InvalidAmount();
+        }
+
         if (bytes(_token.tokenUri).length == 0 || _token.rewards.length == 0 || _token.tokenId == 0) {
             revert InvalidInput();
         }
@@ -148,7 +152,10 @@ contract LootDrop is
             }
 
             if (reward.rewardType == LibItems.RewardType.ERC721) {
-                if (reward.rewardTokenIds.length == 0) {
+                if (
+                    reward.rewardTokenIds.length == 0 ||
+                    reward.rewardTokenIds.length != reward.rewardAmount * _token.maxSupply
+                ) {
                     revert InvalidInput();
                 }
             }
@@ -173,7 +180,7 @@ contract LootDrop is
                 totalETHRequired += reward.rewardAmount;
             }
         }
-        return totalETHRequired;
+        return totalETHRequired * _token.maxSupply;
     }
 
     function _createTokenAndDepositRewards(LibItems.RewardToken calldata _token) private {
@@ -194,7 +201,7 @@ contract LootDrop is
             LibItems.Reward memory reward = _token.rewards[i];
             if (reward.rewardType == LibItems.RewardType.ERC20) {
                 IERC20 token = IERC20(reward.rewardTokenAddress);
-                token.transferFrom(_from, _to, reward.rewardAmount);
+                token.transferFrom(_from, _to, reward.rewardAmount * _token.maxSupply);
             } else if (reward.rewardType == LibItems.RewardType.ERC721) {
                 IERC721 token = IERC721(reward.rewardTokenAddress);
                 for (uint256 j = 0; j < reward.rewardTokenIds.length; j++) {
@@ -202,7 +209,7 @@ contract LootDrop is
                 }
             } else if (reward.rewardType == LibItems.RewardType.ERC1155) {
                 IERC1155 token = IERC1155(reward.rewardTokenAddress);
-                _transferERC1155(token, _from, _to, reward.rewardTokenId, reward.rewardAmount);
+                _transferERC1155(token, _from, _to, reward.rewardTokenId, reward.rewardAmount * _token.maxSupply);
             }
         }
 
@@ -410,7 +417,7 @@ contract LootDrop is
         uint256 currentSupply = currentRewardSupply[_tokenId] + _amount;
         currentRewardSupply[_tokenId] += _amount;
 
-        if (tokenRewards[_tokenId].maxSupply > 0 && currentSupply > tokenRewards[_tokenId].maxSupply) {
+        if (currentSupply > tokenRewards[_tokenId].maxSupply) {
             revert ExceedMaxSupply();
         }
 
