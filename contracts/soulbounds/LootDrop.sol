@@ -75,30 +75,38 @@ contract LootDrop is
     mapping(uint256 => LibItems.RewardToken) public tokenRewards;
     mapping(uint256 => bool) public isTokenMintPaused; // tokenId => bool - default is false
     mapping(uint256 => bool) public isClaimRewardPaused; // tokenId => bool - default is false
-    mapping(address => mapping(uint256 => bool)) private tokenIdProcessed;
     mapping(uint256 => mapping(uint256 => uint256)) private erc721RewardCurrentIndex; // rewardTokenId => rewardIndex => erc721RewardCurrentIndex
-    mapping(uint256 => uint256) private currentRewardSupply; // rewardTokenId => currentRewardSupply
+    mapping(uint256 => uint256) public currentRewardSupply; // rewardTokenId => currentRewardSupply
 
     event TokenAdded(uint256 indexed tokenId);
-    event TokenUpdated(uint256 indexed tokenId);
 
     constructor(address devWallet) {
+        if (devWallet == address(0)) {
+            revert AddressIsZero();
+        }
         _grantRole(DEFAULT_ADMIN_ROLE, devWallet);
     }
 
     function initialize(
         address _devWallet,
+        address _managerWallet,
+        address _minterWallet,
         address _rewardTokenAddress
     ) external initializer onlyRole(DEFAULT_ADMIN_ROLE) {
-        if (_devWallet == address(0) || _rewardTokenAddress == address(0)) {
+        if (
+            _devWallet == address(0) ||
+            _managerWallet == address(0) ||
+            _minterWallet == address(0) ||
+            _rewardTokenAddress == address(0)
+        ) {
             revert AddressIsZero();
         }
 
         rewardTokenContract = AdminERC1155Soulbound(_rewardTokenAddress);
         _grantRole(DEFAULT_ADMIN_ROLE, _devWallet);
         _grantRole(DEV_CONFIG_ROLE, _devWallet);
-        _grantRole(MINTER_ROLE, _devWallet);
-        _grantRole(MANAGER_ROLE, _devWallet);
+        _grantRole(MANAGER_ROLE, _managerWallet);
+        _grantRole(MINTER_ROLE, _minterWallet);
         _addWhitelistSigner(_devWallet);
     }
 
@@ -112,7 +120,7 @@ contract LootDrop is
 
     function isTokenExist(uint256 _tokenId) public view returns (bool) {
         if (!tokenExists[_tokenId]) {
-            revert TokenNotExist();
+            return false;
         }
         return true;
     }
@@ -121,7 +129,7 @@ contract LootDrop is
         return _decodeData(_data);
     }
 
-    function _decodeData(bytes calldata _data) private view returns (uint256[] memory) {
+    function _decodeData(bytes calldata _data) private pure returns (uint256[] memory) {
         uint256[] memory _itemIds = abi.decode(_data, (uint256[]));
         return _itemIds;
     }
@@ -134,13 +142,17 @@ contract LootDrop is
         _unpause();
     }
 
-    function _validateTokenInputs(LibItems.RewardToken calldata _token) private pure {
+    function _validateTokenInputs(LibItems.RewardToken calldata _token) private view {
         if (_token.maxSupply == 0) {
             revert InvalidAmount();
         }
 
         if (bytes(_token.tokenUri).length == 0 || _token.rewards.length == 0 || _token.tokenId == 0) {
             revert InvalidInput();
+        }
+
+        if (isTokenExist(_token.tokenId)) {
+            revert DupTokenId();
         }
 
         for (uint256 i = 0; i < _token.rewards.length; i++) {
@@ -157,12 +169,6 @@ contract LootDrop is
                     reward.rewardTokenIds.length != reward.rewardAmount * _token.maxSupply
                 ) {
                     revert InvalidInput();
-                }
-            }
-
-            if (reward.rewardType == LibItems.RewardType.ERC1155) {
-                if (reward.rewardTokenId == 0) {
-                    revert InvalidTokenId();
                 }
             }
 
@@ -190,7 +196,6 @@ contract LootDrop is
         tokenRewards[_token.tokenId] = _token;
         tokenExists[_token.tokenId] = true;
         itemIds.push(_token.tokenId);
-        LibItems.TokenCreate memory tokenCreate = LibItems.TokenCreate(_token.tokenId, _token.tokenUri);
         rewardTokenContract.addNewToken(_token.tokenId);
 
         // Transfer rewards
@@ -274,6 +279,10 @@ contract LootDrop is
             revert AddressIsZero();
         }
 
+        if (_tokenIds.length != _amounts.length) {
+            revert InvalidLength();
+        }
+
         address _from = address(this);
 
         if (_rewardType == LibItems.RewardType.ETHER) {
@@ -320,17 +329,17 @@ contract LootDrop is
         _token.safeTransferFrom(_from, _to, _tokenId, _amount, "");
     }
 
-    function claimReward(uint256 _tokenId) external nonReentrant {
+    function claimReward(uint256 _tokenId) external nonReentrant whenNotPaused {
         _claimReward(_msgSender(), _tokenId);
     }
 
-    function claimRewards(uint256[] calldata _tokenIds) external nonReentrant {
+    function claimRewards(uint256[] calldata _tokenIds) external nonReentrant whenNotPaused {
         for (uint256 i = 0; i < _tokenIds.length; i++) {
             _claimReward(_msgSender(), _tokenIds[i]);
         }
     }
 
-    function adminClaimReward(address _to, uint256[] calldata _tokenIds) external onlyRole(MANAGER_ROLE) {
+    function adminClaimReward(address _to, uint256[] calldata _tokenIds) external onlyRole(MANAGER_ROLE) whenNotPaused {
         for (uint256 i = 0; i < _tokenIds.length; i++) {
             _claimReward(_to, _tokenIds[i]);
         }
@@ -375,9 +384,10 @@ contract LootDrop is
                     if (currentIndex >= tokenIds.length) {
                         revert InsufficientBalance();
                     }
-                    _transferERC721(IERC721(reward.rewardTokenAddress), _from, _to, tokenIds[currentIndex]);
-                    erc721RewardCurrentIndex[_rewardTokenId][i]++;
+                    _transferERC721(IERC721(reward.rewardTokenAddress), _from, _to, tokenIds[currentIndex + j]);
                 }
+
+                erc721RewardCurrentIndex[_rewardTokenId][i] += reward.rewardAmount;
             } else if (reward.rewardType == LibItems.RewardType.ERC1155) {
                 _transferERC1155(
                     IERC1155(reward.rewardTokenAddress),
@@ -409,9 +419,20 @@ contract LootDrop is
         bool soulbound,
         bool isClaimReward
     ) private {
-        isTokenExist(_tokenId);
+        if (to == address(0)) {
+            revert AddressIsZero();
+        }
+
+        if (!isTokenExist(_tokenId)) {
+            revert TokenNotExist();
+        }
+
         if (isTokenMintPaused[_tokenId]) {
             revert MintPaused();
+        }
+
+        if (_amount == 0) {
+            revert InvalidAmount();
         }
 
         uint256 currentSupply = currentRewardSupply[_tokenId] + _amount;
@@ -419,10 +440,6 @@ contract LootDrop is
 
         if (currentSupply > tokenRewards[_tokenId].maxSupply) {
             revert ExceedMaxSupply();
-        }
-
-        if (_amount == 0) {
-            revert InvalidAmount();
         }
 
         // claim the reward
@@ -472,6 +489,10 @@ contract LootDrop is
         uint256[] calldata _amounts,
         bool isSoulbound
     ) public onlyRole(MINTER_ROLE) whenNotPaused {
+        if (toAddresses.length != _amounts.length) {
+            revert InvalidLength();
+        }
+
         for (uint256 i = 0; i < toAddresses.length; i++) {
             _mintAndClaimRewardToken(toAddresses[i], _tokenId, _amounts[i], isSoulbound, false);
         }

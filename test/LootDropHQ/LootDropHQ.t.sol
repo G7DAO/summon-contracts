@@ -117,7 +117,7 @@ contract LootDropTest is StdCheats, Test {
 
         itemBound = new AdminERC1155Soulbound(address(this));
         lootDrop = new LootDrop(address(this));
-        lootDrop.initialize(address(this), address(itemBound));
+        lootDrop.initialize(address(this), address(this), address(this), address(itemBound));
 
         itemBound.initialize(
             "Test1155",
@@ -201,7 +201,7 @@ contract LootDropTest is StdCheats, Test {
 
     function testInitializeTwiceShouldFail() public {
         vm.expectRevert("Initializable: contract is already initialized");
-        lootDrop.initialize(address(this), address(itemBound));
+        lootDrop.initialize(address(this), address(this), address(this), address(itemBound));
     }
 
     function testPauseUnpause() public {

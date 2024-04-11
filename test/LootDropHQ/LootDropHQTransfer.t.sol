@@ -118,7 +118,7 @@ contract LootDropTransferTest is StdCheats, Test {
 
         itemBound = new AdminERC1155Soulbound(address(this));
         lootDrop = new LootDrop(address(this));
-        lootDrop.initialize(address(this), address(itemBound));
+        lootDrop.initialize(address(this), address(this), address(this), address(itemBound));
 
         itemBound.initialize(
             "Test1155",

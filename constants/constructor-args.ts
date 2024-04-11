@@ -386,10 +386,14 @@ export const BUIDLArgs = {
 export const LootDropArgs = {
     MAINNET: {
         _devWallet: 'DEPLOYER_WALLET',
+        _managerWallet: 'DEPLOYER_WALLET',
+        _minterWallet: 'DEPLOYER_WALLET',
         _rewardTokenAddress: `CONTRACT_${CONTRACT_NAME.RewardToken}`,
     },
     TESTNET: {
         _devWallet: 'DEPLOYER_WALLET',
+        _managerWallet: 'DEPLOYER_WALLET',
+        _minterWallet: 'DEPLOYER_WALLET',
         _rewardTokenAddress: `CONTRACT_${CONTRACT_NAME.RewardToken}`,
     },
 };
