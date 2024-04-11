@@ -52,6 +52,7 @@ contract AvatarBoundV1 is
     string public baseTokenURI;
     string public contractURI;
     string public revealURI;
+    string public compoundURI;
     address public gatingNFTAddress;
     address public itemsNFTAddress;
     bool public mintNftGatingEnabled;
@@ -60,6 +61,7 @@ contract AvatarBoundV1 is
     bool public mintSpecialItemEnabled;
     bool public mintDefaultItemEnabled;
     bool public revealNftGatingEnabled;
+    bool public compoundURIEnabled;
 
     struct BaseSkinResponse {
         uint256 baseSkinId;
@@ -109,7 +111,8 @@ contract AvatarBoundV1 is
         bool _mintNftGatingEnabled,
         bool _mintNftWithoutGatingEnabled,
         bool _mintRandomItemEnabled,
-        bool _mintSpecialItemEnabled
+        bool _mintSpecialItemEnabled,
+        bool _compoundURIEnabled,
     ) public initializer {
         __ERC721_init(_name, _symbol);
         __ERC721Enumerable_init();
@@ -135,6 +138,8 @@ contract AvatarBoundV1 is
         mintSpecialItemEnabled = _mintSpecialItemEnabled;
         mintDefaultItemEnabled = true;
         revealNftGatingEnabled = true;
+        compoundURIEnabled = _compoundURIEnabled;
+        compoundURI = "https://api.achievo.xyz/v1/uri/avatar";
         revealURI = _revealURI;
     }
 
@@ -301,6 +306,11 @@ contract AvatarBoundV1 is
         emit RevealURIChanged(_revealURI, _msgSender());
     }
 
+    function setCompoundURIEnabled(bool _compoundURIEnabled) public onlyRole(DEV_CONFIG_ROLE) {
+        require(_compoundURIEnabled != compoundURIEnabled, "compoundURIEnabled URI already set");
+        compoundURIEnabled = _compoundURIEnabled;
+    }
+
     function setBaseSkin(uint256 baseSkinId, string memory uri) public onlyRole(DEV_CONFIG_ROLE) {
         if (bytes(baseSkins[baseSkinId]).length == 0) {
             _baseSkinCounter++;
@@ -417,6 +427,20 @@ contract AvatarBoundV1 is
     function tokenURI(
         uint256 tokenId
     ) public view override(ERC721Upgradeable, ERC721URIStorageUpgradeable) returns (string memory) {
+        if (compoundURIEnabled) {
+            // compoundURI = "{compoundURI}/0x1234567890123456789012345678901234567890/{tokenId}";
+            return
+                string(
+                    abi.encodePacked(
+                        compoundURI,
+                        "/",
+                        Strings.toHexString(uint160(address(this)), 20),
+                        "/",
+                        Strings.toString(tokenId)
+                    )
+                );
+        }
+
         return super.tokenURI(tokenId);
     }
 
@@ -440,8 +464,7 @@ contract AvatarBoundV1 is
     }
 
     function _decodeData(bytes calldata _data) private view returns (uint256[] memory) {
-        uint256[] memory itemIds = abi.decode(_data, (uint256[]));
-        return itemIds;
+        return abi.decode(_data, (uint256[]));
     }
 
     function decodeData(bytes calldata _data) public view onlyRole(DEV_CONFIG_ROLE) returns (uint256[] memory) {
