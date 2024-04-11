@@ -76,6 +76,8 @@ contract LootDropClaimTest is StdCheats, Test, MockERC1155Receiver, ERC721Holder
     address[] public wallets;
     uint256[] public amounts;
 
+    uint256 public chainId = 31337;
+
     function getWallet(string memory walletLabel) public returns (Wallet memory) {
         (address addr, uint256 privateKey) = makeAddrAndKey(walletLabel);
         Wallet memory wallet = Wallet(addr, privateKey);
@@ -108,8 +110,8 @@ contract LootDropClaimTest is StdCheats, Test, MockERC1155Receiver, ERC721Holder
         return _seed;
     }
 
-    function encode(uint256[] memory itemIds) public pure returns (bytes memory) {
-        return (abi.encode(itemIds));
+    function encode(address contractAddress, uint256[] memory itemIds) public view returns (bytes memory) {
+        return (abi.encode(contractAddress, chainId, itemIds));
     }
 
     function setUp() public {
@@ -346,7 +348,7 @@ contract LootDropClaimTest is StdCheats, Test, MockERC1155Receiver, ERC721Holder
         uint256[] memory _itemIds1 = new uint256[](1);
         _itemIds1[0] = _tokenId;
 
-        encodedItems1 = encode(_itemIds1);
+        encodedItems1 = encode(address(lootDrop), _itemIds1);
         (nonce, signature) = generateSignature(playerWallet.addr, encodedItems1, minterLabel);
         vm.prank(playerWallet.addr);
         lootDrop.mint(encodedItems1, true, nonce, signature, true);
@@ -452,7 +454,7 @@ contract LootDropClaimTest is StdCheats, Test, MockERC1155Receiver, ERC721Holder
         uint256[] memory _itemIds1 = new uint256[](1);
         _itemIds1[0] = _tokenId;
 
-        bytes memory encodedItems4 = encode(_itemIds1);
+        bytes memory encodedItems4 = encode(address(lootDrop), _itemIds1);
         (nonce, signature) = generateSignature(playerWallet.addr, encodedItems4, minterLabel);
         vm.prank(playerWallet.addr);
         lootDrop.mint(encodedItems4, true, nonce, signature, true);

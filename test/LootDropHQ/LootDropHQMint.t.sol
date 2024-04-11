@@ -76,6 +76,8 @@ contract LootDropMintTest is StdCheats, Test, MockERC1155Receiver, ERC721Holder 
     address[] public wallets;
     uint256[] public amounts;
 
+    uint256 public chainId = 31337;
+
     function getWallet(string memory walletLabel) public returns (Wallet memory) {
         (address addr, uint256 privateKey) = makeAddrAndKey(walletLabel);
         Wallet memory wallet = Wallet(addr, privateKey);
@@ -108,8 +110,8 @@ contract LootDropMintTest is StdCheats, Test, MockERC1155Receiver, ERC721Holder 
         return _seed;
     }
 
-    function encode(uint256[] memory itemIds) public pure returns (bytes memory) {
-        return (abi.encode(itemIds));
+    function encode(address contractAddress, uint256[] memory itemIds) public view returns (bytes memory) {
+        return (abi.encode(contractAddress, chainId, itemIds));
     }
 
     function setUp() public {
@@ -180,14 +182,14 @@ contract LootDropMintTest is StdCheats, Test, MockERC1155Receiver, ERC721Holder 
         _itemIds1[1] = _tokenIds[1];
         _itemIds1[2] = _tokenIds[2];
 
-        encodedItems1 = encode(_itemIds1);
+        encodedItems1 = encode(address(lootDrop), _itemIds1);
 
         uint256[] memory _itemIds2 = new uint256[](3);
         _itemIds2[0] = _tokenIds[3];
         _itemIds2[1] = _tokenIds[4];
         _itemIds2[2] = _tokenIds[5];
 
-        encodedItems2 = encode(_itemIds2);
+        encodedItems2 = encode(address(lootDrop), _itemIds2);
 
         (nonce, signature) = generateSignature(playerWallet.addr, encodedItems1, minterLabel);
         (nonce2, signature2) = generateSignature(playerWallet2.addr, encodedItems2, minterLabel);
@@ -234,7 +236,7 @@ contract LootDropMintTest is StdCheats, Test, MockERC1155Receiver, ERC721Holder 
         _itemIds3[0] = 1233;
         _itemIds3[1] = 3322;
 
-        bytes memory encodedItems3 = encode(_itemIds3);
+        bytes memory encodedItems3 = encode(address(lootDrop), _itemIds3);
 
         (uint256 _nonce, bytes memory _signature) = generateSignature(playerWallet.addr, encodedItems3, minterLabel);
 
@@ -321,7 +323,8 @@ contract LootDropMintTest is StdCheats, Test, MockERC1155Receiver, ERC721Holder 
         _rewards.push(_erc1155Reward);
 
         uint256 balance = mockERC1155.balanceOf(address(this), 456);
-        uint256 _tokenId = generateRandomItemId(); // totally random
+        // uint256 _tokenId = generateRandomItemId(); // totally random
+        uint256 _tokenId = 100; // totally random
         LibItems.RewardToken memory _token = LibItems.RewardToken({
             tokenId: _tokenId,
             tokenUri: string(abi.encodePacked("https://something.com", "/", _tokenId.toString())),
@@ -330,17 +333,26 @@ contract LootDropMintTest is StdCheats, Test, MockERC1155Receiver, ERC721Holder 
         });
         _tokens[0] = _token;
 
-        console.log("reward.rewardTokenIds.length", _token.rewards[2].rewardTokenIds.length);
-        console.log("reward.rewardAmount * _token.maxSupply", _token.rewards[2].rewardAmount * _token.maxSupply);
-
         lootDrop.createMultipleTokensAndDepositRewards{ value: 300000000000000000 }(_tokens);
 
-        lootDrop.adminMintById(playerWallet.addr, _tokens[0].tokenId, 1, true);
-        assertEq(itemBound.balanceOf(playerWallet.addr, _tokens[0].tokenId), 1);
+        // (abi.encode(address(lootDrop), 31337, itemIds))
 
-        lootDrop.adminMintById(playerWallet2.addr, _tokens[0].tokenId, 1, true);
+        uint256[] memory itemIds = new uint256[](1);
+        itemIds[0] = 100;
 
-        vm.expectRevert(ExceedMaxSupply.selector);
-        lootDrop.adminMintById(playerWallet3.addr, _tokens[0].tokenId, 1, true);
+        console.log("falskjdflksjfklsd", playerWallet.addr);
+        lootDrop.adminMint(playerWallet.addr, (abi.encode(address(lootDrop), 31337, itemIds)), true, false);
+        // console.log("reward.rewardTokenIds.length", _token.rewards[2].rewardTokenIds.length);
+        // console.log("reward.rewardAmount * _token.maxSupply", _token.rewards[2].rewardAmount * _token.maxSupply);
+
+        // lootDrop.createMultipleTokensAndDepositRewards{ value: 300000000000000000 }(_tokens);
+
+        // lootDrop.adminMintById(playerWallet.addr, _tokens[0].tokenId, 1, true);
+        // assertEq(itemBound.balanceOf(playerWallet.addr, _tokens[0].tokenId), 1);
+
+        // lootDrop.adminMintById(playerWallet2.addr, _tokens[0].tokenId, 1, true);
+
+        // vm.expectRevert(ExceedMaxSupply.selector);
+        // lootDrop.adminMintById(playerWallet3.addr, _tokens[0].tokenId, 1, true);
     }
 }

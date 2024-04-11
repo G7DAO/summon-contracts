@@ -126,13 +126,18 @@ contract LootDrop is
         return true;
     }
 
-    function decodeData(bytes calldata _data) public view onlyRole(DEV_CONFIG_ROLE) returns (uint256[] memory) {
+    function decodeData(
+        bytes calldata _data
+    ) public view onlyRole(DEV_CONFIG_ROLE) returns (address, uint256, uint256[] memory) {
         return _decodeData(_data);
     }
 
-    function _decodeData(bytes calldata _data) private pure returns (uint256[] memory) {
-        uint256[] memory _itemIds = abi.decode(_data, (uint256[]));
-        return _itemIds;
+    function _decodeData(bytes calldata _data) private view returns (address, uint256, uint256[] memory) {
+        (address contractAddress, uint256 chainId, uint256[] memory _itemIds) = abi.decode(
+            _data,
+            (address, uint256, uint256[])
+        );
+        return (contractAddress, chainId, _itemIds);
     }
 
     function pause() external onlyRole(MANAGER_ROLE) {
@@ -454,6 +459,16 @@ contract LootDrop is
         }
     }
 
+    function _verifyContractChainIdAndDecode(bytes calldata data) private view returns (uint256[] memory) {
+        uint256 currentChainId = getChainID();
+        (address contractAddress, uint256 chainId, uint256[] memory tokenIds) = _decodeData(data);
+
+        if (chainId != currentChainId || contractAddress != address(this)) {
+            revert InvalidInput();
+        }
+        return tokenIds;
+    }
+
     function mint(
         bytes calldata data,
         bool isSoulbound,
@@ -461,7 +476,7 @@ contract LootDrop is
         bytes calldata signature,
         bool isClaimReward
     ) external nonReentrant signatureCheck(_msgSender(), nonce, data, signature) whenNotPaused {
-        uint256[] memory _tokenIds = _decodeData(data);
+        uint256[] memory _tokenIds = _verifyContractChainIdAndDecode(data);
         _mintAndClaimRewardTokenBatch(_msgSender(), _tokenIds, 1, isSoulbound, isClaimReward);
     }
 
@@ -471,7 +486,7 @@ contract LootDrop is
         bool isSoulbound,
         bool isClaimReward
     ) external onlyRole(MINTER_ROLE) whenNotPaused {
-        uint256[] memory _tokenIds = _decodeData(data);
+        uint256[] memory _tokenIds = _verifyContractChainIdAndDecode(data);
         _mintAndClaimRewardTokenBatch(to, _tokenIds, 1, isSoulbound, isClaimReward);
     }
 
@@ -544,5 +559,13 @@ contract LootDrop is
 
     function removeWhitelistSigner(address signer) external onlyRole(DEV_CONFIG_ROLE) {
         _removeWhitelistSigner(signer);
+    }
+
+    function getChainID() public view returns (uint256) {
+        uint256 id;
+        assembly {
+            id := chainid()
+        }
+        return id;
     }
 }

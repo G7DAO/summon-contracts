@@ -18,4 +18,12 @@ contract HelloWorld is Initializable, AccessControl {
     function greeting() public pure returns (string memory) {
         return "Hello World!123";
     }
+
+    function getChainID() external view returns (uint256) {
+        uint256 id;
+        assembly {
+            id := chainid()
+        }
+        return id;
+    }
 }
