@@ -25,6 +25,7 @@ import { ERC1155 } from "@openzeppelin/contracts/token/ERC1155/ERC1155.sol";
 import { IERC1155 } from "@openzeppelin/contracts/token/ERC1155/IERC1155.sol";
 import { IERC721 } from "@openzeppelin/contracts/token/ERC721/IERC721.sol";
 import { IERC20 } from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import { SafeERC20 } from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import { ERC1155Burnable } from "@openzeppelin/contracts/token/ERC1155/extensions/ERC1155Burnable.sol";
 import { ERC1155Supply } from "@openzeppelin/contracts/token/ERC1155/extensions/ERC1155Supply.sol";
 import { ERC1155Receiver } from "@openzeppelin/contracts/token/ERC1155/utils/ERC1155Receiver.sol";
@@ -206,7 +207,7 @@ contract LootDrop is
             LibItems.Reward memory reward = _token.rewards[i];
             if (reward.rewardType == LibItems.RewardType.ERC20) {
                 IERC20 token = IERC20(reward.rewardTokenAddress);
-                token.transferFrom(_from, _to, reward.rewardAmount * _token.maxSupply);
+                SafeERC20.safeTransferFrom(token, _from, _to, reward.rewardAmount * _token.maxSupply);
             } else if (reward.rewardType == LibItems.RewardType.ERC721) {
                 IERC721 token = IERC721(reward.rewardTokenAddress);
                 for (uint256 j = 0; j < reward.rewardTokenIds.length; j++) {
@@ -318,7 +319,7 @@ contract LootDrop is
             revert InsufficientBalance();
         }
 
-        _token.transfer(_to, _amount);
+        SafeERC20.safeTransfer(_token, _to, _amount);
     }
 
     function _transferERC721(IERC721 _token, address _from, address _to, uint256 _tokenId) private {
