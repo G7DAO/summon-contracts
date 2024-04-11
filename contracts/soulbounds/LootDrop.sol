@@ -285,10 +285,6 @@ contract LootDrop is
             revert AddressIsZero();
         }
 
-        if (_tokenIds.length != _amounts.length) {
-            revert InvalidLength();
-        }
-
         address _from = address(this);
 
         if (_rewardType == LibItems.RewardType.ETHER) {
@@ -301,6 +297,9 @@ contract LootDrop is
                 _transferERC721(token, _from, _to, _tokenIds[i]);
             }
         } else if (_rewardType == LibItems.RewardType.ERC1155) {
+            if (_tokenIds.length != _amounts.length) {
+                revert InvalidLength();
+            }
             for (uint256 i = 0; i < _tokenIds.length; i++) {
                 _transferERC1155(IERC1155(_tokenAddress), _from, _to, _tokenIds[i], _amounts[i]);
             }
