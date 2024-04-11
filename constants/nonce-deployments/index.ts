@@ -1,5 +1,6 @@
 import { ARBITRUM_SEPOLIA_CONTRACTS } from './deployments-arbitrum-sepolia';
 import { BASE_SEPOLIA_CONTRACTS } from './deployments-base-sepolia';
+import { GAME7_SEPOLIA_CONTRACTS } from './deployments-game7-sepolia';
 import { MANTLE_SEPOLIA_CONTRACTS } from './deployments-mantle-sepolia';
 import { OP_SEPOLIA_CONTRACTS } from './deployments-op-sepolia';
 import { POLYGON_MUMBAI_CONTRACTS } from './deployments-polygon-mumbai';
@@ -14,6 +15,7 @@ export const CONTRACTS = [
     ...OP_SEPOLIA_CONTRACTS,
     ...MANTLE_SEPOLIA_CONTRACTS,
     ...POLYGON_MUMBAI_CONTRACTS,
+    ...GAME7_SEPOLIA_CONTRACTS,
 ];
 
 export const ACHIEVO_TMP_DIR = '.achievo';

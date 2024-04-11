@@ -73,6 +73,8 @@ contract LootDropWithdrawTest is StdCheats, Test {
     uint256[] public _tokenIds;
     uint256[] public _amounts;
 
+    uint256 public chainId = 31337;
+
     function getWallet(string memory walletLabel) public returns (Wallet memory) {
         (address addr, uint256 privateKey) = makeAddrAndKey(walletLabel);
         Wallet memory wallet = Wallet(addr, privateKey);
