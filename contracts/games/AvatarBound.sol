@@ -29,6 +29,7 @@ import { AccessControl } from "@openzeppelin/contracts/access/AccessControl.sol"
 import { Pausable } from "@openzeppelin/contracts/security/Pausable.sol";
 import { ReentrancyGuard } from "@openzeppelin/contracts/security/ReentrancyGuard.sol";
 import { ECDSA } from "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
+import { Strings } from "@openzeppelin/contracts/utils/Strings.sol";
 
 import { Achievo721Soulbound } from "../ercs/extensions/Achievo721Soulbound.sol";
 import { ERCWhitelistSignature } from "../ercs/ERCWhitelistSignature.sol";
@@ -93,6 +94,8 @@ contract AvatarBound is
     event ItemMinted(uint indexed itemId, address to, address itemsNFTAddress);
     event NFTRevealed(uint indexed tokenId, address to, address gatingNFTAddress);
     event AvatarMinted(uint indexed tokenId, address to, string baseSkinUri);
+    event CompoundURIChanged(string indexed uri, address admin);
+    event CompoundURIEnabledChanged(bool enabled, address admin);
 
     mapping(uint256 => string) public baseSkins;
 
@@ -108,8 +111,7 @@ contract AvatarBound is
         bool _mintNftGatingEnabled,
         bool _mintNftWithoutGatingEnabled,
         bool _mintRandomItemEnabled,
-        bool _mintSpecialItemEnabled,
-        bool _compoundURIEnabled,
+        bool _mintSpecialItemEnabled
     ) ERC721(_name, _symbol) {
         _grantRole(DEFAULT_ADMIN_ROLE, developerAdmin);
         _grantRole(DEV_CONFIG_ROLE, developerAdmin);
@@ -127,7 +129,7 @@ contract AvatarBound is
         mintSpecialItemEnabled = _mintSpecialItemEnabled;
         mintDefaultItemEnabled = true;
         revealNftGatingEnabled = true;
-        compoundURIEnabled = _compoundURIEnabled;
+        compoundURIEnabled = true;
         compoundURI = "https://api.achievo.xyz/v1/uri/avatar";
         revealURI = _revealURI;
     }
@@ -297,8 +299,9 @@ contract AvatarBound is
     }
 
     function setCompoundURIEnabled(bool _compoundURIEnabled) public onlyRole(DEV_CONFIG_ROLE) {
-        require(_compoundURIEnabled != compoundURIEnabled, "compoundURIEnabled URI already set");
+        require(_compoundURIEnabled != compoundURIEnabled, "compoundURIEnabled already set");
         compoundURIEnabled = _compoundURIEnabled;
+        emit CompoundURIEnabledChanged(_compoundURIEnabled, _msgSender());
     }
 
     function setBaseSkin(uint256 baseSkinId, string memory uri) public onlyRole(DEV_CONFIG_ROLE) {
@@ -369,6 +372,11 @@ contract AvatarBound is
         emit EnabledRevealNftGatingEnabledChanged(_revealNftGatingEnabled, _msgSender());
     }
 
+    function setCompoundURI(string memory _compoundURI) public onlyRole(DEV_CONFIG_ROLE) {
+        compoundURI = _compoundURI;
+        emit CompoundURIChanged(_compoundURI, _msgSender());
+    }
+
     function _beforeTokenTransfer(
         address from,
         address to,
@@ -401,7 +409,6 @@ contract AvatarBound is
     function _burn(uint256 tokenId) internal override(ERC721, ERC721URIStorage) {}
 
     function tokenURI(uint256 tokenId) public view override(ERC721, ERC721URIStorage) returns (string memory) {
-
         if (compoundURIEnabled) {
             // compoundURI = "{compoundURI}/0x1234567890123456789012345678901234567890/{tokenId}";
             return

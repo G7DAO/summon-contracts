@@ -27,6 +27,7 @@ import "@openzeppelin/contracts-upgradeable/access/AccessControlUpgradeable.sol"
 import "@openzeppelin/contracts-upgradeable/security/PausableUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/security/ReentrancyGuardUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
+import "@openzeppelin/contracts/utils/Strings.sol";
 import { Achievo721SoulboundUpgradeable } from "../ercs/extensions/Achievo721SoulboundUpgradeable.sol";
 import { ERCWhitelistSignatureUpgradeable } from "../ercs/ERCWhitelistSignatureUpgradeable.sol";
 import { IOpenMint } from "../../interfaces/IOpenMint.sol";
@@ -91,6 +92,8 @@ contract AvatarBoundV1 is
     event ItemMinted(uint indexed itemId, address to, address itemsNFTAddress);
     event NFTRevealed(uint indexed tokenId, address to, address gatingNFTAddress);
     event AvatarMinted(uint indexed tokenId, address to, string baseSkinUri);
+    event CompoundURIChanged(string indexed uri, address admin);
+    event CompoundURIEnabledChanged(bool enabled, address admin);
 
     mapping(uint256 => string) public baseSkins;
 
@@ -111,8 +114,7 @@ contract AvatarBoundV1 is
         bool _mintNftGatingEnabled,
         bool _mintNftWithoutGatingEnabled,
         bool _mintRandomItemEnabled,
-        bool _mintSpecialItemEnabled,
-        bool _compoundURIEnabled,
+        bool _mintSpecialItemEnabled
     ) public initializer {
         __ERC721_init(_name, _symbol);
         __ERC721Enumerable_init();
@@ -138,7 +140,7 @@ contract AvatarBoundV1 is
         mintSpecialItemEnabled = _mintSpecialItemEnabled;
         mintDefaultItemEnabled = true;
         revealNftGatingEnabled = true;
-        compoundURIEnabled = _compoundURIEnabled;
+        compoundURIEnabled = true;
         compoundURI = "https://api.achievo.xyz/v1/uri/avatar";
         revealURI = _revealURI;
     }
@@ -307,8 +309,9 @@ contract AvatarBoundV1 is
     }
 
     function setCompoundURIEnabled(bool _compoundURIEnabled) public onlyRole(DEV_CONFIG_ROLE) {
-        require(_compoundURIEnabled != compoundURIEnabled, "compoundURIEnabled URI already set");
+        require(_compoundURIEnabled != compoundURIEnabled, "compoundURIEnabled already set");
         compoundURIEnabled = _compoundURIEnabled;
+        emit CompoundURIEnabledChanged(_compoundURIEnabled, _msgSender());
     }
 
     function setBaseSkin(uint256 baseSkinId, string memory uri) public onlyRole(DEV_CONFIG_ROLE) {
@@ -384,6 +387,11 @@ contract AvatarBoundV1 is
         require(_revealNftGatingEnabled != revealNftGatingEnabled, "NFT without gating already set");
         revealNftGatingEnabled = _revealNftGatingEnabled;
         emit EnabledRevealNftGatingEnabledChanged(_revealNftGatingEnabled, _msgSender());
+    }
+
+    function setCompoundURI(string memory _compoundURI) public onlyRole(DEV_CONFIG_ROLE) {
+        compoundURI = _compoundURI;
+        emit CompoundURIChanged(_compoundURI, _msgSender());
     }
 
     function _beforeTokenTransfer(
@@ -472,5 +480,5 @@ contract AvatarBoundV1 is
     }
 
     // Reserved storage space to allow for layout changes in the future.
-    uint256[31] private __gap;
+    uint256[30] private __gap;
 }
