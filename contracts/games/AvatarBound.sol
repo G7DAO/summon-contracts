@@ -98,6 +98,7 @@ contract AvatarBound is
     event CompoundURIEnabledChanged(bool enabled, address admin);
 
     mapping(uint256 => string) public baseSkins;
+    mapping(uint256 => uint256) public tokenIdToBaseSkinId;
 
     constructor(
         string memory _name,
@@ -140,6 +141,7 @@ contract AvatarBound is
         require(!isSoulboundAddress(to), "Address has already minted an Avatar");
         require(bytes(baseSkins[baseSkinId]).length > 0, "Base Skin not found on-chain");
         uint256 tokenId = _tokenIdCounter++;
+        tokenIdToBaseSkinId[tokenId] = baseSkinId;
         _safeMint(to, tokenId);
         _setTokenURI(tokenId, baseSkins[baseSkinId]);
         _soulboundAddress(to);

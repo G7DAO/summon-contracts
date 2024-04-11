@@ -96,6 +96,7 @@ contract AvatarBoundV1 is
     event CompoundURIEnabledChanged(bool enabled, address admin);
 
     mapping(uint256 => string) public baseSkins;
+    mapping(uint256 => uint256) public tokenIdToBaseSkinId;
 
     /// @custom:oz-upgrades-unsafe-allow constructor
     constructor() {
@@ -150,6 +151,7 @@ contract AvatarBoundV1 is
         require(!isSoulboundAddress(to), "Address has already minted an Avatar");
         require(bytes(baseSkins[baseSkinId]).length > 0, "Base Skin not found on-chain");
         uint256 tokenId = _tokenIdCounter++;
+        tokenIdToBaseSkinId[tokenId] = baseSkinId;
         _safeMint(to, tokenId);
         _setTokenURI(tokenId, baseSkins[baseSkinId]);
         _soulboundAddress(to);
@@ -480,5 +482,5 @@ contract AvatarBoundV1 is
     }
 
     // Reserved storage space to allow for layout changes in the future.
-    uint256[30] private __gap;
+    uint256[29] private __gap;
 }
