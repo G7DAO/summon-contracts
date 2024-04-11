@@ -120,7 +120,7 @@ contract LootDropAddTokenTest is StdCheats, Test, MockERC1155Receiver, ERC721Hol
 
         itemBound = new AdminERC1155Soulbound(address(this));
         lootDrop = new LootDrop(address(this));
-        lootDrop.initialize(address(this), address(itemBound));
+        lootDrop.initialize(address(this), address(this), address(this), address(itemBound));
 
         itemBound.initialize(
             "Test1155",
@@ -213,8 +213,7 @@ contract LootDropAddTokenTest is StdCheats, Test, MockERC1155Receiver, ERC721Hol
         uint256[] memory _amounts = new uint256[](1);
         _amounts[0] = 1;
 
-        vm.expectRevert(TokenNotExist.selector);
-        lootDrop.isTokenExist(_tokenId);
+        assertEq(lootDrop.isTokenExist(_tokenId), false);
 
         vm.expectRevert(TokenNotExist.selector);
         lootDrop.adminBatchMintById(_wallets, _tokenId, _amounts, true);
@@ -240,7 +239,9 @@ contract LootDropAddTokenTest is StdCheats, Test, MockERC1155Receiver, ERC721Hol
         });
 
         lootDrop.createTokenAndDepositRewards(_token);
-        lootDrop.isTokenExist(_tokenId);
+
+        assertEq(lootDrop.isTokenExist(_tokenId), true);
+
         lootDrop.adminBatchMintById(_wallets, _tokenId, _amounts, true);
     }
 
@@ -743,7 +744,6 @@ contract LootDropAddTokenTest is StdCheats, Test, MockERC1155Receiver, ERC721Hol
             assertEq(lootDrop.isTokenExist(_tokens[i].tokenId), true);
         }
 
-        vm.expectRevert(TokenNotExist.selector);
-        lootDrop.isTokenExist(123);
+        assertEq(lootDrop.isTokenExist(123), false);
     }
 }
