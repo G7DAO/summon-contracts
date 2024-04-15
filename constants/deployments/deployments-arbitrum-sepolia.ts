@@ -1,4 +1,4 @@
-import { BUIDLArgs, ItemBoundIronWorksArgs } from '@constants/constructor-args';
+import { BUIDLArgs, ERC20Args, ItemBoundIronWorksArgs } from '@constants/constructor-args';
 import {
     CONTRACT_NAME,
     CONTRACT_TYPE,
@@ -38,6 +38,6 @@ export const ARBITRUM_SEPOLIA_CONTRACTS: DeploymentContract[] = [
         upgradable: true,
         dependencies: [],
         functionCalls: [],
-        args: BUIDLArgs.TESTNET,
+        args: ERC20Args.TESTNET,
     },
 ];
