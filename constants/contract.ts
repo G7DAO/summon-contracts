@@ -81,7 +81,7 @@ export enum CONTRACT_UPGRADABLE_NAME {
     Items = 'ItemsUpgradable',
     Levels = 'LevelsUpgradable',
     PaymasterChainlink = 'PaymasterChainlinkUpgradable',
-    ERC20 = 'ERC20Upgradable',
+    ERC20 = 'BurnableTokenV1',
     Staker = 'ERC20StakeV1',
     Badge = 'BadgeUpgradable',
     BridgePolygon = 'BridgeUpgradeablePolygon',
