@@ -14,6 +14,8 @@
         "deploy:sepolia": "pnpm compile && hardhat --config hardhat.config.ts deploy --network sepolia",
         "deploy:arbitrum:one": "pnpm compile && hardhat --config arbitrum.config.ts deploy --network arbitrumOne",
         "deploy:arbitrum:sepolia": "pnpm compile && hardhat --config arbitrum.config.ts deploy --network arbitrumSepolia",
+        "deploy:base:mainnet": "pnpm compile && hardhat --config base.config.ts deploy --network base",
+        "deploy:base:sepolia": "pnpm compile && hardhat --config base.config.ts deploy --network baseSepolia",
         "deploy:mantle:mainnet": "pnpm compile && hardhat --config mantle.config.ts deploy --network mantle",
         "deploy:mantle:sepolia": "pnpm compile && hardhat --config mantle.config.ts deploy --network mantleSepolia",
         "deploy:polygon:mainnet": "pnpm compile && hardhat --config polygon.config.ts deploy --network polygon",
