@@ -76,6 +76,8 @@ contract LootDropAddTokenTest is StdCheats, Test, MockERC1155Receiver, ERC721Hol
     address[] public wallets;
     uint256[] public amounts;
 
+    uint256 public chainId = 31337;
+
     function getWallet(string memory walletLabel) public returns (Wallet memory) {
         (address addr, uint256 privateKey) = makeAddrAndKey(walletLabel);
         Wallet memory wallet = Wallet(addr, privateKey);
@@ -108,8 +110,8 @@ contract LootDropAddTokenTest is StdCheats, Test, MockERC1155Receiver, ERC721Hol
         return _seed;
     }
 
-    function encode(uint256[] memory itemIds) public pure returns (bytes memory) {
-        return (abi.encode(itemIds));
+    function encode(address contractAddress, uint256[] memory itemIds) public view returns (bytes memory) {
+        return (abi.encode(contractAddress, chainId, itemIds));
     }
 
     function setUp() public {
@@ -120,7 +122,7 @@ contract LootDropAddTokenTest is StdCheats, Test, MockERC1155Receiver, ERC721Hol
 
         itemBound = new AdminERC1155Soulbound(address(this));
         lootDrop = new LootDrop(address(this));
-        lootDrop.initialize(address(this), address(itemBound));
+        lootDrop.initialize(address(this), address(this), address(this), address(itemBound));
 
         itemBound.initialize(
             "Test1155",
@@ -180,14 +182,14 @@ contract LootDropAddTokenTest is StdCheats, Test, MockERC1155Receiver, ERC721Hol
         _itemIds1[1] = _tokenIds[1];
         _itemIds1[2] = _tokenIds[2];
 
-        encodedItems1 = encode(_itemIds1);
+        encodedItems1 = encode(address(lootDrop), _itemIds1);
 
         uint256[] memory _itemIds2 = new uint256[](3);
         _itemIds2[0] = _tokenIds[3];
         _itemIds2[1] = _tokenIds[4];
         _itemIds2[2] = _tokenIds[5];
 
-        encodedItems2 = encode(_itemIds2);
+        encodedItems2 = encode(address(lootDrop), _itemIds2);
 
         (nonce, signature) = generateSignature(playerWallet.addr, encodedItems1, minterLabel);
         (nonce2, signature2) = generateSignature(playerWallet2.addr, encodedItems2, minterLabel);
@@ -213,8 +215,7 @@ contract LootDropAddTokenTest is StdCheats, Test, MockERC1155Receiver, ERC721Hol
         uint256[] memory _amounts = new uint256[](1);
         _amounts[0] = 1;
 
-        vm.expectRevert(TokenNotExist.selector);
-        lootDrop.isTokenExist(_tokenId);
+        assertEq(lootDrop.isTokenExist(_tokenId), false);
 
         vm.expectRevert(TokenNotExist.selector);
         lootDrop.adminBatchMintById(_wallets, _tokenId, _amounts, true);
@@ -240,7 +241,9 @@ contract LootDropAddTokenTest is StdCheats, Test, MockERC1155Receiver, ERC721Hol
         });
 
         lootDrop.createTokenAndDepositRewards(_token);
-        lootDrop.isTokenExist(_tokenId);
+
+        assertEq(lootDrop.isTokenExist(_tokenId), true);
+
         lootDrop.adminBatchMintById(_wallets, _tokenId, _amounts, true);
     }
 
@@ -743,7 +746,6 @@ contract LootDropAddTokenTest is StdCheats, Test, MockERC1155Receiver, ERC721Hol
             assertEq(lootDrop.isTokenExist(_tokens[i].tokenId), true);
         }
 
-        vm.expectRevert(TokenNotExist.selector);
-        lootDrop.isTokenExist(123);
+        assertEq(lootDrop.isTokenExist(123), false);
     }
 }

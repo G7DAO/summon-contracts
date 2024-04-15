@@ -383,13 +383,32 @@ export const BUIDLArgs = {
     },
 };
 
+export const ERC20Args = {
+    MAINNET: {
+        name: 'FILL_ME',
+        symbol: 'FILL_ME',
+        decimals: 18,
+        developerAdmin: 'DEPLOYER_WALLET',
+    },
+    TESTNET: {
+        name: 'MOCKERC20',
+        symbol: 'ERC20',
+        decimals: 18,
+        developerAdmin: 'DEPLOYER_WALLET',
+    },
+};
+
 export const LootDropArgs = {
     MAINNET: {
         _devWallet: 'DEPLOYER_WALLET',
+        _managerWallet: 'DEPLOYER_WALLET',
+        _minterWallet: 'DEPLOYER_WALLET',
         _rewardTokenAddress: `CONTRACT_${CONTRACT_NAME.RewardToken}`,
     },
     TESTNET: {
         _devWallet: 'DEPLOYER_WALLET',
+        _managerWallet: 'DEPLOYER_WALLET',
+        _minterWallet: 'DEPLOYER_WALLET',
         _rewardTokenAddress: `CONTRACT_${CONTRACT_NAME.RewardToken}`,
     },
 };

@@ -73,6 +73,8 @@ contract LootDropTest is StdCheats, Test {
     address[] public wallets;
     uint256[] public amounts;
 
+    uint256 public chainId = 31337;
+
     function getWallet(string memory walletLabel) public returns (Wallet memory) {
         (address addr, uint256 privateKey) = makeAddrAndKey(walletLabel);
         Wallet memory wallet = Wallet(addr, privateKey);
@@ -105,8 +107,8 @@ contract LootDropTest is StdCheats, Test {
         return _seed;
     }
 
-    function encode(uint256[] memory itemIds) public pure returns (bytes memory) {
-        return (abi.encode(itemIds));
+    function encode(address contractAddress, uint256[] memory itemIds) public view returns (bytes memory) {
+        return (abi.encode(contractAddress, chainId, itemIds));
     }
 
     function setUp() public {
@@ -117,7 +119,7 @@ contract LootDropTest is StdCheats, Test {
 
         itemBound = new AdminERC1155Soulbound(address(this));
         lootDrop = new LootDrop(address(this));
-        lootDrop.initialize(address(this), address(itemBound));
+        lootDrop.initialize(address(this), address(this), address(this), address(itemBound));
 
         itemBound.initialize(
             "Test1155",
@@ -177,14 +179,14 @@ contract LootDropTest is StdCheats, Test {
         _itemIds1[1] = _tokenIds[1];
         _itemIds1[2] = _tokenIds[2];
 
-        encodedItems1 = encode(_itemIds1);
+        encodedItems1 = encode(address(lootDrop), _itemIds1);
 
         uint256[] memory _itemIds2 = new uint256[](3);
         _itemIds2[0] = _tokenIds[3];
         _itemIds2[1] = _tokenIds[4];
         _itemIds2[2] = _tokenIds[5];
 
-        encodedItems2 = encode(_itemIds2);
+        encodedItems2 = encode(address(lootDrop), _itemIds2);
 
         (nonce, signature) = generateSignature(playerWallet.addr, encodedItems1, minterLabel);
         (nonce2, signature2) = generateSignature(playerWallet2.addr, encodedItems2, minterLabel);
@@ -201,7 +203,7 @@ contract LootDropTest is StdCheats, Test {
 
     function testInitializeTwiceShouldFail() public {
         vm.expectRevert("Initializable: contract is already initialized");
-        lootDrop.initialize(address(this), address(itemBound));
+        lootDrop.initialize(address(this), address(this), address(this), address(itemBound));
     }
 
     function testPauseUnpause() public {
@@ -248,9 +250,9 @@ contract LootDropTest is StdCheats, Test {
     }
 
     function testDecodeDataShouldPass() public {
-        bytes memory encodedItems = encode(_tokenIds);
+        bytes memory encodedItems = encode(address(lootDrop), _tokenIds);
 
-        uint256[] memory ids = lootDrop.decodeData(encodedItems);
+        (address contractAddress, uint256 chainId, uint256[] memory ids) = lootDrop.decodeData(encodedItems);
 
         for (uint256 i = 0; i < ids.length; i++) {
             assertEq(ids[i], _tokenIds[i]);

@@ -18,7 +18,7 @@ import { exec } from 'node:child_process';
 const { DETERMINISTIC_DEPLOYER_PRIVATE_KEY = '', PRIVATE_KEY = '' } = process.env;
 
 if (!DETERMINISTIC_DEPLOYER_PRIVATE_KEY && PRIVATE_KEY) {
-    throw new Error('Private key not detected! Add it to the .env file!');
+    throw new Error('DETERMINISTIC_DEPLOYER_PRIVATE_KEY not detected! Add it to the .env file!');
 }
 
 const deployOne = async (

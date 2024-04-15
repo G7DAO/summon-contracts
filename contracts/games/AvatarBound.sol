@@ -29,6 +29,7 @@ import { AccessControl } from "@openzeppelin/contracts/access/AccessControl.sol"
 import { Pausable } from "@openzeppelin/contracts/security/Pausable.sol";
 import { ReentrancyGuard } from "@openzeppelin/contracts/security/ReentrancyGuard.sol";
 import { ECDSA } from "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
+import { Strings } from "@openzeppelin/contracts/utils/Strings.sol";
 
 import { Achievo721Soulbound } from "../ercs/extensions/Achievo721Soulbound.sol";
 import { ERCWhitelistSignature } from "../ercs/ERCWhitelistSignature.sol";
@@ -54,6 +55,7 @@ contract AvatarBound is
     string public baseTokenURI;
     string public contractURI;
     string public revealURI;
+    string public compoundURI;
     address public gatingNFTAddress;
     address public itemsNFTAddress;
     bool public mintNftGatingEnabled;
@@ -62,6 +64,7 @@ contract AvatarBound is
     bool public mintSpecialItemEnabled;
     bool public mintDefaultItemEnabled;
     bool public revealNftGatingEnabled;
+    bool public compoundURIEnabled;
 
     struct BaseSkinResponse {
         uint256 baseSkinId;
@@ -91,8 +94,11 @@ contract AvatarBound is
     event ItemMinted(uint indexed itemId, address to, address itemsNFTAddress);
     event NFTRevealed(uint indexed tokenId, address to, address gatingNFTAddress);
     event AvatarMinted(uint indexed tokenId, address to, string baseSkinUri);
+    event CompoundURIChanged(string indexed uri, address admin);
+    event CompoundURIEnabledChanged(bool enabled, address admin);
 
     mapping(uint256 => string) public baseSkins;
+    mapping(uint256 => uint256) public tokenIdToBaseSkinId;
 
     constructor(
         string memory _name,
@@ -124,6 +130,8 @@ contract AvatarBound is
         mintSpecialItemEnabled = _mintSpecialItemEnabled;
         mintDefaultItemEnabled = true;
         revealNftGatingEnabled = true;
+        compoundURIEnabled = true;
+        compoundURI = "https://api.achievo.xyz/v1/uri/avatar";
         revealURI = _revealURI;
     }
 
@@ -133,6 +141,7 @@ contract AvatarBound is
         require(!isSoulboundAddress(to), "Address has already minted an Avatar");
         require(bytes(baseSkins[baseSkinId]).length > 0, "Base Skin not found on-chain");
         uint256 tokenId = _tokenIdCounter++;
+        tokenIdToBaseSkinId[tokenId] = baseSkinId;
         _safeMint(to, tokenId);
         _setTokenURI(tokenId, baseSkins[baseSkinId]);
         _soulboundAddress(to);
@@ -291,6 +300,12 @@ contract AvatarBound is
         emit RevealURIChanged(_revealURI, _msgSender());
     }
 
+    function setCompoundURIEnabled(bool _compoundURIEnabled) public onlyRole(DEV_CONFIG_ROLE) {
+        require(_compoundURIEnabled != compoundURIEnabled, "compoundURIEnabled already set");
+        compoundURIEnabled = _compoundURIEnabled;
+        emit CompoundURIEnabledChanged(_compoundURIEnabled, _msgSender());
+    }
+
     function setBaseSkin(uint256 baseSkinId, string memory uri) public onlyRole(DEV_CONFIG_ROLE) {
         if (bytes(baseSkins[baseSkinId]).length == 0) {
             _baseSkinCounter++;
@@ -359,6 +374,11 @@ contract AvatarBound is
         emit EnabledRevealNftGatingEnabledChanged(_revealNftGatingEnabled, _msgSender());
     }
 
+    function setCompoundURI(string memory _compoundURI) public onlyRole(DEV_CONFIG_ROLE) {
+        compoundURI = _compoundURI;
+        emit CompoundURIChanged(_compoundURI, _msgSender());
+    }
+
     function _beforeTokenTransfer(
         address from,
         address to,
@@ -391,6 +411,20 @@ contract AvatarBound is
     function _burn(uint256 tokenId) internal override(ERC721, ERC721URIStorage) {}
 
     function tokenURI(uint256 tokenId) public view override(ERC721, ERC721URIStorage) returns (string memory) {
+        if (compoundURIEnabled) {
+            // compoundURI = "{compoundURI}/0x1234567890123456789012345678901234567890/{tokenId}";
+            return
+                string(
+                    abi.encodePacked(
+                        compoundURI,
+                        "/",
+                        Strings.toHexString(uint160(address(this)), 20),
+                        "/",
+                        Strings.toString(tokenId)
+                    )
+                );
+        }
+
         return super.tokenURI(tokenId);
     }
 
@@ -409,8 +443,7 @@ contract AvatarBound is
     }
 
     function _decodeData(bytes calldata _data) private view returns (uint256[] memory) {
-        uint256[] memory itemIds = abi.decode(_data, (uint256[]));
-        return itemIds;
+        return abi.decode(_data, (uint256[]));
     }
 
     function decodeData(bytes calldata _data) public view onlyRole(DEV_CONFIG_ROLE) returns (uint256[] memory) {
