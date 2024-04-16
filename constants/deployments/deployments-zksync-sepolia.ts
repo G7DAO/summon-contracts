@@ -450,4 +450,17 @@ export const ZKSYNC_SEPOLIA_CONTRACTS: DeploymentContract[] = [
         functionCalls: [],
         args: BUIDLArgs.TESTNET,
     },
+    {
+        contractFileName: CONTRACT_UPGRADABLE_FILE_NAME.LegacyAvatar,
+        type: CONTRACT_TYPE.LegacyAvatar,
+        name: CONTRACT_UPGRADABLE_NAME.LegacyAvatar,
+        chain,
+        networkType,
+        tenants: [TENANT.Game7],
+        verify: true,
+        upgradable: true,
+        dependencies: [],
+        functionCalls: [],
+        args: {},
+    },
 ];

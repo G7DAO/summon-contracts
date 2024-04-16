@@ -1,4 +1,5 @@
 export enum CONTRACT_TYPE {
+    LegacyAvatar = 'LegacyAvatar',
     Avatars = 'Avatars',
     Items = 'Items',
     RewardItems = 'RewardItems',
@@ -37,6 +38,7 @@ export enum CONTRACT_FILE_NAME {
     AdminERC1155Soulbound = 'AdminERC1155Soulbound',
 }
 export enum CONTRACT_UPGRADABLE_FILE_NAME {
+    LegacyAvatar = 'LegacyAvatarUpgradeableV1',
     Avatars = 'AvatarBoundV1',
     ERC1155RoyaltiesSoulbound = 'ERC1155RoyaltiesSoulboundV1',
     Levels = 'LevelsBoundV1',
@@ -77,6 +79,7 @@ export enum CONTRACT_NAME {
 }
 
 export enum CONTRACT_UPGRADABLE_NAME {
+    LegacyAvatar = 'LegacyAvatarUpgradable',
     Avatars = 'AvatarsUpgradable',
     Items = 'ItemsUpgradable',
     Levels = 'LevelsUpgradable',
