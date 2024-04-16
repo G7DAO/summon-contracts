@@ -1,16 +1,16 @@
 # Marketplace V3 design document.
 
-This is a live document that explains what the [thirdweb](https://thirdweb.com/) `Marketplace V3` smart contract is, how it works and can be used, and why it is written the way it is.
+This is a live document that explains what the [achievo](https://achievo.xyz) `Marketplace V3` smart contract is, how it works and can be used, and why it is written the way it is.
 
-The document is written for technical and non-technical readers. To ask further questions about `Marketplace V3`, please join the [thirdweb discord](https://discord.gg/thirdweb) or create a [github issue](https://github.com/thirdweb-dev/contracts/issues).
+The document is written for technical and non-technical readers. To ask further questions about `Marketplace V3`, please join the [achievo discord](https://discord.gg/achievo) or create a [github issue](https://github.com/achievo-dev/contracts/issues).
 
 ---
 
 ## Background
 
-The [thirdweb](https://thirdweb.com/) `Marketplace V3` is a marketplace where where people can sell NFTs — [ERC 721](https://eips.ethereum.org/EIPS/eip-721) or [ERC 1155](https://eips.ethereum.org/EIPS/eip-1155) tokens — at a fixed price ( what we'll refer to as a "Direct listing"), or auction them (what we'll refer to as an "Auction listing"). It also allows users to make "Offers" on unlisted NFTs.
+The [achievo](https://achievo.xyz) `Marketplace V3` is a marketplace where where people can sell NFTs — [ERC 721](https://eips.ethereum.org/EIPS/eip-721) or [ERC 1155](https://eips.ethereum.org/EIPS/eip-1155) tokens — at a fixed price ( what we'll refer to as a "Direct listing"), or auction them (what we'll refer to as an "Auction listing"). It also allows users to make "Offers" on unlisted NFTs.
 
-`Marketplace V3` offers improvements over previous version in terms of design and features, which are discussed in this document. You can refer to previous (v2) `Marketplace` design document [here](https://github.com/thirdweb-dev/contracts/blob/main/contracts/prebuilts/marketplace-legacy/marketplace.md).
+`Marketplace V3` offers improvements over previous version in terms of design and features, which are discussed in this document. You can refer to previous (v2) `Marketplace` design document [here](https://github.com/achievo-dev/contracts/blob/main/contracts/prebuilts/marketplace-legacy/marketplace.md).
 
 ## Context behind this update
 
@@ -22,7 +22,7 @@ We have given `Marketplace` an update that was long overdue. The marketplace pro
 
 The core improvement about the `Marketplace V3` smart contract is better developer experience of working with the contract.
 
-Previous version had some limitations, arising due to (1) the smart contract size limit of `~24.576 kb` on Ethereum mainnet (and other thirdweb supported chains), and (2) the way the smart contract code is organized (single, large smart contract that inherits other contracts). The previous `Marketplace` smart contract has functions that have multiple jobs, behave in many different ways under different circumstances, and a lack of convenient view functions to read data easily.
+Previous version had some limitations, arising due to (1) the smart contract size limit of `~24.576 kb` on Ethereum mainnet (and other achievo supported chains), and (2) the way the smart contract code is organized (single, large smart contract that inherits other contracts). The previous `Marketplace` smart contract has functions that have multiple jobs, behave in many different ways under different circumstances, and a lack of convenient view functions to read data easily.
 
 Moreover, over time, we received feature requests for `Marketplace`, some of which have been incorporated in `Marketplace V3`, for e.g.:
 
@@ -37,7 +37,7 @@ For all these reasons and feature additions, the `Marketplace` contract is getti
 -   the contract provides explicit functions for each important action (something that is missing from the contract, today).
 -   the contract provides convenient view functions for all relevant state of the contract, without expecting users to rely on events to read critical information.
 
-Finally, to accomplish all these things without the constraint of the smart contract size limit, the `Marketplace V3` contract is written in the following new code pattern, which we call `Plugin Pattern`. It was influenced by [EIP-2535](https://eips.ethereum.org/EIPS/eip-2535). You can read more about Plugin Pattern [here](https://blog.thirdweb.com/).
+Finally, to accomplish all these things without the constraint of the smart contract size limit, the `Marketplace V3` contract is written in the following new code pattern, which we call `Plugin Pattern`. It was influenced by [EIP-2535](https://eips.ethereum.org/EIPS/eip-2535). You can read more about Plugin Pattern [here](https://blog.achievo.xyz).
 
 ## Extensions that make up `Marketplace V3`
 
@@ -51,14 +51,14 @@ Each of these extension smart contracts is independent, and does not care about 
 
 ### What the Marketplace will look like to users
 
-There are two groups of users — (1) thirdweb's customers who'll set up the marketplace, and (2) the end users of thirdweb customers' marketplaces.
+There are two groups of users — (1) achievo's customers who'll set up the marketplace, and (2) the end users of achievo customers' marketplaces.
 
-To thirdweb customers, the marketplace can be set up like any of the other thirdweb contract (e.g. 'NFT Collection') through the thirdweb dashboard, the thirdweb SDK, or by directly consuming the open sourced marketplace smart contract.
+To achievo customers, the marketplace can be set up like any of the other achievo contract (e.g. 'NFT Collection') through the achievo dashboard, the achievo SDK, or by directly consuming the open sourced marketplace smart contract.
 
-To the end users of thirdweb customers, the experience of using the marketplace will feel familiar to popular marketplace platforms like OpenSea, Zora, etc. The biggest difference in user experience will be that performing any action on the marketplace requires gas fees.
+To the end users of achievo customers, the experience of using the marketplace will feel familiar to popular marketplace platforms like OpenSea, Zora, etc. The biggest difference in user experience will be that performing any action on the marketplace requires gas fees.
 
--   Thirdweb's customers
-    -   Deploy the marketplace contract like any other thirdweb contract.
+-   achievo's customers
+    -   Deploy the marketplace contract like any other achievo contract.
     -   Can set a % 'platform fee'. This % is collected on every sale — when a buyer buys tokens from a direct listing, and when a seller collects the highest bid on auction closing. This platform fee is distributed to the platform fee recipient (set by a contract admin).
     -   Can list NFTs for sale at a fixed price.
     -   Can edit an existing listing's parameters, e.g. the currency accepted. An auction's parameters cannot be edited once it has started.
@@ -77,7 +77,7 @@ Marketplace also honors [ERC2981](https://eips.ethereum.org/EIPS/eip-2981) for t
 
 ### Events emitted
 
-All events emitted by the contract, as well as when they're emitted, can be found in the interface of the contract, [here](https://github.com/thirdweb-dev/contracts/blob/main/contracts/prebuilts/marketplace/IMarketplace.sol). In general, events are emitted whenever there is a state change in the contract.
+All events emitted by the contract, as well as when they're emitted, can be found in the interface of the contract, [here](https://github.com/achievo-dev/contracts/blob/main/contracts/prebuilts/marketplace/IMarketplace.sol). In general, events are emitted whenever there is a state change in the contract.
 
 ### Currency transfers
 
