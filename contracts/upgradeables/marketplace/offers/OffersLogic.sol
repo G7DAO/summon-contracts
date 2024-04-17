@@ -8,19 +8,19 @@ import "./OffersStorage.sol";
 // ====== External imports ======
 import "@openzeppelin/contracts/utils/Context.sol";
 import "@openzeppelin/contracts/utils/introspection/IERC165.sol";
-import "../../../eip/interface/IERC721.sol";
+import "@openzeppelin/contracts/token/ERC721/IERC721.sol";
 import "@openzeppelin/contracts/token/ERC1155/IERC1155.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/interfaces/IERC2981.sol";
 
 // ====== Internal imports ======
 
-import "../../../extension/interface/IPlatformFee.sol";
-import "../../../extension/upgradeable/ERC2771ContextConsumer.sol";
-import "../../../extension/upgradeable/ReentrancyGuard.sol";
-import "../../../extension/upgradeable/PermissionsEnumerable.sol";
-import { RoyaltyPaymentsLogic } from "../../../extension/upgradeable/RoyaltyPayments.sol";
-import { CurrencyTransferLib } from "../../../lib/CurrencyTransferLib.sol";
+import "../../../interfaces/IPlatformFee.sol";
+import "../../ercs/extensions/ERC2771ContextConsumer.sol";
+import "../../ercs/extensions/PermissionsEnumerable.sol";
+import "../../security/ReentrancyGuard.sol";
+import { RoyaltyPaymentsLogic } from "../../ercs/extensions/RoyaltyPayments.sol";
+import { CurrencyTransferLib } from "../../../libraries/CurrencyTransferLib.sol";
 
 /**
  * @author  omar@game7.io

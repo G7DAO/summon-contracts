@@ -24,7 +24,7 @@ import "@openzeppelin/contracts/token/ERC721/IERC721Receiver.sol";
 
 import { ERC721Holder } from "@openzeppelin/contracts/token/ERC721/utils/ERC721Holder.sol";
 import { ERC1155Holder, ERC1155Receiver } from "@openzeppelin/contracts/token/ERC1155/utils/ERC1155Holder.sol";
-import "@openzeppelin/contracts/utils/introspection/IERC165.sol";
+import { BaseRouter, IRouter, IRouterState } from "@thirdweb-dev/dynamic-contracts/src/presets/BaseRouter.sol";
 
 //  ==========  Internal imports    ==========
 
@@ -33,9 +33,10 @@ import "../../ercs/extensions/Initializable.sol";
 import "../../ercs/extensions/ContractMetadata.sol";
 import "../../ercs/extensions/PlatformFee.sol";
 import "../../ercs/extensions/PermissionsEnumerable.sol";
-import ".../../ercs/extensions/ReentrancyGuardInit.sol";
+import "../../security/ReentrancyGuardInit.sol";
 import "../../ercs/extensions/ERC2771ContextUpgradeable.sol";
 import { RoyaltyPaymentsLogic } from "../../ercs/extensions/RoyaltyPayments.sol";
+import "../../ercs/ERC165.sol";
 
 /**
  * @author  omar@game7.io
