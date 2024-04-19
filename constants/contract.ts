@@ -92,5 +92,5 @@ export enum CONTRACT_UPGRADABLE_NAME {
     BridgeZkSync = 'BridgeUpgradeableZkSync',
     ZkSpork = 'ZkSpork',
     SkillTree = 'SkillTreeUpgradable',
-    RewardItems = 'RewardItemsUpgradable',
+    RewardItemsUpgradable = 'RewardItemsUpgradable',
 }
