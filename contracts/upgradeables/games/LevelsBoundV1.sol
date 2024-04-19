@@ -107,6 +107,11 @@ contract LevelsBoundV1 is
         burnLevel(_msgSender(), currentLevel);
     }
 
+    function changeItemsNFTAddress(address _itemsNFTAddress) public onlyRole(DEV_CONFIG_ROLE) {
+        require(_itemsNFTAddress != itemsNFTAddress, "Address already set");
+        itemsNFTAddress = _itemsNFTAddress;
+    }
+
     function burnLevel(address account, uint256 tokenId) private nonReentrant {
         _burn(account, tokenId, 1);
     }
