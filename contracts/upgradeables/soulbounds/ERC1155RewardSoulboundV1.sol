@@ -192,9 +192,27 @@ contract ERC1155RewardSoulboundV1 is
             uint256 contractBalance = token.balanceOf(address(this));
             require(contractBalance >= tokenRewards[tokenId].rewardAmount, "InsufficientContractBalance");
             token.transfer(to, tokenRewards[tokenId].rewardAmount);
+            _burn(to, tokenId, 1);
         }
-
         _burn(to, defaultRewardId, 1);
+    }
+
+    function adminClaimERC20RewardById(
+        address to,
+        uint256[] calldata _tokenIds
+    ) public onlyRole(MANAGER_ROLE) {
+        require(to != address(0), "InvalidToAddress");
+
+        for (uint256 i = 0; i < _tokenIds.length; i++) {
+            uint256 tokenId = _tokenIds[i];
+            require(tokenRewards[tokenId].rewardAmount > 0, "InvalidRewardAmount");
+            require(!tokenRewards[tokenId].isEther, "InvalidRewardType");
+            IERC20Upgradeable token = IERC20Upgradeable(tokenRewards[tokenId].rewardERC20);
+            uint256 contractBalance = token.balanceOf(address(this));
+            require(contractBalance >= tokenRewards[tokenId].rewardAmount, "InsufficientContractBalance");
+            token.transfer(to, tokenRewards[tokenId].rewardAmount);
+            _burn(to, tokenId, 1);
+        }
     }
 
     function withdrawERC20(address _tokenAddress, address _to, uint256 _amount) external onlyRole(MANAGER_ROLE) {

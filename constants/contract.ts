@@ -47,6 +47,7 @@ export enum CONTRACT_UPGRADABLE_FILE_NAME {
     Staker = 'ERC20StakeV1',
     Bridge = 'ERC20BridgeV1',
     BurnableToken = 'BurnableTokenV1',
+    ERC1155RewardSoulbound = 'ERC1155RewardSoulboundV1',
 }
 
 export enum CONTRACT_UPGRADABLE_FILE_NAME_V2 {
@@ -91,4 +92,5 @@ export enum CONTRACT_UPGRADABLE_NAME {
     BridgeZkSync = 'BridgeUpgradeableZkSync',
     ZkSpork = 'ZkSpork',
     SkillTree = 'SkillTreeUpgradable',
+    RewardItems = 'RewardItemsUpgradable',
 }
