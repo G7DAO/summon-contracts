@@ -28,6 +28,7 @@ import { AccessControl } from "@openzeppelin/contracts/access/AccessControl.sol"
 import { Pausable } from "@openzeppelin/contracts/security/Pausable.sol";
 import { Strings } from "@openzeppelin/contracts/utils/Strings.sol";
 import { ECDSA } from "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
+import { ERC2981 } from "@openzeppelin/contracts/token/common/ERC2981.sol";
 import { ReentrancyGuard } from "@openzeppelin/contracts/security/ReentrancyGuard.sol";
 
 import { Achievo1155Soulbound } from "../ercs/extensions/Achievo1155Soulbound.sol";
@@ -37,6 +38,7 @@ import { LibItems } from "../libraries/LibItems.sol";
 contract ERC1155Soulbound is
     ERC1155Burnable,
     ERC1155Supply,
+    ERC2981,
     Achievo1155Soulbound,
     ERCWhitelistSignature,
     AccessControl,
@@ -383,7 +385,7 @@ contract ERC1155Soulbound is
         }
     }
 
-    function supportsInterface(bytes4 interfaceId) public view override(ERC1155, AccessControl) returns (bool) {
+    function supportsInterface(bytes4 interfaceId) public view override(ERC2981, ERC1155, AccessControl) returns (bool) {
         return super.supportsInterface(interfaceId);
     }
 
@@ -424,5 +426,21 @@ contract ERC1155Soulbound is
 
     function removeWhitelistSigner(address signer) external onlyRole(DEV_CONFIG_ROLE) {
         _removeWhitelistSigner(signer);
+    }
+
+    function setRoyaltyInfo(address receiver, uint96 feeBasisPoints) external onlyRole(MANAGER_ROLE) {
+        _setDefaultRoyalty(receiver, feeBasisPoints);
+    }
+
+    function setTokenRoyalty(
+        uint256 tokenId,
+        address receiver,
+        uint256 feeBasisPoints
+    ) external onlyRole(MANAGER_ROLE) {
+        _setTokenRoyalty(tokenId, receiver, uint96(feeBasisPoints));
+    }
+
+    function resetTokenRoyalty(uint256 tokenId) external onlyRole(MANAGER_ROLE) {
+        _resetTokenRoyalty(tokenId);
     }
 }

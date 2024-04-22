@@ -89,8 +89,6 @@ contract AdminERC1155Soulbound is
         _grantRole(DEFAULT_ADMIN_ROLE, devWallet);
         _grantRole(MANAGER_ROLE, devWallet);
         _grantRole(DEV_CONFIG_ROLE, devWallet);
-        _grantRole(DEV_CONFIG_ROLE, lootDropAddress);
-        _grantRole(MINTER_ROLE, lootDropAddress);
 
         _updateWhitelistAddress(lootDropAddress, true);
 

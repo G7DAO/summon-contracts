@@ -3,8 +3,10 @@ import {
     DirectListingArgs,
     ERC20Args,
     ItemBoundArgs,
+    ItemBoundIronWorksArgs,
     MarketplaceArgs,
     OpenMintArgs,
+    RewardTokenArgs,
 } from '@constants/constructor-args';
 import {
     CONTRACT_TYPE,
@@ -23,30 +25,17 @@ const networkType = NETWORK_TYPE.TESTNET;
 
 export const G7_SEPOLIA_ARB_CONTRACTS: DeploymentContract[] = [
     {
-        contractFileName: CONTRACT_FILE_NAME.ERC1155RoyaltiesSoulbound,
+        contractFileName: CONTRACT_FILE_NAME.ERC1155Soulbound,
         type: CONTRACT_TYPE.Items,
         name: CONTRACT_NAME.Items,
         chain,
         networkType,
         tenants: [TENANT.IronWorks],
-        verify: true,
+        verify: false,
         upgradable: false,
         dependencies: [],
         functionCalls: [],
-        args: ItemBoundArgs.TESTNET,
-    },
-    {
-        contractFileName: CONTRACT_UPGRADABLE_FILE_NAME.ERC1155RoyaltiesSoulbound,
-        type: CONTRACT_TYPE.Items,
-        name: CONTRACT_UPGRADABLE_NAME.Items,
-        chain,
-        networkType,
-        tenants: [TENANT.IronWorks],
-        verify: true,
-        upgradable: true,
-        dependencies: [],
-        functionCalls: [],
-        args: ItemBoundArgs.TESTNET,
+        args: ItemBoundIronWorksArgs.MAINNET,
     },
     {
         contractFileName: CONTRACT_FILE_NAME.FreeMint,

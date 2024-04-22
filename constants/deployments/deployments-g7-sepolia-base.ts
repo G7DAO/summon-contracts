@@ -16,7 +16,7 @@ const networkType = NETWORK_TYPE.TESTNET;
 
 export const G7_SEPOLIA_BASE_CONTRACTS: DeploymentContract[] = [
     {
-        contractFileName: CONTRACT_FILE_NAME.ERC1155RoyaltiesSoulbound,
+        contractFileName: CONTRACT_FILE_NAME.AdminERC1155Soulbound,
         type: CONTRACT_TYPE.Items,
         name: CONTRACT_NAME.Items,
         chain,
@@ -40,19 +40,6 @@ export const G7_SEPOLIA_BASE_CONTRACTS: DeploymentContract[] = [
         dependencies: [],
         functionCalls: [],
         args: ERC20Args.TESTNET,
-    },
-    {
-        contractFileName: CONTRACT_UPGRADABLE_FILE_NAME.ERC1155RoyaltiesSoulbound,
-        type: CONTRACT_TYPE.Items,
-        name: CONTRACT_UPGRADABLE_NAME.Items,
-        chain,
-        networkType,
-        tenants: [TENANT.IronWorks],
-        verify: true,
-        upgradable: true,
-        dependencies: [],
-        functionCalls: [],
-        args: ItemBoundArgs.TESTNET,
     },
     {
         contractFileName: CONTRACT_FILE_NAME.FreeMint,

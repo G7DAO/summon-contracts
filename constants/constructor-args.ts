@@ -1,6 +1,5 @@
 import { CONTRACT_NAME, CONTRACT_UPGRADABLE_NAME } from './contract';
 import { ChainId } from './network';
-import { getDirectListingExtension } from '@helpers/extensions';
 
 export interface ConstructorArgs {
     name: string;
@@ -74,7 +73,7 @@ export const ItemBoundIronWorksArgs: Soulbound1155Args = {
     },
     TESTNET: {
         name: 'IronWorksItems',
-        symbol: 'AItems',
+        symbol: 'IWItems',
         baseURI: 'https://achievo.mypinata.cloud/ipfs',
         contractURI: 'FILL_ME',
         maxPerMint: 1,
@@ -443,7 +442,6 @@ export const RewardTokenArgs = {
         _defaultTokenURI: 'FILL_ME',
         _contractURI: 'FILL_ME',
         _devWallet: 'DEPLOYER_WALLET',
-        _lootDropAddress: `CONTRACT_${CONTRACT_NAME.LootDrop}`,
     },
     TESTNET: {
         _name: 'RainToken',
@@ -451,7 +449,6 @@ export const RewardTokenArgs = {
         _defaultTokenURI: 'FILL_ME',
         _contractURI: 'FILL_ME',
         _devWallet: 'DEPLOYER_WALLET',
-        _lootDropAddress: `CONTRACT_${CONTRACT_NAME.LootDrop}`,
     },
 };
 
@@ -461,7 +458,7 @@ export const DirectListingArgs = {
         _devWallet: 'DEPLOYER_WALLET',
     },
     TESTNET: {
-        _tokenAddress: 'FILL_ME',
+        _tokenAddress: `CONTRACT_${CONTRACT_NAME.MartinERC20}`,
         _devWallet: 'DEPLOYER_WALLET',
     },
 };
