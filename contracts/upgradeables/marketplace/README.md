@@ -1,16 +1,16 @@
-# Marketplace V3 design document.
+# Marketplace design document.
 
-This is a live document that explains what the [achievo](https://achievo.xyz) `Marketplace V3` smart contract is, how it works and can be used, and why it is written the way it is.
+This is a live document that explains what the [achievo](https://achievo.xyz) `Marketplace` smart contract is, how it works and can be used, and why it is written the way it is.
 
-The document is written for technical and non-technical readers. To ask further questions about `Marketplace V3`, please join the [achievo discord](https://discord.gg/achievo) or create a [github issue](https://github.com/achievo-dev/contracts/issues).
+The document is written for technical and non-technical readers. To ask further questions about `Marketplace`, please join the [achievo discord](https://discord.gg/achievo) or create a [github issue](https://github.com/achievo-dev/contracts/issues).
 
 ---
 
 ## Background
 
-The [achievo](https://achievo.xyz) `Marketplace V3` is a marketplace where where people can sell NFTs — [ERC 721](https://eips.ethereum.org/EIPS/eip-721) or [ERC 1155](https://eips.ethereum.org/EIPS/eip-1155) tokens — at a fixed price ( what we'll refer to as a "Direct listing"), or auction them (what we'll refer to as an "Auction listing"). It also allows users to make "Offers" on unlisted NFTs.
+The [achievo](https://achievo.xyz) `Marketplace` is a marketplace where where people can sell NFTs — [ERC 721](https://eips.ethereum.org/EIPS/eip-721) or [ERC 1155](https://eips.ethereum.org/EIPS/eip-1155) tokens — at a fixed price ( what we'll refer to as a "Direct listing"), or auction them (what we'll refer to as an "Auction listing"). It also allows users to make "Offers" on unlisted NFTs.
 
-`Marketplace V3` offers improvements over previous version in terms of design and features, which are discussed in this document. You can refer to previous (v2) `Marketplace` design document [here](https://github.com/achievo-dev/contracts/blob/main/contracts/prebuilts/marketplace-legacy/marketplace.md).
+`Marketplace` offers improvements over previous version in terms of design and features, which are discussed in this document. You can refer to previous (v2) `Marketplace` design document [here](https://github.com/achievo-dev/contracts/blob/main/contracts/prebuilts/marketplace-legacy/marketplace.md).
 
 ## Context behind this update
 
@@ -20,28 +20,28 @@ We have given `Marketplace` an update that was long overdue. The marketplace pro
 2. Auctioning off NFTs.
 3. Making offers for NFTs not on sale at all, or at favorable prices.
 
-The core improvement about the `Marketplace V3` smart contract is better developer experience of working with the contract.
+The core improvement about the `Marketplace` smart contract is better developer experience of working with the contract.
 
 Previous version had some limitations, arising due to (1) the smart contract size limit of `~24.576 kb` on Ethereum mainnet (and other achievo supported chains), and (2) the way the smart contract code is organized (single, large smart contract that inherits other contracts). The previous `Marketplace` smart contract has functions that have multiple jobs, behave in many different ways under different circumstances, and a lack of convenient view functions to read data easily.
 
-Moreover, over time, we received feature requests for `Marketplace`, some of which have been incorporated in `Marketplace V3`, for e.g.:
+Moreover, over time, we received feature requests for `Marketplace`, some of which have been incorporated in `Marketplace`, for e.g.:
 
 -   Ability to accept multiple currencies for direct listings
 -   Ability to explicitly cancel listings
 -   Explicit getter functions for fetching high level states e.g. “has an auction ended”, “who is the winning bidder”, etc.
 -   Simplify start time and expiration time for listings
 
-For all these reasons and feature additions, the `Marketplace` contract is getting an update, and being rolled out as `Marketplace V3`. In this update:
+For all these reasons and feature additions, the `Marketplace` contract is getting an update, and being rolled out as `Marketplace`. In this update:
 
 -   the contract has been broken down into independent extensions (later offered in ContractKit).
 -   the contract provides explicit functions for each important action (something that is missing from the contract, today).
 -   the contract provides convenient view functions for all relevant state of the contract, without expecting users to rely on events to read critical information.
 
-Finally, to accomplish all these things without the constraint of the smart contract size limit, the `Marketplace V3` contract is written in the following new code pattern, which we call `Plugin Pattern`. It was influenced by [EIP-2535](https://eips.ethereum.org/EIPS/eip-2535). You can read more about Plugin Pattern [here](https://blog.achievo.xyz).
+Finally, to accomplish all these things without the constraint of the smart contract size limit, the `Marketplace` contract is written in the following new code pattern, which we call `Plugin Pattern`. It was influenced by [EIP-2535](https://eips.ethereum.org/EIPS/eip-2535). You can read more about Plugin Pattern [here](https://blog.achievo.xyz).
 
-## Extensions that make up `Marketplace V3`
+## Extensions that make up `Marketplace`
 
-The `Marketplace V3` smart contract is now written as the sum of three main extension smart contracts:
+The `Marketplace` smart contract is now written as the sum of three main extension smart contracts:
 
 1. `DirectListings`: List NFTs for sale at a fixed price. Buy NFTs from listings.
 2. `EnglishAuctions`: Put NFTs up for auction. Bid for NFTs up on auction. The highest bid within an auction’s duration wins.
