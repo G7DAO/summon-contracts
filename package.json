@@ -1,6 +1,6 @@
 {
     "name": "@achievo/contracts",
-    "version": "0.20.0",
+    "version": "0.22.0",
     "description": "Smart contracts for achievo.xyz",
     "scripts": {
         "localChain": "hardhat --config hardhat.config.ts node",
@@ -94,7 +94,6 @@
         "@openzeppelin/contracts-upgradeable": "^4.9.5",
         "@openzeppelin/hardhat-upgrades": "3.0.2",
         "@pythnetwork/pyth-sdk-solidity": "^2.4.0",
-        "@thirdweb-dev/dynamic-contracts": "^1.2.5",
         "axios": "^1.6.5",
         "dotenv": "^16.4.0",
         "ethers": "^6.10.0",

@@ -1,5 +1,5 @@
-// SPDX-License-Identifier: Apache-2.0
-pragma solidity ^0.8.0;
+// SPDX-License-Identifier: MIT
+pragma solidity ^0.8.17;
 
 /// @author omar@game7.io
 
@@ -21,13 +21,15 @@ pragma solidity ^0.8.0;
 // ====== External imports ======
 import "@openzeppelin/contracts/token/ERC1155/IERC1155Receiver.sol";
 import "@openzeppelin/contracts/token/ERC721/IERC721Receiver.sol";
+import "@openzeppelin/contracts/utils/introspection/IERC165.sol";
 
-import { ERC721Holder } from "@openzeppelin/contracts/token/ERC721/utils/ERC721Holder.sol";
-import { ERC1155Holder, ERC1155Receiver } from "@openzeppelin/contracts/token/ERC1155/utils/ERC1155Holder.sol";
-import { BaseRouter, IRouter, IRouterState } from "@thirdweb-dev/dynamic-contracts/src/presets/BaseRouter.sol";
+import "@openzeppelin/contracts/token/ERC721/utils/ERC721Holder.sol";
+import "@openzeppelin/contracts/token/ERC1155/utils/ERC1155Holder.sol";
 
 //  ==========  Internal imports    ==========
 
+import { RoyaltyPaymentsLogic } from "../../ercs/extensions/RoyaltyPayments.sol";
+import { BaseRouter, IRouter, IRouterState } from "../../../router/BaseRouter.sol";
 import "../../ercs/extensions/Multicall.sol";
 import "../../ercs/extensions/Initializable.sol";
 import "../../ercs/extensions/ContractMetadata.sol";
@@ -35,12 +37,7 @@ import "../../ercs/extensions/PlatformFee.sol";
 import "../../ercs/extensions/PermissionsEnumerable.sol";
 import "../../security/ReentrancyGuardInit.sol";
 import "../../ercs/extensions/ERC2771ContextUpgradeable.sol";
-import { RoyaltyPaymentsLogic } from "../../ercs/extensions/RoyaltyPayments.sol";
-import "../../ercs/ERC165.sol";
 
-/**
- * @author  omar@game7.io
- */
 contract MarketplaceV3 is
     Initializable,
     Multicall,
@@ -52,8 +49,7 @@ contract MarketplaceV3 is
     ERC2771ContextUpgradeable,
     RoyaltyPaymentsLogic,
     ERC721Holder,
-    ERC1155Holder,
-    ERC165
+    ERC1155Holder
 {
     /// @dev Only EXTENSION_ROLE holders can perform upgrades.
     bytes32 private constant EXTENSION_ROLE = keccak256("EXTENSION_ROLE");
@@ -134,7 +130,7 @@ contract MarketplaceV3 is
 
     function supportsInterface(
         bytes4 interfaceId
-    ) public view virtual override(ERC165, IERC165, ERC1155Receiver) returns (bool) {
+    ) public view virtual override(IERC165, ERC1155Receiver) returns (bool) {
         return
             interfaceId == type(IERC1155Receiver).interfaceId ||
             interfaceId == type(IERC721Receiver).interfaceId ||

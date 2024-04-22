@@ -41,9 +41,6 @@ dependencies:
   '@pythnetwork/pyth-sdk-solidity':
     specifier: ^2.4.0
     version: 2.4.1
-  '@thirdweb-dev/dynamic-contracts':
-    specifier: ^1.2.5
-    version: 1.2.5
   axios:
     specifier: ^1.6.5
     version: 1.6.8(debug@4.3.4)
@@ -1606,11 +1603,6 @@ packages:
 
   /@swc/wasm@1.4.11:
     resolution: {integrity: sha512-thRcGSN9JJ8vfZZG8yeDGlWH4i0Lr2J0KUP3at7Yfi4jAKtIAoOQxICwgpPfpGbFM9OYlNtPEv2d1C2sD+cPkA==}
-
-  /@thirdweb-dev/dynamic-contracts@1.2.5:
-    resolution: {integrity: sha512-YVsz+jUWbwj+6aF2eTZGMfyw47a1HRmgNl4LQ3gW9gwYL5y5+OX/yOzv6aV5ibvoqCk/k10aIVK2eFrcpMubQA==}
-    engines: {node: '>=18.0.0'}
-    dev: false
 
   /@ts-morph/common@0.22.0:
     resolution: {integrity: sha512-HqNBuV/oIlMKdkLshXd1zKBqNQCsuPEsgQOkfFQ/eUKjRlwndXW1AjN9LVkBEIukm00gGXSRmfkl0Wv5VXLnlw==}
