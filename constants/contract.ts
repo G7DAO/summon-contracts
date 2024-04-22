@@ -39,6 +39,7 @@ export enum CONTRACT_FILE_NAME {
     HelloWorld = 'HelloWorld',
     AdminERC1155Soulbound = 'AdminERC1155Soulbound',
     DirectListingsExtension = 'DirectListingsLogic',
+    ERC20 = 'Martins',
 }
 export enum CONTRACT_UPGRADABLE_FILE_NAME {
     LegacyAvatar = 'LegacyAvatarUpgradeableV1',
@@ -82,6 +83,7 @@ export enum CONTRACT_NAME {
     HelloWorld = 'HelloWorld',
     RewardToken = 'RewardToken',
     DirectListingExtension = 'DirectListingExtension',
+    MartinERC20 = 'MockERC20',
 }
 
 export enum CONTRACT_UPGRADABLE_NAME {

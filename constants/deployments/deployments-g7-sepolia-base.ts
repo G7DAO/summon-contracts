@@ -1,4 +1,4 @@
-import { ItemBoundArgs, OpenMintArgs } from '@constants/constructor-args';
+import { ERC20Args, ItemBoundArgs, OpenMintArgs } from '@constants/constructor-args';
 import {
     CONTRACT_TYPE,
     CONTRACT_NAME,
@@ -27,6 +27,19 @@ export const G7_SEPOLIA_BASE_CONTRACTS: DeploymentContract[] = [
         dependencies: [],
         functionCalls: [],
         args: ItemBoundArgs.TESTNET,
+    },
+    {
+        contractFileName: CONTRACT_FILE_NAME.ERC20,
+        type: CONTRACT_TYPE.ERC20,
+        name: CONTRACT_NAME.MartinERC20,
+        chain,
+        networkType,
+        tenants: [TENANT.IronWorks],
+        verify: true,
+        upgradable: false,
+        dependencies: [],
+        functionCalls: [],
+        args: ERC20Args.TESTNET,
     },
     {
         contractFileName: CONTRACT_UPGRADABLE_FILE_NAME.ERC1155RoyaltiesSoulbound,

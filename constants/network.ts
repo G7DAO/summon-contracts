@@ -71,8 +71,8 @@ export enum NetworkConfigFile {
     OPSepolia = 'op.config.ts',
     Base = 'base.config.ts',
     BaseSepolia = 'base.config.ts',
-    Game7OrbitARBOneSepolia = 'game7.config.ts',
-    Game7OrbitBaseSepolia = 'game7.config.ts',
+    Game7OrbitARBOneSepolia = 'g7.config.ts',
+    Game7OrbitBaseSepolia = 'g7.config.ts',
 }
 
 export enum Currency {

@@ -390,6 +390,17 @@ export const ERC20Args = {
     MAINNET: {
         name: 'FILL_ME',
         symbol: 'FILL_ME',
+    },
+    TESTNET: {
+        name: 'Martins',
+        symbol: 'MAR20',
+    },
+};
+
+export const ERC20DecimalsAgs = {
+    MAINNET: {
+        name: 'FILL_ME',
+        symbol: 'FILL_ME',
         decimals: 18,
         developerAdmin: 'DEPLOYER_WALLET',
     },
@@ -447,9 +458,11 @@ export const RewardTokenArgs = {
 export const DirectListingArgs = {
     MAINNET: {
         _tokenAddress: 'FILL_ME',
+        _devWallet: 'DEPLOYER_WALLET',
     },
     TESTNET: {
         _tokenAddress: 'FILL_ME',
+        _devWallet: 'DEPLOYER_WALLET',
     },
 };
 

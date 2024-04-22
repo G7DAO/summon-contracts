@@ -1,4 +1,11 @@
-import { DirectListingArgs, ItemBoundArgs, MarketplaceArgs, OpenMintArgs } from '@constants/constructor-args';
+import {
+    BUIDLArgs,
+    DirectListingArgs,
+    ERC20Args,
+    ItemBoundArgs,
+    MarketplaceArgs,
+    OpenMintArgs,
+} from '@constants/constructor-args';
 import {
     CONTRACT_TYPE,
     CONTRACT_NAME,
@@ -55,6 +62,19 @@ export const G7_SEPOLIA_ARB_CONTRACTS: DeploymentContract[] = [
         args: OpenMintArgs.TESTNET,
     },
     {
+        contractFileName: CONTRACT_FILE_NAME.ERC20,
+        type: CONTRACT_TYPE.ERC20,
+        name: CONTRACT_NAME.MartinERC20,
+        chain,
+        networkType,
+        tenants: [TENANT.IronWorks],
+        verify: true,
+        upgradable: false,
+        dependencies: [],
+        functionCalls: [],
+        args: ERC20Args.TESTNET,
+    },
+    {
         contractFileName: CONTRACT_FILE_NAME.DirectListingsExtension,
         type: CONTRACT_TYPE.DirectListingExtension,
         name: CONTRACT_NAME.DirectListingExtension,
@@ -63,7 +83,7 @@ export const G7_SEPOLIA_ARB_CONTRACTS: DeploymentContract[] = [
         tenants: [TENANT.IronWorks],
         verify: true,
         upgradable: false,
-        dependencies: [],
+        dependencies: [CONTRACT_NAME.MartinERC20],
         functionCalls: [],
         args: DirectListingArgs.TESTNET,
     },
