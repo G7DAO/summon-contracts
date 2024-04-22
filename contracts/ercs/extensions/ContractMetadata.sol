@@ -3,7 +3,7 @@ pragma solidity ^0.8.0;
 
 /// @author omar@game7.io
 
-import "../../../interfaces/IContractMetadata.sol";
+import "../../interfaces/IContractMetadata.sol";
 
 /**
  *  @author  thirdweb.com

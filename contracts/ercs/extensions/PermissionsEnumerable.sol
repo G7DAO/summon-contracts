@@ -3,8 +3,8 @@ pragma solidity ^0.8.0;
 
 /// @author omar@game7.io
 
-import "../../../interfaces/IPermissionsEnumerable.sol";
-import "./Permissions.sol";
+import "../../interfaces/IPermissionsEnumerable.sol";
+import "../../ercs/extensions/Permissions.sol";
 
 /**
  *  @title   PermissionsEnumerable

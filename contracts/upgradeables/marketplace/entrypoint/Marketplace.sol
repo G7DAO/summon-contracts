@@ -28,17 +28,17 @@ import "@openzeppelin/contracts/token/ERC1155/utils/ERC1155Holder.sol";
 
 //  ==========  Internal imports    ==========
 
-import { RoyaltyPaymentsLogic } from "../../ercs/extensions/RoyaltyPayments.sol";
+import { RoyaltyPaymentsLogic } from "../../../ercs/extensions/RoyaltyPayments.sol";
 import { BaseRouter, IRouter, IRouterState } from "../../../router/BaseRouter.sol";
-import "../../ercs/extensions/Multicall.sol";
+import "../../../ercs/extensions/Multicall.sol";
 import "../../ercs/extensions/Initializable.sol";
-import "../../ercs/extensions/ContractMetadata.sol";
-import "../../ercs/extensions/PlatformFee.sol";
-import "../../ercs/extensions/PermissionsEnumerable.sol";
+import "../../../ercs/extensions/ContractMetadata.sol";
+import "../../../ercs/extensions/PlatformFee.sol";
+import "../../../ercs/extensions/PermissionsEnumerable.sol";
 import "../../security/ReentrancyGuardInit.sol";
 import "../../ercs/extensions/ERC2771ContextUpgradeable.sol";
 
-contract MarketplaceV3 is
+contract Marketplace is
     Initializable,
     Multicall,
     BaseRouter,

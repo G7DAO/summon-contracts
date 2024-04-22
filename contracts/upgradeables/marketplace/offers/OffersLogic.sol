@@ -16,10 +16,10 @@ import "@openzeppelin/contracts/interfaces/IERC2981.sol";
 // ====== Internal imports ======
 
 import "../../../interfaces/IPlatformFee.sol";
-import "../../ercs/extensions/ERC2771ContextConsumer.sol";
-import "../../ercs/extensions/PermissionsEnumerable.sol";
+import "../../../ercs/extensions/ERC2771ContextConsumer.sol";
+import "../../../ercs/extensions/PermissionsEnumerable.sol";
 import "../../security/ReentrancyGuard.sol";
-import { RoyaltyPaymentsLogic } from "../../ercs/extensions/RoyaltyPayments.sol";
+import { RoyaltyPaymentsLogic } from "../../../ercs/extensions/RoyaltyPayments.sol";
 import { CurrencyTransferLib } from "../../../libraries/CurrencyTransferLib.sol";
 
 /**

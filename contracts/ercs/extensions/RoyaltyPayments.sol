@@ -3,9 +3,9 @@ pragma solidity ^0.8.0;
 
 /// @author omar@game7.io
 
-import "../../../interfaces/IRoyaltyPayments.sol";
-import "../../../interfaces/IRoyaltyEngineV1.sol";
-import { IERC2981 } from "../../../interfaces/IERC2981.sol";
+import "../../interfaces/IRoyaltyPayments.sol";
+import "../../interfaces/IRoyaltyEngineV1.sol";
+import { IERC2981 } from "../../interfaces/IERC2981.sol";
 
 library RoyaltyPaymentsStorage {
     /// @custom:storage-location erc7201:royalty.payments.storage

@@ -3,8 +3,8 @@ pragma solidity ^0.8.0;
 
 /// @author omar@game7.io
 
-import "../../../libraries/Address.sol";
-import "../../../interfaces/IMulticall.sol";
+import "../../libraries/Address.sol";
+import "../../interfaces/IMulticall.sol";
 
 /**
  * @dev Provides a function to batch together multiple calls in a single external call.

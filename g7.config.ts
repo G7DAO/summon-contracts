@@ -12,11 +12,6 @@ log(`Using Game7 L3 config`);
 
 defaultConfig.networks = {
     ...defaultConfig.networks,
-    [NetworkName.Game7OPStackBaseSepolia]: {
-        url: rpcUrls[ChainId.Game7OPStackBaseSepolia],
-        accounts: [PRIVATE_KEY],
-        chainId: ChainId.Game7OPStackBaseSepolia,
-    },
     [NetworkName.Game7OrbitARBOneSepolia]: {
         url: rpcUrls[ChainId.Game7OrbitARBOneSepolia],
         accounts: [PRIVATE_KEY],
@@ -32,14 +27,6 @@ defaultConfig.networks = {
 defaultConfig.etherscan = {
     apiKey: ETHSCAN_API_KEY,
     customChains: [
-        {
-            network: NetworkName.Game7OPStackBaseSepolia,
-            chainId: ChainId.Game7OPStackBaseSepolia,
-            urls: {
-                apiURL: `${NetworkExplorer.Game7OPStackBaseSepolia}/api`,
-                browserURL: NetworkExplorer.Game7OPStackBaseSepolia,
-            },
-        },
         {
             network: NetworkName.Game7OrbitARBOneSepolia,
             chainId: ChainId.Game7OrbitARBOneSepolia,

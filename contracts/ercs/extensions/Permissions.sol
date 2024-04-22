@@ -3,8 +3,8 @@ pragma solidity ^0.8.0;
 
 /// @author omar@game7.io
 
-import "../../../interfaces/IPermissions.sol";
-import "../../../libraries/Strings.sol";
+import "../../interfaces/IPermissions.sol";
+import "../../libraries/Strings.sol";
 
 /**
  *  @title   Permissions
