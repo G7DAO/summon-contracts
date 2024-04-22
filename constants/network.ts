@@ -109,7 +109,7 @@ export enum NetworkExplorer {
     Mantle = 'https://explorer.mantle.xyz',
     MantleSepolia = 'https://explorer.sepolia.mantle.xyz',
     ZkSync = 'https://explorer.zksync.io',
-    ZkSyncSepolia = 'https://sepolia.explorer.zksync.io',
+    ZkSyncSepolia = 'https://zksync-sepolia.blockscout.com',
     ArbitrumOne = 'https://arbiscan.io',
     ArbitrumSepolia = 'https://sepolia.arbiscan.io',
     OPMainnet = 'https://optimistic.etherscan.io',
