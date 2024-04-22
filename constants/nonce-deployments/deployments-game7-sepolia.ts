@@ -1,14 +1,14 @@
-import { HelloWorldArgs, LootDropArgs, RewardTokenArgs } from '@constants/constructor-args';
-import { CONTRACT_TYPE, CONTRACT_NAME, CONTRACT_FILE_NAME } from '@constants/contract';
+import { LootDropArgs, HelloWorldArgs, RewardTokenArgs } from '@constants/constructor-args';
+import { CONTRACT_FILE_NAME, CONTRACT_NAME, CONTRACT_TYPE } from '@constants/contract';
 import { TENANT } from '@constants/tenant';
 
 import { DeploymentContract } from '../../types/deployment-type';
 import { NETWORK_TYPE, NetworkName } from '../network';
 
-const chain = NetworkName.ZkSyncSepolia;
+const chain = NetworkName.Game7Sepolia;
 const networkType = NETWORK_TYPE.TESTNET;
 
-export const ZKSYNC_SEPOLIA_CONTRACTS: DeploymentContract[] = [
+export const GAME7_SEPOLIA_CONTRACTS: DeploymentContract[] = [
     {
         contractFileName: CONTRACT_FILE_NAME.LootDrop,
         type: CONTRACT_TYPE.LootDrop,

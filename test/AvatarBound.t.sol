@@ -285,6 +285,7 @@ contract AvatarBoundTest is Test {
     function testSetTokenURI() public {
         vm.startPrank(minterWallet.addr);
         avatarBound.adminMint(playerWallet.addr, 1);
+        avatarBound.setCompoundURIEnabled(false);
         uint256 tokenId = 0;
         string memory newURI = "/newURI1.glb";
         avatarBound.setTokenURI(tokenId, newURI);
@@ -296,8 +297,28 @@ contract AvatarBoundTest is Test {
     function testSetBaseURI() public {
         string memory newBaseURI = "ipfs://newBaseURI/";
         vm.startPrank(minterWallet.addr);
+        avatarBound.setCompoundURIEnabled(false);
         avatarBound.setBaseURI(newBaseURI);
         assertEq(avatarBound.baseTokenURI(), newBaseURI);
+        vm.stopPrank();
+    }
+
+    function testCompoundURI() public {
+        vm.startPrank(minterWallet.addr);
+        avatarBound.adminMint(playerWallet.addr, 1);
+        string memory compoundURI = "https://this.is.a.compound.uri.endpoint/avatar";
+        avatarBound.setCompoundURI(compoundURI);
+        uint256 tokenId = 0;
+        string memory finalURI = string(
+            abi.encodePacked(
+                compoundURI,
+                "/",
+                Strings.toHexString(uint160(address(avatarBound)), 20),
+                "/",
+                Strings.toString(tokenId)
+            )
+        );
+        assertEq(avatarBound.tokenURI(tokenId), finalURI);
         vm.stopPrank();
     }
 

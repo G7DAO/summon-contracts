@@ -68,6 +68,9 @@ contract AdminERC1155Soulbound is
     event TokenAdded(uint256 indexed tokenId);
 
     constructor(address devWallet) ERC1155("") {
+        if (devWallet == address(0)) {
+            revert AddressIsZero();
+        }
         _grantRole(DEFAULT_ADMIN_ROLE, devWallet);
     }
 

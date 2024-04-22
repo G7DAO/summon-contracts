@@ -125,14 +125,14 @@ export const ZKSYNC_SEPOLIA_CONTRACTS: DeploymentContract[] = [
         args: ItemBoundArgs.TESTNET,
     },
     {
-        contractFileName: CONTRACT_FILE_NAME.ERC1155RewardSoulbound,
+        contractFileName: CONTRACT_UPGRADABLE_FILE_NAME.ERC1155RewardSoulbound,
         type: CONTRACT_TYPE.RewardItems,
-        name: CONTRACT_NAME.RewardItems,
+        name: CONTRACT_UPGRADABLE_NAME.RewardItemsUpgradable,
         chain,
         networkType,
         tenants: [TENANT.Game7],
         verify: true,
-        upgradable: false,
+        upgradable: true,
         dependencies: [],
         functionCalls: [
             {
@@ -449,5 +449,18 @@ export const ZKSYNC_SEPOLIA_CONTRACTS: DeploymentContract[] = [
         dependencies: [],
         functionCalls: [],
         args: BUIDLArgs.TESTNET,
+    },
+    {
+        contractFileName: CONTRACT_UPGRADABLE_FILE_NAME.LegacyAvatar,
+        type: CONTRACT_TYPE.LegacyAvatar,
+        name: CONTRACT_UPGRADABLE_NAME.LegacyAvatar,
+        chain,
+        networkType,
+        tenants: [TENANT.Game7],
+        verify: true,
+        upgradable: true,
+        dependencies: [],
+        functionCalls: [],
+        args: {},
     },
 ];

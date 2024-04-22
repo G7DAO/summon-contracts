@@ -82,15 +82,15 @@ export const ItemBoundIronWorksArgs: Soulbound1155Args = {
 
 export const ItemsRewardBoundArgs = {
     MAINNET: {
-        name: 'AchievoItemsReward',
-        symbol: 'AIR',
+        name: 'Roll For Initiative',
+        symbol: 'R4I',
         defaultRewardId: 1,
         isPaused: false,
         devWallet: 'DEPLOYER_WALLET',
     },
     TESTNET: {
-        name: 'AchievoItemsReward',
-        symbol: 'AIR',
+        name: 'Roll For Initiative',
+        symbol: 'R4I',
         defaultRewardId: 1,
         isPaused: false,
         devWallet: 'DEPLOYER_WALLET',
@@ -207,8 +207,8 @@ const PYTH_USDC_PRICE_ID_MAINNET = '0xeaa020c61cc479712813461ce153894a96a6c00b21
 const PYTH_ETH_PRICE_ID_MAINNET = '0xff61491a931112ddf1bd8147cd1b641375f79f5825126d665480874634fd0ace';
 const PYTH_ORACLE_ADDRESS_MAINNET = '0xf087c864AEccFb6A2Bf1Af6A0382B0d0f6c5D834';
 
-const CHAINLINK_USDC_PRICE_ID_TESTNET = '0x37FBa63C443Ca1Bf262B9E6cc46c4B46273F687C';
-const CHAINLINK_ETH_PRICE_ID_TESTNET = '0x2bBaff398B72d5B26f4f9B3397cfd9DC578a9f08';
+const CHAINLINK_USDC_PRICE_ID_TESTNET = '0x1844478CA634f3a762a2E71E3386837Bd50C947F';
+const CHAINLINK_ETH_PRICE_ID_TESTNET = '0xfEefF7c3fB57d18C5C6Cdd71e45D2D0b4F9377bF';
 
 const CHAINLINK_USDC_PRICE_ID_MAINNET = '0x1824D297C6d6D311A204495277B63e943C2D376E';
 const CHAINLINK_ETH_PRICE_ID_MAINNET = '0x6D41d1dc818112880b40e26BD6FD347E41008eDA';
@@ -244,9 +244,7 @@ export const ERC20ChainlinkPaymasterArgs = {
         erc20FeedId: CHAINLINK_USDC_PRICE_ID_TESTNET,
         ethFeedId: CHAINLINK_ETH_PRICE_ID_TESTNET,
         fixedPrice: 1,
-        // This is in "false" because chainlink is not available on zkSync-sepolia yet, anyway check this link:
-        // https://docs.chain.link/data-feeds/price-feeds/addresses?network=zksync&page=1
-        useChainLink: false,
+        useChainLink: true,
     },
 };
 
@@ -383,12 +381,33 @@ export const BUIDLArgs = {
     },
 };
 
-export const LootDropArgs = {
+export const ERC20Args = {
     MAINNET: {
-        _uri: 'FILL_ME',
+        name: 'FILL_ME',
+        symbol: 'FILL_ME',
+        decimals: 18,
+        developerAdmin: 'DEPLOYER_WALLET',
     },
     TESTNET: {
-        _uri: 'FILL_ME',
+        name: 'MOCKERC20',
+        symbol: 'ERC20',
+        decimals: 18,
+        developerAdmin: 'DEPLOYER_WALLET',
+    },
+};
+
+export const LootDropArgs = {
+    MAINNET: {
+        _devWallet: 'DEPLOYER_WALLET',
+        _managerWallet: 'DEPLOYER_WALLET',
+        _minterWallet: 'DEPLOYER_WALLET',
+        _rewardTokenAddress: `CONTRACT_${CONTRACT_NAME.RewardToken}`,
+    },
+    TESTNET: {
+        _devWallet: 'DEPLOYER_WALLET',
+        _managerWallet: 'DEPLOYER_WALLET',
+        _minterWallet: 'DEPLOYER_WALLET',
+        _rewardTokenAddress: `CONTRACT_${CONTRACT_NAME.RewardToken}`,
     },
 };
 
@@ -403,9 +422,19 @@ export const HelloWorldArgs = {
 
 export const RewardTokenArgs = {
     MAINNET: {
-        _uri: 'FILL_ME',
+        _name: 'RewardToken',
+        _symbol: 'RT',
+        _defaultTokenURI: 'FILL_ME',
+        _contractURI: 'FILL_ME',
+        _devWallet: 'DEPLOYER_WALLET',
+        _lootDropAddress: `CONTRACT_${CONTRACT_NAME.LootDrop}`,
     },
     TESTNET: {
-        _uri: 'FILL_ME',
+        _name: 'RainToken',
+        _symbol: 'RT',
+        _defaultTokenURI: 'FILL_ME',
+        _contractURI: 'FILL_ME',
+        _devWallet: 'DEPLOYER_WALLET',
+        _lootDropAddress: `CONTRACT_${CONTRACT_NAME.LootDrop}`,
     },
 };

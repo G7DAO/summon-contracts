@@ -18,10 +18,9 @@ export const BASE_SEPOLIA_CONTRACTS: DeploymentContract[] = [
         tenants: [TENANT.Game7],
         verify: true,
         upgradable: false,
-        dependencies: [],
+        dependencies: [CONTRACT_NAME.RewardToken],
         functionCalls: [],
         args: LootDropArgs.TESTNET,
-        skipCallInitializeFn: true,
     },
     {
         contractFileName: CONTRACT_FILE_NAME.AdminERC1155Soulbound,
@@ -32,10 +31,9 @@ export const BASE_SEPOLIA_CONTRACTS: DeploymentContract[] = [
         tenants: [TENANT.Game7],
         verify: true,
         upgradable: false,
-        dependencies: [],
+        dependencies: [CONTRACT_NAME.LootDrop],
         functionCalls: [],
         args: RewardTokenArgs.TESTNET,
-        skipCallInitializeFn: true,
     },
     {
         contractFileName: CONTRACT_FILE_NAME.HelloWorld,

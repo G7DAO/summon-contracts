@@ -1,5 +1,10 @@
-import { ItemBoundIronWorksArgs } from '@constants/constructor-args';
-import { CONTRACT_TYPE, CONTRACT_UPGRADABLE_FILE_NAME, CONTRACT_UPGRADABLE_NAME } from '@constants/contract';
+import { BUIDLArgs, ERC20Args, ItemBoundIronWorksArgs } from '@constants/constructor-args';
+import {
+    CONTRACT_NAME,
+    CONTRACT_TYPE,
+    CONTRACT_UPGRADABLE_FILE_NAME,
+    CONTRACT_UPGRADABLE_NAME,
+} from '@constants/contract';
 import { TENANT } from '@constants/tenant';
 
 import { DeploymentContract } from '../../types/deployment-type';
@@ -21,5 +26,18 @@ export const ARBITRUM_SEPOLIA_CONTRACTS: DeploymentContract[] = [
         dependencies: [],
         functionCalls: [],
         args: ItemBoundIronWorksArgs.TESTNET,
+    },
+    {
+        contractFileName: CONTRACT_UPGRADABLE_FILE_NAME.BurnableToken,
+        type: CONTRACT_TYPE.ERC20,
+        name: CONTRACT_UPGRADABLE_NAME.ERC20,
+        chain,
+        networkType,
+        tenants: [TENANT.IronWorks],
+        verify: false,
+        upgradable: true,
+        dependencies: [],
+        functionCalls: [],
+        args: ERC20Args.TESTNET,
     },
 ];

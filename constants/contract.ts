@@ -1,4 +1,5 @@
 export enum CONTRACT_TYPE {
+    LegacyAvatar = 'LegacyAvatar',
     Avatars = 'Avatars',
     Items = 'Items',
     RewardItems = 'RewardItems',
@@ -37,21 +38,23 @@ export enum CONTRACT_FILE_NAME {
     AdminERC1155Soulbound = 'AdminERC1155Soulbound',
 }
 export enum CONTRACT_UPGRADABLE_FILE_NAME {
+    LegacyAvatar = 'LegacyAvatarUpgradeableV1',
     Avatars = 'AvatarBoundV1',
     ERC1155RoyaltiesSoulbound = 'ERC1155RoyaltiesSoulboundV1',
     Levels = 'LevelsBoundV1',
-    ERC20ChainlinkPaymaster = 'ERC20ChainlinkPaymasterV1',
+    ERC20ChainlinkPaymaster = 'ERC20ChainlinkPaymasterV2',
     ERC1155Soulbound = 'ERC1155SoulboundV1',
     Staker = 'ERC20StakeV1',
     Bridge = 'ERC20BridgeV1',
     BurnableToken = 'BurnableTokenV1',
+    ERC1155RewardSoulbound = 'ERC1155RewardSoulboundV1',
 }
 
 export enum CONTRACT_UPGRADABLE_FILE_NAME_V2 {
     Avatars = 'AvatarBoundV2',
     ERC1155RoyaltiesSoulbound = 'ERC1155RoyaltiesSoulboundV2',
     Levels = 'LevelsBoundV2',
-    ERC20ChainlinkPaymaster = 'ERC20ChainlinkPaymasterV2',
+    ERC20ChainlinkPaymaster = 'ERC20ChainlinkPaymasterV3',
     ERC1155Soulbound = 'ERC1155SoulboundV2',
 }
 
@@ -77,15 +80,17 @@ export enum CONTRACT_NAME {
 }
 
 export enum CONTRACT_UPGRADABLE_NAME {
+    LegacyAvatar = 'LegacyAvatarUpgradable',
     Avatars = 'AvatarsUpgradable',
     Items = 'ItemsUpgradable',
     Levels = 'LevelsUpgradable',
     PaymasterChainlink = 'PaymasterChainlinkUpgradable',
-    ERC20 = 'ERC20Upgradable',
+    ERC20 = 'BurnableTokenV1',
     Staker = 'ERC20StakeV1',
     Badge = 'BadgeUpgradable',
     BridgePolygon = 'BridgeUpgradeablePolygon',
     BridgeZkSync = 'BridgeUpgradeableZkSync',
     ZkSpork = 'ZkSpork',
     SkillTree = 'SkillTreeUpgradable',
+    RewardItemsUpgradable = 'RewardItemsUpgradable',
 }
