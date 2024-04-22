@@ -1,8 +1,16 @@
-# Achievo Contracts
 
-![Version](https://img.shields.io/badge/version-0.19.0-brightgreen)
+<p align="center">
+<br />
+<a href="https://thirdweb.com"><img src="https://docs.achievo.xyz/assets/images/achievo_hero-c6f48974170f838b624d0b30ef52735f.png" width="200" alt=""/></a>
+<br />
+</p>
+<h1 align="center">Achievo Contracts</h1>
+<p align="center">
+<a href="https://github.com/G7DAO/achievo-contracts/actions"><img alt="Build Status" src="https://github.com/thirdweb-dev/contracts/actions/workflows/tests.yml/badge.svg"/></a>
 
-![Achievo](https://docs.achievo.xyz/assets/images/achievo_hero-c6f48974170f838b624d0b30ef52735f.png)
+</p>
+<br />
+
 
 This is a EIP-2535 diamond implementation for the Achievo project - Achievement system.
 
