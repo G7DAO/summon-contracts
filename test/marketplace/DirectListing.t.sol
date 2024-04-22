@@ -2,8 +2,7 @@
 pragma solidity ^0.8.17;
 
 import { console } from "forge-std/Test.sol";
-import { BaseTest } from "../utils/BaseTest.sol";
-import { RoyaltyPaymentsLogic } from "../../contracts/ercs/extensions/RoyaltyPayments.sol";
+import { BaseTest } from "../BaseTest.sol";
 
 import { Marketplace, IPlatformFee } from "../../contracts/upgradeables/marketplace/entrypoint/Marketplace.sol";
 import { DirectListingsLogic } from "../../contracts/upgradeables//marketplace/direct-listings/DirectListingsLogic.sol";
@@ -62,7 +61,7 @@ contract MarketplaceDirectListingsTest is BaseTest, IExtension {
 
     function _setupExtensions() private returns (Extension[] memory extensions) {
         extensions = new Extension[](1);
-        address directListings = address(new DirectListingsLogic(address(erc20)));
+        address directListings = address(new DirectListingsLogic(address(this), address(erc20)));
 
         // Extension: DirectListingsLogic
         Extension memory extension_directListings;
@@ -78,6 +77,7 @@ contract MarketplaceDirectListingsTest is BaseTest, IExtension {
             DirectListingsLogic.totalListings.selector,
             "totalListings()"
         );
+
         extension_directListings.functions[1] = ExtensionFunction(
             DirectListingsLogic.isBuyerApprovedForListing.selector,
             "isBuyerApprovedForListing(uint256,address)"
@@ -111,8 +111,8 @@ contract MarketplaceDirectListingsTest is BaseTest, IExtension {
             "approveCurrencyForListing(uint256,address,uint256)"
         );
         extension_directListings.functions[9] = ExtensionFunction(
-            DirectListingsLogic.buyFromListing.selector,
-            "buyFromListing(uint256,address,uint256,address,uint256)"
+            DirectListingsLogic.buyFromListingWithApproval.selector,
+            "buyFromListingWithApproval(uint256,address,uint256,address,uint256)"
         );
         extension_directListings.functions[10] = ExtensionFunction(
             DirectListingsLogic.getAllListings.selector,
@@ -692,7 +692,7 @@ contract MarketplaceDirectListingsTest is BaseTest, IExtension {
         // Buy tokens from listing.
         vm.warp(listing.startTimestamp);
         vm.prank(buyer);
-        DirectListingsLogic(marketplace).buyFromListing(listingId, buyFor, quantityToBuy, currency, totalPrice);
+        DirectListingsLogic(marketplace).buyFromListingWithApproval(listingId, buyFor, quantityToBuy, currency, totalPrice);
 
         // Verify that buyer is owner of listed tokens, post-sale.
         assertIsOwnerERC721(address(erc721), buyer, tokenIds);
@@ -740,7 +740,7 @@ contract MarketplaceDirectListingsTest is BaseTest, IExtension {
         // Buy tokens from listing.
         vm.warp(listing.startTimestamp);
         vm.prank(buyer);
-        DirectListingsLogic(marketplace).buyFromListing{ value: totalPrice }(
+        DirectListingsLogic(marketplace).buyFromListingWithApproval{ value: totalPrice }(
             listingId,
             buyFor,
             quantityToBuy,
@@ -793,7 +793,7 @@ contract MarketplaceDirectListingsTest is BaseTest, IExtension {
         vm.warp(listing.startTimestamp);
         vm.prank(buyer);
         vm.expectRevert("Marketplace: msg.value must exactly be the total price.");
-        DirectListingsLogic(marketplace).buyFromListing{ value: totalPrice - 1 }( // sending insufficient value
+        DirectListingsLogic(marketplace).buyFromListingWithApproval{ value: totalPrice - 1 }( // sending insufficient value
             listingId,
             buyFor,
             quantityToBuy,
@@ -832,7 +832,7 @@ contract MarketplaceDirectListingsTest is BaseTest, IExtension {
         vm.warp(listing.startTimestamp);
         vm.prank(buyer);
         vm.expectRevert("Unexpected total price");
-        DirectListingsLogic(marketplace).buyFromListing{ value: totalPrice }(
+        DirectListingsLogic(marketplace).buyFromListingWithApproval{ value: totalPrice }(
             listingId,
             buyFor,
             quantityToBuy,
@@ -876,7 +876,7 @@ contract MarketplaceDirectListingsTest is BaseTest, IExtension {
         vm.warp(listing.startTimestamp);
         vm.prank(buyer);
         vm.expectRevert("Paying in invalid currency.");
-        DirectListingsLogic(marketplace).buyFromListing(listingId, buyFor, quantityToBuy, NATIVE_TOKEN, totalPrice);
+        DirectListingsLogic(marketplace).buyFromListingWithApproval(listingId, buyFor, quantityToBuy, NATIVE_TOKEN, totalPrice);
     }
 
     function test_revert_buyFromListing_buyerBalanceLessThanPrice() public {
@@ -911,7 +911,7 @@ contract MarketplaceDirectListingsTest is BaseTest, IExtension {
         vm.warp(listing.startTimestamp);
         vm.prank(buyer);
         vm.expectRevert("!BAL20");
-        DirectListingsLogic(marketplace).buyFromListing(listingId, buyFor, quantityToBuy, currency, totalPrice);
+        DirectListingsLogic(marketplace).buyFromListingWithApproval(listingId, buyFor, quantityToBuy, currency, totalPrice);
     }
 
     function test_revert_buyFromListing_notApprovedMarketplaceToTransferPrice() public {
@@ -946,7 +946,7 @@ contract MarketplaceDirectListingsTest is BaseTest, IExtension {
         vm.warp(listing.startTimestamp);
         vm.prank(buyer);
         vm.expectRevert("!BAL20");
-        DirectListingsLogic(marketplace).buyFromListing(listingId, buyFor, quantityToBuy, currency, totalPrice);
+        DirectListingsLogic(marketplace).buyFromListingWithApproval(listingId, buyFor, quantityToBuy, currency, totalPrice);
     }
 
     function test_revert_buyFromListing_buyingZeroQuantity() public {
@@ -981,7 +981,7 @@ contract MarketplaceDirectListingsTest is BaseTest, IExtension {
         vm.warp(listing.startTimestamp);
         vm.prank(buyer);
         vm.expectRevert("Buying invalid quantity");
-        DirectListingsLogic(marketplace).buyFromListing(listingId, buyFor, quantityToBuy, currency, totalPrice);
+        DirectListingsLogic(marketplace).buyFromListingWithApproval(listingId, buyFor, quantityToBuy, currency, totalPrice);
     }
 
     function test_revert_buyFromListing_buyingMoreQuantityThanListed() public {
@@ -1016,7 +1016,7 @@ contract MarketplaceDirectListingsTest is BaseTest, IExtension {
         vm.warp(listing.startTimestamp);
         vm.prank(buyer);
         vm.expectRevert("Buying invalid quantity");
-        DirectListingsLogic(marketplace).buyFromListing(listingId, buyFor, quantityToBuy, currency, totalPrice);
+        DirectListingsLogic(marketplace).buyFromListingWithApproval(listingId, buyFor, quantityToBuy, currency, totalPrice);
     }
 
     /*///////////////////////////////////////////////////////////////
@@ -1086,7 +1086,7 @@ contract MarketplaceDirectListingsTest is BaseTest, IExtension {
         erc20.approve(marketplace, 10 ether);
 
         vm.expectRevert("Marketplace: invalid native tokens sent.");
-        DirectListingsLogic(marketplace).buyFromListing{ value: 1 ether }(listingId, buyer, 1, address(erc20), 1 ether);
+        DirectListingsLogic(marketplace).buyFromListingWithApproval{ value: 1 ether }(listingId, buyer, 1, address(erc20), 1 ether);
         vm.stopPrank();
 
         // 1 ether is temporary locked in contract

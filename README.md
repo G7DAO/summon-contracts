@@ -144,6 +144,8 @@ npx hardhat flatten contracts/GameSummary.sol > .flat/GameSummary.sol
     "upgradeBadge:ZkSync:mainnet": "pnpm compile:zkSync && hardhat run deploy/upgrades/upgradeBadge.mainnet.ts --config zkSync.config.ts --network zkSync",
     "upgradeBadge:ZkSync:sepolia": "pnpm compile:zkSync && hardhat run deploy/upgrades/upgradeBadge.testnet.ts --config zkSync.config.ts --network zkSyncSepolia",
     "deploySkillTreeUpgradable:ZkSync:mainnet": "pnpm deploy:ZkSync:mainnet --name SkillTreeUpgradable",
-    "deploySkillTreeUpgradable:ZkSync:sepolia": "pnpm deploy:ZkSync:sepolia --name SkillTreeUpgradable"
+    "deploySkillTreeUpgradable:ZkSync:sepolia": "pnpm deploy:ZkSync:sepolia --name SkillTreeUpgradable",
+    "deployMarketplace:g7:sepolia:arb": "pnpm deploy:g7:sepolia:arb --name Marketplace",
+    "deployMarketplace:g7:sepolia:base": "pnpm deploy:g7:sepolia:base --name Marketplace"
 }
 ```

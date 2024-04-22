@@ -1,5 +1,6 @@
 import { CONTRACT_NAME, CONTRACT_UPGRADABLE_NAME } from './contract';
 import { ChainId } from './network';
+import { getDirectListingExtension } from '@helpers/extensions';
 
 export interface ConstructorArgs {
     name: string;
@@ -11,10 +12,12 @@ export interface ConstructorArgs {
     devWallet: string;
     royalty?: number;
 }
+
 export interface Soulbound1155Args {
     MAINNET: ConstructorArgs;
     TESTNET: ConstructorArgs;
 }
+
 export const SoulboundBadgesArgs: Soulbound1155Args = {
     MAINNET: {
         name: 'SoulboundBadges',
@@ -438,5 +441,25 @@ export const RewardTokenArgs = {
         _contractURI: 'FILL_ME',
         _devWallet: 'DEPLOYER_WALLET',
         _lootDropAddress: `CONTRACT_${CONTRACT_NAME.LootDrop}`,
+    },
+};
+
+export const DirectListingArgs = {
+    MAINNET: {
+        _tokenAddress: 'FILL_ME',
+    },
+    TESTNET: {
+        _tokenAddress: 'FILL_ME',
+    },
+};
+
+export const MarketplaceArgs = {
+    MAINNET: {},
+    TESTNET: {
+        _marketplaceConstructorParams: {
+            extensions: [],
+            royaltyEngineAddress: 'FILL_ME',
+            nativeTokenWrapper: 'FILL_ME',
+        },
     },
 };

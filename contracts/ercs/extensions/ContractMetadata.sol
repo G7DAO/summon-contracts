@@ -6,10 +6,10 @@ pragma solidity ^0.8.0;
 import "../../interfaces/IContractMetadata.sol";
 
 /**
- *  @author  thirdweb.com
+ *  @author  omar@game7.io
  *
  *  @title   Contract Metadata
- *  @notice  Thirdweb's `ContractMetadata` is a contract extension for any base contracts. It lets you set a metadata URI
+ *  @notice  Achievo's `ContractMetadata` is a contract extension for any base contracts. It lets you set a metadata URI
  *           for you contract.
  *           Additionally, `ContractMetadata` is necessary for NFT contracts that want royalties to get distributed on OpenSea.
  */

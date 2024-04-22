@@ -18,6 +18,8 @@ export enum CONTRACT_TYPE {
     LootDrop = 'LootDrop',
     HelloWorld = 'HelloWorld',
     RewardToken = 'RewardToken',
+    DirectListingExtension = 'DirectListingExtension',
+    Marketplace = 'Marketplace',
 }
 
 export enum CONTRACT_FILE_NAME {
@@ -36,6 +38,7 @@ export enum CONTRACT_FILE_NAME {
     LootDrop = 'LootDrop',
     HelloWorld = 'HelloWorld',
     AdminERC1155Soulbound = 'AdminERC1155Soulbound',
+    DirectListingsExtension = 'DirectListingsLogic',
 }
 export enum CONTRACT_UPGRADABLE_FILE_NAME {
     LegacyAvatar = 'LegacyAvatarUpgradeableV1',
@@ -48,6 +51,7 @@ export enum CONTRACT_UPGRADABLE_FILE_NAME {
     Bridge = 'ERC20BridgeV1',
     BurnableToken = 'BurnableTokenV1',
     ERC1155RewardSoulbound = 'ERC1155RewardSoulboundV1',
+    Marketplace = 'Marketplace',
 }
 
 export enum CONTRACT_UPGRADABLE_FILE_NAME_V2 {
@@ -77,6 +81,7 @@ export enum CONTRACT_NAME {
     LootDrop = 'LootDrop',
     HelloWorld = 'HelloWorld',
     RewardToken = 'RewardToken',
+    DirectListingExtension = 'DirectListingExtension',
 }
 
 export enum CONTRACT_UPGRADABLE_NAME {
@@ -93,4 +98,5 @@ export enum CONTRACT_UPGRADABLE_NAME {
     ZkSpork = 'ZkSpork',
     SkillTree = 'SkillTreeUpgradable',
     RewardItemsUpgradable = 'RewardItemsUpgradable',
+    Marketplace = 'Marketplace',
 }
