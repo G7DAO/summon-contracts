@@ -106,18 +106,6 @@ const deployOne = async (
 
     console.log('chainId', networkName, chainId);
 
-    const factoryContract = await getContractFromDB(CONTRACT_NAME.DETERMINISTIC_FACTORY_CONTRACT, chainId);
-
-    if (!factoryContract) {
-        throw new Error(`Factory contract not found for ${networkName}`);
-    }
-
-    const factoryAddr = factoryContract?.contractAddress;
-
-    if (!factoryAddr) {
-        throw new Error(`Factory address not found for ${networkName}`);
-    }
-
     if (isZkSync) {
         const ethNetworkName = networkName.split('zkSync')[1].toLowerCase() || 'mainnet';
         const ethNetworkNameKey = Object.keys(NetworkName)[Object.values(NetworkName).indexOf(ethNetworkName)];
@@ -135,6 +123,18 @@ const deployOne = async (
         contractAddress = await achievoContract.getAddress();
         console.log('Contract deployed to:', networkName, '::', contractAddress);
     } else {
+        const factoryContract = await getContractFromDB(CONTRACT_NAME.DETERMINISTIC_FACTORY_CONTRACT, chainId);
+
+        if (!factoryContract) {
+            throw new Error(`Factory contract not found for ${networkName}`);
+        }
+
+        const factoryAddr = factoryContract?.contractAddress;
+
+        if (!factoryAddr) {
+            throw new Error(`Factory address not found for ${networkName}`);
+        }
+
         const provider = new hre.ethers.JsonRpcProvider(rpcUrl);
         deployerWallet = new hre.ethers.Wallet(PRIVATE_KEY, provider);
 
