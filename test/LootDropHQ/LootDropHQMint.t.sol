@@ -269,6 +269,12 @@ contract LootDropMintTest is StdCheats, Test, MockERC1155Receiver, ERC721Holder 
         assertEq(itemBound.balanceOf(playerWallet.addr, _tokenIds[2]), 1);
     }
 
+    function testAdminMintAndClaims() public {
+        assertEq(mockERC20.balanceOf(playerWallet.addr), 0);
+        lootDrop.adminMint(playerWallet.addr, encodedItems1, true, true);
+        assertEq(mockERC20.balanceOf(playerWallet.addr), 60000); // 2000 * 10 * 3
+    }
+
     function testadminMintById() public {
         uint256 _tokenId = _tokenIds[0];
         lootDrop.adminMintById(playerWallet.addr, _tokenId, 1, true);
