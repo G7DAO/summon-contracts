@@ -468,6 +468,40 @@ contract LootDrop is
         return tokenIds;
     }
 
+    function getTokenDetails(
+        uint256 tokenId
+    )
+        public
+        view
+        returns (
+            string memory tokenUri,
+            uint256 maxSupply,
+            LibItems.RewardType[] memory rewardTypes,
+            uint256[] memory rewardAmounts,
+            address[] memory rewardTokenAddresses,
+            uint256[][] memory rewardTokenIds,
+            uint256[] memory rewardTokenId
+        )
+    {
+        tokenUri = tokenRewards[tokenId].tokenUri;
+        maxSupply = tokenRewards[tokenId].maxSupply;
+        LibItems.Reward[] memory rewards = tokenRewards[tokenId].rewards;
+
+        rewardTypes = new LibItems.RewardType[](rewards.length);
+        rewardAmounts = new uint256[](rewards.length);
+        rewardTokenAddresses = new address[](rewards.length);
+        rewardTokenIds = new uint256[][](rewards.length);
+        rewardTokenId = new uint256[](rewards.length);
+
+        for (uint i = 0; i < rewards.length; i++) {
+            rewardTypes[i] = rewards[i].rewardType;
+            rewardAmounts[i] = rewards[i].rewardAmount;
+            rewardTokenAddresses[i] = rewards[i].rewardTokenAddress;
+            rewardTokenIds[i] = rewards[i].rewardTokenIds;
+            rewardTokenId[i] = rewards[i].rewardTokenId;
+        }
+    }
+
     function mint(
         bytes calldata data,
         bool isSoulbound,
