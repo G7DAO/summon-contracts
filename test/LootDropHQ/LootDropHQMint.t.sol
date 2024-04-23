@@ -341,24 +341,72 @@ contract LootDropMintTest is StdCheats, Test, MockERC1155Receiver, ERC721Holder 
 
         lootDrop.createMultipleTokensAndDepositRewards{ value: 300000000000000000 }(_tokens);
 
-        // (abi.encode(address(lootDrop), 31337, itemIds))
-
         uint256[] memory itemIds = new uint256[](1);
         itemIds[0] = 100;
 
-        console.log("falskjdflksjfklsd", playerWallet.addr);
-        lootDrop.adminMint(playerWallet.addr, (abi.encode(address(lootDrop), 31337, itemIds)), true, false);
-        // console.log("reward.rewardTokenIds.length", _token.rewards[2].rewardTokenIds.length);
-        // console.log("reward.rewardAmount * _token.maxSupply", _token.rewards[2].rewardAmount * _token.maxSupply);
+        lootDrop.adminMint(playerWallet.addr, (encode(address(lootDrop), itemIds)), true, false);
 
-        // lootDrop.createMultipleTokensAndDepositRewards{ value: 300000000000000000 }(_tokens);
+        lootDrop.adminMintById(playerWallet.addr, _tokens[0].tokenId, 1, true);
+        assertEq(itemBound.balanceOf(playerWallet.addr, _tokens[0].tokenId), 2);
 
-        // lootDrop.adminMintById(playerWallet.addr, _tokens[0].tokenId, 1, true);
-        // assertEq(itemBound.balanceOf(playerWallet.addr, _tokens[0].tokenId), 1);
+        vm.expectRevert(ExceedMaxSupply.selector);
+        lootDrop.adminMintById(playerWallet2.addr, _tokens[0].tokenId, 1, true);
+    }
 
-        // lootDrop.adminMintById(playerWallet2.addr, _tokens[0].tokenId, 1, true);
+    function testAdminAndUserMintAndClaims() public {
+        uint256 _tokenId = 100; // totally random
+        LibItems.RewardToken[] memory _tokens = new LibItems.RewardToken[](1);
 
-        // vm.expectRevert(ExceedMaxSupply.selector);
-        // lootDrop.adminMintById(playerWallet3.addr, _tokens[0].tokenId, 1, true);
+        skip(36000);
+        delete _rewards; // reset rewards
+
+        LibItems.Reward memory _erc20Reward = LibItems.Reward({
+            rewardType: LibItems.RewardType.ERC20,
+            rewardAmount: 100,
+            rewardTokenAddress: erc20FakeRewardAddress,
+            rewardTokenId: 0,
+            rewardTokenIds: new uint256[](0)
+        });
+
+        _rewards.push(_erc20Reward);
+
+        LibItems.RewardToken memory _token = LibItems.RewardToken({
+            tokenId: _tokenId,
+            tokenUri: string(abi.encodePacked("https://something.com", "/", _tokenId.toString())),
+            rewards: _rewards,
+            maxSupply: 15
+        });
+        _tokens[0] = _token;
+
+        lootDrop.createMultipleTokensAndDepositRewards{ value: 300000000000000000 }(_tokens);
+
+        assertEq(mockERC20.balanceOf(address(lootDrop)), 4001500);
+
+        uint256[] memory itemIds = new uint256[](1);
+        itemIds[0] = _tokenId;
+
+        lootDrop.adminMint(playerWallet.addr, (encode(address(lootDrop), itemIds)), true, true);
+
+        assertEq(mockERC20.balanceOf(playerWallet.addr), 100);
+        assertEq(mockERC20.balanceOf(address(lootDrop)), 4001400);
+
+        bytes memory encodedItems = encode(address(lootDrop), itemIds);
+        (uint256 _nonce, bytes memory _signature) = generateSignature(playerWallet2.addr, encodedItems, minterLabel);
+
+        vm.prank(playerWallet2.addr);
+        lootDrop.mint(encodedItems, true, _nonce, _signature, true);
+
+        assertEq(mockERC20.balanceOf(playerWallet2.addr), 100);
+
+        skip(36000);
+        (uint256 _nonce2, bytes memory _signature2) = generateSignature(playerWallet2.addr, encodedItems, minterLabel);
+
+        vm.prank(playerWallet2.addr);
+        lootDrop.mint(encodedItems, true, _nonce2, _signature2, true);
+        assertEq(mockERC20.balanceOf(playerWallet2.addr), 200);
+
+        // current supply is 3 out of 15
+        assertEq(lootDrop.currentRewardSupply(_tokenId), 3);
+        assertEq(mockERC20.balanceOf(address(lootDrop)), 4001200);
     }
 }
