@@ -11,8 +11,8 @@ import { ECDSA } from "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
 import { LootDrop } from "../../contracts/soulbounds/LootDrop.sol";
 import { AdminERC1155Soulbound } from "../../contracts/soulbounds/AdminERC1155Soulbound.sol";
 import { MockERC1155Receiver } from "../../contracts/mocks/MockERC1155Receiver.sol";
-import {MockERC20} from "../../contracts/mocks/MockErc20.sol";
-import {MockERC721} from "../../contracts/mocks/MockErc721.sol";
+import { MockERC20 } from "../../contracts/mocks/MockErc20.sol";
+import { MockERC721 } from "../../contracts/mocks/MockErc721.sol";
 import { MockERC1155 } from "../../contracts/mocks/MockErc1155.sol";
 import { LibItems, TestLibItems } from "../../contracts/libraries/LibItems.sol";
 
@@ -90,7 +90,7 @@ contract LootDropTransferTest is StdCheats, Test {
         Wallet memory signerWallet = getWallet(signerLabel);
 
         uint256 _nonce = uint256(keccak256(abi.encodePacked(block.timestamp, block.difficulty, signerWallet.addr))) %
-            50;
+                    50;
 
         bytes32 message = keccak256(abi.encodePacked(wallet, encodedItems, _nonce));
         bytes32 hash = ECDSA.toEthSignedMessageHash(message);
