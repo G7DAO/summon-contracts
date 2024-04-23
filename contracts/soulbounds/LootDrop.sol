@@ -80,6 +80,8 @@ contract LootDrop is
     mapping(uint256 => uint256) public currentRewardSupply; // rewardTokenId => currentRewardSupply
 
     event TokenAdded(uint256 indexed tokenId);
+    event Minted(address indexed to, uint256 indexed tokenId, uint256 amount, bool soulbound);
+    event Claimed(address indexed to, uint256 indexed tokenId, uint256 amount);
 
     constructor(address devWallet) {
         if (devWallet == address(0)) {
@@ -403,6 +405,8 @@ contract LootDrop is
                 );
             }
         }
+
+        emit Claimed(_to, _rewardTokenId, 1);
     }
 
     function _mintAndClaimRewardTokenBatch(
@@ -455,6 +459,7 @@ contract LootDrop is
         } else {
             // mint reward token
             rewardTokenContract.adminMintId(to, _tokenId, _amount, soulbound);
+            emit Minted(to, _tokenId, _amount, soulbound);
         }
     }
 
