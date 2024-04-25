@@ -42,7 +42,7 @@ contract LevelsBound is ERC1155, Ownable, ReentrancyGuard, ERCWhitelistSignature
     event RandomItemMinted(address to, bytes data, address itemsNFTAddress);
     event MintRandomItemEnabledChanged(bool enabled, address admin);
     event LevelUp(uint256 newLevel, address account);
-    event LevelBurned(uint256 levelBurned , address admin);
+    event LevelBurned(uint256 levelBurned, address admin);
 
     constructor(
         string memory _name,
@@ -77,15 +77,22 @@ contract LevelsBound is ERC1155, Ownable, ReentrancyGuard, ERCWhitelistSignature
         emit RandomItemMinted(to, data, itemsNFTAddress);
     }
 
-    function adminMintLevel(address account, uint256 level) public onlyRole(MINTER_ROLE) {
+    function adminReplaceLevel(address account, uint256 level) public onlyRole(MINTER_ROLE) {
         require(currentPlayerLevel[account] != level, "Account already has a level");
-        currentPlayerLevel[account] = level;
+
+        // burn first the current level if exists
+        if (currentPlayerLevel[account] != 0) {
+            burnLevel(account, currentPlayerLevel[account]);
+        }
+        _soulbound(account, level, 1);
         _mint(account, level, 1, "");
+        currentPlayerLevel[account] = level;
         emit LevelUp(level, account);
     }
 
     function adminBurnLevel(address account, uint256 levelTokenId) public onlyRole(DEV_CONFIG_ROLE) {
         burnLevel(account, levelTokenId);
+        currentPlayerLevel[account] = 0; // reset level to 0
         emit LevelBurned(levelTokenId, _msgSender());
     }
 
