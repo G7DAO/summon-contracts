@@ -7,7 +7,7 @@ import type { AddressLike, BigNumberish } from 'ethers';
 import type { NonPayableOverrides } from '../../typechain-types/common';
 import { Contract } from 'zksync-ethers';
 
-describe.only('LevelsBound', function () {
+describe('LevelsBound', function () {
     let levelsBound: LevelsBound;
     let items: ERC1155Soulbound;
     let minterAccount: SignerWithAddress;
@@ -49,7 +49,7 @@ describe.only('LevelsBound', function () {
         expect(balance).to.be.eq(1);
     });
 
-    it.only(' As admin I can reset the level of a player', async function () {
+    it(' As admin I can reset the level of a player', async function () {
         const lvlUpTrx = await levelsBound.adminMintLevel(playerAccount.address, 1);
         await lvlUpTrx.wait();
         const tx = await levelsBound.adminBurnLevel(playerAccount.address, 1);
