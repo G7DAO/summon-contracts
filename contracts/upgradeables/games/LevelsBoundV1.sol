@@ -51,6 +51,7 @@ contract LevelsBoundV1 is
     event RandomItemMinted(address to, bytes data, address itemsNFTAddress);
     event MintRandomItemEnabledChanged(bool enabled, address admin);
     event LevelUp(uint256 newLevel, address account);
+    event LevelBurned(uint256 levelBurned , address admin);
 
     /// @custom:oz-upgrades-unsafe-allow constructor
     constructor() {
@@ -110,6 +111,11 @@ contract LevelsBoundV1 is
     function changeItemsNFTAddress(address _itemsNFTAddress) public onlyRole(DEV_CONFIG_ROLE) {
         require(_itemsNFTAddress != itemsNFTAddress, "Address already set");
         itemsNFTAddress = _itemsNFTAddress;
+    }
+
+    function adminBurnLevel(address account, uint256 levelTokenId) public onlyRole(DEV_CONFIG_ROLE) {
+        burnLevel(account, levelTokenId);
+        emit LevelBurned(levelTokenId, _msgSender());
     }
 
     function burnLevel(address account, uint256 tokenId) private nonReentrant {

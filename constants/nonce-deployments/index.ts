@@ -6,14 +6,20 @@ import { OP_SEPOLIA_CONTRACTS } from './deployments-op-sepolia';
 import { POLYGON_MUMBAI_CONTRACTS } from './deployments-polygon-mumbai';
 import { SEPOLIA_CONTRACTS } from './deployments-sepolia';
 import { ZKSYNC_SEPOLIA_CONTRACTS } from './deployments-zksync-sepolia';
+import { BASE_MAINNET_CONTRACTS } from './deployments-base-mainnet';
+import { MANTLE_MAINNET_CONTRACTS } from './deployments-mantle-mainnet';
+import { ZKSYNC_MAINNET_CONTRACTS } from './deployments-zksync-mainnet';
 
 export const CONTRACTS = [
     ...ARBITRUM_SEPOLIA_CONTRACTS,
     ...ZKSYNC_SEPOLIA_CONTRACTS,
+    ...ZKSYNC_MAINNET_CONTRACTS,
     ...SEPOLIA_CONTRACTS,
     ...BASE_SEPOLIA_CONTRACTS,
+    ...BASE_MAINNET_CONTRACTS,
     ...OP_SEPOLIA_CONTRACTS,
     ...MANTLE_SEPOLIA_CONTRACTS,
+    ...MANTLE_MAINNET_CONTRACTS,
     ...POLYGON_MUMBAI_CONTRACTS,
     ...GAME7_SEPOLIA_CONTRACTS,
 ];

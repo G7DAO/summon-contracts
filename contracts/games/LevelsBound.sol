@@ -32,6 +32,7 @@ import { Achievo1155Soulbound } from "../ercs/extensions/Achievo1155Soulbound.so
 contract LevelsBound is ERC1155, Ownable, ReentrancyGuard, ERCWhitelistSignature, AccessControl, Achievo1155Soulbound {
     mapping(address => uint256) public currentPlayerLevel;
     bytes32 public constant MINTER_ROLE = keccak256("MINTER_ROLE");
+    bytes32 public constant DEV_CONFIG_ROLE = keccak256("DEV_CONFIG_ROLE");
 
     string public name;
     string public symbol;
@@ -41,7 +42,7 @@ contract LevelsBound is ERC1155, Ownable, ReentrancyGuard, ERCWhitelistSignature
     event RandomItemMinted(address to, bytes data, address itemsNFTAddress);
     event MintRandomItemEnabledChanged(bool enabled, address admin);
     event LevelUp(uint256 newLevel, address account);
-    event LevelReseted(uint256 newLevel, address account);
+    event LevelBurned(uint256 levelBurned , address admin);
 
     constructor(
         string memory _name,
@@ -52,6 +53,7 @@ contract LevelsBound is ERC1155, Ownable, ReentrancyGuard, ERCWhitelistSignature
     ) ERC1155("") {
         _grantRole(DEFAULT_ADMIN_ROLE, developerAdmin);
         _setupRole(MINTER_ROLE, developerAdmin);
+        _setupRole(DEV_CONFIG_ROLE, developerAdmin);
         _addWhitelistSigner(developerAdmin);
 
         name = _name;
@@ -80,6 +82,11 @@ contract LevelsBound is ERC1155, Ownable, ReentrancyGuard, ERCWhitelistSignature
         currentPlayerLevel[account] = level;
         _mint(account, level, 1, "");
         emit LevelUp(level, account);
+    }
+
+    function adminBurnLevel(address account, uint256 levelTokenId) public onlyRole(DEV_CONFIG_ROLE) {
+        burnLevel(account, levelTokenId);
+        emit LevelBurned(levelTokenId, _msgSender());
     }
 
     function levelUp(uint256 nonce, bytes calldata data, bytes calldata signature) public nonReentrant {
