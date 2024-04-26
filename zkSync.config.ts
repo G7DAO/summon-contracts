@@ -25,7 +25,7 @@ defaultConfig.networks = {
     },
     [NetworkName.ZkSync]: {
         url: rpcUrls[ChainId.ZkSync],
-        ethNetwork: NetworkName.Ethereum,
+        ethNetwork: NetworkName.ZkSync,
         zksync: true,
         accounts: [PRIVATE_KEY],
         verifyURL: 'https://zksync2-mainnet-explorer.zksync.io/contract_verification',

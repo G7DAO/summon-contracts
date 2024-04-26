@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.17;
+pragma solidity 0.8.17;
 
 /**
  * Author: Omar <ogarciarevett>(https://github.com/ogarciarevett)
@@ -31,7 +31,7 @@ import { ERCWhitelistSignatureUpgradeable } from "../ercs/ERCWhitelistSignatureU
 import { IItemBound } from "../../interfaces/IItemBound.sol";
 import { Achievo1155SoulboundUpgradeable } from "../ercs/extensions/Achievo1155SoulboundUpgradeable.sol";
 
-contract LevelsBoundV1 is
+contract LevelsBoundV2 is
     Initializable,
     ERC1155Upgradeable,
     Achievo1155SoulboundUpgradeable,
@@ -56,28 +56,6 @@ contract LevelsBoundV1 is
     /// @custom:oz-upgrades-unsafe-allow constructor
     constructor() {
         _disableInitializers();
-    }
-
-    function initialize(
-        string memory _name,
-        string memory _symbol,
-        address developerAdmin,
-        bool _mintRandomItemEnabled,
-        address _itemsNFTAddress
-    ) public initializer {
-        __ERC1155_init("");
-        __ReentrancyGuard_init();
-        __AccessControl_init();
-        __ERCWhitelistSignatureUpgradeable_init();
-
-        _grantRole(DEFAULT_ADMIN_ROLE, developerAdmin);
-        _grantRole(MINTER_ROLE, developerAdmin);
-        _grantRole(DEV_CONFIG_ROLE, developerAdmin);
-        _addWhitelistSigner(msg.sender);
-        name = _name;
-        symbol = _symbol;
-        mintRandomItemEnabled = _mintRandomItemEnabled;
-        itemsNFTAddress = _itemsNFTAddress;
     }
 
     function mintLevel(address account, uint256 level, bytes calldata data) private {

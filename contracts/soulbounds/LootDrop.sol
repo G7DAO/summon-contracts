@@ -80,6 +80,8 @@ contract LootDrop is
     mapping(uint256 => uint256) public currentRewardSupply; // rewardTokenId => currentRewardSupply
 
     event TokenAdded(uint256 indexed tokenId);
+    event Minted(address indexed to, uint256 indexed tokenId, uint256 amount, bool soulbound);
+    event Claimed(address indexed to, uint256 indexed tokenId, uint256 amount);
 
     constructor(address devWallet) {
         if (devWallet == address(0)) {
@@ -403,6 +405,8 @@ contract LootDrop is
                 );
             }
         }
+
+        emit Claimed(_to, _rewardTokenId, 1);
     }
 
     function _mintAndClaimRewardTokenBatch(
@@ -455,6 +459,7 @@ contract LootDrop is
         } else {
             // mint reward token
             rewardTokenContract.adminMintId(to, _tokenId, _amount, soulbound);
+            emit Minted(to, _tokenId, _amount, soulbound);
         }
     }
 
@@ -466,6 +471,40 @@ contract LootDrop is
             revert InvalidInput();
         }
         return tokenIds;
+    }
+
+    function getTokenDetails(
+        uint256 tokenId
+    )
+        public
+        view
+        returns (
+            string memory tokenUri,
+            uint256 maxSupply,
+            LibItems.RewardType[] memory rewardTypes,
+            uint256[] memory rewardAmounts,
+            address[] memory rewardTokenAddresses,
+            uint256[][] memory rewardTokenIds,
+            uint256[] memory rewardTokenId
+        )
+    {
+        tokenUri = tokenRewards[tokenId].tokenUri;
+        maxSupply = tokenRewards[tokenId].maxSupply;
+        LibItems.Reward[] memory rewards = tokenRewards[tokenId].rewards;
+
+        rewardTypes = new LibItems.RewardType[](rewards.length);
+        rewardAmounts = new uint256[](rewards.length);
+        rewardTokenAddresses = new address[](rewards.length);
+        rewardTokenIds = new uint256[][](rewards.length);
+        rewardTokenId = new uint256[](rewards.length);
+
+        for (uint i = 0; i < rewards.length; i++) {
+            rewardTypes[i] = rewards[i].rewardType;
+            rewardAmounts[i] = rewards[i].rewardAmount;
+            rewardTokenAddresses[i] = rewards[i].rewardTokenAddress;
+            rewardTokenIds[i] = rewards[i].rewardTokenIds;
+            rewardTokenId[i] = rewards[i].rewardTokenId;
+        }
     }
 
     function mint(

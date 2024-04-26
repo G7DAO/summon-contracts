@@ -247,6 +247,132 @@ contract LootDropAddTokenTest is StdCheats, Test, MockERC1155Receiver, ERC721Hol
         lootDrop.adminBatchMintById(_wallets, _tokenId, _amounts, true);
     }
 
+    function testGetTokenDetails() public {
+        LibItems.RewardToken[] memory _tokens = new LibItems.RewardToken[](2);
+
+        uint256[] memory _erc721TokenIds1 = new uint256[](3);
+        _erc721TokenIds1[0] = 0;
+        _erc721TokenIds1[1] = 1;
+        _erc721TokenIds1[2] = 2;
+
+        uint256[] memory _erc721TokenIds2 = new uint256[](3);
+        _erc721TokenIds2[0] = 3;
+        _erc721TokenIds2[1] = 4;
+        _erc721TokenIds2[2] = 5;
+
+        skip(36000);
+        for (uint256 i = 0; i < 2; i++) {
+            delete _rewards; // reset rewards
+
+            LibItems.Reward memory _etherReward = LibItems.Reward({
+                rewardType: LibItems.RewardType.ETHER,
+                rewardAmount: 100000000000000000,
+                rewardTokenAddress: address(0),
+                rewardTokenId: 0,
+                rewardTokenIds: new uint256[](0)
+            });
+
+            LibItems.Reward memory _erc20Reward = LibItems.Reward({
+                rewardType: LibItems.RewardType.ERC20,
+                rewardAmount: 2000,
+                rewardTokenAddress: erc20FakeRewardAddress,
+                rewardTokenId: 0,
+                rewardTokenIds: new uint256[](0)
+            });
+
+            LibItems.Reward memory _erc721Reward = LibItems.Reward({
+                rewardType: LibItems.RewardType.ERC721,
+                rewardAmount: 1,
+                rewardTokenAddress: erc721FakeRewardAddress,
+                rewardTokenId: 0,
+                rewardTokenIds: i == 0 ? _erc721TokenIds1 : _erc721TokenIds2
+            });
+
+            LibItems.Reward memory _erc1155Reward = LibItems.Reward({
+                rewardType: LibItems.RewardType.ERC1155,
+                rewardAmount: 2,
+                rewardTokenAddress: erc1155FakeRewardAddress,
+                rewardTokenId: 456,
+                rewardTokenIds: new uint256[](0)
+            });
+
+            _rewards.push(_etherReward);
+            _rewards.push(_erc20Reward);
+            _rewards.push(_erc721Reward);
+            _rewards.push(_erc1155Reward);
+
+            uint256 balance = mockERC1155.balanceOf(address(this), 456);
+            uint256 _tokenId = generateRandomItemId(); // totally random
+            LibItems.RewardToken memory _token = LibItems.RewardToken({
+                tokenId: _tokenId,
+                tokenUri: string(abi.encodePacked("https://something.com", "/", _tokenId.toString())),
+                rewards: _rewards,
+                maxSupply: 3
+            });
+            _tokens[i] = _token;
+        }
+
+        lootDrop.createMultipleTokensAndDepositRewards{ value: 600000000000000000 }(_tokens);
+
+        uint256 _tokenId = _tokens[0].tokenId;
+        assertEq(lootDrop.isTokenExist(_tokenId), true);
+
+        (
+            string memory tokenUri,
+            uint256 maxSupply,
+            LibItems.RewardType[] memory rewardTypes,
+            uint256[] memory rewardAmounts,
+            address[] memory rewardTokenAddresses,
+            uint256[][] memory rewardTokenIds,
+            uint256[] memory rewardTokenId
+        ) = lootDrop.getTokenDetails(_tokenId);
+
+        assertEq(tokenUri, string(abi.encodePacked("https://something.com", "/", _tokenId.toString())));
+        assertEq(maxSupply, 3);
+
+        for (uint256 i = 0; i < rewardTypes.length; i++) {
+            if (i == 0) {
+                // ETHER
+                assertEq(uint256(rewardTypes[i]), uint256(LibItems.RewardType.ETHER));
+                assertEq(rewardAmounts[i], 100000000000000000);
+                assertEq(rewardTokenAddresses[i], address(0));
+                assertEq(rewardTokenId[i], 0);
+                assertEq(rewardTokenIds[i].length, 0);
+            }
+
+            if (i == 1) {
+                // ERC20
+                assertEq(uint256(rewardTypes[i]), uint256(LibItems.RewardType.ERC20));
+                assertEq(rewardAmounts[i], 2000);
+                assertEq(rewardTokenAddresses[i], erc20FakeRewardAddress);
+                assertEq(rewardTokenId[i], 0);
+                assertEq(rewardTokenIds[i].length, 0);
+            }
+
+            if (i == 2) {
+                // ERC721
+                assertEq(uint256(rewardTypes[i]), uint256(LibItems.RewardType.ERC721));
+                assertEq(rewardAmounts[i], 1);
+                assertEq(rewardTokenAddresses[i], erc721FakeRewardAddress);
+                assertEq(rewardTokenId[i], 0);
+                assertEq(rewardTokenIds[i].length, _erc721TokenIds1.length);
+
+                for (uint256 j = 0; j < rewardTokenIds[i].length; j++) {
+                    assertEq(rewardTokenIds[i][j], _erc721TokenIds1[j]);
+                }
+            }
+
+            if (i == 3) {
+                // ERC1155
+                assertEq(uint256(rewardTypes[i]), uint256(LibItems.RewardType.ERC1155));
+                assertEq(rewardAmounts[i], 2);
+                assertEq(rewardTokenAddresses[i], erc1155FakeRewardAddress);
+                assertEq(rewardTokenId[i], 456);
+                assertEq(rewardTokenIds[i].length, 0);
+            }
+        }
+    }
+
     function testAddNewTokensNotDEV_CONFIG_ROLEShouldFail() public {
         LibItems.RewardToken[] memory _tokens = new LibItems.RewardToken[](3);
 
