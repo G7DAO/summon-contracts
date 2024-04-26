@@ -11,6 +11,7 @@ import { HardhatRuntimeEnvironment } from 'hardhat/types';
 import { Wallet } from 'zksync-ethers';
 
 import getZkWallet from './getWallet';
+import { ProxyType } from '@constants/proxies';
 
 const { Wallet: EthersWallet } = ethers;
 
@@ -78,6 +79,8 @@ export default async function (
 
     // Show the contract info.
     const contractAddress = await achievoContract.getAddress();
+    const implementationAddress = await hre.upgrades.erc1967.getImplementationAddress(contractAddress);
+    const proxyAdminAddress = await hre.upgrades.erc1967.getAdminAddress(contractAddress);
 
     log('=====================================================');
     log(`VERIFY: ${contract.verify}`);
@@ -119,6 +122,9 @@ export default async function (
         fakeContractAddress: '',
         explorerUrl: `${blockExplorerBaseUrl}/address/${contractAddress}#contract`,
         upgradable: true,
+        proxyType: ProxyType.TRANSPARENT_PROXY,
+        proxyAdminAddress,
+        implementationAddress,
     };
 
     log(`*****************************************************`);
