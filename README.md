@@ -4,14 +4,6 @@
 
 ![Achievo](https://docs.achievo.xyz/assets/images/achievo_hero-c6f48974170f838b624d0b30ef52735f.png)
 
-This is a EIP-2535 diamond implementation for the Achievo project - Achievement system.
-
-The latest contracts use Transparent Proxies and not the diamond pattern.
-
-Also for a specific contracts there's no proxy like : GameSummary1155.sol
-
-Or the proxy is just the beacon proxy like: LevelsBound.sol
-
 ## Requirements
 
 1. NodeJs >= 18 (use nvm pls)
