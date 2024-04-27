@@ -130,6 +130,7 @@ export function getTransactionUrl(txHash: string, network: NetworkName): string 
 }
 
 export const rpcUrls = {
+    [ChainId.Ganache]: 'http://localhost:8545',
     [ChainId.Ethereum]: `https://mainnet.infura.io/v3/${INFURA_API_KEY}`,
     [ChainId.Goerli]: `https://goerli.infura.io/v3/${INFURA_API_KEY}`,
     [ChainId.Sepolia]: `https://sepolia.infura.io/v3/${INFURA_API_KEY}`,

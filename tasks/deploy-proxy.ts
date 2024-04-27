@@ -16,11 +16,11 @@ import { task, types } from 'hardhat/config';
 import { HardhatRuntimeEnvironment } from 'hardhat/types';
 import { Deployment, DeploymentContract } from 'types/deployment-type';
 import {
-    utils,
-    Provider as zkProvider,
-    Wallet as zkWallet,
-    ContractFactory as zkContractFactory,
     Contract,
+    ContractFactory as zkContractFactory,
+    Provider as zkProvider,
+    utils,
+    Wallet as zkWallet,
 } from 'zksync-ethers';
 
 const { PRIVATE_KEY = '' } = process.env;
@@ -32,34 +32,10 @@ if (!PRIVATE_KEY) {
 const wallet = getWallet(PRIVATE_KEY);
 const MINTER_ROLE = '0x9f2df0fed2c77648de5860a4cc508cd0818c85b8b8a1ab4ceeef8d981c8956a6';
 
-const encoder = (types: readonly (string | ethers.ethers.ParamType)[], values: readonly any[]) => {
-    const abiCoder = new ethers.AbiCoder();
-    const encodedParams = abiCoder.encode(types, values);
-    return encodedParams.slice(2);
-};
-
-const create2Address = (
-    hre: HardhatRuntimeEnvironment,
-    isZkSync: boolean,
-    factoryAddress: string,
-    initCode: string,
-    saltHex: string
-) => {
-    let create2Addr;
-    if (isZkSync) {
-        create2Addr = utils.create2Address(factoryAddress, utils.hashBytecode(initCode), saltHex, '0x'); // zkSync
-    } else {
-        create2Addr = hre.ethers.getCreate2Address(factoryAddress, saltHex, ethers.keccak256(initCode)); // EVM chains
-    }
-
-    return create2Addr;
-};
-
-export function populateNonceParam(
+export function populateProxyParam(
     param: string | number | boolean,
     networkName: NetworkName,
-    deployments: Deployment[],
-    salt: string
+    deployments: Deployment[]
 ): string | number | boolean {
     let value = param;
 
@@ -74,7 +50,7 @@ export function populateNonceParam(
     if (typeof param === 'string' && param.startsWith('CONTRACT_')) {
         const name = param.substring('CONTRACT_'.length);
         const deployedContract = deployments?.find(
-            (d) => d.name === name && d.networkName === networkName && d.networkName === networkName && d.salt === salt
+            (d) => d.name === name && d.networkName === networkName && d.networkName === networkName
         );
 
         if (!deployedContract) {
@@ -90,11 +66,9 @@ export function populateNonceParam(
 const deployOne = async (
     hre: HardhatRuntimeEnvironment,
     networkName: NetworkName,
-    contract: DeploymentContract,
-    saltString: string
+    contract: DeploymentContract
 ): Promise<Deployment> => {
     const encryptedPrivateKey = await encryptPrivateKey(PRIVATE_KEY);
-    const saltHex = hre.ethers.keccak256(hre.ethers.toUtf8Bytes(saltString));
     const isZkSync = networkName.toLowerCase().includes('zksync');
 
     const abiPath = getABIFilePath(isZkSync, contract.contractFileName);
@@ -145,16 +119,12 @@ const deployOne = async (
         const provider = new hre.ethers.JsonRpcProvider(rpcUrl);
         deployerWallet = new hre.ethers.Wallet(PRIVATE_KEY, provider);
 
-        const initCode = bytecode + encoder(['address'], [deployerWallet.address]);
-        const create2Addr = create2Address(hre, isZkSync, factoryAddr, initCode, saltHex);
-        console.log('precomputed address:', networkName, create2Addr);
-
         const Factory = await hre.ethers.getContractFactory(
             CONTRACT_NAME.DETERMINISTIC_FACTORY_CONTRACT,
             deployerWallet
         );
         const factory = Factory.attach(factoryAddr) as Contract;
-        const deployment = await factory.deploy(initCode, saltHex);
+        const deployment = await factory.deploy();
         const txReceipt = await deployment.wait();
 
         // find the log with the name Deployed
@@ -178,7 +148,7 @@ const deployOne = async (
         );
     }
 
-    const deploymentPayload: Deployment = {
+    return {
         contractAbi,
         contractAddress,
         type: contract.type,
@@ -194,10 +164,7 @@ const deployOne = async (
         fakeContractAddress: '',
         explorerUrl: `${blockExplorerBaseUrl}/address/${contractAddress}#contract`,
         upgradable: contract.upgradable,
-        salt: saltString,
     };
-
-    return deploymentPayload;
 };
 
 const getDependencies = (contractName: string, chain: string) => {
@@ -223,14 +190,10 @@ const getDependencies = (contractName: string, chain: string) => {
 task('deploy-nonce', 'Deploys Smart contracts to same address across chain')
     .addParam('name', 'Contract Name you want to deploy', undefined, types.string)
     .addParam('tenant', 'Tenant you want to deploy', undefined, types.string)
-    .addParam('salt', 'Fixed Salt', undefined, types.string)
     .addParam('chains', 'Chains in this order chain1,chain2,chain3', undefined, types.string)
     .setAction(
-        async (
-            _args: { name: CONTRACT_NAME; tenant: TENANT; chains: string; salt: string },
-            hre: HardhatRuntimeEnvironment
-        ) => {
-            const { name, tenant, chains, salt } = _args;
+        async (_args: { name: CONTRACT_NAME; tenant: TENANT; chains: string }, hre: HardhatRuntimeEnvironment) => {
+            const { name, tenant, chains } = _args;
             log('└─ args :\n');
             log(`   ├─ Tenant : ${tenant}\n`);
             log(`   ├─ Contract name : ${name}\n`);
@@ -326,13 +289,13 @@ task('deploy-nonce', 'Deploys Smart contracts to same address across chain')
                             `[PREPPING] Get ready to deploy ${name}:<${contract.contractFileName}> contract on ${networkName} for ${tenant}`
                         );
 
-                        const deployment = await deployOne(hre, networkName, contract, salt);
+                        const deployment = await deployOne(hre, networkName, contract);
                         deployments.push(deployment);
                     }
 
                     log('=====================================================');
                     log(
-                        `[DONE] ${name} contract deployment on ${networkName} for [[${tenant}]] via Create2 Contract is DONE!`
+                        `[DONE] ${name} contract deployment on ${networkName} for [[${tenant}]] Achievo Proxy Contract is DONE!`
                     );
                     log('=====================================================');
                     log('\n');
@@ -402,7 +365,7 @@ task('deploy-nonce', 'Deploys Smart contracts to same address across chain')
 
                 const initializeArgs = [];
                 for (const key in deployedContract?.args) {
-                    const arg = populateNonceParam(deployedContract?.args[key], networkName, deployments, salt);
+                    const arg = populateProxyParam(deployedContract?.args[key], networkName, deployments);
                     console.log('key:', key, 'arg:', arg);
                     initializeArgs.push(arg);
                 }

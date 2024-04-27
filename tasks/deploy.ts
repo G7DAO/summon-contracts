@@ -159,6 +159,7 @@ const prepFunctionOne = async (
 ) => {
     const populatedArgs = [];
     for (const arg of call.args) {
+        // @ts-ignore-next-line
         populatedArgs.push(await populateParam(hre, arg, tenant));
     }
 

@@ -1,4 +1,4 @@
-import { CONTRACT_TYPE } from '@constants/contract';
+import { CONTRACT_PROXY_CONTRACT_NAME, CONTRACT_TYPE, PROXY_CONTRACT_TYPE } from '@constants/contract';
 import { NETWORK_TYPE, NetworkName } from '@constants/network';
 import { TENANT } from '@constants/tenant';
 
@@ -37,12 +37,38 @@ export interface DeploymentContract {
     skipCallInitializeFn?: boolean;
 }
 
+export interface DeploymentExtensionContract
+    extends Pick<DeploymentContract, 'verify' | 'args' | 'name' | 'contractFileName' | 'type'> {
+    metadata: {
+        // Name of the contract
+        name: string;
+        // URI to the metadata file
+        metadataURI: string;
+        // Contract address of the extension
+        implementation: `0x${string}`;
+    };
+}
+
+export interface ExtensionSelector {
+    functionSelector: string;
+    functionSignature: string;
+}
+
+export interface DeploymentProxyContract extends Omit<DeploymentContract, 'upgradable'> {
+    proxyContractFileName: CONTRACT_PROXY_CONTRACT_NAME;
+    proxyContractType: PROXY_CONTRACT_TYPE;
+    proxyContractArgs: Record<string, any>;
+    selectors: ExtensionSelector[];
+    extensions: DeploymentExtensionContract[];
+}
+
 export interface FunctionCall {
     contractName: string;
     functionName: string;
     args: (string | number | boolean | Record<string, any>)[];
     contractAddress?: string;
 }
+
 export interface DeploymentMap {
     [key: string]: {
         dbPayload: object;

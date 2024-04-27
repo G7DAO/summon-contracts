@@ -22,6 +22,19 @@ export enum CONTRACT_TYPE {
     Marketplace = 'Marketplace',
 }
 
+export enum PROXY_CONTRACT_TYPE {
+    EIP2535 = 'EIP2535',
+    TransparentUpgradeableProxy = 'TransparentUpgradeableProxy',
+    EIP1967 = 'EIP1967',
+}
+
+export enum CONTRACT_PROXY_CONTRACT_NAME {
+    AchievoProxy = 'AchievoProxy',
+    Diamond = 'Diamond',
+}
+
+export enum CONTRACT_PROXY_NAME {}
+
 export enum CONTRACT_FILE_NAME {
     GameSummary = 'GameSummary',
     Avatars = 'AvatarBound',
@@ -39,8 +52,10 @@ export enum CONTRACT_FILE_NAME {
     HelloWorld = 'HelloWorld',
     AdminERC1155Soulbound = 'AdminERC1155Soulbound',
     DirectListingsExtension = 'DirectListingsLogic',
-    ERC20 = 'Martins',
+    ERC20 = 'MockERC20',
+    Marketplace = 'Marketplace',
 }
+
 export enum CONTRACT_UPGRADABLE_FILE_NAME {
     LegacyAvatar = 'LegacyAvatarUpgradeableV1',
     Avatars = 'AvatarBoundV1',
@@ -84,6 +99,7 @@ export enum CONTRACT_NAME {
     RewardToken = 'RewardToken',
     DirectListingExtension = 'DirectListingExtension',
     MartinERC20 = 'MockERC20',
+    Marketplace = 'Marketplace',
 }
 
 export enum CONTRACT_UPGRADABLE_NAME {

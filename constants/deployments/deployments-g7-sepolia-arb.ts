@@ -1,6 +1,5 @@
 import {
     BUIDLArgs,
-    DirectListingArgs,
     ERC20Args,
     ItemBoundArgs,
     ItemBoundIronWorksArgs,
@@ -62,19 +61,6 @@ export const G7_SEPOLIA_ARB_CONTRACTS: DeploymentContract[] = [
         dependencies: [],
         functionCalls: [],
         args: ERC20Args.TESTNET,
-    },
-    {
-        contractFileName: CONTRACT_FILE_NAME.DirectListingsExtension,
-        type: CONTRACT_TYPE.DirectListingExtension,
-        name: CONTRACT_NAME.DirectListingExtension,
-        chain,
-        networkType,
-        tenants: [TENANT.IronWorks],
-        verify: true,
-        upgradable: false,
-        dependencies: [CONTRACT_NAME.MartinERC20],
-        functionCalls: [],
-        args: DirectListingArgs.TESTNET,
     },
     {
         contractFileName: CONTRACT_UPGRADABLE_NAME.Marketplace,

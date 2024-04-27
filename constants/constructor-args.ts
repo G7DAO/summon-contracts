@@ -449,24 +449,31 @@ export const RewardTokenArgs = {
     },
 };
 
-export const DirectListingArgs = {
+const MAR20_G7_TESTNET = '0x9BcdFD72F0434B1cA3b2E8BB96592ceEc22A85e7';
+const IRON_G7_ARB_SEPOLIA_NATIVE_TOKEN = '0x4EdD6ddeAf8f259dba75AC8C5C89ee7564201170';
+
+export const DirectListingExtensionArgs = {
     MAINNET: {
-        _tokenAddress: 'FILL_ME',
-        _devWallet: 'DEPLOYER_WALLET',
+        // _tokenAddress: 'FILL_ME',
+        // _devWallet: 'DEPLOYER_WALLET',
     },
     TESTNET: {
-        _tokenAddress: `CONTRACT_${CONTRACT_NAME.MartinERC20}`,
+        _tokenAddress: MAR20_G7_TESTNET,
         _devWallet: 'DEPLOYER_WALLET',
     },
 };
 
 export const MarketplaceArgs = {
-    MAINNET: {},
-    TESTNET: {
+    MAINNET: {
         _marketplaceConstructorParams: {
-            extensions: [],
             royaltyEngineAddress: 'FILL_ME',
             nativeTokenWrapper: 'FILL_ME',
+        },
+    },
+    TESTNET: {
+        _marketplaceConstructorParams: {
+            royaltyEngineAddress: 'FILL_ME',
+            nativeTokenWrapper: IRON_G7_ARB_SEPOLIA_NATIVE_TOKEN,
         },
     },
 };
