@@ -37,8 +37,7 @@
         "format:check": "yarn prettier -c ./deploy/**/*.ts ./tasks/**/*.ts ./tests/**/*.ts ./helpers/**/*.ts ./contracts/**/*.sol ",
         "coverage": "pnpm dlx hardhat coverage",
         "coverage:foundry": "forge coverage --report lcov && genhtml lcov.info --branch-coverage --output-dir coverage",
-        "generate:types": "pnpm dlx hardhat typechain",
-        "deleteme": "pnpm compile && hardhat --config g7.config.ts deploy-proxy --name Marketplace --network game7OrbitArbSepolia --verbose"
+        "generate:types": "pnpm dlx hardhat typechain"
     },
     "repository": {
         "type": "git",
