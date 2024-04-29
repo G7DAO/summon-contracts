@@ -5,7 +5,6 @@ import {
     BridgeZkSyncV1Args,
     BurnableTokenV1Args,
     ERC20ChainlinkPaymasterArgs,
-    ERC20PythPaymasterArgs,
     ItemBoundArgs,
     ItemsRewardBoundArgs,
     LevelsBoundArgs,
@@ -289,39 +288,6 @@ export const ZKSYNC_MAINNET_CONTRACTS: DeploymentContract[] = [
             },
         ],
         args: OpenMintArgs.MAINNET,
-    },
-    {
-        contractFileName: CONTRACT_FILE_NAME.ERC20PythPaymaster,
-        type: CONTRACT_TYPE.Paymaster,
-        name: CONTRACT_NAME.PaymasterPyth,
-        chain,
-        networkType,
-        tenants: [TENANT.ZkSync],
-        verify: true,
-        upgradable: false,
-        dependencies: [
-            CONTRACT_UPGRADABLE_NAME.Avatars,
-            CONTRACT_UPGRADABLE_NAME.Items,
-            CONTRACT_UPGRADABLE_NAME.Levels,
-        ],
-        functionCalls: [
-            {
-                contractName: CONTRACT_NAME.PaymasterPyth,
-                functionName: 'addRecipient',
-                args: [`CONTRACT_${CONTRACT_UPGRADABLE_NAME.Avatars}`],
-            },
-            {
-                contractName: CONTRACT_NAME.PaymasterPyth,
-                functionName: 'addRecipient',
-                args: [`CONTRACT_${CONTRACT_UPGRADABLE_NAME.Items}`],
-            },
-            {
-                contractName: CONTRACT_NAME.PaymasterPyth,
-                functionName: 'addRecipient',
-                args: [`CONTRACT_${CONTRACT_UPGRADABLE_NAME.Levels}`],
-            },
-        ],
-        args: ERC20PythPaymasterArgs.MAINNET,
     },
     {
         contractFileName: CONTRACT_FILE_NAME.ERC20ChainlinkPaymaster,

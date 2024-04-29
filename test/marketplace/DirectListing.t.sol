@@ -49,6 +49,9 @@ contract MarketplaceDirectListingsTest is BaseTest, IExtension {
         Permissions(marketplace).grantRole(keccak256("ASSET_ROLE"), address(erc721));
         Permissions(marketplace).grantRole(keccak256("ASSET_ROLE"), address(erc1155));
 
+        console.log("OMAR3");
+
+
         vm.stopPrank();
 
         vm.label(implementation, "MarketplaceV3_Impl");
