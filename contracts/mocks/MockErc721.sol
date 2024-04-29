@@ -1,11 +1,5 @@
 // SPDX-License-Identifier: UNLICENSED
-///@notice This contract is for mock for WETH token.
-pragma solidity 0.8.17;
-
-/**
- * Authors: Omar Garcia
- * GitHub: https://github.com/ogarciarevett
- */
+pragma solidity ^0.8.17;
 
 // MMMMNkc. .,oKWMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMM
 // MWXd,.      .cONMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMM
@@ -22,17 +16,17 @@ pragma solidity 0.8.17;
 // MMNx'.dWMMK;.:0WMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMM
 // MMMM0cdNMM0cdNMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMM
 
-import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
-import "@openzeppelin/contracts/token/ERC20/extensions/ERC20Burnable.sol";
+import "@openzeppelin/contracts/token/ERC721/extensions/ERC721Burnable.sol";
 
-contract MockERC20 is ERC20Burnable {
-    constructor(string memory name, string memory symbol) ERC20(name, symbol) {}
+contract MockERC721 is ERC721Burnable {
+    uint256 private _tokenIdCounter;
 
-    function mint(address account, uint256 amount) public {
-        _mint(account, amount);
+    constructor() ERC721("MockERC721", "ERC721") {}
+
+    function mint(address to) public {
+        uint256 tokenId = _tokenIdCounter++;
+        _safeMint(to, tokenId);
     }
 
-    function decimals() public view virtual override returns (uint8) {
-        return 18;
-    }
+    function reveal(uint256 tokenId, string memory newURI) public view {}
 }

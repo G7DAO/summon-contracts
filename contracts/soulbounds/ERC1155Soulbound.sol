@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: UNLICENSED
-pragma solidity 0.8.17;
+pragma solidity ^0.8.17;
 
 /**
  * Author: Max vasinl124(https://github.com/vasinl124)
@@ -28,6 +28,7 @@ import { AccessControl } from "@openzeppelin/contracts/access/AccessControl.sol"
 import { Pausable } from "@openzeppelin/contracts/security/Pausable.sol";
 import { Strings } from "@openzeppelin/contracts/utils/Strings.sol";
 import { ECDSA } from "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
+import { ERC2981 } from "@openzeppelin/contracts/token/common/ERC2981.sol";
 import { ReentrancyGuard } from "@openzeppelin/contracts/security/ReentrancyGuard.sol";
 
 import { Achievo1155Soulbound } from "../ercs/extensions/Achievo1155Soulbound.sol";
@@ -37,6 +38,7 @@ import { LibItems } from "../libraries/LibItems.sol";
 contract ERC1155Soulbound is
     ERC1155Burnable,
     ERC1155Supply,
+    ERC2981,
     Achievo1155Soulbound,
     ERCWhitelistSignature,
     AccessControl,
@@ -184,6 +186,22 @@ contract ERC1155Soulbound is
         _unpause();
     }
 
+    function addNewTokenWithRoyalty(LibItems.TokenCreateWithRoyalty calldata _token) public onlyRole(DEV_CONFIG_ROLE) {
+        if (_token.receiver == address(0)) {
+            revert("ReceiverAddressZero");
+        }
+
+        if (bytes(_token.tokenUri).length > 0) {
+            tokenUris[_token.tokenId] = _token.tokenUri;
+        }
+
+        tokenExists[_token.tokenId] = true;
+
+        itemIds.push(_token.tokenId);
+
+        _setTokenRoyalty(_token.tokenId, _token.receiver, uint96(_token.feeBasisPoints));
+    }
+
     function addNewToken(LibItems.TokenCreate calldata _token) public onlyRole(DEV_CONFIG_ROLE) {
         if (bytes(_token.tokenUri).length > 0) {
             tokenUris[_token.tokenId] = _token.tokenUri;
@@ -193,6 +211,14 @@ contract ERC1155Soulbound is
 
         itemIds.push(_token.tokenId);
         emit TokenAdded(_token.tokenId);
+    }
+
+    function addNewTokensWithRoyalty(
+        LibItems.TokenCreateWithRoyalty[] calldata _tokens
+    ) external onlyRole(DEV_CONFIG_ROLE) {
+        for (uint256 i = 0; i < _tokens.length; i++) {
+            addNewTokenWithRoyalty(_tokens[i]);
+        }
     }
 
     function addNewTokens(LibItems.TokenCreate[] calldata _tokens) external onlyRole(DEV_CONFIG_ROLE) {
@@ -383,7 +409,7 @@ contract ERC1155Soulbound is
         }
     }
 
-    function supportsInterface(bytes4 interfaceId) public view override(ERC1155, AccessControl) returns (bool) {
+    function supportsInterface(bytes4 interfaceId) public view override(ERC2981, ERC1155, AccessControl) returns (bool) {
         return super.supportsInterface(interfaceId);
     }
 
@@ -424,5 +450,21 @@ contract ERC1155Soulbound is
 
     function removeWhitelistSigner(address signer) external onlyRole(DEV_CONFIG_ROLE) {
         _removeWhitelistSigner(signer);
+    }
+
+    function setRoyaltyInfo(address receiver, uint96 feeBasisPoints) external onlyRole(MANAGER_ROLE) {
+        _setDefaultRoyalty(receiver, feeBasisPoints);
+    }
+
+    function setTokenRoyalty(
+        uint256 tokenId,
+        address receiver,
+        uint256 feeBasisPoints
+    ) external onlyRole(MANAGER_ROLE) {
+        _setTokenRoyalty(tokenId, receiver, uint96(feeBasisPoints));
+    }
+
+    function resetTokenRoyalty(uint256 tokenId) external onlyRole(MANAGER_ROLE) {
+        _resetTokenRoyalty(tokenId);
     }
 }

@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity 0.8.17;
+pragma solidity ^0.8.17;
 
 import "forge-std/Test.sol";
 import "forge-std/StdCheats.sol";
@@ -11,8 +11,8 @@ import { ECDSA } from "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
 import { LootDrop } from "../../contracts/soulbounds/LootDrop.sol";
 import { AdminERC1155Soulbound } from "../../contracts/soulbounds/AdminERC1155Soulbound.sol";
 import { MockERC1155Receiver } from "../../contracts/mocks/MockERC1155Receiver.sol";
-import { MockERC20 } from "../../contracts/mocks/MockERC20Token.sol";
-import { MockERC721 } from "../../contracts/mocks/MockERC721Token.sol";
+import { MockERC20 } from "../../contracts/mocks/MockErc20.sol";
+import { MockERC721 } from "../../contracts/mocks/MockErc721.sol";
 import { MockERC1155 } from "../../contracts/mocks/MockErc1155.sol";
 import { LibItems, TestLibItems } from "../../contracts/libraries/LibItems.sol";
 
@@ -27,7 +27,7 @@ error TransferFailed();
 error MintPaused();
 error DupTokenId();
 
-contract LootDropTest is StdCheats, Test {
+contract LootDropTransferTest is StdCheats, Test {
     using Strings for uint256;
 
     LootDrop public lootDrop;
@@ -69,6 +69,7 @@ contract LootDropTest is StdCheats, Test {
     LibItems.RewardToken[] public _tokens;
     LibItems.Reward[] public _rewards;
     uint256[] public _tokenIds;
+    uint256[] public _amounts;
 
     address[] public wallets;
     uint256[] public amounts;
@@ -89,7 +90,7 @@ contract LootDropTest is StdCheats, Test {
         Wallet memory signerWallet = getWallet(signerLabel);
 
         uint256 _nonce = uint256(keccak256(abi.encodePacked(block.timestamp, block.difficulty, signerWallet.addr))) %
-            50;
+                    50;
 
         bytes32 message = keccak256(abi.encodePacked(wallet, encodedItems, _nonce));
         bytes32 hash = ECDSA.toEthSignedMessageHash(message);
@@ -167,7 +168,7 @@ contract LootDropTest is StdCheats, Test {
                 tokenId: _tokenId,
                 tokenUri: string(abi.encodePacked("https://something.com", "/", _tokenId.toString())),
                 rewards: _rewards,
-                maxSupply: 1
+                maxSupply: 2
             });
 
             _tokens.push(_token);
@@ -201,95 +202,102 @@ contract LootDropTest is StdCheats, Test {
         lootDrop.createMultipleTokensAndDepositRewards(_tokens);
     }
 
-    function testInitializeTwiceShouldFail() public {
-        vm.expectRevert("Initializable: contract is already initialized");
-        lootDrop.initialize(address(this), address(this), address(this), address(itemBound));
+    function testBatchTransferFrom() public {
+        uint256[] memory _itemIds1 = new uint256[](3);
+        _itemIds1[0] = _tokenIds[0];
+        _itemIds1[1] = _tokenIds[1];
+        _itemIds1[2] = _tokenIds[2];
+
+        uint256[] memory _itemIds2 = new uint256[](3);
+        _itemIds2[0] = _tokenIds[3];
+        _itemIds2[1] = _tokenIds[4];
+        _itemIds2[2] = _tokenIds[5];
+
+        uint256[] memory _amount1 = new uint256[](3);
+        _amount1[0] = 1;
+        _amount1[1] = 1;
+        _amount1[2] = 1;
+
+        vm.prank(playerWallet.addr);
+        lootDrop.mint(encodedItems1, true, nonce, signature, false);
+        assertEq(itemBound.balanceOf(playerWallet.addr, _tokenIds[0]), 1);
+
+        lootDrop.adminMint(playerWallet2.addr, encodedItems1, false, false);
+
+        vm.prank(playerWallet2.addr);
+        itemBound.safeTransferFrom(playerWallet2.addr, playerWallet.addr, _tokenIds[0], 1, "");
+
+        assertEq(itemBound.balanceOf(playerWallet.addr, _tokenIds[0]), 2);
+
+        uint256[] memory _itemIds3 = new uint256[](2);
+        _itemIds3[0] = _tokenIds[0];
+        _itemIds3[1] = _tokenIds[0];
+
+        uint256[] memory _amount3 = new uint256[](2);
+        _amount3[0] = 1;
+        _amount3[1] = 1;
+
+        vm.expectRevert("ERC1155: duplicate ID");
+        vm.prank(playerWallet.addr);
+        itemBound.safeBatchTransferFrom(playerWallet.addr, minterWallet.addr, _itemIds3, _amount3, "");
+
+        assertEq(itemBound.balanceOf(minterWallet.addr, _tokenIds[0]), 0);
+
+        vm.prank(playerWallet.addr);
+        itemBound.safeTransferFrom(playerWallet.addr, minterWallet.addr, _tokenIds[0], 1, "");
+        assertEq(itemBound.balanceOf(minterWallet.addr, _tokenIds[0]), 1);
     }
 
-    function testPauseUnpause() public {
+    function testNonSoulboundTokenTransfer() public {
         uint256 _tokenId = _tokenIds[0];
+        lootDrop.adminMintById(playerWallet.addr, _tokenId, 1, false);
 
-        address[] memory _wallets = new address[](2);
-        _wallets[0] = address(this);
-        _wallets[1] = address(mockERC1155Receiver);
+        vm.prank(playerWallet.addr);
+        itemBound.safeTransferFrom(playerWallet.addr, minterWallet.addr, _tokenId, 1, "");
 
-        uint256[] memory _amounts = new uint256[](2);
-        _amounts[0] = 1;
-        _amounts[1] = 2;
-
-        lootDrop.pause();
-        vm.expectRevert("Pausable: paused");
-        lootDrop.adminBatchMintById(_wallets, _tokenId, _amounts, true);
-        lootDrop.unpause();
-
-        lootDrop.adminMintById(address(mockERC1155Receiver), _tokenId, 1, true);
-        assertEq(itemBound.balanceOf(address(mockERC1155Receiver), _tokenId), 1);
+        assertEq(itemBound.balanceOf(playerWallet.addr, _tokenId), 0);
+        assertEq(itemBound.balanceOf(minterWallet.addr, _tokenId), 1);
     }
 
-    function testPauseUnpauseSpecificToken() public {
+    function testSoulboundTokenNotTransfer() public {
         uint256 _tokenId = _tokenIds[0];
+        lootDrop.adminMintById(playerWallet.addr, _tokenId, 1, true);
 
-        lootDrop.updateTokenMintPaused(_tokenId, true);
-
-        vm.expectRevert(MintPaused.selector);
-        lootDrop.adminMintById(address(mockERC1155Receiver), _tokenId, 1, true);
-
-        vm.expectRevert(MintPaused.selector);
-        lootDrop.adminMint(address(mockERC1155Receiver), encodedItems1, true, false);
-
-        vm.expectRevert(MintPaused.selector);
-        vm.prank(playerWallet.addr);
-        lootDrop.mint(encodedItems1, true, nonce, signature, false);
-
-        lootDrop.updateTokenMintPaused(_tokenId, false);
-
-        vm.prank(playerWallet.addr);
-        lootDrop.mint(encodedItems1, true, nonce, signature, false);
-
-        assertEq(itemBound.balanceOf(playerWallet.addr, _tokenId), 1);
-    }
-
-    function testDecodeDataShouldPass() public {
-        bytes memory encodedItems = encode(address(lootDrop), _tokenIds);
-
-        (address contractAddress, uint256 chainId, uint256[] memory ids) = lootDrop.decodeData(encodedItems);
-
-        for (uint256 i = 0; i < ids.length; i++) {
-            assertEq(ids[i], _tokenIds[i]);
-        }
-    }
-
-    function testInvalidSignature() public {
-        vm.prank(playerWallet.addr);
-        vm.expectRevert("InvalidSignature");
-        lootDrop.mint(encodedItems1, true, nonce, signature2, false);
-    }
-
-    function testReuseSignatureMint() public {
-        vm.prank(playerWallet.addr);
-        lootDrop.mint(encodedItems1, true, nonce, signature, false);
-        vm.prank(playerWallet.addr);
-        vm.expectRevert("AlreadyUsedSignature");
-        lootDrop.mint(encodedItems1, true, nonce, signature, false);
-    }
-
-    function testUpdateRewardTokenContractAddressZeroShouldFail() public {
-        vm.expectRevert(AddressIsZero.selector);
-        lootDrop.updateRewardTokenContract(address(0));
-    }
-
-    function testUpdateRewardTokenContractNotAuthorizedShouldFail() public {
-        address _newRewardTokenAddress = address(mockERC20);
-
-        vm.prank(playerWallet.addr);
         vm.expectRevert(
-            "AccessControl: account 0x44e97af4418b7a17aabd8090bea0a471a366305c is missing role 0x3b359cf0b4471a5de84269135285268e64ac56f52d3161392213003a780ad63b"
+            "Achievo1155Soulbound: The amount of soulbounded tokens is more than the amount of tokens to be transferred"
         );
-        lootDrop.updateRewardTokenContract(_newRewardTokenAddress);
+        vm.prank(playerWallet.addr);
+        itemBound.safeTransferFrom(playerWallet.addr, minterWallet.addr, _tokenId, 1, "");
+
+        vm.expectRevert("Achievo1155Soulbound: can't be zero amount");
+        vm.prank(playerWallet.addr);
+        itemBound.safeTransferFrom(playerWallet.addr, minterWallet.addr, _tokenId, 0, "");
     }
 
-    function testUpdateRewardTokenContractShouldPass() public {
-        address _newRewardTokenAddress = address(mockERC20);
-        lootDrop.updateRewardTokenContract(_newRewardTokenAddress);
+    function testSoulboundTokenTransferOnlyWhitelistAddresses() public {
+        uint256 _tokenId = _tokenIds[0];
+        lootDrop.adminMintById(playerWallet.addr, _tokenId, 1, true);
+
+        vm.expectRevert(
+            "Achievo1155Soulbound: The amount of soulbounded tokens is more than the amount of tokens to be transferred"
+        );
+        vm.prank(playerWallet.addr);
+        itemBound.safeTransferFrom(playerWallet.addr, playerWallet3.addr, _tokenId, 1, "");
+
+        itemBound.updateWhitelistAddress(playerWallet3.addr, true);
+
+        vm.prank(playerWallet.addr);
+        itemBound.safeTransferFrom(playerWallet.addr, playerWallet3.addr, _tokenId, 1, "");
+
+        vm.prank(playerWallet3.addr);
+        itemBound.safeTransferFrom(playerWallet3.addr, playerWallet.addr, _tokenId, 1, "");
+
+        itemBound.updateWhitelistAddress(playerWallet3.addr, false);
+
+        vm.expectRevert(
+            "Achievo1155Soulbound: The amount of soulbounded tokens is more than the amount of tokens to be transferred"
+        );
+        vm.prank(playerWallet.addr);
+        itemBound.safeTransferFrom(playerWallet.addr, playerWallet3.addr, _tokenId, 1, "");
     }
 }

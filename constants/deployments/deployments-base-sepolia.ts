@@ -1,4 +1,4 @@
-import { BUIDLArgs, ERC20Args } from '@constants/constructor-args';
+import { BUIDLArgs, ERC20Args, ERC20DecimalsAgs } from '@constants/constructor-args';
 import { CONTRACT_TYPE, CONTRACT_UPGRADABLE_FILE_NAME, CONTRACT_UPGRADABLE_NAME } from '@constants/contract';
 import { TENANT } from '@constants/tenant';
 
@@ -20,6 +20,6 @@ export const BASE_SEPOLIA_CONTRACTS: DeploymentContract[] = [
         upgradable: true,
         dependencies: [],
         functionCalls: [],
-        args: ERC20Args.TESTNET,
+        args: ERC20DecimalsAgs.TESTNET,
     },
 ];

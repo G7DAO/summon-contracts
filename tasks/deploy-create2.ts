@@ -32,7 +32,7 @@ const deployOne = async (
 
     const isZkSync = networkName.toLowerCase().includes('zksync');
 
-    const networkNameKey = Object.keys(NetworkName)[Object.values(NetworkName).indexOf(networkName)];
+    const networkNameKey = Object.keys(NetworkName)[Object.values(NetworkName).indexOf(networkName as NetworkName)];
     const chainId = ChainId[networkNameKey as keyof typeof ChainId];
     const blockExplorerBaseUrl = NetworkExplorer[networkNameKey as keyof typeof NetworkExplorer];
     const rpcUrl = rpcUrls[chainId];
@@ -42,12 +42,13 @@ const deployOne = async (
     let deployerWallet: zkWallet | ethers.ethers.Wallet;
     let managerWallet: zkWallet | ethers.ethers.Wallet;
 
-    const abiContent = fs.readFileSync(path.resolve(abiPath), 'utf8');
+    const abiContent = fs.readFileSync(path.resolve(abiPath as string), 'utf8');
     const { abi: contractAbi, bytecode } = JSON.parse(abiContent);
 
     if (isZkSync) {
         const ethNetworkName = networkName.split('zkSync')[1].toLowerCase() || 'mainnet';
-        const ethNetworkNameKey = Object.keys(NetworkName)[Object.values(NetworkName).indexOf(ethNetworkName)];
+        const ethNetworkNameKey =
+            Object.keys(NetworkName)[Object.values(NetworkName).indexOf(ethNetworkName as NetworkName)];
         const ethChainId = ChainId[ethNetworkNameKey as keyof typeof ChainId];
         const ethRpcUrl = rpcUrls[ethChainId];
 
@@ -88,7 +89,7 @@ const deployOne = async (
         contractAddress,
         type: contractFileName,
         name: contractFileName,
-        networkName,
+        networkName: networkName as NetworkName,
         chainId,
         rpcUrl,
         currency,
@@ -154,6 +155,7 @@ task('deploy-create2', 'Deploys Create2 Smart contracts')
 
         // check balance across all chains
         const minBalance = hre.ethers.parseEther('0.06'); // should have at least 0.06 eth
+        // @ts-ignore
         const hasEnoughBalance = walletData.every(({ chainId, balance }: { balance: string }) => {
             console.log(chainId, ethers.parseEther(balance) >= minBalance);
             return hre.ethers.parseEther(balance) >= minBalance;

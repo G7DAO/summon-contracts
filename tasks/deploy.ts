@@ -35,6 +35,10 @@ export async function populateParam(
         return MINTER_ROLE;
     }
 
+    if (param === 'ZERO_ADDRESS') {
+        return hre.ethers.ZeroAddress;
+    }
+
     if (typeof param === 'string' && param.startsWith('CONTRACT_')) {
         const name = param.substring('CONTRACT_'.length);
         const contract = CONTRACTS.find((c) => c.name === name && c.chain === chain);
@@ -151,7 +155,7 @@ const deployOne = async (
     return deploymentPayload;
 };
 
-const prepFunctionOne = async (
+export const prepFunctionOne = async (
     hre: HardhatRuntimeEnvironment,
     call: FunctionCall,
     tenant: string,
@@ -159,6 +163,7 @@ const prepFunctionOne = async (
 ) => {
     const populatedArgs = [];
     for (const arg of call.args) {
+        // @ts-ignore-next-line
         populatedArgs.push(await populateParam(hre, arg, tenant));
     }
 

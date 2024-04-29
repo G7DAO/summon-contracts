@@ -287,39 +287,6 @@ export const ZKSYNC_SEPOLIA_CONTRACTS: DeploymentContract[] = [
         args: OpenMintArgs.TESTNET,
     },
     {
-        contractFileName: CONTRACT_FILE_NAME.ERC20PythPaymaster,
-        type: CONTRACT_TYPE.Paymaster,
-        name: CONTRACT_NAME.PaymasterPyth,
-        chain,
-        networkType,
-        tenants: [TENANT.ZkSync],
-        verify: true,
-        upgradable: false,
-        dependencies: [
-            CONTRACT_UPGRADABLE_NAME.Avatars,
-            CONTRACT_UPGRADABLE_NAME.Items,
-            CONTRACT_UPGRADABLE_NAME.Levels,
-        ],
-        functionCalls: [
-            {
-                contractName: CONTRACT_NAME.PaymasterPyth,
-                functionName: 'addRecipient',
-                args: [`CONTRACT_${CONTRACT_UPGRADABLE_NAME.Avatars}`],
-            },
-            {
-                contractName: CONTRACT_NAME.PaymasterPyth,
-                functionName: 'addRecipient',
-                args: [`CONTRACT_${CONTRACT_UPGRADABLE_NAME.Items}`],
-            },
-            {
-                contractName: CONTRACT_NAME.PaymasterPyth,
-                functionName: 'addRecipient',
-                args: [`CONTRACT_${CONTRACT_UPGRADABLE_NAME.Levels}`],
-            },
-        ],
-        args: ERC20PythPaymasterArgs.TESTNET,
-    },
-    {
         contractFileName: CONTRACT_FILE_NAME.ERC20ChainlinkPaymaster,
         type: CONTRACT_TYPE.Paymaster,
         name: CONTRACT_NAME.PaymasterChainlink,

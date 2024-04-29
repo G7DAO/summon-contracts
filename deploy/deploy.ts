@@ -65,6 +65,7 @@ export default async function (
                 ...restArgs,
             ]);
         } else {
+            console.info('Constructor arguments:', JSON.stringify(restArgs, null, 2));
             achievoContract = await hre.ethers.deployContract(contract.contractFileName, restArgs);
         }
     }
@@ -84,7 +85,15 @@ export default async function (
 
     if (contract.verify) {
         log('Waiting for contract to be confirmed...');
-        await achievoContract.deploymentTransaction()?.wait(5); // wait for 5 confirmations
+        if (
+            hre.network.name === NetworkName.Game7OrbitArbSepolia ||
+            hre.network.name === NetworkName.Game7OrbitBaseSepolia
+        ) {
+            // This L3 provided network requires only 1 confirmation
+            await achievoContract.deploymentTransaction()?.wait(1); // wait for 1 confirmation
+        } else {
+            await achievoContract.deploymentTransaction()?.wait(5); // wait for 5 confirmations
+        }
 
         log('=====================================================');
         log(`Verifying ${contract.type}(${contract.name}) for ${tenant} on ${networkName}`);

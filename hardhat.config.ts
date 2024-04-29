@@ -2,7 +2,6 @@ import * as dotenv from 'dotenv';
 import { HardhatUserConfig } from 'hardhat/config';
 
 import '@nomicfoundation/hardhat-toolbox';
-import '@nomicfoundation/hardhat-foundry';
 import '@typechain/hardhat';
 import 'hardhat-contract-sizer';
 // This adds support for typescript paths mappings
@@ -23,7 +22,7 @@ if (!PRIVATE_KEY) {
 
 const config: HardhatUserConfig = {
     solidity: {
-        version: '0.8.17',
+        version: '0.8.20',
         settings: {
             optimizer: {
                 enabled: true,

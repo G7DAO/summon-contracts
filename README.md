@@ -1,8 +1,16 @@
-# Achievo Contracts
 
-![Version](https://img.shields.io/badge/version-0.19.0-brightgreen)
+<p align="center">
+<br />
+<a href="https://achievo.xyz"><img src="https://docs.achievo.xyz/assets/images/achievo_hero-c6f48974170f838b624d0b30ef52735f.png" width="200" alt=""/></a>
+<br />
+</p>
+<h1 align="center">Achievo Contracts</h1>
+<p align="center">
+<a href="https://github.com/G7DAO/achievo-contracts/actions"><img alt="Build Status" src="https://github.com/thirdweb-dev/contracts/actions/workflows/tests.yml/badge.svg"/></a>
 
-![Achievo](https://docs.achievo.xyz/assets/images/achievo_hero-c6f48974170f838b624d0b30ef52735f.png)
+</p>
+<br />
+
 
 ## Requirements
 
@@ -128,6 +136,10 @@ npx hardhat flatten contracts/GameSummary.sol > .flat/GameSummary.sol
     "upgradeBadge:ZkSync:mainnet": "pnpm compile:zkSync && hardhat run deploy/upgrades/upgradeBadge.mainnet.ts --config zkSync.config.ts --network zkSync",
     "upgradeBadge:ZkSync:sepolia": "pnpm compile:zkSync && hardhat run deploy/upgrades/upgradeBadge.testnet.ts --config zkSync.config.ts --network zkSyncSepolia",
     "deploySkillTreeUpgradable:ZkSync:mainnet": "pnpm deploy:ZkSync:mainnet --name SkillTreeUpgradable",
-    "deploySkillTreeUpgradable:ZkSync:sepolia": "pnpm deploy:ZkSync:sepolia --name SkillTreeUpgradable"
+    "deploySkillTreeUpgradable:ZkSync:sepolia": "pnpm deploy:ZkSync:sepolia --name SkillTreeUpgradable",
+    "deployMarketplace:g7:base:sepolia": "pnpm deploy:g7:sepolia:base --name Marketplace",
+    "upgradeLegacyAvatars:ZkSync:mainnet": "pnpm compile:zkSync && hardhat run deploy/upgrades/upgradeLegacyAvatarBound.mainnet.ts --config zkSync.config.ts --network zkSync",
+    "upgradeLegacyAvatars:ZkSync:sepolia": "pnpm compile:zkSync && hardhat run deploy/upgrades/upgradeLegacyAvatarBound.testnet.ts --config zkSync.config.ts --network zkSyncSepolia",
+    "deployMarketplace:g7:arb:sepolia": "pnpm compile && hardhat --config g7.config.ts deploy-proxy --name Marketplace --network game7OrbitArbSepolia"
 }
 ```

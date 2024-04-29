@@ -18,6 +18,24 @@ export enum CONTRACT_TYPE {
     LootDrop = 'LootDrop',
     HelloWorld = 'HelloWorld',
     RewardToken = 'RewardToken',
+    DirectListingExtension = 'DirectListingExtension',
+    Marketplace = 'Marketplace',
+}
+
+export enum PROXY_CONTRACT_TYPE {
+    EIP2535 = 'EIP2535',
+    TransparentUpgradeableProxy = 'TransparentUpgradeableProxy',
+    EIP1967 = 'EIP1967',
+}
+
+export enum CONTRACT_PROXY_CONTRACT_NAME {
+    AchievoProxy = 'AchievoProxy',
+    Diamond = 'Diamond',
+}
+
+export enum CONTRACT_PROXY_FILE_NAME {
+    AchievoProxy = 'AchievoProxy',
+    Diamond = 'Diamond',
 }
 
 export enum CONTRACT_FILE_NAME {
@@ -27,7 +45,6 @@ export enum CONTRACT_FILE_NAME {
     ERC1155RewardSoulbound = 'ERC1155RewardSoulbound',
     Levels = 'LevelsBound',
     FreeMint = 'FreeMint',
-    ERC20PythPaymaster = 'ERC20PythPaymaster',
     ERC20ChainlinkPaymaster = 'ERC20ChainlinkPaymaster',
     ERC1155Soulbound = 'ERC1155Soulbound',
     Bridge = 'ERC20Bridge',
@@ -36,11 +53,15 @@ export enum CONTRACT_FILE_NAME {
     LootDrop = 'LootDrop',
     HelloWorld = 'HelloWorld',
     AdminERC1155Soulbound = 'AdminERC1155Soulbound',
+    DirectListingsExtension = 'DirectListingsLogic',
+    ERC20 = 'MockERC20',
+    Marketplace = 'Marketplace',
 }
+
 export enum CONTRACT_UPGRADABLE_FILE_NAME {
     LegacyAvatar = 'LegacyAvatarUpgradeableV1',
     Avatars = 'AvatarBoundV1',
-    ERC1155RoyaltiesSoulbound = 'ERC1155RoyaltiesSoulboundV1',
+    ERC1155RoyaltiesSoulbound = 'ERC1155RoyaltiesSoulboundV2',
     Levels = 'LevelsBoundV1',
     ERC20ChainlinkPaymaster = 'ERC20ChainlinkPaymasterV2',
     ERC1155Soulbound = 'ERC1155SoulboundV1',
@@ -48,6 +69,7 @@ export enum CONTRACT_UPGRADABLE_FILE_NAME {
     Bridge = 'ERC20BridgeV1',
     BurnableToken = 'BurnableTokenV1',
     ERC1155RewardSoulbound = 'ERC1155RewardSoulboundV1',
+    Marketplace = 'Marketplace',
 }
 
 export enum CONTRACT_UPGRADABLE_FILE_NAME_V2 {
@@ -64,7 +86,6 @@ export enum CONTRACT_NAME {
     RewardItems = 'RewardItems',
     Levels = 'Levels',
     FreeMint = 'FreeMint',
-    PaymasterPyth = 'PaymasterPyth',
     PaymasterChainlink = 'PaymasterChainlink',
     GameSummary = 'GameSummary',
     ERC20 = 'ERC20',
@@ -77,12 +98,16 @@ export enum CONTRACT_NAME {
     LootDrop = 'LootDrop',
     HelloWorld = 'HelloWorld',
     RewardToken = 'RewardToken',
+    DirectListingExtension = 'DirectListingExtension',
+    MartinERC20 = 'MockERC20',
+    Marketplace = 'Marketplace',
 }
 
 export enum CONTRACT_UPGRADABLE_NAME {
     LegacyAvatar = 'LegacyAvatarUpgradable',
     Avatars = 'AvatarsUpgradable',
     Items = 'ItemsUpgradable',
+    ItemsRoyaltiesV2 = 'ItemsRoyaltiesV2',
     Levels = 'LevelsUpgradable',
     PaymasterChainlink = 'PaymasterChainlinkUpgradable',
     ERC20 = 'BurnableTokenV1',
@@ -93,4 +118,5 @@ export enum CONTRACT_UPGRADABLE_NAME {
     ZkSpork = 'ZkSpork',
     SkillTree = 'SkillTreeUpgradable',
     RewardItemsUpgradable = 'RewardItemsUpgradable',
+    Marketplace = 'Marketplace',
 }

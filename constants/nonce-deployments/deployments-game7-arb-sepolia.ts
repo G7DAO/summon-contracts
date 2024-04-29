@@ -5,10 +5,10 @@ import { TENANT } from '@constants/tenant';
 import { DeploymentContract } from '../../types/deployment-type';
 import { NETWORK_TYPE, NetworkName } from '../network';
 
-const chain = NetworkName.Game7Sepolia;
+const chain = NetworkName.Game7OrbitArbSepolia;
 const networkType = NETWORK_TYPE.TESTNET;
 
-export const GAME7_SEPOLIA_CONTRACTS: DeploymentContract[] = [
+export const GAME7_ARB_SEPOLIA_CONTRACTS: DeploymentContract[] = [
     {
         contractFileName: CONTRACT_FILE_NAME.LootDrop,
         type: CONTRACT_TYPE.LootDrop,

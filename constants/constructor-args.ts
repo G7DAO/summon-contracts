@@ -1,6 +1,27 @@
 import { CONTRACT_NAME, CONTRACT_UPGRADABLE_NAME } from './contract';
 import { ChainId } from './network';
 
+//  TODO: move this to the addresses file @daniel.lima
+const MAR20_G7_TESTNET = '0x9BcdFD72F0434B1cA3b2E8BB96592ceEc22A85e7';
+const IRON_G7_ARB_SEPOLIA_NATIVE_TOKEN = '0x4EdD6ddeAf8f259dba75AC8C5C89ee7564201170';
+
+const PYTH_USDC_PRICE_ID_TESTNET = '0x41f3625971ca2ed2263e78573fe5ce23e13d2558ed3f2e47ab0f84fb9e7ae722';
+const PYTH_ETH_PRICE_ID_TESTNET = '0xca80ba6dc32e08d06f1aa886011eed1d77c77be9eb761cc10d72b7d0a2fd57a6';
+const PYTH_ORACLE_ADDRESS_TESTNET = '0x8739d5024B5143278E2b15Bd9e7C26f6CEc658F1';
+
+const PYTH_USDC_PRICE_ID_MAINNET = '0xeaa020c61cc479712813461ce153894a96a6c00b21ed0cfc2798d1f9a9e9c94a';
+const PYTH_ETH_PRICE_ID_MAINNET = '0xff61491a931112ddf1bd8147cd1b641375f79f5825126d665480874634fd0ace';
+const PYTH_ORACLE_ADDRESS_MAINNET = '0xf087c864AEccFb6A2Bf1Af6A0382B0d0f6c5D834';
+
+const CHAINLINK_USDC_PRICE_ID_TESTNET = '0x1844478CA634f3a762a2E71E3386837Bd50C947F';
+const CHAINLINK_ETH_PRICE_ID_TESTNET = '0xfEefF7c3fB57d18C5C6Cdd71e45D2D0b4F9377bF';
+
+const CHAINLINK_USDC_PRICE_ID_MAINNET = '0x1824D297C6d6D311A204495277B63e943C2D376E';
+const CHAINLINK_ETH_PRICE_ID_MAINNET = '0x6D41d1dc818112880b40e26BD6FD347E41008eDA';
+
+const ZKSYNC_MAINNET_ERC20_USDC = '0x1d17CBcF0D6D143135aE902365D2E5e2A16538D4';
+const ZKSYNC_TESTNET_ERC20_OUSDC = '0x4b6021A15cB4E76DD40dE7B0d316A6a7fb613C05';
+
 export interface ConstructorArgs {
     name: string;
     symbol: string;
@@ -11,10 +32,12 @@ export interface ConstructorArgs {
     devWallet: string;
     royalty?: number;
 }
+
 export interface Soulbound1155Args {
     MAINNET: ConstructorArgs;
     TESTNET: ConstructorArgs;
 }
+
 export const SoulboundBadgesArgs: Soulbound1155Args = {
     MAINNET: {
         name: 'SoulboundBadges',
@@ -71,7 +94,7 @@ export const ItemBoundIronWorksArgs: Soulbound1155Args = {
     },
     TESTNET: {
         name: 'IronWorksItems',
-        symbol: 'AItems',
+        symbol: 'IWItems',
         baseURI: 'https://achievo.mypinata.cloud/ipfs',
         contractURI: 'FILL_ME',
         maxPerMint: 1,
@@ -124,6 +147,7 @@ export const AvatarBoundArgs = {
         devWallet: 'DEPLOYER_WALLET',
         gatingNftAddress: '0xD07180c423F9B8CF84012aA28cC174F3c433EE29',
         itemsNftAddress: `CONTRACT_${CONTRACT_NAME.Items}`,
+        compoundURI: 'https://api.achievo.xyz/v1/uri/avatar',
         mintNftGatingEnabled: true,
         mintNFtWithoutGatingEnabled: true,
         mintRandomItemEnabled: true,
@@ -138,6 +162,7 @@ export const AvatarBoundArgs = {
         devWallet: 'DEPLOYER_WALLET',
         gatingNftAddress: '0x6E03Ea6c9aBBb78Dd761b9c71c06176c508488C3',
         itemsNftAddress: `CONTRACT_${CONTRACT_NAME.Items}`,
+        compoundURI: 'https://staging-api.achievo.xyz/v1/uri/avatar',
         mintNftGatingEnabled: true,
         mintNFtWithoutGatingEnabled: true,
         mintRandomItemEnabled: true,
@@ -198,23 +223,6 @@ export const OpenMintArgs = {
         unrevealedURI: 'Qmc7c9tNVaaAbTM5RMgdPY7MjPoLDFfPw8BAv3WuBUrebe',
     },
 };
-
-const PYTH_USDC_PRICE_ID_TESTNET = '0x41f3625971ca2ed2263e78573fe5ce23e13d2558ed3f2e47ab0f84fb9e7ae722';
-const PYTH_ETH_PRICE_ID_TESTNET = '0xca80ba6dc32e08d06f1aa886011eed1d77c77be9eb761cc10d72b7d0a2fd57a6';
-const PYTH_ORACLE_ADDRESS_TESTNET = '0x8739d5024B5143278E2b15Bd9e7C26f6CEc658F1';
-
-const PYTH_USDC_PRICE_ID_MAINNET = '0xeaa020c61cc479712813461ce153894a96a6c00b21ed0cfc2798d1f9a9e9c94a';
-const PYTH_ETH_PRICE_ID_MAINNET = '0xff61491a931112ddf1bd8147cd1b641375f79f5825126d665480874634fd0ace';
-const PYTH_ORACLE_ADDRESS_MAINNET = '0xf087c864AEccFb6A2Bf1Af6A0382B0d0f6c5D834';
-
-const CHAINLINK_USDC_PRICE_ID_TESTNET = '0x1844478CA634f3a762a2E71E3386837Bd50C947F';
-const CHAINLINK_ETH_PRICE_ID_TESTNET = '0xfEefF7c3fB57d18C5C6Cdd71e45D2D0b4F9377bF';
-
-const CHAINLINK_USDC_PRICE_ID_MAINNET = '0x1824D297C6d6D311A204495277B63e943C2D376E';
-const CHAINLINK_ETH_PRICE_ID_MAINNET = '0x6D41d1dc818112880b40e26BD6FD347E41008eDA';
-
-const ZKSYNC_MAINNET_ERC20_USDC = '0x1d17CBcF0D6D143135aE902365D2E5e2A16538D4';
-const ZKSYNC_TESTNET_ERC20_OUSDC = '0x4b6021A15cB4E76DD40dE7B0d316A6a7fb613C05';
 
 export const ERC20PythPaymasterArgs = {
     MAINNET: {
@@ -385,6 +393,17 @@ export const ERC20Args = {
     MAINNET: {
         name: 'FILL_ME',
         symbol: 'FILL_ME',
+    },
+    TESTNET: {
+        name: 'Martins',
+        symbol: 'MAR20',
+    },
+};
+
+export const ERC20DecimalsAgs = {
+    MAINNET: {
+        name: 'FILL_ME',
+        symbol: 'FILL_ME',
         decimals: 18,
         developerAdmin: 'DEPLOYER_WALLET',
     },
@@ -424,7 +443,6 @@ export const RewardTokenArgs = {
         _defaultTokenURI: 'FILL_ME',
         _contractURI: 'FILL_ME',
         _devWallet: 'DEPLOYER_WALLET',
-        _lootDropAddress: `CONTRACT_${CONTRACT_NAME.LootDrop}`,
     },
     TESTNET: {
         _name: 'RainToken',
@@ -432,6 +450,31 @@ export const RewardTokenArgs = {
         _defaultTokenURI: 'FILL_ME',
         _contractURI: 'FILL_ME',
         _devWallet: 'DEPLOYER_WALLET',
-        _lootDropAddress: `CONTRACT_${CONTRACT_NAME.LootDrop}`,
+    },
+};
+
+export const DirectListingExtensionArgs = {
+    MAINNET: {
+        // _tokenAddress: 'FILL_ME',
+        // _devWallet: 'DEPLOYER_WALLET',
+    },
+    TESTNET: {
+        _tokenAddress: MAR20_G7_TESTNET,
+        _devWallet: 'DEPLOYER_WALLET',
+    },
+};
+
+export const MarketplaceArgs = {
+    MAINNET: {
+        // This will be filled in the deploy script
+        extensions: [],
+        royaltyEngineAddress: 'FILL_ME',
+        nativeTokenWrapper: 'FILL_ME',
+    },
+    TESTNET: {
+        // This will be filled in the deploy script
+        extensions: [],
+        royaltyEngineAddress: 'ZERO_ADDRESS',
+        nativeTokenWrapper: IRON_G7_ARB_SEPOLIA_NATIVE_TOKEN,
     },
 };

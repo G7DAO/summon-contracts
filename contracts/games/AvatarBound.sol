@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity 0.8.17;
+pragma solidity ^0.8.17;
 
 /**
  * Author: Omar <ogarciarevett>(https://github.com/ogarciarevett)
@@ -106,6 +106,7 @@ contract AvatarBound is
         string memory _baseTokenURI,
         string memory _contractURI,
         string memory _revealURI,
+        string memory _compoundURI,
         address developerAdmin,
         address _gatingNFTAddress,
         address _itemsNFTAddress,
@@ -131,7 +132,7 @@ contract AvatarBound is
         mintDefaultItemEnabled = true;
         revealNftGatingEnabled = true;
         compoundURIEnabled = true;
-        compoundURI = "https://api.achievo.xyz/v1/uri/avatar";
+        compoundURI = _compoundURI;
         revealURI = _revealURI;
     }
 

@@ -26,8 +26,7 @@ export enum ChainId {
     OPSepolia = 11155420,
     Base = 8453,
     BaseSepolia = 84532,
-    Game7OPStackBaseSepolia = 7777000,
-    Game7OrbitARBOneSepolia = 7007007,
+    Game7OrbitArbSepolia = 7007007,
     Game7OrbitBaseSepolia = 7770007,
 }
 
@@ -49,8 +48,7 @@ export enum NetworkName {
     OPSepolia = 'OPSepolia',
     Base = 'base',
     BaseSepolia = 'baseSepolia',
-    Game7OPStackBaseSepolia = 'game7OPStackBaseSepolia',
-    Game7OrbitARBOneSepolia = 'game7OrbitARBOneSepolia',
+    Game7OrbitArbSepolia = 'game7OrbitArbSepolia',
     Game7OrbitBaseSepolia = 'game7OrbitBaseSepolia',
 }
 
@@ -73,9 +71,8 @@ export enum NetworkConfigFile {
     OPSepolia = 'op.config.ts',
     Base = 'base.config.ts',
     BaseSepolia = 'base.config.ts',
-    Game7OPStackBaseSepolia = 'game7.config.ts',
-    Game7OrbitARBOneSepolia = 'game7.config.ts',
-    Game7OrbitBaseSepolia = 'game7.config.ts',
+    Game7OrbitArbSepolia = 'g7.config.ts',
+    Game7OrbitBaseSepolia = 'g7.config.ts',
 }
 
 export enum Currency {
@@ -97,8 +94,7 @@ export enum Currency {
     Base = 'ETH',
     BaseSepolia = 'ETH',
     Game7Sepolia = 'ETH',
-    Game7OPStackBaseSepolia = 'Iron',
-    Game7OrbitARBOneSepolia = 'Iron',
+    Game7OrbitArbSepolia = 'Iron',
     Game7OrbitBaseSepolia = 'Iron',
 }
 
@@ -113,7 +109,7 @@ export enum NetworkExplorer {
     Mantle = 'https://explorer.mantle.xyz',
     MantleSepolia = 'https://explorer.sepolia.mantle.xyz',
     ZkSync = 'https://explorer.zksync.io',
-    ZkSyncSepolia = 'https://sepolia.explorer.zksync.io',
+    ZkSyncSepolia = 'https://zksync-sepolia.blockscout.com',
     ArbitrumOne = 'https://arbiscan.io',
     ArbitrumSepolia = 'https://sepolia.arbiscan.io',
     OPMainnet = 'https://optimistic.etherscan.io',
@@ -121,8 +117,7 @@ export enum NetworkExplorer {
     Base = 'https://basescan.org',
     BaseSepolia = 'https://base-sepolia.blockscout.com',
     //  this will change to: testnet.explorer.game7.io
-    Game7OPStackBaseSepolia = 'https://explorerl2new-game7-base-eagenda-cpjwey1rnq.t.conduit.xyz',
-    Game7OrbitARBOneSepolia = 'https://explorerl2new-game7-arb-anytrust-wcj9hysn7y.t.conduit.xyz',
+    Game7OrbitArbSepolia = 'https://explorerl2new-game7-arb-anytrust-wcj9hysn7y.t.conduit.xyz',
     Game7OrbitBaseSepolia = 'https://explorerl2new-game7-base-anytrust-zuthm7ggv0.t.conduit.xyz',
 }
 
@@ -135,6 +130,7 @@ export function getTransactionUrl(txHash: string, network: NetworkName): string 
 }
 
 export const rpcUrls = {
+    [ChainId.Ganache]: 'http://localhost:8545',
     [ChainId.Ethereum]: `https://mainnet.infura.io/v3/${INFURA_API_KEY}`,
     [ChainId.Goerli]: `https://goerli.infura.io/v3/${INFURA_API_KEY}`,
     [ChainId.Sepolia]: `https://sepolia.infura.io/v3/${INFURA_API_KEY}`,
@@ -151,7 +147,6 @@ export const rpcUrls = {
     [ChainId.Base]: 'https://mainnet.base.org',
     [ChainId.BaseSepolia]: 'https://sepolia.base.org',
     //  this will change to: rpc.sepolia.game7.io
-    [ChainId.Game7OPStackBaseSepolia]: 'https://rpc-game7-base-eagenda-cpjwey1rnq.t.conduit.xyz',
-    [ChainId.Game7OrbitARBOneSepolia]: 'https://rpc-game7-arb-anytrust-wcj9hysn7y.t.conduit.xyz',
+    [ChainId.Game7OrbitArbSepolia]: 'https://rpc-game7-arb-anytrust-wcj9hysn7y.t.conduit.xyz',
     [ChainId.Game7OrbitBaseSepolia]: 'https://rpc-game7-base-anytrust-zuthm7ggv0.t.conduit.xyz',
 };

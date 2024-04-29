@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity 0.8.17;
+pragma solidity ^0.8.17;
 
 import { Test, console } from "forge-std/Test.sol";
 import { Strings } from "@openzeppelin/contracts/utils/Strings.sol";
@@ -150,6 +150,7 @@ contract AvatarBoundTest is Test {
             "MISSING_BASE_URL",
             "MISSING_CONTRACT_URL",
             "MISSING_REVEAL_CAPSULE_URL",
+            "https://example.api.com",
             address(minterWallet.addr),
             address(capsuleNft),
             address(itemBound),

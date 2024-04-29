@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: MIT
 
-pragma solidity 0.8.17;
+pragma solidity ^0.8.17;
 
 import "forge-std/Test.sol";
 import "forge-std/StdCheats.sol";
@@ -140,6 +140,7 @@ contract AvatarBoundV1Test is StdCheats, Test {
             "MISSING_BASE_URL",
             "MISSING_CONTRACT_URL",
             "MISSING_REVEAL_CAPSULE_URL",
+            "https://api.example/ipfs",
             address(minterWallet.addr),
             address(capsuleNft),
             address(itemBound),

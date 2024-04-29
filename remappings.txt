@@ -1,0 +1,4 @@
+@openzeppelin/contracts/=node_modules/@openzeppelin/contracts/
+@openzeppelin/contracts-upgradeable/=node_modules/@openzeppelin/contracts-upgradeable/
+@matterlabs/zksync-contracts/=node_modules/@matterlabs/zksync-contracts/
+@chainlink/contracts/=node_modules/@chainlink/contracts/

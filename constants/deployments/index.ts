@@ -8,8 +8,12 @@ import { SEPOLIA_CONTRACTS } from './deployments-sepolia';
 import { ZKSYNC_MAINNET_CONTRACTS } from './deployments-zksync-mainnet';
 import { ZKSYNC_SEPOLIA_CONTRACTS } from './deployments-zksync-sepolia';
 import { BASE_SEPOLIA_CONTRACTS } from '@constants/deployments/deployments-base-sepolia';
+import { G7_SEPOLIA_BASE_CONTRACTS } from '@constants/deployments/deployments-g7-sepolia-base';
+import { G7_SEPOLIA_ARB_CONTRACTS } from '@constants/deployments/deployments-g7-sepolia-arb';
 
 export const CONTRACTS = [
+    ...G7_SEPOLIA_ARB_CONTRACTS,
+    ...G7_SEPOLIA_BASE_CONTRACTS,
     ...ARBITRUM_ONE_CONTRACTS,
     ...BASE_SEPOLIA_CONTRACTS,
     ...ARBITRUM_SEPOLIA_CONTRACTS,
