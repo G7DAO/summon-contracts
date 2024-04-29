@@ -1,7 +1,7 @@
 
 <p align="center">
 <br />
-<a href="https://thirdweb.com"><img src="https://docs.achievo.xyz/assets/images/achievo_hero-c6f48974170f838b624d0b30ef52735f.png" width="200" alt=""/></a>
+<a href="https://achievo.xyz"><img src="https://docs.achievo.xyz/assets/images/achievo_hero-c6f48974170f838b624d0b30ef52735f.png" width="200" alt=""/></a>
 <br />
 </p>
 <h1 align="center">Achievo Contracts</h1>
