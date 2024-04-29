@@ -247,10 +247,9 @@ const getDependencies = (contractName: string, chain: string) => {
 
 task('deploy-proxy', 'Deploys Smart contracts with proxy')
     .addParam('name', 'Contract Name you want to deploy', undefined, types.string)
-    .addFlag('force', 'Do you want to force deploy?')
     .setAction(
         async (_args: { name: CONTRACT_NAME; tenant: TENANT; force: boolean }, hre: HardhatRuntimeEnvironment) => {
-            const { name, force } = _args;
+            const { name } = _args;
 
             const network = hre.network.name;
             log('└─ args :\n');
@@ -324,6 +323,7 @@ task('deploy-proxy', 'Deploys Smart contracts with proxy')
                             metadata,
                             functions,
                         };
+                        // TODO: save the right information into the same deployed contract: ABI extension, name, address, functions
                         deployments.push(deployedExtensionContract);
                         deployedExtensions.push(extensionDeployed);
                     }

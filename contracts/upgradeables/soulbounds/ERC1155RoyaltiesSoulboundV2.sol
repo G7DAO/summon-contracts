@@ -6,6 +6,8 @@ pragma solidity ^0.8.17;
  * Co-Authors: Omar ogarciarevett(https://github.com/ogarciarevett)
  */
 
+//TODO: This contract is deprecated USE THE ERC1155SoulboundV1.sol
+
 // MMMMNkc. .,oKWMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMM
 // MWXd,.      .cONMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMM
 // Wx'           .cKMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMM
@@ -75,14 +77,6 @@ contract ERC1155RoyaltiesSoulboundV2 is
 
     mapping(address => mapping(uint256 => bool)) private tokenIdProcessed;
 
-    modifier maxPerMintCheck(uint256 amount) {
-        if (amount > MAX_PER_MINT) {
-            revert("ExceedMaxMint");
-        }
-        _;
-    }
-
-    event Minted(address indexed to, uint256[] tokenIds, uint256 amount, bool soulbound);
     event MintedId(address indexed to, uint256 indexed tokenId, uint256 amount, bool soulbound);
     event TokenAdded(uint256 indexed tokenId);
 
@@ -123,10 +117,6 @@ contract ERC1155RoyaltiesSoulboundV2 is
         if (_isPaused) _pause();
     }
 
-    function newFunction() public view returns (string memory) {
-        return "hello";
-    }
-
     function getAllItems() public view returns (LibItems.TokenReturn[] memory) {
         uint256 totalTokens = itemIds.length;
         LibItems.TokenReturn[] memory tokenReturns = new LibItems.TokenReturn[](totalTokens);
@@ -145,35 +135,6 @@ contract ERC1155RoyaltiesSoulboundV2 is
                 tokenReturns[index] = tokenReturn;
                 index++;
             }
-        }
-
-        // truncate the array
-        LibItems.TokenReturn[] memory returnsTruncated = new LibItems.TokenReturn[](index);
-        for (uint i = 0; i < index; i++) {
-            returnsTruncated[i] = tokenReturns[i];
-        }
-
-        return returnsTruncated;
-    }
-
-    function getAllItemsAdmin(
-        address _owner
-    ) public view onlyRole(MINTER_ROLE) returns (LibItems.TokenReturn[] memory) {
-        uint256 totalTokens = itemIds.length;
-        LibItems.TokenReturn[] memory tokenReturns = new LibItems.TokenReturn[](totalTokens);
-
-        uint index;
-        for (uint i = 0; i < totalTokens; i++) {
-            uint256 tokenId = itemIds[i];
-            uint256 amount = balanceOf(_owner, tokenId);
-
-            LibItems.TokenReturn memory tokenReturn = LibItems.TokenReturn({
-                tokenId: tokenId,
-                tokenUri: uri(tokenId),
-                amount: amount
-            });
-            tokenReturns[index] = tokenReturn;
-            index++;
         }
 
         // truncate the array
@@ -268,39 +229,6 @@ contract ERC1155RoyaltiesSoulboundV2 is
 
     function updateTokenMintPaused(uint256 _tokenId, bool _isTokenMintPaused) public onlyRole(MANAGER_ROLE) {
         isTokenMintPaused[_tokenId] = _isTokenMintPaused;
-    }
-
-    function _mintBatch(address to, uint256[] memory _tokenIds, uint256 amount, bool soulbound) private {
-        for (uint256 i = 0; i < _tokenIds.length; i++) {
-            uint256 _id = _tokenIds[i];
-            isTokenExist(_id);
-            if (isTokenMintPaused[_id]) {
-                revert("TokenMintPaused");
-            }
-
-            if (soulbound) {
-                _soulbound(to, _id, amount);
-            }
-
-            _mint(to, _id, amount, "");
-        }
-        emit Minted(to, _tokenIds, amount, soulbound);
-    }
-
-    function mint(
-        bytes calldata data,
-        uint256 amount,
-        bool soulbound,
-        uint256 nonce,
-        bytes calldata signature
-    ) external nonReentrant signatureCheck(_msgSender(), nonce, data, signature) maxPerMintCheck(amount) whenNotPaused {
-        uint256[] memory _tokenIds = _decodeData(data);
-        _mintBatch(_msgSender(), _tokenIds, amount, soulbound);
-    }
-
-    function adminMint(address to, bytes calldata data, bool soulbound) external onlyRole(MINTER_ROLE) whenNotPaused {
-        uint256[] memory _tokenIds = _decodeData(data);
-        _mintBatch(to, _tokenIds, 1, soulbound);
     }
 
     function adminMintId(
@@ -445,10 +373,6 @@ contract ERC1155RoyaltiesSoulboundV2 is
         } else {
             return string(abi.encodePacked(baseURI, "/", tokenId.toString()));
         }
-    }
-
-    function updateBaseUri(string memory _baseURI) external onlyRole(DEV_CONFIG_ROLE) {
-        baseURI = _baseURI;
     }
 
     function setRoyaltyInfo(address receiver, uint96 feeBasisPoints) external onlyRole(MANAGER_ROLE) {

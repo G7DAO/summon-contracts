@@ -29,7 +29,7 @@
         "upgrade:ZkSync:sepolia": "pnpm compile:zkSync && hardhat --config zkSync.config.ts upgrade --network zkSyncSepolia",
         "test:foundry": "forge test -vvv",
         "test": "REPORT_GAS=true hardhat --config hardhat.config.ts test test/hardhatTests/*.ts --network hardhat",
-        "test:ci": "hardhat --config hardhat.config.ts test test/hardhatTests/*.ts  --network hardhat ",
+        "test:ci": "hardhat --config hardhat.config.ts test test/hardhatTests/*.ts  --network hardhat",
         "test:zkSyncLocal": "hardhat --config zkSync.config.ts test test/zkSync/*.ts --network zkSyncLocal",
         "lint": "eslint --config ./.eslintrc.js --ignore-path ./.eslintignore ./test/**/*.ts",
         "solhint": "solhint ./contracts/**/*.sol",

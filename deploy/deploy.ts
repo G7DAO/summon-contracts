@@ -90,7 +90,7 @@ export default async function (
             hre.network.name === NetworkName.Game7OrbitBaseSepolia
         ) {
             // This L3 provided network requires only 1 confirmation
-            await achievoContract.deploymentTransaction()?.wait(1); // wait for 5 confirmations
+            await achievoContract.deploymentTransaction()?.wait(1); // wait for 1 confirmation
         } else {
             await achievoContract.deploymentTransaction()?.wait(5); // wait for 5 confirmations
         }
@@ -125,8 +125,6 @@ export default async function (
         fakeContractAddress: '',
         explorerUrl: `${blockExplorerBaseUrl}/address/${contractAddress}#contract`,
     };
-
-    // TODO: to avoid re-deploys, here We could save the contract into the achievo tmp folder = .achievo @max
 
     log(`*****************************************************`);
     log(
