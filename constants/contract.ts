@@ -38,8 +38,6 @@ export enum CONTRACT_PROXY_FILE_NAME {
     Diamond = 'Diamond',
 }
 
-export enum CONTRACT_PROXY_NAME {}
-
 export enum CONTRACT_FILE_NAME {
     GameSummary = 'GameSummary',
     Avatars = 'AvatarBound',
