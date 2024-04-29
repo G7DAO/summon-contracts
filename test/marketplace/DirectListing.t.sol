@@ -27,7 +27,7 @@ contract MarketplaceDirectListingsTest is BaseTest, IExtension {
         Extension[] memory extensions = _setupExtensions();
 
         address implementation = address(
-            new Marketplace(Marketplace.MarketplaceConstructorParams(extensions, address(0), address(erc20)))
+            new Marketplace(extensions, address(0), address(erc20))
         );
 
         vm.prank(marketplaceDeployer);

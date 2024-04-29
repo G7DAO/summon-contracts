@@ -65,6 +65,7 @@ export default async function (
                 ...restArgs,
             ]);
         } else {
+            console.info('Constructor arguments:', JSON.stringify(restArgs, null, 2));
             achievoContract = await hre.ethers.deployContract(contract.contractFileName, restArgs);
         }
     }
@@ -85,7 +86,7 @@ export default async function (
     if (contract.verify) {
         log('Waiting for contract to be confirmed...');
         if (
-            hre.network.name === NetworkName.Game7OrbitARBOneSepolia ||
+            hre.network.name === NetworkName.Game7OrbitArbSepolia ||
             hre.network.name === NetworkName.Game7OrbitBaseSepolia
         ) {
             // This L3 provided network requires only 1 confirmation
@@ -124,6 +125,8 @@ export default async function (
         fakeContractAddress: '',
         explorerUrl: `${blockExplorerBaseUrl}/address/${contractAddress}#contract`,
     };
+
+    // TODO: to avoid re-deploys, here We could save the contract into the achievo tmp folder = .achievo @max
 
     log(`*****************************************************`);
     log(

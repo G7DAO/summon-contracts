@@ -13,6 +13,7 @@ import { Deployment, DeploymentContract, FunctionCall } from 'types/deployment-t
 
 import deploy from '../deploy/deploy';
 import deployUpgradeable from '../deploy/deployUpgradeable';
+import { encoder } from '@helpers/encoder';
 
 const PRIVATE_KEY = process.env.PRIVATE_KEY || '';
 const wallet = getWallet(PRIVATE_KEY);
@@ -33,6 +34,17 @@ export async function populateParam(
 
     if (param === 'MINTER_ROLE') {
         return MINTER_ROLE;
+    }
+
+    if (param === 'ZERO_ADDRESS') {
+        return hre.ethers.ZeroAddress;
+    }
+
+    if (param === 'ENCODE_INITIALIZE_FUNCTION_ACHIEVO_PROXY') {
+        return encoder(
+            ['address', 'string', 'address[]', 'address', 'uint256'],
+            [wallet.address, 'ipfs://NewUriToMetaData', [], wallet.address, 0]
+        );
     }
 
     if (typeof param === 'string' && param.startsWith('CONTRACT_')) {
@@ -151,7 +163,7 @@ const deployOne = async (
     return deploymentPayload;
 };
 
-const prepFunctionOne = async (
+export const prepFunctionOne = async (
     hre: HardhatRuntimeEnvironment,
     call: FunctionCall,
     tenant: string,

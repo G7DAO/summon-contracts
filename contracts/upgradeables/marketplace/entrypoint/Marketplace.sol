@@ -52,10 +52,10 @@ contract Marketplace is
     ERC1155Holder
 {
     /// @dev Only EXTENSION_ROLE holders can perform upgrades.
-    bytes32 private constant EXTENSION_ROLE = keccak256("EXTENSION_ROLE");
+    bytes32 public constant EXTENSION_ROLE = keccak256("EXTENSION_ROLE");
 
-    bytes32 private constant MODULE_TYPE = bytes32("MarketplaceV3");
-    uint256 private constant VERSION = 3;
+    bytes32 private constant MODULE_TYPE = bytes32("Marketplace");
+    uint256 private constant VERSION = 1;
 
     /// @dev The address of the native token wrapper contract.
     address private immutable nativeTokenWrapper;
@@ -64,17 +64,12 @@ contract Marketplace is
                     Constructor + initializer logic
     //////////////////////////////////////////////////////////////*/
 
-    /// @dev We accept constructor params as a struct to avoid `Stack too deep` errors.
-    struct MarketplaceConstructorParams {
-        Extension[] extensions;
-        address royaltyEngineAddress;
-        address nativeTokenWrapper;
-    }
-
     constructor(
-        MarketplaceConstructorParams memory _marketplaceV3Params
-    ) BaseRouter(_marketplaceV3Params.extensions) RoyaltyPaymentsLogic(_marketplaceV3Params.royaltyEngineAddress) {
-        nativeTokenWrapper = _marketplaceV3Params.nativeTokenWrapper;
+        Extension[] memory _extensions,
+        address _royaltyEngineAddress,
+        address _nativeTokenWrapper
+    ) BaseRouter(_extensions) RoyaltyPaymentsLogic(_royaltyEngineAddress) {
+        nativeTokenWrapper = _nativeTokenWrapper;
         _disableInitializers();
     }
 

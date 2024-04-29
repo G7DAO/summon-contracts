@@ -12,7 +12,7 @@
         "compile:zkSync": "hardhat --config zkSync.config.ts compile --network zkSyncSepolia",
         "deploy:create2": "pnpm compile && pnpm compile:zkSync && hardhat --config hardhat.config.ts deploy-create2",
         "deploy:nonce": "pnpm compile && pnpm compile:zkSync && hardhat --config hardhat.config.ts deploy-nonce",
-        "deploy:proxy": "pnpm compile && pnpm compile:zkSync && hardhat --config hardhat.config.ts deploy-proxy",
+        "deploy:proxy": "pnpm compile && hardhat --config hardhat.config.ts deploy-proxy",
         "deploy:sepolia": "pnpm compile && hardhat --config hardhat.config.ts deploy --network sepolia",
         "deploy:arbitrum:one": "pnpm compile && hardhat --config arbitrum.config.ts deploy --network arbitrumOne",
         "deploy:arbitrum:sepolia": "pnpm compile && hardhat --config arbitrum.config.ts deploy --network arbitrumSepolia",
@@ -24,10 +24,9 @@
         "deploy:polygon:mumbai": "pnpm compile && hardhat --config polygon.config.ts deploy --network polygonMumbai",
         "deploy:ZkSync:mainnet": "pnpm compile:zkSync && hardhat --config zkSync.config.ts deploy --network zkSync",
         "deploy:ZkSync:sepolia": "pnpm compile:zkSync && hardhat --config zkSync.config.ts deploy --network zkSyncSepolia",
-        "deploy:g7:arb:sepolia": "pnpm compile && hardhat --config g7.config.ts deploy --network game7OrbitARBOneSepolia",
+        "deploy:g7:arb:sepolia": "pnpm compile && hardhat --config g7.config.ts deploy --network game7OrbitArbSepolia",
         "deploy:g7:base:sepolia": "pnpm compile && hardhat --config g7.config.ts deploy --network game7OrbitBaseSepolia",
         "upgrade:ZkSync:sepolia": "pnpm compile:zkSync && hardhat --config zkSync.config.ts upgrade --network zkSyncSepolia",
-        "deleteme": "pnpm deploy:proxy --name Marketplace",
         "test:foundry": "forge test -vvv",
         "test": "REPORT_GAS=true hardhat --config hardhat.config.ts test test/hardhatTests/*.ts --network hardhat",
         "test:ci": "hardhat --config hardhat.config.ts test test/hardhatTests/*.ts  --network hardhat ",
@@ -38,7 +37,8 @@
         "format:check": "yarn prettier -c ./deploy/**/*.ts ./tasks/**/*.ts ./tests/**/*.ts ./helpers/**/*.ts ./contracts/**/*.sol ",
         "coverage": "pnpm dlx hardhat coverage",
         "coverage:foundry": "forge coverage --report lcov && genhtml lcov.info --branch-coverage --output-dir coverage",
-        "generate:types": "pnpm dlx hardhat typechain"
+        "generate:types": "pnpm dlx hardhat typechain",
+        "deleteme": "pnpm compile && hardhat --config g7.config.ts deploy-proxy --name Marketplace --network game7OrbitArbSepolia --verbose"
     },
     "repository": {
         "type": "git",

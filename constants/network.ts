@@ -26,7 +26,7 @@ export enum ChainId {
     OPSepolia = 11155420,
     Base = 8453,
     BaseSepolia = 84532,
-    Game7OrbitARBOneSepolia = 7007007,
+    Game7OrbitArbSepolia = 7007007,
     Game7OrbitBaseSepolia = 7770007,
 }
 
@@ -48,7 +48,7 @@ export enum NetworkName {
     OPSepolia = 'OPSepolia',
     Base = 'base',
     BaseSepolia = 'baseSepolia',
-    Game7OrbitARBOneSepolia = 'game7OrbitARBOneSepolia',
+    Game7OrbitArbSepolia = 'game7OrbitArbSepolia',
     Game7OrbitBaseSepolia = 'game7OrbitBaseSepolia',
 }
 
@@ -94,7 +94,7 @@ export enum Currency {
     Base = 'ETH',
     BaseSepolia = 'ETH',
     Game7Sepolia = 'ETH',
-    Game7OrbitARBOneSepolia = 'Iron',
+    Game7OrbitArbSepolia = 'Iron',
     Game7OrbitBaseSepolia = 'Iron',
 }
 
@@ -117,7 +117,7 @@ export enum NetworkExplorer {
     Base = 'https://basescan.org',
     BaseSepolia = 'https://base-sepolia.blockscout.com',
     //  this will change to: testnet.explorer.game7.io
-    Game7OrbitARBOneSepolia = 'https://explorerl2new-game7-arb-anytrust-wcj9hysn7y.t.conduit.xyz',
+    Game7OrbitArbSepolia = 'https://explorerl2new-game7-arb-anytrust-wcj9hysn7y.t.conduit.xyz',
     Game7OrbitBaseSepolia = 'https://explorerl2new-game7-base-anytrust-zuthm7ggv0.t.conduit.xyz',
 }
 
@@ -147,6 +147,6 @@ export const rpcUrls = {
     [ChainId.Base]: 'https://mainnet.base.org',
     [ChainId.BaseSepolia]: 'https://sepolia.base.org',
     //  this will change to: rpc.sepolia.game7.io
-    [ChainId.Game7OrbitARBOneSepolia]: 'https://rpc-game7-arb-anytrust-wcj9hysn7y.t.conduit.xyz',
+    [ChainId.Game7OrbitArbSepolia]: 'https://rpc-game7-arb-anytrust-wcj9hysn7y.t.conduit.xyz',
     [ChainId.Game7OrbitBaseSepolia]: 'https://rpc-game7-base-anytrust-zuthm7ggv0.t.conduit.xyz',
 };

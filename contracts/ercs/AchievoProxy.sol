@@ -3,11 +3,17 @@ pragma solidity ^0.8.17;
 
 /// @author omar@game7.io
 
+import "@openzeppelin/contracts/access/AccessControl.sol";
 import "@openzeppelin/contracts/proxy/Proxy.sol";
 import "@openzeppelin/contracts/utils/Address.sol";
 import "@openzeppelin/contracts/utils/StorageSlot.sol";
 
-contract AchievoProxy is Proxy {
+contract AchievoProxy is Proxy, AccessControl {
+    /// @dev Only MANAGER_ROLE holders can perform upgrades.
+    bytes32 public constant MANAGER_ROLE = keccak256("MANAGER_ROLE");
+
+    event Upgraded(address indexed implementation);
+
     /**
      * @dev Storage slot with the address of the current implementation.
      * This is the keccak-256 hash of "eip1967.proxy.implementation" subtracted by 1, and is
@@ -29,5 +35,15 @@ contract AchievoProxy is Proxy {
      */
     function _implementation() internal view override returns (address impl) {
         return StorageSlot.getAddressSlot(_IMPLEMENTATION_SLOT).value;
+    }
+
+    /**
+     * @dev Upgrades the proxy to a new implementation.
+     * @param newImplementation Address of the new implementation.
+     */
+    function upgradeTo(address newImplementation) external onlyRole(MANAGER_ROLE) {
+        require(Address.isContract(newImplementation), "AchievoProxy: New implementation is not a contract");
+        StorageSlot.getAddressSlot(_IMPLEMENTATION_SLOT).value = newImplementation;
+        emit Upgraded(newImplementation); // Optional: Emit an event after the upgrade
     }
 }

@@ -1,6 +1,15 @@
-import { AbiCoder } from 'ethers';
+import * as ethers from 'ethers';
 
-export function functionEncoder(values: string[], functionArgs: any[]): string {
-    const abiCoder = AbiCoder.defaultAbiCoder();
-    return abiCoder.encode(values, functionArgs);
-}
+export const encoder = (
+    types: readonly (string | ethers.ethers.ParamType)[],
+    values: readonly any[],
+    sliceNumber?: number
+): string => {
+    const abiCoder = new ethers.AbiCoder();
+    const encodedParams = abiCoder.encode(types, values);
+
+    if (sliceNumber) return encodedParams.slice(sliceNumber);
+    else {
+        return encodedParams;
+    }
+};

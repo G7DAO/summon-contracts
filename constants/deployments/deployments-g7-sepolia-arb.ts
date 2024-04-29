@@ -19,7 +19,7 @@ import { TENANT } from '@constants/tenant';
 import { DeploymentContract } from '../../types/deployment-type';
 import { NETWORK_TYPE, NetworkName } from '../network';
 
-const chain = NetworkName.Game7OrbitARBOneSepolia;
+const chain = NetworkName.Game7OrbitArbSepolia;
 const networkType = NETWORK_TYPE.TESTNET;
 
 export const G7_SEPOLIA_ARB_CONTRACTS: DeploymentContract[] = [

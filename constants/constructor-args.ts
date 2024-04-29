@@ -465,15 +465,15 @@ export const DirectListingExtensionArgs = {
 
 export const MarketplaceArgs = {
     MAINNET: {
-        _marketplaceConstructorParams: {
-            royaltyEngineAddress: 'FILL_ME',
-            nativeTokenWrapper: 'FILL_ME',
-        },
+        // This will be filled in the deploy script
+        extensions: [],
+        royaltyEngineAddress: 'FILL_ME',
+        nativeTokenWrapper: 'FILL_ME',
     },
     TESTNET: {
-        _marketplaceConstructorParams: {
-            royaltyEngineAddress: 'FILL_ME',
-            nativeTokenWrapper: IRON_G7_ARB_SEPOLIA_NATIVE_TOKEN,
-        },
+        // This will be filled in the deploy script
+        extensions: [],
+        royaltyEngineAddress: 'ZERO_ADDRESS',
+        nativeTokenWrapper: IRON_G7_ARB_SEPOLIA_NATIVE_TOKEN,
     },
 };

@@ -1,27 +1,32 @@
-import fs from 'fs';
-import { exec } from 'node:child_process';
-import path from 'path';
-
-import { CONTRACT_NAME } from '@constants/contract';
-import { ChainId, Currency, NetworkConfigFile, NetworkExplorer, NetworkName, rpcUrls } from '@constants/network';
-import { CONTRACTS } from '@constants/nonce-deployments';
-import { TENANT } from '@constants/tenant';
-import { getContractFromDB, submitContractDeploymentsToDB } from '@helpers/contract';
-import { encryptPrivateKey } from '@helpers/encrypt';
-import { getABIFilePath } from '@helpers/folder';
-import { log } from '@helpers/logger';
-import getWallet from 'deploy/getWallet';
-import * as ethers from 'ethers';
 import { task, types } from 'hardhat/config';
 import { HardhatRuntimeEnvironment } from 'hardhat/types';
-import { Deployment, DeploymentContract } from 'types/deployment-type';
+import fs from 'fs';
+import path from 'path';
+
+import { executeFunctionCallBatch, getContractFromDB, submitContractDeploymentsToDB } from '@helpers/contract';
+import { encryptPrivateKey } from '@helpers/encrypt';
+import { createDefaultFolders, getABIFilePath } from '@helpers/folder';
+import { log } from '@helpers/logger';
+import getWallet from 'deploy/getWallet';
+import { ChainId, Currency, NetworkConfigFile, NetworkExplorer, NetworkName, rpcUrls } from '@constants/network';
+import { CONTRACT_NAME, PROXY_CONTRACT_TYPE } from '@constants/contract';
+import { TENANT } from '@constants/tenant';
 import {
-    Contract,
-    ContractFactory as zkContractFactory,
-    Provider as zkProvider,
-    utils,
-    Wallet as zkWallet,
-} from 'zksync-ethers';
+    Deployment,
+    DeploymentContract,
+    DeploymentExtensionContract,
+    DeploymentProxyContract,
+} from 'types/deployment-type';
+import { exec } from 'node:child_process';
+import { CONTRACTS } from '@constants/proxy-deployments';
+import { ACHIEVO_TMP_DIR } from '@constants/deployments';
+import { isAlreadyDeployed, writeChecksumToFile } from '@helpers/checksum';
+import deployUpgradeable from '../deploy/deployUpgradeable';
+import deploy from '../deploy/deploy';
+import { encoder } from '@helpers/encoder';
+import { ExtensionFunction } from '@helpers/extensions';
+import { populateParam, prepFunctionOne } from './deploy';
+import { Contract } from 'ethers';
 
 const { PRIVATE_KEY = '' } = process.env;
 
@@ -32,12 +37,19 @@ if (!PRIVATE_KEY) {
 const wallet = getWallet(PRIVATE_KEY);
 const MINTER_ROLE = '0x9f2df0fed2c77648de5860a4cc508cd0818c85b8b8a1ab4ceeef8d981c8956a6';
 
-export function populateProxyParam(
+export async function populateProxyParam(
+    hre: HardhatRuntimeEnvironment,
     param: string | number | boolean,
-    networkName: NetworkName,
-    deployments: Deployment[]
-): string | number | boolean {
+    tenant: string,
+    contract: DeploymentProxyContract,
+    implementationContract?: Contract
+): Promise<string | number | boolean> {
+    const chain = hre.network.name;
     let value = param;
+
+    if (param === 'ENCODE_INITIALIZE_FUNCTION_ACHIEVO_PROXY' && !implementationContract && !contract) {
+        throw new Error('Implementation contract is required for ENCODE_INITIALIZE_FUNCTION_ACHIEVO_PROXY');
+    }
 
     if (param === 'DEPLOYER_WALLET') {
         return wallet.address;
@@ -47,124 +59,170 @@ export function populateProxyParam(
         return MINTER_ROLE;
     }
 
-    if (typeof param === 'string' && param.startsWith('CONTRACT_')) {
-        const name = param.substring('CONTRACT_'.length);
-        const deployedContract = deployments?.find(
-            (d) => d.name === name && d.networkName === networkName && d.networkName === networkName
+    if (param === 'ZERO_ADDRESS') {
+        return hre.ethers.ZeroAddress;
+    }
+
+    if (param === 'ENCODE_INITIALIZE_FUNCTION_ACHIEVO_PROXY') {
+        // Encode the initialization function call
+        const encodedDataMapped = contract?.encodeInitializeFunctionArgs?.map((arg) => {
+            if (arg === 'DEV_WALLET') {
+                return wallet.address;
+            }
+
+            return arg;
+        });
+        const initData = implementationContract?.interface?.encodeFunctionData(
+            contract.proxyInitializeFunctionName,
+            encodedDataMapped
         );
 
-        if (!deployedContract) {
+        if (!initData) {
+            throw new Error('initData encoded not created');
+        }
+
+        return initData;
+    }
+
+    if (typeof param === 'string' && param.startsWith('CONTRACT_')) {
+        const name = param.substring('CONTRACT_'.length);
+        const contract = CONTRACTS.find((c) => c.name === name && c.chain === chain);
+
+        if (!contract) {
             throw new Error(`Contract ${name} not found`);
         }
 
-        value = deployedContract.contractAddress;
+        const goingToDeploy = !isAlreadyDeployed(contract, tenant as string);
+
+        console.log('goingToDeploy->', name, goingToDeploy);
+
+        const filePathDeploymentLatest = path.resolve(
+            `${ACHIEVO_TMP_DIR}/${contract?.chain}/upgradeables/deployments-${contract?.name}-${tenant}-latest.json`
+        );
+
+        let deploymentPayload;
+        if (!goingToDeploy) {
+            log(`SKIPPED: ${contract?.contractFileName} Already deployed, using existing deploymentPayload`);
+
+            const deploymentPayloadContent = fs.readFileSync(filePathDeploymentLatest, 'utf8');
+            deploymentPayload = JSON.parse(deploymentPayloadContent);
+        } else {
+            const abiPath = getABIFilePath(hre.network.zksync, contract?.contractFileName);
+
+            // @ts-ignore-next-line
+            // eslint-disable-next-line
+            const constructorArgs = await populateProxyConstructorArgs(
+                hre,
+                // @ts-ignore-next-line
+                contract.args,
+                tenant as string
+            );
+
+            deploymentPayload = await deploy(hre, contract, constructorArgs, abiPath as string, tenant);
+
+            // @ts-ignore-next-line
+            writeChecksumToFile(contract?.contractFileName, contract.name as unknown as string, tenant);
+
+            // Convert deployments to JSON
+            const deploymentsJson = JSON.stringify(deploymentPayload, null, 2);
+            // Write to the file
+            fs.writeFileSync(filePathDeploymentLatest, deploymentsJson);
+            log(`Deployments saved to ${filePathDeploymentLatest}`);
+        }
+
+        value = deploymentPayload.contractAddress;
     }
 
     return value;
 }
 
-const deployOne = async (
+export async function populateProxyConstructorArgs(
     hre: HardhatRuntimeEnvironment,
-    networkName: NetworkName,
-    contract: DeploymentContract
+    constructorArgs: Record<string, string | number | boolean>,
+    tenant: string,
+    contract: DeploymentProxyContract,
+    implementationContract?: Contract
+) {
+    for (const key in constructorArgs) {
+        constructorArgs[key] = await populateProxyParam(
+            hre,
+            constructorArgs[key],
+            tenant,
+            contract,
+            implementationContract
+        );
+    }
+    return constructorArgs;
+}
+
+const deployOneWithExtensions = async (
+    hre: HardhatRuntimeEnvironment,
+    contract: DeploymentProxyContract,
+    tenant: string,
+    deployedExtensions: any[]
 ): Promise<Deployment> => {
-    const encryptedPrivateKey = await encryptPrivateKey(PRIVATE_KEY);
-    const isZkSync = networkName.toLowerCase().includes('zksync');
+    // @ts-ignore-next-line
+    const constructorArgs = await populateProxyConstructorArgs(hre, contract.implementationArgs, tenant, contract);
 
-    const abiPath = getABIFilePath(isZkSync, contract.contractFileName);
-    const abiContent = fs.readFileSync(path.resolve(abiPath as string), 'utf8');
-    const { abi: contractAbi, bytecode } = JSON.parse(abiContent);
-
-    const networkNameKey = Object.keys(NetworkName)[Object.values(NetworkName).indexOf(networkName)];
-    const chainId = ChainId[networkNameKey as keyof typeof ChainId];
-    const blockExplorerBaseUrl = NetworkExplorer[networkNameKey as keyof typeof NetworkExplorer];
-    const rpcUrl = rpcUrls[chainId] as string;
-    const currency = Currency[networkNameKey as keyof typeof Currency];
-
-    let deployerWallet;
-    let contractAddress: string;
-
-    console.log('chainId', networkName, chainId);
+    const isZkSync = hre.network.zksync;
 
     if (isZkSync) {
-        const ethNetworkName = networkName.split('zkSync')[1].toLowerCase() || 'mainnet';
-        const ethNetworkNameKey =
-            Object.keys(NetworkName)[Object.values(NetworkName).indexOf(ethNetworkName as NetworkName)];
-        const ethChainId = ChainId[ethNetworkNameKey as keyof typeof ChainId];
-        const ethRpcUrl = rpcUrls[ethChainId as ChainId];
-
-        const provider = new zkProvider(rpcUrl);
-        const ethProvider = hre.ethers.getDefaultProvider(ethRpcUrl);
-
-        deployerWallet = new zkWallet(PRIVATE_KEY, provider, ethProvider);
-
-        const factory = new zkContractFactory(contractAbi, bytecode, deployerWallet);
-        const achievoContract = await factory.deploy(deployerWallet.address);
-        await achievoContract.waitForDeployment();
-        contractAddress = await achievoContract.getAddress();
-        console.log('Contract deployed to:', networkName, '::', contractAddress);
-    } else {
-        const factoryContract = await getContractFromDB(CONTRACT_NAME.DETERMINISTIC_FACTORY_CONTRACT, chainId);
-
-        if (!factoryContract) {
-            throw new Error(`Factory contract not found for ${networkName}`);
-        }
-
-        const factoryAddr = factoryContract?.contractAddress;
-
-        if (!factoryAddr) {
-            throw new Error(`Factory address not found for ${networkName}`);
-        }
-
-        const provider = new hre.ethers.JsonRpcProvider(rpcUrl);
-        deployerWallet = new hre.ethers.Wallet(PRIVATE_KEY, provider);
-
-        const Factory = await hre.ethers.getContractFactory(
-            CONTRACT_NAME.DETERMINISTIC_FACTORY_CONTRACT,
-            deployerWallet
-        );
-        const factory = Factory.attach(factoryAddr) as Contract;
-        const deployment = await factory.deploy();
-        const txReceipt = await deployment.wait();
-
-        // find the log with the name Deployed
-        const log = txReceipt.logs.find((log: { fragment: { name: string } }) => {
-            return log.fragment.name === 'Deployed';
-        });
-        contractAddress = log.args[0];
-        console.log('Contract deployed to:', networkName, '::', contractAddress);
+        // TODO: Implement zkSync, not supported yet
+        throw new Error(`SKIPPED: ${contract?.name} ZKSync not supported yet`);
     }
 
-    // verify
-    if (contract.verify) {
-        const networkConfigFile = NetworkConfigFile[networkNameKey as keyof typeof NetworkConfigFile];
-        exec(
-            `npx hardhat verify ${contractAddress} ${deployerWallet.address} --network ${networkName} --config ${networkConfigFile}`,
-            (error) => {
-                if (error) {
-                    console.warn(error);
-                }
-            }
-        );
+    const abiPath = getABIFilePath(isZkSync, contract.contractFileName);
+
+    if (!abiPath) {
+        throw new Error(`ABI not found for ${contract.contractFileName}`);
     }
 
-    return {
-        contractAbi,
-        contractAddress,
-        type: contract.type,
-        name: contract.name,
-        networkName,
-        chainId,
-        rpcUrl,
-        currency,
-        blockExplorerBaseUrl,
-        privateKey: encryptedPrivateKey,
-        publicKey: deployerWallet.address,
-        paymasterAddresses: [],
-        fakeContractAddress: '',
-        explorerUrl: `${blockExplorerBaseUrl}/address/${contractAddress}#contract`,
-        upgradable: contract.upgradable,
-    };
+    if (contract.proxyContractType === PROXY_CONTRACT_TYPE.EIP1967) {
+        // @ts-ignore
+        constructorArgs.extensions = deployedExtensions;
+    }
+
+    // TODO: Implement other proxy contract types here
+
+    return await deploy(hre, contract, constructorArgs, abiPath, tenant);
+};
+
+const deployOne = async (
+    hre: HardhatRuntimeEnvironment,
+    contract: DeploymentProxyContract | DeploymentExtensionContract,
+    tenant: string,
+    implementationContract?: Contract
+): Promise<Deployment> => {
+    // @ts-ignore
+    if (!contract.extensionArgs && !contract.proxyContractArgs && !contract.implementationArgs) {
+        throw new Error(`Missing extensionArgs, proxyContractArgs or implementationArgs for ${contract.name}`);
+    }
+
+    const constructorArgs = await populateProxyConstructorArgs(
+        hre,
+        // @ts-ignore
+        contract.extensionArgs || contract.proxyContractArgs || contract.implementationArgs,
+        tenant,
+        // @ts-ignore
+        contract,
+        // @ts-ignore
+        implementationContract
+    );
+
+    const isZkSync = hre.network.zksync;
+
+    if (isZkSync) {
+        // TODO: Implement zkSync, not supported yet
+        throw new Error(`SKIPPED: ${contract?.name} ZKSync not supported yet`);
+    }
+
+    const abiPath = getABIFilePath(isZkSync, contract.contractFileName);
+
+    if (!abiPath) {
+        throw new Error(`ABI not found for ${contract.contractFileName}`);
+    }
+
+    return await deploy(hre, contract, constructorArgs, abiPath, tenant);
 };
 
 const getDependencies = (contractName: string, chain: string) => {
@@ -187,211 +245,197 @@ const getDependencies = (contractName: string, chain: string) => {
     return [...dependencies];
 };
 
-task('deploy-nonce', 'Deploys Smart contracts to same address across chain')
+task('deploy-proxy', 'Deploys Smart contracts with proxy')
     .addParam('name', 'Contract Name you want to deploy', undefined, types.string)
-    .addParam('tenant', 'Tenant you want to deploy', undefined, types.string)
-    .addParam('chains', 'Chains in this order chain1,chain2,chain3', undefined, types.string)
+    .addFlag('force', 'Do you want to force deploy?')
     .setAction(
-        async (_args: { name: CONTRACT_NAME; tenant: TENANT; chains: string }, hre: HardhatRuntimeEnvironment) => {
-            const { name, tenant, chains } = _args;
+        async (_args: { name: CONTRACT_NAME; tenant: TENANT; force: boolean }, hre: HardhatRuntimeEnvironment) => {
+            const { name, force } = _args;
+
+            const network = hre.network.name;
             log('└─ args :\n');
-            log(`   ├─ Tenant : ${tenant}\n`);
             log(`   ├─ Contract name : ${name}\n`);
-            log(`   └─ Chains : ${chains}\n`);
+            log(`   └─ network : ${network}\n`);
 
-            const networksToDeploy: NetworkName[] = chains.split(',').map((chain) => {
-                if (Object.values(NetworkName).includes(chain as NetworkName)) {
-                    return chain as NetworkName;
-                } else {
-                    throw new Error(`Invalid chain: ${chain}`);
-                }
-            });
+            createDefaultFolders(network);
 
-            const infoPerNetwork = await Promise.all(
-                networksToDeploy.map(async (networkName: NetworkName) => {
-                    const networkNameKey = Object.keys(NetworkName)[Object.values(NetworkName).indexOf(networkName)];
-                    const chainId = ChainId[networkNameKey as keyof typeof ChainId];
+            const contract = CONTRACTS.find((d) => d.name === name && d.chain === network);
 
-                    const rpcUrl = rpcUrls[chainId];
-                    const provider = new hre.ethers.JsonRpcProvider(rpcUrl);
-                    const wallet = new hre.ethers.Wallet(PRIVATE_KEY, provider);
-                    const nonce = await provider.getTransactionCount(wallet.address);
-
-                    const balance = hre.ethers.formatEther(await provider.getBalance(wallet.address));
-
-                    console.log(networkName, 'chain', chainId, 'nonce', nonce);
-
-                    const contract = CONTRACTS.find((d) => d.name === name && d.chain === networkName);
-
-                    if (!contract) {
-                        throw new Error(`Contract ${name} not found on ${networkName}`);
-                    }
-
-                    return { chainId, nonce, balance };
-                })
-            );
-
-            console.log('infoPerNetwork', infoPerNetwork);
-
-            // check balance across all chains
-            const minBalance = hre.ethers.parseEther('0.06'); // should have at least 0.06 eth
-            // @ts-ignore
-            const hasEnoughBalance = infoPerNetwork.every(({ chainId, balance }: { balance: string }) => {
-                console.log(chainId, hre.ethers.parseEther(balance) >= minBalance);
-                return hre.ethers.parseEther(balance) >= minBalance;
-            });
-            if (!hasEnoughBalance) {
-                throw new Error('Not enough balance in one or more wallets');
+            if (!contract) {
+                throw new Error(`Contract ${name} not found on ${network}`);
             }
 
-            const deployments: Deployment[] = [];
+            const contractsToDeploy = getDependencies(contract.name, network);
+            for (const tenant of contract.tenants) {
+                log('=====================================================');
+                log('=====================================================');
+                log(`[STARTING] Deploy ${name} contract on ${network} for [[${tenant}]]`);
+                log(`Contracts to deploy: ${contractsToDeploy.length}`);
+                for (const contract of contractsToDeploy) {
+                    log(`contract: ${contract}`);
+                }
+                log('=====================================================');
+                log('=====================================================');
+                log('\n');
+                log('\n');
+                log('\n');
+                log('\n');
 
-            await Promise.all(
-                networksToDeploy.map(async (networkName: NetworkName) => {
-                    log('\n');
-                    log('\n');
-                    log('=====================================================');
-                    log('=====================================================');
-                    log(`[STARTING] Deploy ${name} contract on ${networkName} for [[${tenant}]] via Create2 Contract`);
-                    log('=====================================================');
-                    log('=====================================================');
-                    log('\n');
-                    log('\n');
+                const deployments: Deployment[] = [];
 
+                for (const contractName of contractsToDeploy) {
                     const contract = CONTRACTS.find(
-                        (d) => d.name === name && d.chain === networkName && d.tenants.find((t) => t === tenant)
+                        (d) => d.name === contractName && d.chain === network
+                    ) as unknown as DeploymentProxyContract;
+                    log(
+                        `[PREPPING] Get ready to deploy ${name}:<${contract.contractFileName}> contract on ${network} for ${tenant}`
                     );
-                    if (!contract) {
-                        throw new Error(`Contract ${name} not found on ${networkName}`);
-                    }
 
-                    const contractsToDeploy = getDependencies(contract.name, networkName);
+                    log('\n\n');
+                    log('=====================================================');
+                    log(`[EXTENSIONS DEPLOYMENT]`);
+                    log('=====================================================');
 
-                    log('=====================================================');
-                    log('=====================================================');
-                    log(`[STARTING] Deploy ${name} contract on ${networkName} for [[${tenant}]]`);
-                    log(`Contracts to deploy: ${contractsToDeploy.length}`);
-                    for (const contract of contractsToDeploy) {
-                        log(`contract: ${contract}`);
-                    }
-                    log('=====================================================');
-                    log('=====================================================');
-                    log('\n');
-                    log('\n');
-                    log('\n');
-                    log('\n');
+                    const deployedExtensions = [];
+                    for await (const extension of contract.extensions) {
+                        const deployedExtensionContract = await deployOne(hre, extension, tenant);
+                        const metadata = {
+                            name: extension.metadata.name,
+                            metadataURI: extension.metadata.metadataURI,
+                            implementation: deployedExtensionContract.contractAddress,
+                        };
 
-                    for (const contractName of contractsToDeploy) {
-                        const contract = CONTRACTS.find(
-                            (d) => d.name === contractName && d.chain === networkName
-                        ) as unknown as DeploymentContract;
-                        log(
-                            `[PREPPING] Get ready to deploy ${name}:<${contract.contractFileName}> contract on ${networkName} for ${tenant}`
+                        const contractInstance = await hre.ethers.getContractAt(
+                            extension.contractFileName,
+                            deployedExtensionContract.contractAddress
                         );
 
-                        const deployment = await deployOne(hre, networkName, contract);
-                        deployments.push(deployment);
+                        let functions: ExtensionFunction[] = [];
+
+                        for (const func of extension.functionsToInclude) {
+                            const selector = contractInstance.getFunction(func).getFragment().selector;
+                            functions.push({
+                                functionSelector: selector,
+                                functionSignature: func,
+                            });
+                        }
+
+                        const extensionDeployed = {
+                            metadata,
+                            functions,
+                        };
+                        deployments.push(deployedExtensionContract);
+                        deployedExtensions.push(extensionDeployed);
                     }
 
+                    log('\n\n');
                     log('=====================================================');
-                    log(
-                        `[DONE] ${name} contract deployment on ${networkName} for [[${tenant}]] Achievo Proxy Contract is DONE!`
+                    log(`[IMPLEMENTATION DEPLOYMENT]`);
+                    log('=====================================================');
+
+                    const deployedImplementation = await deployOneWithExtensions(
+                        hre,
+                        contract,
+                        tenant,
+                        deployedExtensions
                     );
+
+                    deployments.push(deployedImplementation);
+
+                    log('\n\n');
                     log('=====================================================');
-                    log('\n');
-                })
-            );
+                    log(`[PROXY DEPLOYMENT]`);
+                    log('=====================================================');
 
-            // submit to db
-            try {
-                log('*******************************************');
-                log('[SUBMITTING] Deployments to db');
-                log('*******************************************');
-                await submitContractDeploymentsToDB(deployments, tenant);
-                log('*******************************************');
-                log('*** Deployments submitted to db ***');
-                log('*******************************************');
-            } catch (error: any) {
-                log('*******************************************');
-                log('***', error.message, '***');
-                log('*******************************************');
-            }
+                    switch (contract.proxyContractType) {
+                        default:
+                        case PROXY_CONTRACT_TYPE.EIP1967:
+                            // switch to the proxy contract values
+                            const proxyContract = contract;
+                            proxyContract.contractFileName = contract.proxyContractFileName;
+                            proxyContract.name = contract.proxyContractName;
+                            proxyContract.proxyContractArgs.implementation = deployedImplementation.contractAddress;
+                            proxyContract.verify = contract.proxyContractVerify;
 
-            for (const deployment of deployments) {
-                const { contractAbi, contractAddress, name, networkName } = deployment;
+                            // // Prepare the arguments for the initialize function
+                            const defaultAdmin = wallet.address; // Admin address here
+                            const contractURI = 'ipfs://NewUriToMetaData';
+                            const trustedForwarders: never[] = []; // Forwarder addresses
+                            const platformFeeRecipient = wallet.address;
+                            const platformFeeBps = 0; // Example fee basis points (1%)
 
-                log('\n');
-                log('\n');
-                log('=====================================================');
-                log('=====================================================');
-                log(`[INITIALIZING] Calling initialize() on ${name} contract on ${networkName} for [[${tenant}]]`);
-                log('=====================================================');
-                log('=====================================================');
-                log('\n');
-                log('\n');
+                            const implementationContract = await hre.ethers.getContractAt(
+                                deployedImplementation.name,
+                                deployedImplementation.contractAddress
+                            );
 
-                const deployedContract = CONTRACTS.find(
-                    (d) =>
-                        d.type === deployment.type && d.chain === networkName && d.upgradable === deployment.upgradable
+                            const proxyDeployment = await deployOne(hre, proxyContract, tenant, implementationContract);
+
+                            // TODO: Add this data to the deployment object, @daniel.lima
+                            deployments.push(proxyDeployment);
+                            break;
+                    }
+                }
+
+                log('=====================================================');
+                log(
+                    `[DONE] ${name}, ${contract?.proxyContractName}, ${contract?.extensions.map(
+                        (extension) => `${extension.name},`
+                    )} contract deployment on ${network} for [[${tenant}]] is DONE!`
                 );
-
-                if (!deployedContract) {
-                    throw new Error(`Contract ${deployment.type} not found on ${networkName}`);
-                }
-
-                console.log('deployedContract', deployedContract);
-
-                const networkNameKey = Object.keys(NetworkName)[Object.values(NetworkName).indexOf(networkName)];
-                const chainId = ChainId[networkNameKey as keyof typeof ChainId];
-                const rpcUrl = rpcUrls[chainId];
-                const isZkSync = networkName.toLowerCase().includes('zksync');
-
-                let deployerWallet;
-                if (isZkSync) {
-                    const ethNetworkName = networkName.split('zkSync')[1].toLowerCase() || 'mainnet';
-                    const ethNetworkNameKey =
-                        Object.keys(NetworkName)[Object.values(NetworkName).indexOf(ethNetworkName as NetworkName)];
-                    const ethChainId = ChainId[ethNetworkNameKey as keyof typeof ChainId];
-                    const ethRpcUrl = rpcUrls[ethChainId];
-
-                    const provider = new zkProvider(rpcUrl);
-                    const ethProvider = hre.ethers.getDefaultProvider(ethRpcUrl);
-
-                    deployerWallet = new zkWallet(PRIVATE_KEY, provider, ethProvider);
-                } else {
-                    const provider = new hre.ethers.JsonRpcProvider(rpcUrl);
-                    deployerWallet = new hre.ethers.Wallet(PRIVATE_KEY, provider);
-                }
-
-                const initializeArgs = [];
-                for (const key in deployedContract?.args) {
-                    const arg = populateProxyParam(deployedContract?.args[key], networkName, deployments);
-                    console.log('key:', key, 'arg:', arg);
-                    initializeArgs.push(arg);
-                }
-
-                // check if contract has initialized function
-                const hasInitializeFunction = contractAbi.some(
-                    (abi: any) => abi.type === 'function' && abi.name === 'initialize'
-                );
-                if (hasInitializeFunction) {
-                    const contractInstance = new hre.ethers.Contract(contractAddress, contractAbi, deployerWallet);
-                    console.log('initializeArgs', networkName, initializeArgs);
-                    const initializeTx = await contractInstance.initialize(...initializeArgs);
-                    await initializeTx.wait();
-                } else {
-                    console.log('Contract does not have an initialize function');
-                }
-
-                log('\n');
-                log('\n');
-                log('=====================================================');
-                log('=====================================================');
-                log(`[DONE] Initialization is completed for ${name} contract on ${networkName} for [[${tenant}]]`);
-                log('=====================================================');
                 log('=====================================================');
                 log('\n');
-                log('\n');
+
+                // submit to db
+                try {
+                    log('*******************************************');
+                    log('[SUBMITTING] Deployments to db');
+                    log('*******************************************');
+                    await submitContractDeploymentsToDB(deployments, tenant);
+                    log('*******************************************');
+                    log('*** Deployments submitted to db ***');
+                    log('*******************************************');
+                } catch (error: any) {
+                    log('*******************************************');
+                    log('***', error.message, '***');
+                    log('*******************************************');
+                }
+
+                const calls = [];
+                for (const deployment of deployments) {
+                    // write deployment payload per tenant
+                    // Define the path to the file
+                    const filePath = path.resolve(
+                        `${ACHIEVO_TMP_DIR}/deployments/${contract.chain}/upgradeables/deployments-${
+                            deployment.type
+                        }-${tenant}-${Date.now()}.json`
+                    );
+                    // Convert deployments to JSON
+                    const deploymentsJson = JSON.stringify(deployment, null, 2);
+                    // Write to the file
+                    fs.writeFileSync(filePath, deploymentsJson);
+
+                    log(`Deployments saved to ${filePath}`);
+
+                    const deployedContract = CONTRACTS.find((d) => d.type === deployment.type && d.chain === network);
+
+                    if (!deployedContract?.functionCalls || deployedContract?.functionCalls?.length === 0) {
+                        continue;
+                    }
+
+                    for (const call of deployedContract?.functionCalls) {
+                        console.log(
+                            `[CALLING]: ${deployedContract.contractFileName} on ${deployedContract.chain} for ${tenant} `
+                        );
+                        const _call = await prepFunctionOne(hre, call, tenant, deployment.contractAddress);
+                        calls.push(_call);
+                    }
+                }
+
+                // execute function calls
+                if (calls.length > 0) {
+                    await executeFunctionCallBatch(calls, tenant);
+                }
             }
         }
     );

@@ -22,6 +22,7 @@ import {
     ContractFactory as zkContractFactory,
     Contract,
 } from 'zksync-ethers';
+import { encoder } from '@helpers/encoder';
 
 const { PRIVATE_KEY = '' } = process.env;
 
@@ -31,12 +32,6 @@ if (!PRIVATE_KEY) {
 
 const wallet = getWallet(PRIVATE_KEY);
 const MINTER_ROLE = '0x9f2df0fed2c77648de5860a4cc508cd0818c85b8b8a1ab4ceeef8d981c8956a6';
-
-const encoder = (types: readonly (string | ethers.ethers.ParamType)[], values: readonly any[]) => {
-    const abiCoder = new ethers.AbiCoder();
-    const encodedParams = abiCoder.encode(types, values);
-    return encodedParams.slice(2);
-};
 
 const create2Address = (
     hre: HardhatRuntimeEnvironment,
@@ -145,7 +140,7 @@ const deployOne = async (
         const provider = new hre.ethers.JsonRpcProvider(rpcUrl);
         deployerWallet = new hre.ethers.Wallet(PRIVATE_KEY, provider);
 
-        const initCode = bytecode + encoder(['address'], [deployerWallet.address]);
+        const initCode = bytecode + encoder(['address'], [deployerWallet.address], 2);
         const create2Addr = create2Address(hre, isZkSync, factoryAddr, initCode, saltHex);
         console.log('precomputed address:', networkName, create2Addr);
 
@@ -178,7 +173,7 @@ const deployOne = async (
         );
     }
 
-    const deploymentPayload: Deployment = {
+    return {
         contractAbi,
         contractAddress,
         type: contract.type,
@@ -196,8 +191,6 @@ const deployOne = async (
         upgradable: contract.upgradable,
         salt: saltString,
     };
-
-    return deploymentPayload;
 };
 
 const getDependencies = (contractName: string, chain: string) => {

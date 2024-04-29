@@ -4,7 +4,7 @@ import path from 'path';
 
 import { ACHIEVO_TMP_DIR } from '@constants/deployments';
 import glob from 'glob';
-import { DeploymentContract } from 'types/deployment-type';
+import { DeploymentContract, DeploymentProxyContract } from 'types/deployment-type';
 
 const CHECKSUM_PATH = `${ACHIEVO_TMP_DIR}/checksums`;
 
@@ -24,6 +24,7 @@ export function generateChecksumFromFile(contractFileName: string): string {
     }
 
     const data = fs.readFileSync(contractFiles[0]);
+    // @ts-ignore
     const checksum = generateChecksum(data);
     return checksum;
 }
@@ -48,7 +49,7 @@ export function readChecksumFromFile(contractName: string, tenant: string): stri
     return checksum;
 }
 
-export function isAlreadyDeployed(contract: DeploymentContract, tenant: string): boolean {
+export function isAlreadyDeployed(contract: DeploymentContract | DeploymentProxyContract, tenant: string): boolean {
     const checksum = generateChecksumFromFile(contract.contractFileName);
     const previousChecksum = readChecksumFromFile(contract.name, tenant);
     if (!previousChecksum) {
@@ -57,6 +58,7 @@ export function isAlreadyDeployed(contract: DeploymentContract, tenant: string):
     let _isAlreadyDeployed = checksum === previousChecksum;
 
     const filePathDeploymentLatest = path.resolve(
+        // @ts-ignore
         `${ACHIEVO_TMP_DIR}/${contract.chain}/${contract.upgradable ? 'upgradeables/' : ''}deployments-${
             contract.name
         }-${tenant}-latest.json`

@@ -5,8 +5,8 @@ export interface ExtensionMetadata {
 }
 
 export interface ExtensionFunction {
-    selector: string;
-    signature: string;
+    functionSelector: string;
+    functionSignature: string;
 }
 
 export interface Extension {
