@@ -13,7 +13,7 @@ import { Wallet } from 'zksync-ethers';
 import getZkWallet from './getWallet';
 import { PROXY_CONTRACT_TYPE } from '@constants/contract';
 import { Deployment } from 'types/deployment-type';
-import { PROXY_ADMIN_PATH } from '@constants/proxy-deployments';
+import { PROXY_ADMIN_ABI_PATH } from '@constants/proxy-deployments';
 
 const { Wallet: EthersWallet } = ethers;
 
@@ -84,7 +84,7 @@ export default async function (
     const implementationAddress = await hre.upgrades.erc1967.getImplementationAddress(contractAddress);
 
     const proxyAdminAddress = await hre.upgrades.erc1967.getAdminAddress(contractAddress);
-    const proxyAdminAbiContent = fs.readFileSync(path.resolve(PROXY_ADMIN_PATH), 'utf8');
+    const proxyAdminAbiContent = fs.readFileSync(path.resolve(PROXY_ADMIN_ABI_PATH), 'utf8');
     const { abi: proxyAdminAbi } = JSON.parse(proxyAdminAbiContent);
     const proxyAdminContract = await hre.ethers.getContractAt(proxyAdminAbi, proxyAdminAddress);
     const proxyAdminOwnerAddress = await proxyAdminContract.owner();
