@@ -324,8 +324,7 @@ task('deploy-proxy', 'Deploys Smart contracts with proxy')
                             metadata,
                             functions,
                         };
-                        // TODO: save the right information into the same deployed contract: ABI extension, name, address, functions
-                        deployments.push(deployedExtensionContract);
+
                         deployedExtensions.push(extensionDeployed);
                     }
 
@@ -340,8 +339,6 @@ task('deploy-proxy', 'Deploys Smart contracts with proxy')
                         tenant,
                         deployedExtensions
                     );
-
-                    deployments.push(deployedImplementation);
 
                     log('\n\n');
                     log('=====================================================');
