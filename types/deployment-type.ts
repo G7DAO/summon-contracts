@@ -24,6 +24,25 @@ export interface Deployment {
     explorerUrl: string;
     salt?: string;
     upgradable?: boolean;
+    proxyType?: PROXY_CONTRACT_TYPE;
+    proxy?: {
+        abi: any;
+        address: string;
+        owner: string;
+    };
+    proxyAdmin?: {
+        abi: any;
+        address: string;
+        owner: string;
+    };
+    implementation?: {
+        abi: any;
+        address: string;
+    };
+    extensions?: {
+        abi: any;
+        address: string;
+    }[];
 }
 
 export interface DeploymentContract {
