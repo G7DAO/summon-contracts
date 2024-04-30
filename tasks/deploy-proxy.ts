@@ -372,7 +372,6 @@ task('deploy-proxy', 'Deploys Smart contracts with proxy')
 
                             const proxyDeployment = await deployOne(hre, proxyContract, tenant, implementationContract);
 
-                            // TODO: Add this data to the deployment object, @daniel.lima
                             proxyDeployment.upgradable = true;
                             proxyDeployment.proxyType = PROXY_CONTRACT_TYPE.EIP1967;
                             proxyDeployment.proxy = {
