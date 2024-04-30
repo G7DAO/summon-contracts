@@ -42,6 +42,8 @@ export interface Deployment {
     extensions?: {
         abi: any;
         address: string;
+        functions: string[];
+        selectors: string[];
     }[];
 }
 
