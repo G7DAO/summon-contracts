@@ -6,6 +6,7 @@ import {
 } from '@constants/contract';
 import { NETWORK_TYPE, NetworkName } from '@constants/network';
 import { TENANT } from '@constants/tenant';
+import { ExtensionFunction } from '@helpers/extensions';
 
 export interface Deployment {
     contractAbi: any;
@@ -42,8 +43,7 @@ export interface Deployment {
     extensions?: {
         abi: any;
         address: string;
-        functions: string[];
-        selectors: string[];
+        functions: ExtensionFunction[];
     }[];
 }
 
