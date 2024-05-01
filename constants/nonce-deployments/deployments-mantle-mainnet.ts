@@ -1,4 +1,4 @@
-import { HelloWorldArgs, LootDropArgs, RewardTokenArgs } from '@constants/constructor-args';
+import { GameSummaryArgs, LootDropArgs, RewardTokenArgs } from '@constants/constructor-args';
 import { CONTRACT_FILE_NAME, CONTRACT_NAME, CONTRACT_TYPE } from '@constants/contract';
 import { TENANT } from '@constants/tenant';
 
@@ -34,5 +34,18 @@ export const MANTLE_MAINNET_CONTRACTS: DeploymentContract[] = [
         dependencies: [CONTRACT_NAME.LootDrop],
         functionCalls: [],
         args: RewardTokenArgs.MAINNET,
+    },
+    {
+        contractFileName: CONTRACT_FILE_NAME.GameSummary,
+        type: CONTRACT_TYPE.GameSummary,
+        name: CONTRACT_NAME.GameSummary,
+        chain,
+        networkType,
+        tenants: [TENANT.HyperPlay],
+        verify: true,
+        upgradable: false,
+        dependencies: [],
+        functionCalls: [],
+        args: GameSummaryArgs.MAINNET,
     },
 ];

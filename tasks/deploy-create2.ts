@@ -28,9 +28,8 @@ const deployOne = async (
 ): Promise<Deployment> => {
     const encryptedPrivateKey = await encryptPrivateKey(DETERMINISTIC_DEPLOYER_PRIVATE_KEY);
 
-    const abiPath = getABIFilePath(true, contractFileName);
-
     const isZkSync = networkName.toLowerCase().includes('zksync');
+    const abiPath = getABIFilePath(isZkSync, contractFileName);
 
     const networkNameKey = Object.keys(NetworkName)[Object.values(NetworkName).indexOf(networkName as NetworkName)];
     const chainId = ChainId[networkNameKey as keyof typeof ChainId];
@@ -51,13 +50,10 @@ const deployOne = async (
             Object.keys(NetworkName)[Object.values(NetworkName).indexOf(ethNetworkName as NetworkName)];
         const ethChainId = ChainId[ethNetworkNameKey as keyof typeof ChainId];
         const ethRpcUrl = rpcUrls[ethChainId];
-
         const provider = new zkProvider(rpcUrl);
         const ethProvider = hre.ethers.getDefaultProvider(ethRpcUrl);
-
         deployerWallet = new zkWallet(DETERMINISTIC_DEPLOYER_PRIVATE_KEY, provider, ethProvider);
         managerWallet = new zkWallet(PRIVATE_KEY, provider, ethProvider);
-
         const factory = new zkContractFactory(contractAbi, bytecode, deployerWallet);
         achievoContract = await factory.deploy(managerWallet.address);
     } else {

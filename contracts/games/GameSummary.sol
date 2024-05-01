@@ -99,6 +99,7 @@ contract GameSummary is
         string memory _symbol,
         string memory _initBaseURI,
         string memory _contractURI,
+        string memory _compoundURI,
         uint256 _maxPerMint,
         bool _isPaused,
         address devWallet
@@ -118,6 +119,9 @@ contract GameSummary is
         baseURI = _initBaseURI;
         contractURI = _contractURI;
         MAX_PER_MINT = _maxPerMint;
+
+        compoundURIEnabled = true;
+        compoundURI = _compoundURI;
 
         if (_isPaused) _pause();
     }
@@ -438,7 +442,11 @@ contract GameSummary is
                 );
         }
 
-        return string(abi.encodePacked(baseURI, "/", tokenId.toString()));
+        if (bytes(tokenUris[tokenId]).length > 0) {
+            return tokenUris[tokenId];
+        } else {
+            return string(abi.encodePacked(baseURI, "/", tokenId.toString()));
+        }
     }
 
     function setBaseUri(string memory _uri) public onlyRole(DEV_CONFIG_ROLE) {
