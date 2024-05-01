@@ -2,12 +2,10 @@
 pragma solidity ^0.8.17;
 
 /**
- * Author: Omar <ogarciarevett>(https://github.com/ogarciarevett)
- * Co-Authors: Max <vasinl124>(https://github.com/vasinl124)
+ * Author: Achievo Team - (https://achievo.xyz/)
  */
 
 //TODO: This contract is deprecated USE THE LootDrop.sol
-
 
 // MMMMNkc. .,oKWMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMM
 // MWXd,.      .cONMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMM
@@ -200,10 +198,7 @@ contract ERC1155RewardSoulboundV1 is
         _burn(to, defaultRewardId, 1);
     }
 
-    function adminClaimERC20RewardById(
-        address to,
-        uint256[] calldata _tokenIds
-    ) public onlyRole(MANAGER_ROLE) {
+    function adminClaimERC20RewardById(address to, uint256[] calldata _tokenIds) public onlyRole(MANAGER_ROLE) {
         require(to != address(0), "InvalidToAddress");
 
         for (uint256 i = 0; i < _tokenIds.length; i++) {

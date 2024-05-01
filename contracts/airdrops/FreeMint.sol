@@ -18,8 +18,7 @@ pragma solidity ^0.8.17;
 // MMMM0cdNMM0cdNMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMM
 
 /**
- * Authors: Omar Garcia
- * GitHub: https://github.com/ogarciarevett
+ * Author: Achievo Team - (https://achievo.xyz/)
  */
 
 import "@openzeppelin/contracts/token/ERC721/extensions/ERC721Enumerable.sol";

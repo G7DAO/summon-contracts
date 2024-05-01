@@ -2,8 +2,7 @@
 pragma solidity ^0.8.17;
 
 /**
- * Author: Omar <ogarciarevett>(https://github.com/ogarciarevett)
- * Co-Authors: Max <vasinl124>(https://github.com/vasinl124)
+ * Author: Achievo Team - (https://achievo.xyz/)
  */
 
 // MMMMNkc. .,oKWMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMM
