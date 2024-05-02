@@ -11,6 +11,9 @@ import { HardhatRuntimeEnvironment } from 'hardhat/types';
 import { Wallet } from 'zksync-ethers';
 
 import getZkWallet from './getWallet';
+import { PROXY_CONTRACT_TYPE } from '@constants/contract';
+import { Deployment } from 'types/deployment-type';
+import { PROXY_ADMIN_ABI_PATH } from '@constants/proxy-deployments';
 
 const { Wallet: EthersWallet } = ethers;
 
@@ -78,6 +81,13 @@ export default async function (
 
     // Show the contract info.
     const contractAddress = await achievoContract.getAddress();
+    const implementationAddress = await hre.upgrades.erc1967.getImplementationAddress(contractAddress);
+
+    const proxyAdminAddress = await hre.upgrades.erc1967.getAdminAddress(contractAddress);
+    const proxyAdminAbiContent = fs.readFileSync(path.resolve(PROXY_ADMIN_ABI_PATH), 'utf8');
+    const { abi: proxyAdminAbi } = JSON.parse(proxyAdminAbiContent);
+    const proxyAdminContract = await hre.ethers.getContractAt(proxyAdminAbi, proxyAdminAddress);
+    const proxyAdminOwnerAddress = await proxyAdminContract.owner();
 
     log('=====================================================');
     log(`VERIFY: ${contract.verify}`);
@@ -103,7 +113,7 @@ export default async function (
     const abiContent = fs.readFileSync(path.resolve(abiPath), 'utf8');
     const { abi: contractAbi } = JSON.parse(abiContent);
 
-    const deploymentPayload = {
+    const deploymentPayload: Deployment = {
         contractAbi,
         contractAddress,
         type: contract.type,
@@ -119,6 +129,16 @@ export default async function (
         fakeContractAddress: '',
         explorerUrl: `${blockExplorerBaseUrl}/address/${contractAddress}#contract`,
         upgradable: true,
+        proxyType: PROXY_CONTRACT_TYPE.TransparentUpgradeableProxy,
+        proxyAdmin: {
+            address: proxyAdminAddress,
+            owner: proxyAdminOwnerAddress,
+            abi: proxyAdminAbi,
+        },
+        implementation: {
+            abi: contractAbi,
+            address: implementationAddress,
+        },
     };
 
     log(`*****************************************************`);

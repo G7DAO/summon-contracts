@@ -6,6 +6,7 @@ import {
 } from '@constants/contract';
 import { NETWORK_TYPE, NetworkName } from '@constants/network';
 import { TENANT } from '@constants/tenant';
+import { ExtensionFunction } from '@helpers/extensions';
 
 export interface Deployment {
     contractAbi: any;
@@ -24,6 +25,26 @@ export interface Deployment {
     explorerUrl: string;
     salt?: string;
     upgradable?: boolean;
+    proxyType?: PROXY_CONTRACT_TYPE;
+    proxy?: {
+        abi: any;
+        address: string;
+        owner: string;
+    };
+    proxyAdmin?: {
+        abi: any;
+        address: string;
+        owner: string;
+    };
+    implementation?: {
+        abi: any;
+        address: string;
+    };
+    extensions?: {
+        abi: any;
+        address: string;
+        functions: ExtensionFunction[];
+    }[];
 }
 
 export interface DeploymentContract {
