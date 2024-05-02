@@ -60,7 +60,6 @@ export const GAME7_ARB_SEPOLIA_CONTRACTS: DeploymentProxyContract[] = [
                     'approveBuyerForListing(uint256,address,bool)',
                     'approveCurrencyForListing(uint256,address,uint256)',
                     'buyFromListing(uint256,address,uint256,address,uint256)',
-                    'adminBuyFromListing(uint256,address,uint256,address,uint256,address)',
                     'buyFromListingWithSignature(uint256,address,uint256,address,uint256,uint256,bytes,bytes)',
                     'getAllListings(uint256,uint256)',
                     'getAllValidListings(uint256,uint256)',
