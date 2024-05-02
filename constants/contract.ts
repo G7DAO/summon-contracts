@@ -120,3 +120,7 @@ export enum CONTRACT_UPGRADABLE_NAME {
     RewardItemsUpgradable = 'RewardItemsUpgradable',
     Marketplace = 'Marketplace',
 }
+
+export enum CONTRACT_EXTENSION_NAME {
+    DirectListingExtension = 'DirectListingExtension'
+}

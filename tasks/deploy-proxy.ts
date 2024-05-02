@@ -305,6 +305,7 @@ task('deploy-proxy', 'Deploys Smart contracts with proxy')
                             implementation: deployedExtensionContract.contractAddress,
                         };
                         const abi = deployedExtensionContract.contractAbi;
+                        const name = deployedExtensionContract.name;
 
                         const contractInstance = await hre.ethers.getContractAt(
                             extension.contractFileName,
@@ -325,6 +326,7 @@ task('deploy-proxy', 'Deploys Smart contracts with proxy')
                             metadata,
                             functions,
                             abi,
+                            name,
                         };
 
                         deployedExtensions.push(extensionDeployed);
@@ -385,6 +387,7 @@ task('deploy-proxy', 'Deploys Smart contracts with proxy')
                             };
                             proxyDeployment.extensions = deployedExtensions.map((extension) => {
                                 return {
+                                    name: extension.name,
                                     abi: extension.abi,
                                     address: extension.metadata.implementation,
                                     functions: extension.functions,

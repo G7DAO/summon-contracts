@@ -1,4 +1,5 @@
 import {
+    CONTRACT_EXTENSION_NAME,
     CONTRACT_PROXY_CONTRACT_NAME,
     CONTRACT_PROXY_FILE_NAME,
     CONTRACT_TYPE,
@@ -44,6 +45,7 @@ export interface Deployment {
         abi: any;
         address: string;
         functions: ExtensionFunction[];
+        name: CONTRACT_EXTENSION_NAME;
     }[];
 }
 
