@@ -27,6 +27,7 @@ import { encoder } from '@helpers/encoder';
 import { ExtensionFunction } from '@helpers/extensions';
 import { populateParam, prepFunctionOne } from './deploy';
 import { Contract } from 'ethers';
+import { proxy } from 'typechain-types/@openzeppelin/contracts';
 
 const { PRIVATE_KEY = '' } = process.env;
 
@@ -323,8 +324,7 @@ task('deploy-proxy', 'Deploys Smart contracts with proxy')
                             metadata,
                             functions,
                         };
-                        // TODO: save the right information into the same deployed contract: ABI extension, name, address, functions
-                        deployments.push(deployedExtensionContract);
+
                         deployedExtensions.push(extensionDeployed);
                     }
 
@@ -339,8 +339,6 @@ task('deploy-proxy', 'Deploys Smart contracts with proxy')
                         tenant,
                         deployedExtensions
                     );
-
-                    deployments.push(deployedImplementation);
 
                     log('\n\n');
                     log('=====================================================');
@@ -371,7 +369,24 @@ task('deploy-proxy', 'Deploys Smart contracts with proxy')
 
                             const proxyDeployment = await deployOne(hre, proxyContract, tenant, implementationContract);
 
-                            // TODO: Add this data to the deployment object, @daniel.lima
+                            proxyDeployment.upgradable = true;
+                            proxyDeployment.proxyType = PROXY_CONTRACT_TYPE.EIP1967;
+                            proxyDeployment.proxy = {
+                                abi: proxyDeployment.contractAbi,
+                                address: proxyDeployment.contractAddress,
+                                owner: wallet.address,
+                            }
+                            proxyDeployment.implementation = {
+                                abi: deployedImplementation.contractAbi,
+                                address: deployedImplementation.contractAddress,
+                            };
+                            proxyDeployment.extensions = deployedExtensions.map((extension) => {
+                                return {
+                                    abi: extension.metadata,
+                                    address: extension.metadata.implementation,
+                                    functions: extension.functions,
+                                };
+                            });
                             deployments.push(proxyDeployment);
                             break;
                     }
