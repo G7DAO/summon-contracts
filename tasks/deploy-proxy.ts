@@ -368,7 +368,8 @@ task('deploy-proxy', 'Deploys Smart contracts with proxy')
                             );
 
                             const proxyDeployment = await deployOne(hre, proxyContract, tenant, implementationContract);
-
+                            
+                            proxyDeployment.name = `${proxyDeployment.name}${deployedImplementation.name}`;
                             proxyDeployment.upgradable = true;
                             proxyDeployment.proxyType = PROXY_CONTRACT_TYPE.EIP1967;
                             proxyDeployment.proxy = {
