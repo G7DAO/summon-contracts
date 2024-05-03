@@ -32,7 +32,7 @@ import { Initializable } from "@openzeppelin/contracts/proxy/utils/Initializable
 
 import { Achievo1155Soulbound } from "../ercs/extensions/Achievo1155Soulbound.sol";
 import { ERCWhitelistSignature } from "../ercs/ERCWhitelistSignature.sol";
-import { LibItems } from "../libraries/LibItems.sol";
+import { LibGameSummary } from "../libraries/LibGameSummary.sol";
 
 error AddressIsZero();
 error InvalidInput();
@@ -70,6 +70,11 @@ contract GameSummary is
 
     mapping(uint256 => bool) private tokenExists;
     mapping(uint256 => string) public tokenUris; // tokenId => tokenUri
+
+    mapping(uint256 => uint256) public storeIds; // tokenId => storeIds
+    mapping(uint256 => uint256) public playerIds; // tokenId => playerIds
+    mapping(uint256 => uint256) public gameIds; // tokenId => gameIds
+
     mapping(uint256 => bool) public isTokenMintPaused; // tokenId => bool - default is false
 
     uint256[] public itemIds;
@@ -126,9 +131,11 @@ contract GameSummary is
         if (_isPaused) _pause();
     }
 
-    function getAllItems() public view returns (LibItems.TokenReturn[] memory) {
+    function getAllItems() public view returns (LibGameSummary.GameSummaryReturn[] memory) {
         uint256 totalTokens = itemIds.length;
-        LibItems.TokenReturn[] memory tokenReturns = new LibItems.TokenReturn[](totalTokens);
+        LibGameSummary.GameSummaryReturn[] memory GameSummaryReturns = new LibGameSummary.GameSummaryReturn[](
+            totalTokens
+        );
 
         uint index;
         for (uint i = 0; i < totalTokens; i++) {
@@ -136,20 +143,23 @@ contract GameSummary is
             uint256 amount = balanceOf(_msgSender(), tokenId);
 
             if (amount > 0) {
-                LibItems.TokenReturn memory tokenReturn = LibItems.TokenReturn({
+                LibGameSummary.GameSummaryReturn memory GameSummaryReturn = LibGameSummary.GameSummaryReturn({
                     tokenId: tokenId,
                     tokenUri: uri(tokenId),
+                    storeId: storeIds[tokenId],
+                    playerId: playerIds[tokenId],
+                    gameId: gameIds[tokenId],
                     amount: amount
                 });
-                tokenReturns[index] = tokenReturn;
+                GameSummaryReturns[index] = GameSummaryReturn;
                 index++;
             }
         }
 
         // truncate the array
-        LibItems.TokenReturn[] memory returnsTruncated = new LibItems.TokenReturn[](index);
+        LibGameSummary.GameSummaryReturn[] memory returnsTruncated = new LibGameSummary.GameSummaryReturn[](index);
         for (uint i = 0; i < index; i++) {
-            returnsTruncated[i] = tokenReturns[i];
+            returnsTruncated[i] = GameSummaryReturns[i];
         }
 
         return returnsTruncated;
@@ -157,28 +167,33 @@ contract GameSummary is
 
     function getAllItemsAdmin(
         address _owner
-    ) public view onlyRole(MINTER_ROLE) returns (LibItems.TokenReturn[] memory) {
+    ) public view onlyRole(MINTER_ROLE) returns (LibGameSummary.GameSummaryReturn[] memory) {
         uint256 totalTokens = itemIds.length;
-        LibItems.TokenReturn[] memory tokenReturns = new LibItems.TokenReturn[](totalTokens);
+        LibGameSummary.GameSummaryReturn[] memory GameSummaryReturns = new LibGameSummary.GameSummaryReturn[](
+            totalTokens
+        );
 
         uint index;
         for (uint i = 0; i < totalTokens; i++) {
             uint256 tokenId = itemIds[i];
             uint256 amount = balanceOf(_owner, tokenId);
 
-            LibItems.TokenReturn memory tokenReturn = LibItems.TokenReturn({
+            LibGameSummary.GameSummaryReturn memory GameSummaryReturn = LibGameSummary.GameSummaryReturn({
                 tokenId: tokenId,
                 tokenUri: uri(tokenId),
+                storeId: storeIds[tokenId],
+                playerId: playerIds[tokenId],
+                gameId: gameIds[tokenId],
                 amount: amount
             });
-            tokenReturns[index] = tokenReturn;
+            GameSummaryReturns[index] = GameSummaryReturn;
             index++;
         }
 
         // truncate the array
-        LibItems.TokenReturn[] memory returnsTruncated = new LibItems.TokenReturn[](index);
+        LibGameSummary.GameSummaryReturn[] memory returnsTruncated = new LibGameSummary.GameSummaryReturn[](index);
         for (uint i = 0; i < index; i++) {
-            returnsTruncated[i] = tokenReturns[i];
+            returnsTruncated[i] = GameSummaryReturns[i];
         }
 
         return returnsTruncated;
@@ -186,33 +201,51 @@ contract GameSummary is
 
     function isTokenExist(uint256 _tokenId) public view returns (bool) {
         if (!tokenExists[_tokenId]) {
-            revert("TokenNotExist");
+            return false;
         }
         return true;
     }
 
-    function _verifyContractChainIdAndDecode(bytes calldata data) private view returns (uint256[] memory) {
+    function _verifyContractChainIdAndDecode(
+        bytes calldata data
+    ) private view returns (uint256[] memory, uint256[] memory, uint256[] memory) {
         uint256 currentChainId = getChainID();
-        (address contractAddress, uint256 chainId, uint256[] memory tokenIds) = _decodeData(data);
+        (
+            address contractAddress,
+            uint256 chainId,
+            uint256[] memory _storeIds,
+            uint256[] memory _playerIds,
+            uint256[] memory _gameIds
+        ) = _decodeData(data);
 
         if (chainId != currentChainId || contractAddress != address(this)) {
             revert InvalidInput();
         }
-        return tokenIds;
+        return (_storeIds, _playerIds, _gameIds);
     }
 
     function decodeData(
         bytes calldata _data
-    ) public view onlyRole(DEV_CONFIG_ROLE) returns (address, uint256, uint256[] memory) {
+    )
+        public
+        view
+        onlyRole(DEV_CONFIG_ROLE)
+        returns (address, uint256, uint256[] memory, uint256[] memory, uint256[] memory)
+    {
         return _decodeData(_data);
     }
 
-    function _decodeData(bytes calldata _data) private view returns (address, uint256, uint256[] memory) {
-        (address contractAddress, uint256 chainId, uint256[] memory _tokenIds) = abi.decode(
-            _data,
-            (address, uint256, uint256[])
-        );
-        return (contractAddress, chainId, _tokenIds);
+    function _decodeData(
+        bytes calldata _data
+    ) private pure returns (address, uint256, uint256[] memory, uint256[] memory, uint256[] memory) {
+        (
+            address contractAddress,
+            uint256 chainId,
+            uint256[] memory _storeIds,
+            uint256[] memory _playerIds,
+            uint256[] memory _gameIds
+        ) = abi.decode(_data, (address, uint256, uint256[], uint256[], uint256[]));
+        return (contractAddress, chainId, _storeIds, _playerIds, _gameIds);
     }
 
     function pause() external onlyRole(MANAGER_ROLE) {
@@ -223,21 +256,24 @@ contract GameSummary is
         _unpause();
     }
 
-    function addNewToken(LibItems.TokenCreate calldata _token) public onlyRole(DEV_CONFIG_ROLE) {
+    function getTokenId(uint256 storeId, uint256 playerId, uint256 gameId) public pure returns (uint256) {
+        uint256 tokenId = uint256(keccak256(abi.encode(storeId, playerId, gameId)));
+        return tokenId;
+    }
+
+    function addNewToken(LibGameSummary.GameSummaryCreate memory _token) public onlyRole(DEV_CONFIG_ROLE) {
         if (bytes(_token.tokenUri).length > 0) {
             tokenUris[_token.tokenId] = _token.tokenUri;
         }
 
         tokenExists[_token.tokenId] = true;
 
+        storeIds[_token.tokenId] = _token.storeId;
+        playerIds[_token.tokenId] = _token.playerId;
+        gameIds[_token.tokenId] = _token.gameId;
+
         itemIds.push(_token.tokenId);
         emit TokenAdded(_token.tokenId);
-    }
-
-    function addNewTokens(LibItems.TokenCreate[] calldata _tokens) external onlyRole(DEV_CONFIG_ROLE) {
-        for (uint256 i = 0; i < _tokens.length; i++) {
-            addNewToken(_tokens[i]);
-        }
     }
 
     function updateTokenUri(uint256 _tokenId, string calldata _tokenUri) public onlyRole(DEV_CONFIG_ROLE) {
@@ -260,21 +296,53 @@ contract GameSummary is
         isTokenMintPaused[_tokenId] = _isTokenMintPaused;
     }
 
-    function _mintBatch(address to, uint256[] memory _tokenIds, uint256 amount, bool soulbound) private {
-        for (uint256 i = 0; i < _tokenIds.length; i++) {
-            uint256 _id = _tokenIds[i];
-            isTokenExist(_id);
-            if (isTokenMintPaused[_id]) {
-                revert("TokenMintPaused");
-            }
-
-            if (soulbound) {
-                _soulbound(to, _id, amount);
-            }
-
-            _mint(to, _id, amount, "");
+    function _mintBatch(
+        address to,
+        uint256[] memory _storeIds,
+        uint256[] memory _playerIds,
+        uint256[] memory _gameIds,
+        uint256 amount,
+        bool soulbound
+    ) private {
+        uint256[] memory _tokenIds = new uint256[](_storeIds.length);
+        for (uint256 i = 0; i < _storeIds.length; i++) {
+            uint256 _id = _internalMint(to, _storeIds[i], _playerIds[i], _gameIds[i], amount, soulbound);
+            _tokenIds[i] = _id;
         }
         emit Minted(to, _tokenIds, amount, soulbound);
+    }
+
+    function _internalMint(
+        address to,
+        uint256 _storeId,
+        uint256 _playerId,
+        uint256 _gameId,
+        uint256 amount,
+        bool soulbound
+    ) private returns (uint256) {
+        uint256 _id = getTokenId(_storeId, _playerId, _gameId);
+
+        if (!isTokenExist(_id)) {
+            LibGameSummary.GameSummaryCreate memory gameSummaryCreate = LibGameSummary.GameSummaryCreate({
+                tokenId: _id,
+                tokenUri: "",
+                storeId: _storeId,
+                playerId: _playerId,
+                gameId: _gameId
+            });
+            addNewToken(gameSummaryCreate);
+        }
+
+        if (isTokenMintPaused[_id]) {
+            revert("TokenMintPaused");
+        }
+
+        if (soulbound) {
+            _soulbound(to, _id, amount);
+        }
+
+        _mint(to, _id, amount, "");
+        return _id;
     }
 
     function mint(
@@ -284,33 +352,33 @@ contract GameSummary is
         uint256 nonce,
         bytes calldata signature
     ) external nonReentrant signatureCheck(_msgSender(), nonce, data, signature) maxPerMintCheck(amount) whenNotPaused {
-        uint256[] memory _tokenIds = _verifyContractChainIdAndDecode(data);
-        _mintBatch(_msgSender(), _tokenIds, amount, soulbound);
+        (
+            uint256[] memory _storeIds,
+            uint256[] memory _playerIds,
+            uint256[] memory _gameIds
+        ) = _verifyContractChainIdAndDecode(data);
+        _mintBatch(_msgSender(), _storeIds, _playerIds, _gameIds, amount, soulbound);
     }
 
     function adminMint(address to, bytes calldata data, bool soulbound) external onlyRole(MINTER_ROLE) whenNotPaused {
-        uint256[] memory _tokenIds = _verifyContractChainIdAndDecode(data);
-        _mintBatch(to, _tokenIds, 1, soulbound);
+        (
+            uint256[] memory _storeIds,
+            uint256[] memory _playerIds,
+            uint256[] memory _gameIds
+        ) = _verifyContractChainIdAndDecode(data);
+        _mintBatch(to, _storeIds, _playerIds, _gameIds, 1, soulbound);
     }
 
     function adminMintId(
         address to,
-        uint256 id,
+        uint256 _storeId,
+        uint256 _playerId,
+        uint256 _gameId,
         uint256 amount,
         bool soulbound
     ) external onlyRole(MINTER_ROLE) whenNotPaused {
-        isTokenExist(id);
-
-        if (isTokenMintPaused[id]) {
-            revert("TokenMintPaused");
-        }
-
-        if (soulbound) {
-            _soulbound(to, id, amount);
-        }
-
-        _mint(to, id, amount, "");
-        emit MintedId(to, id, amount, soulbound);
+        uint256 _id = _internalMint(to, _storeId, _playerId, _gameId, amount, soulbound);
+        emit MintedId(to, _id, amount, soulbound);
     }
 
     function _beforeTokenTransfer(
@@ -437,7 +505,11 @@ contract GameSummary is
                         "/",
                         Strings.toHexString(uint160(address(this)), 20),
                         "/",
-                        Strings.toString(tokenId)
+                        Strings.toString(storeIds[tokenId]),
+                        "-",
+                        Strings.toString(playerIds[tokenId]),
+                        "-",
+                        Strings.toString(gameIds[tokenId])
                     )
                 );
         }
