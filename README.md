@@ -6,7 +6,7 @@
 </p>
 <h1 align="center">Achievo Contracts</h1>
 <p align="center">
-<a href="https://github.com/G7DAO/achievo-contracts/actions"><img alt="Build Status" src="https://github.com/thirdweb-dev/contracts/actions/workflows/tests.yml/badge.svg"/></a>
+<a href="https://github.com/G7DAO/achievo-contracts/actions"><img alt="Build Status" src="https://github.com/G7DAO/achievo-contracts/actions/workflows/tests.yml/badge.svg"/></a>
 
 </p>
 <br />
