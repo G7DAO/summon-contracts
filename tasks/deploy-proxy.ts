@@ -156,7 +156,7 @@ export async function populateProxyConstructorArgs(
     return constructorArgs;
 }
 
-const deployOneWithExtensions = async (
+export const deployOneWithExtensions = async (
     hre: HardhatRuntimeEnvironment,
     contract: DeploymentProxyContract,
     tenant: string,
@@ -188,7 +188,7 @@ const deployOneWithExtensions = async (
     return await deploy(hre, contract, constructorArgs, abiPath, tenant);
 };
 
-const deployOne = async (
+export const deployOne = async (
     hre: HardhatRuntimeEnvironment,
     contract: DeploymentProxyContract | DeploymentExtensionContract,
     tenant: string,

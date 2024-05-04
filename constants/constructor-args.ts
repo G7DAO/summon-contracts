@@ -478,3 +478,12 @@ export const MarketplaceArgs = {
         nativeTokenWrapper: IRON_G7_ARB_SEPOLIA_NATIVE_TOKEN,
     },
 };
+
+export const EnglishAuctionsExtensionArgs = {
+    MAINNET: {
+        // _nativeTokenWrapper: 'FILL_ME',
+    },
+    TESTNET: {
+        _nativeTokenWrapper: IRON_G7_ARB_SEPOLIA_NATIVE_TOKEN,
+    },
+};

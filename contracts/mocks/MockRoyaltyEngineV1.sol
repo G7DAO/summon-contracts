@@ -1,11 +1,5 @@
 // SPDX-License-Identifier: UNLICENSED
-///@notice This contract is for mock for WETH token.
 pragma solidity ^0.8.17;
-
-/**
- * Authors: Omar Garcia
- * GitHub: https://github.com/ogarciarevett
- */
 
 // MMMMNkc. .,oKWMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMM
 // MWXd,.      .cONMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMM
@@ -22,30 +16,46 @@ pragma solidity ^0.8.17;
 // MMNx'.dWMMK;.:0WMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMM
 // MMMM0cdNMM0cdNMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMM
 
-import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
-import "@openzeppelin/contracts/token/ERC20/extensions/ERC20Burnable.sol";
+import {IRoyaltyEngineV1} from "../interfaces/IRoyaltyEngineV1.sol";
 
-contract MockERC20 is ERC20Burnable {
-    constructor(string memory name, string memory symbol) ERC20(name, symbol) {}
+/**
+ * @title MockRoyaltyEngineV1
+ * @dev This contract is a mock for RoyaltyEngineV1
+ */
+contract MockRoyaltyEngineV1 is IRoyaltyEngineV1 {
+    address payable[] private _recipients;
+    uint256[] private _amounts;
 
-    function mint(address account, uint256 amount) public {
-        _mint(account, amount);
+    constructor() {
     }
 
-    function decimals() public view virtual override returns (uint8) {
-        return 18;
+    function setRoyalty(address payable[] memory recipients, uint256[] memory amounts) public {
+        _recipients = recipients;
+        _amounts = amounts;
     }
 
-    function supportsInterface(bytes4 interfaceId) public view virtual returns (bool) {
-        return interfaceId == type(IERC20).interfaceId;
+    function getRoyalty(
+        address,
+        uint256,
+        uint256
+    ) external view override returns (address payable[] memory recipients, uint256[] memory amounts) {
+        return (_recipients, _amounts);
     }
 
-    function deposit() public payable {
-        _mint(msg.sender, msg.value);
+    function getRoyaltyView(
+        address,
+        uint256,
+        uint256
+    ) external view override returns (address payable[] memory recipients, uint256[] memory amounts) {
+        return (_recipients, _amounts);
     }
 
-    function withdraw(uint256 amount) public {
-        _burn(msg.sender, amount);
-        payable(msg.sender).transfer(amount);
+    function setRoyaltyInfo(address payable[] memory recipients, uint256[] memory amounts) public {
+        _recipients = recipients;
+        _amounts = amounts;
+    }
+
+    function supportsInterface(bytes4 interfaceId) public view override returns (bool) {
+        return interfaceId == type(IRoyaltyEngineV1).interfaceId;
     }
 }

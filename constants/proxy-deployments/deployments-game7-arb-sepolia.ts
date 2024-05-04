@@ -9,7 +9,7 @@ import {
 import { TENANT } from '@constants/tenant';
 import { DeploymentProxyContract } from '../../types/deployment-type';
 import { NETWORK_TYPE, NetworkName } from '../network';
-import { DirectListingExtensionArgs, MarketplaceArgs } from '@constants/constructor-args';
+import {DirectListingExtensionArgs, EnglishAuctionsExtensionArgs, MarketplaceArgs} from '@constants/constructor-args';
 
 const chain = NetworkName.Game7OrbitArbSepolia;
 const networkType = NETWORK_TYPE.TESTNET;
@@ -62,6 +62,32 @@ export const GAME7_ARB_SEPOLIA_CONTRACTS: DeploymentProxyContract[] = [
                     'getAllListings(uint256,uint256)',
                     'getAllValidListings(uint256,uint256)',
                     'getListing(uint256)',
+                ],
+            },
+            {
+                contractFileName: CONTRACT_FILE_NAME.EnglishAuctionsExtension,
+                type: CONTRACT_TYPE.EnglishAuctionsExtension,
+                name: CONTRACT_NAME.EnglishAuctionsExtension,
+                verify: true,
+                extensionArgs: EnglishAuctionsExtensionArgs.TESTNET,
+                metadata: {
+                    name: 'EnglishAuctionsLogic',
+                    metadataURI: 'ipfs://{hash}',
+                    implementation: `CONTRACT_${CONTRACT_NAME.EnglishAuctionsExtension}`,
+                },
+                functionsToInclude: [
+                    'createAuction((address,uint256,uint256,address,uint256,uint256,uint64,uint64,uint64,uint64))',
+                    'bidInAuction(uint256,uint256)',
+                    'collectAuctionPayout(uint256)',
+                    'collectAuctionTokens(uint256)',
+                    'cancelAuction(uint256)',
+                    'isNewWinningBid(uint256,uint256)',
+                    'totalAuctions()',
+                    'getAuction(uint256)',
+                    'getAllAuctions(uint256,uint256)',
+                    'getAllValidAuctions(uint256,uint256)',
+                    'getWinningBid(uint256)',
+                    'isAuctionExpired(uint256)',
                 ],
             },
         ],

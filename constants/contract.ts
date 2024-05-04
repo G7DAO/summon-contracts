@@ -20,6 +20,7 @@ export enum CONTRACT_TYPE {
     RewardToken = 'RewardToken',
     DirectListingExtension = 'DirectListingExtension',
     Marketplace = 'Marketplace',
+    EnglishAuctionsExtension = 'EnglishAuctionsExtension'
 }
 
 export enum PROXY_CONTRACT_TYPE {
@@ -56,6 +57,7 @@ export enum CONTRACT_FILE_NAME {
     DirectListingsExtension = 'DirectListingsLogic',
     ERC20 = 'MockERC20',
     Marketplace = 'Marketplace',
+    EnglishAuctionsExtension = 'EnglishAuctionsLogic'
 }
 
 export enum CONTRACT_UPGRADABLE_FILE_NAME {
@@ -101,6 +103,7 @@ export enum CONTRACT_NAME {
     DirectListingExtension = 'DirectListingExtension',
     MartinERC20 = 'MockERC20',
     Marketplace = 'Marketplace',
+    EnglishAuctionsExtension = 'EnglishAuctionsExtension'
 }
 
 export enum CONTRACT_UPGRADABLE_NAME {
@@ -122,5 +125,6 @@ export enum CONTRACT_UPGRADABLE_NAME {
 }
 
 export enum CONTRACT_EXTENSION_NAME {
-    DirectListingExtension = 'DirectListingExtension'
+    DirectListingExtension = 'DirectListingExtension',
+    EnglishAuctionsExtension = 'EnglishAuctionsExtension'
 }
