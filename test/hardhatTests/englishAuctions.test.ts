@@ -313,7 +313,7 @@ describe('EnglishAuction', function () {
                         englishAuction,
                         'NewBid'
                     );
-                    
+
                     const updatedAuction = {
                         ...auction,
                         endTimestamp: auction.endTimestamp + auction.timeBufferInSeconds,
@@ -463,8 +463,12 @@ describe('EnglishAuction', function () {
                             await englishAuction
                                 .connect(bidder)
                                 .bidInAuction(auction.auctionId, auction.buyoutBidAmount);
-                            expect(await mockERC20.balanceOf(bidder.address)).to.be.equal(bidderBalance - auction.buyoutBidAmount); // 1 wei from previous winning bid is refunded
-                            expect(await mockERC20.balanceOf(await englishAuction.getAddress())).to.be.equal(auction.buyoutBidAmount);
+                            expect(await mockERC20.balanceOf(bidder.address)).to.be.equal(
+                                bidderBalance - auction.buyoutBidAmount
+                            ); // 1 wei from previous winning bid is refunded
+                            expect(await mockERC20.balanceOf(await englishAuction.getAddress())).to.be.equal(
+                                auction.buyoutBidAmount
+                            );
                             await expect(englishAuction.connect(lister).collectAuctionPayout(auction.auctionId))
                                 .to.emit(englishAuction, 'AuctionClosed')
                                 .withArgs(
@@ -476,8 +480,12 @@ describe('EnglishAuction', function () {
                                     bidder.address
                                 );
                             expect(await mockERC20.balanceOf(lister.address)).to.be.equal(auction.buyoutBidAmount);
-                            expect(await mockERC20.balanceOf(bidder.address)).to.be.equal(bidderBalance - auction.buyoutBidAmount);
-                            expect(await mockERC20.balanceOf(await englishAuction.getAddress())).to.be.equal(zeroBalance);
+                            expect(await mockERC20.balanceOf(bidder.address)).to.be.equal(
+                                bidderBalance - auction.buyoutBidAmount
+                            );
+                            expect(await mockERC20.balanceOf(await englishAuction.getAddress())).to.be.equal(
+                                zeroBalance
+                            );
                         });
                     });
                 });
