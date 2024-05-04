@@ -32,6 +32,8 @@ describe('EnglishAuction', function () {
     let royaltyRecipient: SignerWithAddress;
 
     const tokenId = 0;
+    const bidderBalance = toWei('1000');
+    const zeroBalance = BigInt(0);
 
     beforeEach(async function () {
         [deployer, lister, bidder, royaltyRecipient] = await ethers.getSigners();
@@ -47,8 +49,8 @@ describe('EnglishAuction', function () {
         await mockERC1155.mint(lister.address, tokenId, 1000, '0x');
         await mockERC1155.connect(lister).setApprovalForAll(marketplaceAddress, true);
 
-        await mockERC20.mint(bidder.address, toWei('1000'));
-        await mockERC20.connect(bidder).approve(marketplaceAddress, toWei('1000'));
+        await mockERC20.mint(bidder.address, bidderBalance);
+        await mockERC20.connect(bidder).approve(marketplaceAddress, bidderBalance);
 
         englishAuction = await ethers.getContractAt('EnglishAuctionsLogic', marketplaceAddress);
         permissions = await ethers.getContractAt('Permissions', marketplaceAddress);
@@ -74,10 +76,12 @@ describe('EnglishAuction', function () {
             });
             describe('Create Auction', function () {
                 it('Should create an Auction with ERC721 token', async function () {
+                    expect(await mockERC721.ownerOf(tokenId)).to.be.equal(lister.address);
                     await expect(englishAuction.connect(lister).createAuction(auctionParameters)).to.emit(
                         englishAuction,
                         'NewAuction'
                     );
+                    expect(await mockERC721.ownerOf(tokenId)).to.be.equal(await englishAuction.getAddress());
                 });
                 it('Should create an Auction with ERC1155 token', async function () {
                     auctionParameters.assetContract = await mockERC1155.getAddress();
@@ -256,9 +260,11 @@ describe('EnglishAuction', function () {
 
             describe('Cancel Auction', function () {
                 it('Should cancel an Auction', async function () {
+                    expect(await mockERC721.ownerOf(tokenId)).to.be.equal(await englishAuction.getAddress());
                     await expect(englishAuction.connect(lister).cancelAuction(auction.auctionId))
                         .to.emit(englishAuction, 'CancelledAuction')
                         .withArgs(auction.auctionCreator, auction.auctionId);
+                    expect(await mockERC721.ownerOf(tokenId)).to.be.equal(lister.address);
                 });
                 it('Should NOT cancel an Auction if Auction does not exist', async function () {
                     await expect(englishAuction.connect(lister).cancelAuction(10)).to.be.revertedWith(
@@ -285,12 +291,14 @@ describe('EnglishAuction', function () {
                 it('Should bid in an Auction', async function () {
                     const winningBid = toWei('1');
                     expect(await englishAuction.isNewWinningBid(auction.auctionId, winningBid)).to.be.true;
-
+                    expect(await mockERC20.balanceOf(bidder.address)).to.be.equal(bidderBalance);
+                    expect(await mockERC20.balanceOf(await englishAuction.getAddress())).to.be.equal(0);
                     await expect(englishAuction.connect(bidder).bidInAuction(auction.auctionId, winningBid)).to.emit(
                         englishAuction,
                         'NewBid'
                     );
-
+                    expect(await mockERC20.balanceOf(bidder.address)).to.be.equal(bidderBalance - winningBid);
+                    expect(await mockERC20.balanceOf(await englishAuction.getAddress())).to.be.equal(winningBid);
                     expect(await englishAuction.getWinningBid(auction.auctionId)).to.be.deep.equal([
                         bidder.address,
                         auction.currency,
@@ -305,7 +313,7 @@ describe('EnglishAuction', function () {
                         englishAuction,
                         'NewBid'
                     );
-
+                    
                     const updatedAuction = {
                         ...auction,
                         endTimestamp: auction.endTimestamp + auction.timeBufferInSeconds,
@@ -381,8 +389,10 @@ describe('EnglishAuction', function () {
 
             describe('Collect Auction Payout', function () {
                 describe('When Auction has bids', function () {
+                    let winningBid: bigint;
                     beforeEach(async function () {
-                        await englishAuction.connect(bidder).bidInAuction(auction.auctionId, toWei('1'));
+                        winningBid = toWei('1');
+                        await englishAuction.connect(bidder).bidInAuction(auction.auctionId, winningBid);
                     });
                     describe('When Auction is closed', function () {
                         beforeEach(async function () {
@@ -390,25 +400,27 @@ describe('EnglishAuction', function () {
                             await time.increase(timeToIncrease);
                         });
                         it('Should collect Auction payout', async function () {
-                            await expect(englishAuction.connect(bidder).collectAuctionPayout(auction.auctionId))
+                            expect(await mockERC20.balanceOf(lister.address)).to.be.equal(zeroBalance);
+                            await expect(englishAuction.connect(lister).collectAuctionPayout(auction.auctionId))
                                 .to.emit(englishAuction, 'AuctionClosed')
                                 .withArgs(
                                     auction.auctionId,
                                     auction.assetContract,
-                                    bidder.address,
+                                    lister.address,
                                     auction.tokenId,
                                     auction.auctionCreator,
                                     bidder.address
                                 );
+                            expect(await mockERC20.balanceOf(lister.address)).to.be.equal(winningBid);
                         });
                         it('Should collect Auction payout after collecting Auction tokens', async function () {
-                            await englishAuction.connect(bidder).collectAuctionTokens(auction.auctionId);
-                            await expect(englishAuction.connect(bidder).collectAuctionPayout(auction.auctionId))
+                            await englishAuction.connect(lister).collectAuctionTokens(auction.auctionId);
+                            await expect(englishAuction.connect(lister).collectAuctionPayout(auction.auctionId))
                                 .to.emit(englishAuction, 'AuctionClosed')
                                 .withArgs(
                                     auction.auctionId,
                                     auction.assetContract,
-                                    bidder.address,
+                                    lister.address,
                                     auction.tokenId,
                                     auction.auctionCreator,
                                     bidder.address
@@ -418,12 +430,12 @@ describe('EnglishAuction', function () {
                             const recipients = [royaltyRecipient.address];
                             const amounts = [toWei('0.1')];
                             await mockRoyaltyEngineV1.setRoyalty(recipients, amounts);
-                            await expect(englishAuction.connect(bidder).collectAuctionPayout(auction.auctionId))
+                            await expect(englishAuction.connect(lister).collectAuctionPayout(auction.auctionId))
                                 .to.emit(englishAuction, 'AuctionClosed')
                                 .withArgs(
                                     auction.auctionId,
                                     auction.assetContract,
-                                    bidder.address,
+                                    lister.address,
                                     auction.tokenId,
                                     auction.auctionCreator,
                                     bidder.address
@@ -434,38 +446,46 @@ describe('EnglishAuction', function () {
                             const amounts = [toWei('1.1')];
                             await mockRoyaltyEngineV1.setRoyalty(recipients, amounts);
                             await expect(
-                                englishAuction.connect(bidder).collectAuctionPayout(auction.auctionId)
+                                englishAuction.connect(lister).collectAuctionPayout(auction.auctionId)
                             ).to.be.revertedWith('fees exceed the price');
                         });
                         it('Should NOT collect Auction payout twice', async function () {
-                            await englishAuction.connect(bidder).collectAuctionPayout(auction.auctionId);
+                            await englishAuction.connect(lister).collectAuctionPayout(auction.auctionId);
                             await expect(
-                                englishAuction.connect(bidder).collectAuctionPayout(auction.auctionId)
+                                englishAuction.connect(lister).collectAuctionPayout(auction.auctionId)
                             ).to.be.revertedWith('Marketplace: payout already completed.');
                         });
                     });
                     describe('When Auction is not closed', function () {
                         it('Should collect Auction payout if Auction has buyoutBidAmount', async function () {
+                            expect(await mockERC20.balanceOf(lister.address)).to.be.equal(zeroBalance);
+                            expect(await mockERC20.balanceOf(bidder.address)).to.be.equal(bidderBalance - winningBid);
                             await englishAuction
                                 .connect(bidder)
                                 .bidInAuction(auction.auctionId, auction.buyoutBidAmount);
-                            await expect(englishAuction.connect(bidder).collectAuctionPayout(auction.auctionId))
+                            expect(await mockERC20.balanceOf(bidder.address)).to.be.equal(bidderBalance - auction.buyoutBidAmount); // 1 wei from previous winning bid is refunded
+                            expect(await mockERC20.balanceOf(await englishAuction.getAddress())).to.be.equal(auction.buyoutBidAmount);
+                            await expect(englishAuction.connect(lister).collectAuctionPayout(auction.auctionId))
                                 .to.emit(englishAuction, 'AuctionClosed')
                                 .withArgs(
                                     auction.auctionId,
                                     auction.assetContract,
-                                    bidder.address,
+                                    lister.address,
                                     auction.tokenId,
                                     auction.auctionCreator,
                                     bidder.address
                                 );
+                            expect(await mockERC20.balanceOf(lister.address)).to.be.equal(auction.buyoutBidAmount);
+                            expect(await mockERC20.balanceOf(bidder.address)).to.be.equal(bidderBalance - auction.buyoutBidAmount);
+                            expect(await mockERC20.balanceOf(await englishAuction.getAddress())).to.be.equal(zeroBalance);
                         });
                     });
                 });
                 describe('When Auction has no bids', function () {
                     describe('When Auction is not closed', function () {
                         it('Should NOT collect Auction payout', async function () {
-                            await time.increase(ONE_DAY);
+                            const timeToIncrease = auction.endTimestamp - (await time.latest());
+                            await time.increase(timeToIncrease);
                             await expect(
                                 englishAuction.connect(bidder).collectAuctionPayout(auction.auctionId)
                             ).to.be.revertedWith('Marketplace: no bids were made.');
@@ -495,6 +515,7 @@ describe('EnglishAuction', function () {
                         await time.increase(timeToIncrease);
                     });
                     it('Should collect Auction tokens', async function () {
+                        expect(await mockERC721.ownerOf(tokenId)).to.be.equal(await englishAuction.getAddress());
                         await expect(englishAuction.connect(bidder).collectAuctionTokens(auction.auctionId))
                             .to.emit(englishAuction, 'AuctionClosed')
                             .withArgs(
@@ -505,6 +526,7 @@ describe('EnglishAuction', function () {
                                 auction.auctionCreator,
                                 bidder.address
                             );
+                        expect(await mockERC721.ownerOf(tokenId)).to.be.equal(bidder.address);
                     });
                     it('Should collect Auction tokens after collecting Auction payout', async function () {
                         await englishAuction.connect(bidder).collectAuctionPayout(auction.auctionId);
