@@ -50,20 +50,6 @@ export type OfferParams = {
     expirationTimestamp: number;
 }
 
-/*
-struct Offer {
-    uint256 offerId;
-    uint256 tokenId;
-    uint256 quantity;
-    uint256 totalPrice;
-    uint256 expirationTimestamp;
-    address offeror;
-    address assetContract;
-    address currency;
-    TokenType tokenType;
-    Status status;
-}*/
-
 export type Offer = {
     offerId: bigint;
     tokenId: number;
