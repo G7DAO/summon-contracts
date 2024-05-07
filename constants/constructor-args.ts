@@ -487,3 +487,8 @@ export const EnglishAuctionsExtensionArgs = {
         _nativeTokenWrapper: IRON_G7_ARB_SEPOLIA_NATIVE_TOKEN,
     },
 };
+
+export const OffersExtensionArgs = {
+    MAINNET: {},
+    TESTNET: {},
+};
