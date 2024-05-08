@@ -359,13 +359,6 @@ task('deploy-proxy', 'Deploys Smart contracts with proxy')
                             proxyContract.proxyContractArgs.implementation = deployedImplementation.contractAddress;
                             proxyContract.verify = contract.proxyContractVerify;
 
-                            // // Prepare the arguments for the initialize function
-                            const defaultAdmin = wallet.address; // Admin address here
-                            const contractURI = 'ipfs://NewUriToMetaData';
-                            const trustedForwarders: never[] = []; // Forwarder addresses
-                            const platformFeeRecipient = wallet.address;
-                            const platformFeeBps = 0; // Example fee basis points (1%)
-
                             const implementationContract = await hre.ethers.getContractAt(
                                 deployedImplementation.name,
                                 deployedImplementation.contractAddress
@@ -380,7 +373,7 @@ task('deploy-proxy', 'Deploys Smart contracts with proxy')
                                 abi: proxyDeployment.contractAbi,
                                 address: proxyDeployment.contractAddress,
                                 owner: wallet.address,
-                            }
+                            };
                             proxyDeployment.implementation = {
                                 abi: deployedImplementation.contractAbi,
                                 address: deployedImplementation.contractAddress,
