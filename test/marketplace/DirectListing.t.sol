@@ -536,7 +536,7 @@ contract MarketplaceDirectListingsTest is BaseTest, IExtension {
         _setup_cancelListing();
 
         // Verify no listing exists at `nexListingId`
-        uint256 nextListingId = DirectListingsLogic(marketplace).totalListings();
+        uint256 nextListingId = DirectListingsLogic(marketplace).totalListings() + 1;
 
         vm.prank(seller);
         vm.expectRevert("Marketplace: invalid listing.");

@@ -510,6 +510,7 @@ contract DirectListingsLogic is IDirectListings, ReentrancyGuard, ERC2771Context
 
     /// @notice Returns all non-cancelled listings.
     function getAllListings(uint256 _startId, uint256 _endId) external view returns (Listing[] memory _allListings) {
+        if (_directListingsStorage().totalListings == 0) return _allListings;
         require(_startId <= _endId && _endId < _directListingsStorage().totalListings, "invalid range");
 
         _allListings = new Listing[](_endId - _startId + 1);
@@ -528,6 +529,7 @@ contract DirectListingsLogic is IDirectListings, ReentrancyGuard, ERC2771Context
         uint256 _startId,
         uint256 _endId
     ) external view returns (Listing[] memory _validListings) {
+        if (_directListingsStorage().totalListings == 0) return _validListings;
         require(_startId <= _endId && _endId < _directListingsStorage().totalListings, "invalid range");
 
         Listing[] memory _listings = new Listing[](_endId - _startId + 1);
@@ -561,8 +563,7 @@ contract DirectListingsLogic is IDirectListings, ReentrancyGuard, ERC2771Context
 
     /// @dev Returns the next listing Id.
     function _getNextListingId() internal returns (uint256 id) {
-        id = _directListingsStorage().totalListings;
-        _directListingsStorage().totalListings += 1;
+        id = ++_directListingsStorage().totalListings;
     }
 
     /// @dev Returns the interface supported by a contract.

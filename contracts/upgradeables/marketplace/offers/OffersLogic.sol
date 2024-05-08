@@ -149,6 +149,7 @@ contract OffersLogic is IOffers, ReentrancyGuard, ERC2771ContextConsumer {
 
     /// @dev Returns all existing offers within the specified range.
     function getAllOffers(uint256 _startId, uint256 _endId) external view returns (Offer[] memory _allOffers) {
+        if(_offersStorage().totalOffers == 0) return _allOffers;
         require(_startId <= _endId && _endId < _offersStorage().totalOffers, "invalid range");
 
         _allOffers = new Offer[](_endId - _startId + 1);
@@ -160,6 +161,7 @@ contract OffersLogic is IOffers, ReentrancyGuard, ERC2771ContextConsumer {
 
     /// @dev Returns offers within the specified range, where offeror has sufficient balance.
     function getAllValidOffers(uint256 _startId, uint256 _endId) external view returns (Offer[] memory _validOffers) {
+        if(_offersStorage().totalOffers == 0) return _validOffers;
         require(_startId <= _endId && _endId < _offersStorage().totalOffers, "invalid range");
 
         Offer[] memory _offers = new Offer[](_endId - _startId + 1);
@@ -189,8 +191,7 @@ contract OffersLogic is IOffers, ReentrancyGuard, ERC2771ContextConsumer {
 
     /// @dev Returns the next offer Id.
     function _getNextOfferId() internal returns (uint256 id) {
-        id = _offersStorage().totalOffers;
-        _offersStorage().totalOffers += 1;
+        id = ++_offersStorage().totalOffers;
     }
 
     /// @dev Returns the interface supported by a contract.
