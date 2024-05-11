@@ -1,67 +1,64 @@
-import { getABIFilePath } from '@helpers/folder';
 import { log } from '@helpers/logger';
 import { task, types } from 'hardhat/config';
 import { HardhatRuntimeEnvironment } from 'hardhat/types';
-import { Deployment, DeploymentProxyContract } from 'types/deployment-type';
+import { Deployment } from 'types/deployment-type';
 
 import upgradeProxy from '../deploy/upgrade-proxy';
 import { CONTRACTS } from '@constants/proxy-deployments';
+import { getContractFromDB, submitContractDeploymentsToDB } from '@helpers/contract';
+import { CONTRACT_EXTENSION_NAME, CONTRACT_NAME } from '@constants/contract';
+import { ExtensionAction } from '@helpers/extensions';
+import { TENANT } from '@constants/tenant';
+import path from 'path';
+import { ACHIEVO_TMP_DIR } from '@constants/deployments';
+import fs from 'fs';
 
-const upgradeOne = async (
-    hre: HardhatRuntimeEnvironment,
-    contract: DeploymentProxyContract,
-    tenant: string,
-    proxyAddress: string,
-    extension: string,
-    action: string
-): Promise<Deployment> => {
-    const abiPath = getABIFilePath(hre.network.zksync, contract.name);
-    const upgradePayload = await upgradeProxy(
-        hre,
-        contract,
-        abiPath as string,
-        tenant,
-        proxyAddress,
-        extension,
-        action
+export const writeUpgradePayload = (deploymentPayload: Deployment, chain: string, tenant: TENANT) => {
+    log('*******************************************');
+    log('[SAVING] Upgrade Payload');
+    log('*******************************************');
+    // Define the path to the file
+    const filePath = path.resolve(
+        `${ACHIEVO_TMP_DIR}/upgrades/${chain}/upgrades-${deploymentPayload.type}-${tenant}-${Date.now()}.json`
     );
+    // Convert deployments to JSON
+    const deploymentsJson = JSON.stringify(deploymentPayload, null, 2);
+    // Write to the file
+    fs.writeFileSync(filePath, deploymentsJson);
 
-    // TODO: Maybe should write the upgradePayload to a file ?
-
-    return upgradePayload;
+    log('*******************************************');
+    log(`Upgrade saved to ${filePath}`);
+    log('*******************************************');
 };
 
 task('upgrade-proxy', 'Upgrade Smart contracts')
     .addParam('name', 'Contract Name you want to upgrade', undefined, types.string)
-    .addParam('address', 'Contract address you want to upgrade', undefined, types.string)
-    .addParam('extension', 'Extension to add', undefined, types.string)
-    .addParam('action', 'Action to perform', undefined, types.string)
+    .addParam('extension', 'Extension name', undefined, types.string)
+    .addParam('action', 'Extension Manager Action', undefined, types.string)
     .setAction(
         async (
             _args: {
-                name: string;
-                address: string;
-                extension: string;
-                action: string;
+                name: CONTRACT_NAME;
+                extension: CONTRACT_EXTENSION_NAME;
+                action: ExtensionAction;
             },
             hre: HardhatRuntimeEnvironment
         ) => {
-            const { name, extension, action, address: proxyAddress } = _args;
+            const { name, extension, action } = _args;
             const network = hre.network.name;
+
             log('└─ args :\n');
             log(`   ├─ contractName : ${name}\n`);
             log(`   ├─ network : ${network}\n`);
-            log(`   └─ proxyAddress : ${proxyAddress}\n`);
             log(`   └─ extension : ${extension}\n`);
             log(`   └─ action : ${action}\n`);
 
-            const contract = CONTRACTS.find((d) => d.name === name && d.chain === network);
-
-            if (!contract) {
+            const proxyDeployment = CONTRACTS.find((d) => d.name === name && d.chain === network);
+            if (!proxyDeployment) {
                 throw new Error(`Contract ${name} not found on ${network}`);
             }
 
-            for (const tenant of contract.tenants) {
+            for (const tenant of proxyDeployment.tenants) {
                 log('=====================================================');
                 log('=====================================================');
                 log(`[STARTING] Upgrade ${name} contract on ${network} for [[${tenant}]]`);
@@ -69,12 +66,34 @@ task('upgrade-proxy', 'Upgrade Smart contracts')
                 log('=====================================================');
                 log('\n');
 
-                await upgradeOne(hre, contract, tenant, proxyAddress, extension, action);
+                const chainId = hre.network.config.chainId!;
+                const dbContract = await getContractFromDB(name, chainId);
+                if (!dbContract) {
+                    throw new Error(`Contract ${name} not found in DB for chain ${chainId}`);
+                }
+                const deployment = await upgradeProxy(hre, proxyDeployment, dbContract, tenant, extension, action);
 
                 log('=====================================================');
                 log(`[DONE] ${name} contract deployment on ${network} for [[${tenant}]] is DONE!`);
                 log('=====================================================');
                 log('\n');
+
+                // submit to db
+                try {
+                    log('*******************************************');
+                    log('[SUBMITTING] Deployments to db');
+                    log('*******************************************');
+                    await submitContractDeploymentsToDB([deployment], tenant);
+                    log('*******************************************');
+                    log('*** Deployments submitted to db ***');
+                    log('*******************************************');
+                } catch (error: any) {
+                    log('*******************************************');
+                    log('***', error.message, '***');
+                    log('*******************************************');
+                }
+
+                writeUpgradePayload(deployment, network, tenant);
             }
         }
     );

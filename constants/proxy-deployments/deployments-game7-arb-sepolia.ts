@@ -25,7 +25,7 @@ export const GAME7_ARB_SEPOLIA_CONTRACTS: DeploymentProxyContract[] = [
         verify: true,
         contractFileName: CONTRACT_FILE_NAME.Marketplace,
         type: CONTRACT_TYPE.Marketplace,
-        name: CONTRACT_NAME.Marketplace,
+        name: CONTRACT_NAME.AchievoProxyMarketplace,
         chain,
         networkType,
         tenants: [TENANT.IronWorks],

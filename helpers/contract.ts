@@ -30,7 +30,7 @@ export const executeFunctionCallBatch = async (calls: FunctionCall[], tenant: TE
     }
 };
 
-export const getContractFromDB = async (name: CONTRACT_NAME, chainId: number) => {
+export const getContractFromDB = async (name: CONTRACT_NAME, chainId: number): Promise<Deployment | undefined> => {
     try {
         const { data } = await axios.get(`/v1/tenants/self/contracts/${name}${chainId ? `?chainId=${chainId}` : ''}`);
         if (data.status === 200) {

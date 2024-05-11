@@ -1,36 +1,29 @@
-import { NetworkName } from '@constants/network';
 import { log } from '@helpers/logger';
 import { HardhatRuntimeEnvironment } from 'hardhat/types';
 
-import { ExtensionFunction, ExtensionMetadata } from '@helpers/extensions';
+import { DeployedExtension, ExtensionAction, ExtensionFunction } from '@helpers/extensions';
 import { Deployment, DeploymentExtensionContract, DeploymentProxyContract } from '../types/deployment-type';
 import deploy from '../deploy/deploy';
 import { getABIFilePath } from '@helpers/folder';
 import { ExtensionManager } from '../typechain-types';
-
-type DeployedExtension = {
-    metadata: ExtensionMetadata;
-    functions: ExtensionFunction[];
-    abi: any;
-    name: string;
-};
-
-enum ExtensionAction {
-    ADD = 'add',
-    REMOVE = 'remove',
-    REPLACE = 'replace',
-}
+import { CONTRACT_EXTENSION_NAME } from '@constants/contract';
+import { TENANT } from '@constants/tenant';
+import { populateConstructorArgs } from '../tasks';
 
 async function deployExtension(
     hre: HardhatRuntimeEnvironment,
     extension: DeploymentExtensionContract,
-    tenant: string
+    tenant: TENANT
 ): Promise<DeployedExtension> {
     const abiPath = getABIFilePath(hre.network.zksync, extension.contractFileName)!;
-    const extensionDeployment = await deploy(hre, extension, extension.extensionArgs, abiPath, tenant);
+    let constructorArgs;
+    if (extension.extensionArgs) {
+        constructorArgs = await populateConstructorArgs(hre, extension.extensionArgs, tenant);
+    }
+    const extensionDeployment = await deploy(hre, extension, constructorArgs, abiPath, tenant);
     const functions = await getContractFunctionSelectors(
         hre,
-        extensionDeployment.name,
+        extension.contractFileName,
         extensionDeployment.contractAddress,
         extension.functionsToInclude
     );
@@ -68,13 +61,18 @@ async function getContractFunctionSelectors(
 
 async function deployExtensions(
     hre: HardhatRuntimeEnvironment,
-    tenant: string,
+    tenant: TENANT,
     proxyDeployment: DeploymentProxyContract,
-    extensionsName: string[]
+    extensionsName: CONTRACT_EXTENSION_NAME[]
 ) {
+    log('\n');
+    log('=====================================================');
+    log(`[EXTENSIONS DEPLOYMENT]`);
+    log('=====================================================');
+
     const extensionsToDeploy: DeploymentExtensionContract[] = [];
     for (const extensionName of extensionsName) {
-        const extensionToDeploy = proxyDeployment.extensions.find((ext) => ext.name === extensionName);
+        const extensionToDeploy = proxyDeployment?.extensions?.find((ext) => ext.name === extensionName);
         if (!extensionToDeploy) continue;
         extensionsToDeploy.push(extensionToDeploy);
     }
@@ -92,16 +90,20 @@ async function upgradeManagerExtensions(
     hre: HardhatRuntimeEnvironment,
     proxyAddress: string,
     deployedExtensions: DeployedExtension[],
-    actions: string[]
+    actions: ExtensionAction[]
 ) {
-    log(`[EXTENSION MANAGER] Upgrading extensions`);
     log('\n');
+    log('=====================================================');
+    log(`[EXTENSION MANAGER] Upgrading extensions`);
+    log('=====================================================');
+    log('\n');
+
     const manager: ExtensionManager = await hre.ethers.getContractAt('ExtensionManager', proxyAddress);
     for (let i = 0; i < deployedExtensions.length; i++) {
         const extension = deployedExtensions[i];
         const action = actions[i];
         log(`[EXTENSION] ${extension.metadata.name} - ${action}`);
-        switch (action) {
+        switch (action.toLowerCase()) {
             case ExtensionAction.ADD:
                 await manager.addExtension(extension);
                 break;
@@ -119,40 +121,36 @@ async function upgradeManagerExtensions(
     }
 }
 
+function updateDbContractDeployment(dbContract: Deployment, deployedExtensions: DeployedExtension[]) {
+    const updatedDbContract = dbContract;
+    updatedDbContract.extensions = deployedExtensions.map((ext) => ({
+        abi: ext.abi,
+        address: ext.metadata.implementation,
+        functions: ext.functions,
+        name: ext.name,
+    }));
+    return updatedDbContract;
+}
+
 export default async function (
     hre: HardhatRuntimeEnvironment,
-    contract: DeploymentProxyContract,
-    abiPath: string,
-    tenant: string,
-    proxyAddress: string,
-    extension: string,
-    action: string
+    proxyDeployment: DeploymentProxyContract,
+    dbContract: Deployment,
+    tenant: TENANT,
+    extension: CONTRACT_EXTENSION_NAME,
+    action: ExtensionAction
 ): Promise<Deployment> {
-    const networkName = hre.network.name as NetworkName;
-
     log('=====================================================');
-    log(`[UPGRADING] Upgrading ${contract.name} contract for [[${tenant}]] on ${networkName}`);
+    log(`[UPGRADING] Upgrading ${proxyDeployment.name} contract for [[${tenant}]]`);
     log('=====================================================');
 
-    log('\n');
-    log('=====================================================');
-    log(`[EXTENSIONS DEPLOYMENT]`);
-    log('=====================================================');
-
-    const deployedExtensions: DeployedExtension[] = await deployExtensions(hre, tenant, contract, [extension]);
-
-    log('\n');
-    log('=====================================================');
-    log(`[EXTENSION MANAGER UPDATE]`);
-    log('=====================================================');
-
-    await upgradeManagerExtensions(hre, proxyAddress, deployedExtensions, [action]);
-
-    const deploymentPayload: Deployment = {} as Deployment; // TODO: Figure out how to update proxy info with updated extensions deployment
+    const deployedExtensions: DeployedExtension[] = await deployExtensions(hre, tenant, proxyDeployment, [extension]);
+    await upgradeManagerExtensions(hre, dbContract.contractAddress, deployedExtensions, [action]);
+    const deployment = updateDbContractDeployment(dbContract, deployedExtensions);
 
     log(`*****************************************************`);
-    log(`Upgraded ${contract.type}(${contract.name}) for ${tenant}`);
+    log(`Upgraded ${proxyDeployment.type}(${proxyDeployment.name}) for ${tenant}`);
     log(`*****************************************************`);
 
-    return deploymentPayload;
+    return deployment;
 }

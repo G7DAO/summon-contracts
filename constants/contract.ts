@@ -106,7 +106,8 @@ export enum CONTRACT_NAME {
     MartinERC20 = 'MockERC20',
     Marketplace = 'Marketplace',
     EnglishAuctionsExtension = 'EnglishAuctionsExtension',
-    OffersExtension = 'OffersExtension'
+    OffersExtension = 'OffersExtension',
+    AchievoProxyMarketplace = 'AchievoProxyMarketplace'
 }
 
 export enum CONTRACT_UPGRADABLE_NAME {
