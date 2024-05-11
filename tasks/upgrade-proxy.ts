@@ -17,6 +17,15 @@ export const writeUpgradePayload = (deploymentPayload: Deployment, chain: string
     log('*******************************************');
     log('[SAVING] Upgrade Payload');
     log('*******************************************');
+
+    if (!fs.existsSync(`${ACHIEVO_TMP_DIR}/upgrades`)) {
+        fs.mkdirSync(`${ACHIEVO_TMP_DIR}/upgrades`);
+    }
+
+    if (!fs.existsSync(`${ACHIEVO_TMP_DIR}/upgrades/${chain}`)) {
+        fs.mkdirSync(`${ACHIEVO_TMP_DIR}/upgrades/${chain}`);
+    }
+
     // Define the path to the file
     const filePath = path.resolve(
         `${ACHIEVO_TMP_DIR}/upgrades/${chain}/upgrades-${deploymentPayload.type}-${tenant}-${Date.now()}.json`
@@ -78,7 +87,7 @@ task('upgrade-proxy', 'Upgrade Smart contracts')
                 log('=====================================================');
                 log('\n');
 
-                // submit to db
+               // submit to db
                 try {
                     log('*******************************************');
                     log('[SUBMITTING] Deployments to db');
