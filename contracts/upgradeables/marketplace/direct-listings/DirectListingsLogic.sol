@@ -21,7 +21,7 @@ import "../../../ercs/extensions/PermissionsEnumerable.sol";
 import { RoyaltyPaymentsLogic } from "../../../ercs/extensions/RoyaltyPayments.sol";
 import { CurrencyTransferLib } from "../../../libraries/CurrencyTransferLib.sol";
 
-    error InvalidSeed();
+error InvalidSeed();
 error InvalidListingId();
 
 /**
