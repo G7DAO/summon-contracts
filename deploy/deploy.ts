@@ -14,10 +14,6 @@ import getWallet from './getWallet';
 const PRIVATE_KEY = process.env.PRIVATE_KEY || '';
 const ENCRYPTION_KEY = process.env.PRIVATE_KEY || '';
 
-if (!PRIVATE_KEY) throw '⛔️ Private key not detected! Add it to the .env file!';
-
-if (!ENCRYPTION_KEY) throw '⛔️ Encryption key not detected! Add it to the .env file!';
-
 export default async function (
     hre: HardhatRuntimeEnvironment,
     contract: any,
@@ -25,7 +21,10 @@ export default async function (
     abiPath: string,
     tenant: any
 ) {
-    const encryptedPrivateKey = await encryptPrivateKey(PRIVATE_KEY);
+    const isHardhatNetwork = hre.network.name === 'hardhat';
+    if (!PRIVATE_KEY && !isHardhatNetwork) throw '⛔️ Private key not detected! Add it to the .env file!';
+    if (!ENCRYPTION_KEY && !isHardhatNetwork) throw '⛔️ Encryption key not detected! Add it to the .env file!';
+    const encryptedPrivateKey = !isHardhatNetwork ? await encryptPrivateKey(PRIVATE_KEY) : '';
     const networkName = hre.network.name as NetworkName;
     const networkNameKey = Object.keys(NetworkName)[Object.values(NetworkName).indexOf(networkName)]; // get NetworkName Key from Value
     const chainId = ChainId[networkNameKey as keyof typeof ChainId];

@@ -48,6 +48,10 @@ export async function populateProxyParam(
     const chain = hre.network.name;
     let value = param;
 
+    if(param === 'FILL_ME') {
+        throw new Error('Parameter is with FILL_ME value, please update it');
+    }
+
     if (param === 'ENCODE_INITIALIZE_FUNCTION_ACHIEVO_PROXY' && !implementationContract && !contract) {
         throw new Error('Implementation contract is required for ENCODE_INITIALIZE_FUNCTION_ACHIEVO_PROXY');
     }
@@ -156,7 +160,7 @@ export async function populateProxyConstructorArgs(
     return constructorArgs;
 }
 
-const deployOneWithExtensions = async (
+export const deployOneWithExtensions = async (
     hre: HardhatRuntimeEnvironment,
     contract: DeploymentProxyContract,
     tenant: string,
@@ -188,7 +192,7 @@ const deployOneWithExtensions = async (
     return await deploy(hre, contract, constructorArgs, abiPath, tenant);
 };
 
-const deployOne = async (
+export const deployOne = async (
     hre: HardhatRuntimeEnvironment,
     contract: DeploymentProxyContract | DeploymentExtensionContract,
     tenant: string,
