@@ -112,7 +112,7 @@ export enum CONTRACT_NAME {
 
 export enum CONTRACT_UPGRADABLE_NAME {
     LegacyAvatar = 'LegacyAvatarUpgradable',
-    Avatars = 'AvatarsUpgradable',
+    Avatars = 'AvatarsUpgradeable',
     Items = 'ItemsUpgradable',
     ItemsRoyaltiesV2 = 'ItemsRoyaltiesV2',
     Levels = 'LevelsUpgradable',
