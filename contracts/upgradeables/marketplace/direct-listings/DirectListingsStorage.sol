@@ -18,6 +18,7 @@ library DirectListingsStorage {
         uint256 totalListings;
         mapping(uint256 => IDirectListings.Listing) listings;
         mapping(uint256 => mapping(address => bool)) isBuyerApprovedForListing;
+        mapping(uint256 => mapping(uint256 => bool)) isOfferApprovedForListing;
         mapping(uint256 => mapping(address => uint256)) currencyPriceForListing;
     }
 
