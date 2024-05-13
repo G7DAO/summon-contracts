@@ -13,10 +13,11 @@ export type AuctionParameters = {
 
 export enum TokenType {
     ERC721,
-    ERC1155
+    ERC1155,
+    ERC20
 }
 
-export enum AuctionStatus {
+export enum Status {
     UNSET,
     CREATED,
     COMPLETED,
@@ -37,5 +38,27 @@ export type Auction = {
     assetContract: string;
     currency: string;
     tokenType: TokenType;
-    status: AuctionStatus;
+    status: Status;
+}
+
+export type OfferParams = {
+    assetContract: string;
+    tokenId: number;
+    quantity: number;
+    currency: string;
+    totalPrice: bigint;
+    expirationTimestamp: number;
+}
+
+export type Offer = {
+    offerId: bigint;
+    tokenId: number;
+    quantity: number;
+    totalPrice: bigint;
+    expirationTimestamp: number;
+    offeror: string;
+    assetContract: string;
+    currency: string;
+    tokenType: TokenType;
+    status: Status;
 }

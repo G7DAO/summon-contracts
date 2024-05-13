@@ -12,7 +12,7 @@ import {
 import { loadFixture, time } from '@nomicfoundation/hardhat-network-helpers';
 import { deployMarketplaceContracts } from './fixture/marketplaceContractsFixture';
 import { SignerWithAddress } from '@nomicfoundation/hardhat-ethers/signers';
-import { Auction, AuctionParameters, AuctionStatus, TokenType } from './helpers/types';
+import { Auction, AuctionParameters, Status, TokenType } from './helpers/types';
 import { NATIVE_TOKEN, ONE_DAY, ONE_HOUR } from './helpers/constants';
 import { ASSET_ROLE, LISTER_ROLE } from './helpers/roles';
 import { ZeroAddress } from 'ethers';
@@ -195,7 +195,7 @@ describe('EnglishAuction', function () {
                     assetContract: auctionParameters.assetContract,
                     currency: auctionParameters.currency,
                     tokenType: TokenType.ERC721,
-                    status: AuctionStatus.CREATED,
+                    status: Status.CREATED,
                 };
             });
 

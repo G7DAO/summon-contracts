@@ -9,7 +9,12 @@ import {
 import { TENANT } from '@constants/tenant';
 import { DeploymentProxyContract } from '../../types/deployment-type';
 import { NETWORK_TYPE, NetworkName } from '../network';
-import {DirectListingExtensionArgs, EnglishAuctionsExtensionArgs, MarketplaceArgs} from '@constants/constructor-args';
+import {
+    DirectListingExtensionArgs,
+    EnglishAuctionsExtensionArgs,
+    MarketplaceArgs,
+    OffersExtensionArgs,
+} from '@constants/constructor-args';
 
 const chain = NetworkName.Game7OrbitArbSepolia;
 const networkType = NETWORK_TYPE.TESTNET;
@@ -90,6 +95,27 @@ export const GAME7_ARB_SEPOLIA_CONTRACTS: DeploymentProxyContract[] = [
                     'getAllValidAuctions(uint256,uint256)',
                     'getWinningBid(uint256)',
                     'isAuctionExpired(uint256)',
+                ],
+            },
+            {
+                contractFileName: CONTRACT_FILE_NAME.OffersExtension,
+                type: CONTRACT_TYPE.OffersExtension,
+                name: CONTRACT_NAME.OffersExtension,
+                verify: true,
+                extensionArgs: OffersExtensionArgs.TESTNET,
+                metadata: {
+                    name: 'OffersLogic',
+                    metadataURI: 'ipfs://{hash}',
+                    implementation: `CONTRACT_${CONTRACT_NAME.OffersExtension}`,
+                },
+                functionsToInclude: [
+                    'makeOffer((address,uint256,uint256,address,uint256,uint256))',
+                    'cancelOffer(uint256)',
+                    'acceptOffer(uint256)',
+                    'totalOffers()',
+                    'getOffer(uint256)',
+                    'getAllOffers(uint256,uint256)',
+                    'getAllValidOffers(uint256,uint256)',
                 ],
             },
         ],
