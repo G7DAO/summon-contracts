@@ -115,6 +115,7 @@ contract DirectListingsAddon is DirectListingsLogic {
         data = OffersStorage.data();
     }
 
+    /// @dev Returns the Direct Listings Addon storage.
     function _directListingsAddonStorage() internal pure returns (DirectListingsAddonStorage.Data storage data) {
         data = DirectListingsAddonStorage.data();
     }
