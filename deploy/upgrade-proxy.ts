@@ -10,7 +10,7 @@ import { CONTRACT_EXTENSION_NAME } from '@constants/contract';
 import { TENANT } from '@constants/tenant';
 import { populateConstructorArgs } from '../tasks';
 
-async function deployExtension(
+export async function deployExtension(
     hre: HardhatRuntimeEnvironment,
     extension: DeploymentExtensionContract,
     tenant: TENANT
@@ -59,7 +59,7 @@ async function getContractFunctionSelectors(
     return functions;
 }
 
-async function deployExtensions(
+export async function deployExtensions(
     hre: HardhatRuntimeEnvironment,
     tenant: TENANT,
     proxyDeployment: DeploymentProxyContract,
@@ -86,7 +86,7 @@ async function deployExtensions(
     return deployedExtensions;
 }
 
-async function upgradeManagerExtensions(
+export async function upgradeManagerExtensions(
     hre: HardhatRuntimeEnvironment,
     proxyAddress: string,
     deployedExtensions: DeployedExtension[],
