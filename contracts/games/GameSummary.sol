@@ -69,7 +69,6 @@ contract GameSummary is
     uint256 public MAX_PER_MINT;
 
     mapping(uint256 => bool) private tokenExists;
-    mapping(uint256 => string) public tokenUris; // tokenId => tokenUri
 
     mapping(uint256 => uint256) public storeIds; // tokenId => storeIds
     mapping(uint256 => uint256) public playerIds; // tokenId => playerIds
@@ -262,10 +261,6 @@ contract GameSummary is
     }
 
     function addNewToken(LibGameSummary.GameSummaryCreate memory _token) public onlyRole(DEV_CONFIG_ROLE) {
-        if (bytes(_token.tokenUri).length > 0) {
-            tokenUris[_token.tokenId] = _token.tokenUri;
-        }
-
         tokenExists[_token.tokenId] = true;
 
         storeIds[_token.tokenId] = _token.storeId;
@@ -274,22 +269,6 @@ contract GameSummary is
 
         itemIds.push(_token.tokenId);
         emit TokenAdded(_token.tokenId);
-    }
-
-    function updateTokenUri(uint256 _tokenId, string calldata _tokenUri) public onlyRole(DEV_CONFIG_ROLE) {
-        tokenUris[_tokenId] = _tokenUri;
-    }
-
-    function batchUpdateTokenUri(
-        uint256[] calldata _tokenIds,
-        string[] calldata _tokenUris
-    ) public onlyRole(DEV_CONFIG_ROLE) {
-        if (_tokenIds.length != _tokenUris.length) {
-            revert("InvalidInput");
-        }
-        for (uint256 i = 0; i < _tokenIds.length; i++) {
-            updateTokenUri(_tokenIds[i], _tokenUris[i]);
-        }
     }
 
     function updateTokenMintPaused(uint256 _tokenId, bool _isTokenMintPaused) public onlyRole(MANAGER_ROLE) {
@@ -514,11 +493,7 @@ contract GameSummary is
                 );
         }
 
-        if (bytes(tokenUris[tokenId]).length > 0) {
-            return tokenUris[tokenId];
-        } else {
-            return string(abi.encodePacked(baseURI, "/", tokenId.toString()));
-        }
+        return string(abi.encodePacked(baseURI, "/", tokenId.toString()));
     }
 
     function setBaseUri(string memory _uri) public onlyRole(DEV_CONFIG_ROLE) {
