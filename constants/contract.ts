@@ -114,7 +114,7 @@ export enum CONTRACT_NAME {
 export enum CONTRACT_UPGRADABLE_NAME {
     LegacyAvatar = 'LegacyAvatarUpgradable',
     Avatars = 'AvatarsUpgradeable',
-    Items = 'ItemsUpgradable',
+    Items = 'ItemsUpgradeable',
     ItemsRoyaltiesV2 = 'ItemsRoyaltiesV2',
     Levels = 'LevelsUpgradable',
     PaymasterChainlink = 'PaymasterChainlinkUpgradable',
@@ -125,7 +125,7 @@ export enum CONTRACT_UPGRADABLE_NAME {
     BridgeZkSync = 'BridgeUpgradeableZkSync',
     ZkSpork = 'ZkSpork',
     SkillTree = 'SkillTreeUpgradable',
-    RewardItemsUpgradable = 'RewardItemsUpgradable',
+    RewardItemsUpgradeable = 'RewardItemsUpgradeable',
     Marketplace = 'Marketplace',
 }
 
