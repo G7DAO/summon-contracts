@@ -1,12 +1,13 @@
 // SPDX-License-Identifier: Apache-2.0
 pragma solidity ^0.8.11;
 
-import {DirectListingsLogic} from "./DirectListingsLogic.sol";
+import {DirectListingsLogic} from "../direct-listings/DirectListingsLogic.sol";
+import {DirectListingsAddonStorage} from "./DirectListingsAddonStorage.sol";
 import {OffersLogic} from "../offers/OffersLogic.sol";
 import {OffersStorage} from "../offers/OffersStorage.sol";
 import {IOffers, IDirectListings} from "../../../interfaces/IMarketplace.sol";
 import {CurrencyTransferLib} from "../../../libraries/CurrencyTransferLib.sol";
-
+import "hardhat/console.sol";
 /**
  * @title Direct Listings Addon
  * @dev Contains logic for direct listings with offers.
@@ -19,7 +20,10 @@ contract DirectListingsAddon is DirectListingsLogic {
         _;
     }
 
-    constructor(address _nativeTokenWrapper, address devWallet) DirectListingsLogic(_nativeTokenWrapper, devWallet) {}
+    constructor(address _nativeTokenWrapper, address devWallet) DirectListingsLogic(_nativeTokenWrapper, devWallet) {
+        bytes32 slot = keccak256(abi.encode(uint256(keccak256("direct.listings.addon.storage")) - 1));
+        console.logBytes32(slot);
+    }
 
     // @notice Buy NFTs from a listing with an offer.
     function buyFromListingWithOffer(
@@ -30,7 +34,7 @@ contract DirectListingsAddon is DirectListingsLogic {
         IOffers.Offer memory offer = _offersStorage().offers[_offerId];
 
         require(
-            !listing.reserved || _directListingsStorage().isOfferApprovedForListing[_listingId][_offerId],
+            !listing.reserved || _directListingsAddonStorage().isOfferApprovedForListing[_listingId][_offerId],
             "offer not approved"
         );
         require(
@@ -96,8 +100,25 @@ contract DirectListingsAddon is DirectListingsLogic {
         );
     }
 
+    /// @notice Approve an offer to buy from a reserved listing.
+    function approveOfferForListing(
+        uint256 _listingId,
+        uint256 _offerId,
+        bool _toApprove
+    ) external onlyExistingListing(_listingId) onlyListingCreator(_listingId) {
+        require(_directListingsStorage().listings[_listingId].reserved, "Marketplace: listing not reserved.");
+
+        _directListingsAddonStorage().isOfferApprovedForListing[_listingId][_offerId] = _toApprove;
+
+        emit OfferApprovedForListing(_listingId, _offerId, _toApprove);
+    }
+
     /// @dev Returns the Offers storage.
     function _offersStorage() internal pure returns (OffersStorage.Data storage data) {
         data = OffersStorage.data();
+    }
+
+    function _directListingsAddonStorage() internal pure returns (DirectListingsAddonStorage.Data storage data) {
+        data = DirectListingsAddonStorage.data();
     }
 }

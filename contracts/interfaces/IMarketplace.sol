@@ -116,6 +116,9 @@ interface IDirectListings {
     /// @notice Emitted when a buyer is approved to buy from a reserved listing.
     event BuyerApprovedForListing(uint256 indexed listingId, address indexed buyer, bool approved);
 
+    /// @notice Emitted when a offer is approved to buy from a reserved listing.
+    event OfferApprovedForListing(uint256 indexed listingId, uint256 indexed offerId, bool approved);
+
     /// @notice Emitted when a currency is approved as a form of payment for the listing.
     event CurrencyApprovedForListing(uint256 indexed listingId, address indexed currency, uint256 pricePerToken);
 
