@@ -7,7 +7,7 @@ import {OffersLogic} from "../offers/OffersLogic.sol";
 import {OffersStorage} from "../offers/OffersStorage.sol";
 import {IOffers, IDirectListings} from "../../../interfaces/IMarketplace.sol";
 import {CurrencyTransferLib} from "../../../libraries/CurrencyTransferLib.sol";
-import "hardhat/console.sol";
+
 /**
  * @title Direct Listings Addon
  * @dev Contains logic for direct listings with offers.
@@ -20,10 +20,7 @@ contract DirectListingsAddon is DirectListingsLogic {
         _;
     }
 
-    constructor(address _nativeTokenWrapper, address devWallet) DirectListingsLogic(_nativeTokenWrapper, devWallet) {
-        bytes32 slot = keccak256(abi.encode(uint256(keccak256("direct.listings.addon.storage")) - 1));
-        console.logBytes32(slot);
-    }
+    constructor(address _nativeTokenWrapper, address devWallet) DirectListingsLogic(_nativeTokenWrapper, devWallet) {}
 
     // @notice Buy NFTs from a listing with an offer.
     function buyFromListingWithOffer(
