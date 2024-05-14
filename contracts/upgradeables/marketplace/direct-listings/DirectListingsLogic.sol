@@ -520,7 +520,7 @@ contract DirectListingsLogic is IDirectListings, ReentrancyGuard, ERC2771Context
             targetTotalPrice
         );
     }
-    
+
     /*///////////////////////////////////////////////////////////////
                             Custom Verifications
     //////////////////////////////////////////////////////////////*/
