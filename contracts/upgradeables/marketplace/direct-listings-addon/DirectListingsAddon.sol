@@ -135,6 +135,7 @@ contract DirectListingsAddon is IDirectListingsAddon, ReentrancyGuard, ERC2771Co
         require(_msgSender() == listing.listingCreator, "Marketplace: not listing creator.");
         require(LibStorage.directListingsAddonStorage().isOfferMadeForListing[_listingId][_offerId], "Marketplace: Offer not made for listing.");
         require(offer.status == IOffers.Status.CREATED, "Marketplace: invalid offer.");
+        require(offer.quantity <= listing.quantity, "Marketplace: invalid quantity.");
 
         address buyer = offer.offeror;
 
