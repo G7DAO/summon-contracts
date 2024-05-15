@@ -1,52 +1,146 @@
 // SPDX-License-Identifier: Apache-2.0
 pragma solidity ^0.8.11;
 
-import {DirectListingsLogic} from "../direct-listings/DirectListingsLogic.sol";
-import {DirectListingsAddonStorage} from "./DirectListingsAddonStorage.sol";
-import {OffersLogic} from "../offers/OffersLogic.sol";
-import {OffersStorage} from "../offers/OffersStorage.sol";
-import {IOffers, IDirectListings} from "../../../interfaces/IMarketplace.sol";
+import {IOffers, IDirectListings, IOffers, IDirectListingsAddon} from "../../../interfaces/IMarketplace.sol";
 import {CurrencyTransferLib} from "../../../libraries/CurrencyTransferLib.sol";
+import {ReentrancyGuard} from "@openzeppelin/contracts/security/ReentrancyGuard.sol";
+
+import {ERC2771ContextConsumer} from "../../../ercs/extensions/ERC2771ContextConsumer.sol";
+
+
+import {LibStorage} from "../libraries/LibStorage.sol";
+import {LibOffers} from "../libraries/LibOffers.sol";
+import {LibDirectListings} from "../libraries/LibDirectListings.sol";
 
 /**
  * @title Direct Listings Addon
  * @dev Contains logic for direct listings with offers.
- * @author daniel.lima@game7.io
+ * @author Daniel Lima <karacurt>(https://github.com/karacurt)
  */
-contract DirectListingsAddon is DirectListingsLogic {
+contract DirectListingsAddon is IDirectListingsAddon, ReentrancyGuard, ERC2771ContextConsumer {
+    /// @dev The address of the native token wrapper contract.
+    address private immutable nativeTokenWrapper;
+
     /// @dev Checks whether an auction exists.
     modifier onlyExistingOffer(uint256 _offerId) {
-        require(_offersStorage().offers[_offerId].status == IOffers.Status.CREATED, "Marketplace: invalid offer.");
+        require(LibStorage.offersStorage().offers[_offerId].status == IOffers.Status.CREATED, "Marketplace: invalid offer.");
         _;
     }
 
-    constructor(address _nativeTokenWrapper, address devWallet) DirectListingsLogic(_nativeTokenWrapper, devWallet) {}
+    /// @dev Checks whether a listing exists.
+    modifier onlyExistingListing(uint256 _listingId) {
+        require(
+            LibStorage.directListingsStorage().listings[_listingId].status == IDirectListings.Status.CREATED,
+            "Marketplace: invalid listing."
+        );
+        _;
+    }
+
+    /// @dev Checks whether caller is a listing creator.
+    modifier onlyListingCreator(uint256 _listingId) {
+        require(
+            LibStorage.directListingsStorage().listings[_listingId].listingCreator == _msgSender(),
+            "Marketplace: not listing creator."
+        );
+        _;
+    }
+
+    /// @dev Checks whether caller is a offer creator.
+    modifier onlyOfferor(uint256 _offerId) {
+        require(LibStorage.offersStorage().offers[_offerId].offeror == _msgSender(), "!Offeror");
+        _;
+    }
+
+    /*///////////////////////////////////////////////////////////////
+                            Constructor logic
+    //////////////////////////////////////////////////////////////*/
+
+    constructor(address _nativeTokenWrapper) {
+        nativeTokenWrapper = _nativeTokenWrapper;
+    }
+
+    /*///////////////////////////////////////////////////////////////
+                            External functions
+    //////////////////////////////////////////////////////////////*/
+
+    // @notice Create a new listing with offers.
+    function makeOfferForListing(
+        uint256 _listingId,
+        uint256 _expirationTimestamp,
+        uint256 _totalPrice
+    ) external onlyExistingListing(_listingId) returns (uint256 _offerId) {
+        IDirectListings.Listing memory listing = LibStorage.directListingsStorage().listings[_listingId];
+        _offerId = LibOffers.getNextOfferId();
+        address _offeror = _msgSender();
+
+        require(_expirationTimestamp + 60 minutes > block.timestamp, "Marketplace: invalid expiration timestamp.");
+
+        IOffers.Offer memory _offer = IOffers.Offer({
+            offerId: _offerId,
+            offeror: _offeror,
+            assetContract: listing.assetContract,
+            tokenId: listing.tokenId,
+            tokenType: IOffers.TokenType(uint(listing.tokenType)),
+            quantity: listing.quantity,
+            currency: listing.currency,
+            totalPrice: _totalPrice,
+            expirationTimestamp: _expirationTimestamp,
+            status: IOffers.Status.CREATED
+        });
+
+        LibStorage.offersStorage().offers[_offerId] = _offer;
+        LibStorage.directListingsAddonStorage().isOfferMadeForListing[_listingId][_offerId] = true;
+
+        // Transfer currency to marketplace
+        CurrencyTransferLib.transferCurrencyWithWrapper(
+            _offer.currency,
+            _offeror,
+            address(this),
+            _offer.totalPrice,
+            nativeTokenWrapper
+        );
+
+        emit NewOffer(_offeror, _offerId, listing.assetContract, _offer);
+    }
+
+    // @notice Cancel an offer for a listing.
+    function cancelOfferForListing(uint256 _offerId) external onlyExistingOffer(_offerId) onlyOfferor(_offerId) {
+        require(LibStorage.offersStorage().offers[_offerId].status == IOffers.Status.CREATED, "Marketplace: invalid offer.");
+
+        IOffers.Offer storage _offer = LibStorage.offersStorage().offers[_offerId];
+        _offer.status = IOffers.Status.CANCELLED;
+
+        // Refund currency to offeror
+        CurrencyTransferLib.transferCurrencyWithWrapper(
+            _offer.currency,
+            address(this),
+            _offer.offeror,
+            _offer.totalPrice,
+            nativeTokenWrapper
+        );
+
+        emit CancelledOffer(_msgSender(), _offerId);
+    }
 
     // @notice Buy NFTs from a listing with an offer.
-    function buyFromListingWithOffer(
+    function acceptOfferForListing(
         uint256 _listingId,
         uint256 _offerId
     ) external payable nonReentrant onlyExistingOffer(_offerId) onlyExistingListing(_listingId) {
-        Listing memory listing = _directListingsStorage().listings[_listingId];
-        IOffers.Offer memory offer = _offersStorage().offers[_offerId];
+        IDirectListings.Listing memory listing = LibStorage.directListingsStorage().listings[_listingId];
+        IOffers.Offer memory offer = LibStorage.offersStorage().offers[_offerId];
 
-        require(
-            !listing.reserved || _directListingsAddonStorage().isOfferApprovedForListing[_listingId][_offerId],
-            "offer not approved"
-        );
-        require(
-            _msgSender() == offer.offeror || _msgSender() == listing.listingCreator,
-            "Marketplace: not offeror or listing creator."
-        );
+        require(_msgSender() == listing.listingCreator, "Marketplace: not listing creator.");
+        require(LibStorage.directListingsAddonStorage().isOfferMadeForListing[_listingId][_offerId], "Marketplace: Offer not made for listing.");
         address buyer = offer.offeror;
 
         require(
             block.timestamp < listing.endTimestamp && block.timestamp >= listing.startTimestamp,
-            "not within sale window."
+            "Marketplace: not within sale window."
         );
 
         require(
-            _validateOwnershipAndApproval(
+            LibDirectListings.validateOwnershipAndApproval(
                 listing.listingCreator,
                 listing.assetContract,
                 listing.tokenId,
@@ -58,33 +152,32 @@ contract DirectListingsAddon is DirectListingsLogic {
 
         uint256 targetTotalPrice;
 
-        if (_directListingsStorage().currencyPriceForListing[_listingId][offer.currency] > 0) {
+        if (LibStorage.directListingsStorage().currencyPriceForListing[_listingId][offer.currency] > 0) {
             targetTotalPrice =
                 offer.quantity *
-                _directListingsStorage().currencyPriceForListing[_listingId][offer.currency];
+                LibStorage.directListingsStorage().currencyPriceForListing[_listingId][offer.currency];
         } else {
-            require(offer.currency == listing.currency, "Paying in invalid currency.");
+            require(offer.currency == listing.currency, "Marketplace: Paying in invalid currency.");
         }
 
-        require(offer.totalPrice == targetTotalPrice, "Unexpected total price");
+        require(offer.totalPrice == targetTotalPrice, "Marketplace: Unexpected total price");
 
         // Check: buyer owns and has approved sufficient currency for sale.
         if (offer.currency == CurrencyTransferLib.NATIVE_TOKEN) {
             require(msg.value == offer.totalPrice, "Marketplace: msg.value must exactly be the total price.");
         } else {
             require(msg.value == 0, "Marketplace: invalid native tokens sent.");
-            _validateERC20BalAndAllowance(buyer, offer.currency, offer.totalPrice);
+            LibDirectListings.validateERC20BalAndAllowance(buyer, offer.currency, offer.totalPrice);
         }
 
         if (listing.quantity == offer.quantity) {
-            _directListingsStorage().listings[_listingId].status = IDirectListings.Status.COMPLETED;
+            LibStorage.directListingsStorage().listings[_listingId].status = IDirectListings.Status.COMPLETED;
         }
-        _directListingsStorage().listings[_listingId].quantity -= offer.quantity;
+        LibStorage.directListingsStorage().listings[_listingId].quantity -= offer.quantity;
+        LibStorage.offersStorage().offers[_offerId].status = IOffers.Status.COMPLETED;
 
-        _payout(buyer, listing.listingCreator, offer.currency, offer.totalPrice, listing);
-        _transferListingTokens(listing.listingCreator, buyer, offer.quantity, listing);
-
-        _offersStorage().offers[_offerId].status = IOffers.Status.COMPLETED;
+        LibDirectListings.payout(address(this), listing.listingCreator, offer.currency, offer.totalPrice, listing, nativeTokenWrapper);
+        LibDirectListings.transferListingTokens(listing.listingCreator, buyer, offer.quantity, listing);
 
         emit NewSale(
             listing.listingCreator,
@@ -95,28 +188,15 @@ contract DirectListingsAddon is DirectListingsLogic {
             offer.quantity,
             offer.totalPrice
         );
-    }
 
-    /// @notice Approve an offer to buy from a reserved listing.
-    function approveOfferForListing(
-        uint256 _listingId,
-        uint256 _offerId,
-        bool _toApprove
-    ) external onlyExistingListing(_listingId) onlyListingCreator(_listingId) {
-        require(_directListingsStorage().listings[_listingId].reserved, "Marketplace: listing not reserved.");
-
-        _directListingsAddonStorage().isOfferApprovedForListing[_listingId][_offerId] = _toApprove;
-
-        emit OfferApprovedForListing(_listingId, _offerId, _toApprove);
-    }
-
-    /// @dev Returns the Offers storage.
-    function _offersStorage() internal pure returns (OffersStorage.Data storage data) {
-        data = OffersStorage.data();
-    }
-
-    /// @dev Returns the Direct Listings Addon storage.
-    function _directListingsAddonStorage() internal pure returns (DirectListingsAddonStorage.Data storage data) {
-        data = DirectListingsAddonStorage.data();
+        emit AcceptedOffer(
+            offer.offeror,
+            offer.offerId,
+            offer.assetContract,
+            offer.tokenId,
+            listing.listingCreator,
+            offer.quantity,
+            offer.totalPrice
+        );
     }
 }

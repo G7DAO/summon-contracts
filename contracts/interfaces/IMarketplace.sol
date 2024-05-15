@@ -20,6 +20,36 @@ pragma solidity ^0.8.17;
 // MMNx'.dWMMK;.:0WMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMM
 // MMMM0cdNMM0cdNMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMM
 
+interface IDirectListingsAddon {
+    /// @notice Emitted when NFTs are bought from a listing.
+    event NewSale(
+        address indexed listingCreator,
+        uint256 indexed listingId,
+        address indexed assetContract,
+        uint256 tokenId,
+        address buyer,
+        uint256 quantityBought,
+        uint256 totalPricePaid
+    );
+
+    /// @dev Emitted when an offer is accepted.
+    event AcceptedOffer(
+        address indexed offeror,
+        uint256 indexed offerId,
+        address indexed assetContract,
+        uint256 tokenId,
+        address seller,
+        uint256 quantityBought,
+        uint256 totalPricePaid
+    );
+
+    /// @dev Emitted when a new offer is created.
+    event NewOffer(address indexed offeror, uint256 indexed offerId, address indexed assetContract, IOffers.Offer offer);
+
+    /// @dev Emitted when an offer is cancelled.
+    event CancelledOffer(address indexed offeror, uint256 indexed offerId);
+}
+
 /**
  *  @author  Omar
  *
@@ -115,9 +145,6 @@ interface IDirectListings {
 
     /// @notice Emitted when a buyer is approved to buy from a reserved listing.
     event BuyerApprovedForListing(uint256 indexed listingId, address indexed buyer, bool approved);
-
-    /// @notice Emitted when a offer is approved to buy from a reserved listing.
-    event OfferApprovedForListing(uint256 indexed listingId, uint256 indexed offerId, bool approved);
 
     /// @notice Emitted when a currency is approved as a form of payment for the listing.
     event CurrencyApprovedForListing(uint256 indexed listingId, address indexed currency, uint256 pricePerToken);

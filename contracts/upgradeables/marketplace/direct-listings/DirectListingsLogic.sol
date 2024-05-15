@@ -19,8 +19,9 @@ import "../../../ercs/extensions/ERC2771ContextConsumer.sol";
 import "../../../ercs/extensions/PermissionsEnumerable.sol";
 import { RoyaltyPaymentsLogic } from "../../../ercs/extensions/RoyaltyPayments.sol";
 import { CurrencyTransferLib } from "../../../libraries/CurrencyTransferLib.sol";
+import { LibDirectListings } from "../libraries/LibDirectListings.sol";
 
-error InvalidSeed();
+    error InvalidSeed();
 error InvalidListingId();
 
 /**
