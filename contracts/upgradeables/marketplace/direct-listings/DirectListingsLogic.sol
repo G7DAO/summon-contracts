@@ -742,13 +742,35 @@ contract DirectListingsLogic is IDirectListings, ReentrancyGuard, ERC2771Context
             _targetListing.startTimestamp <= block.timestamp &&
             _targetListing.endTimestamp > block.timestamp &&
             _targetListing.status == IDirectListings.Status.CREATED &&
-            _validateOwnershipAndApproval(
-                _targetListing.listingCreator,
+            _validateOwnership(
+                address(this),
                 _targetListing.assetContract,
                 _targetListing.tokenId,
                 _targetListing.quantity,
                 _targetListing.tokenType
             );
+    }
+
+    /// @dev Validates that `_tokenOwner` owns and has approved Marketplace to transfer NFTs.
+    function _validateOwnership(
+        address _tokenOwner,
+        address _assetContract,
+        uint256 _tokenId,
+        uint256 _quantity,
+        TokenType _tokenType
+    ) internal view returns (bool isValid) {
+        if (_tokenType == TokenType.ERC1155) {
+            isValid = IERC1155(_assetContract).balanceOf(_tokenOwner, _tokenId) >= _quantity;
+        } else if (_tokenType == TokenType.ERC721) {
+            address owner;
+
+            // failsafe for reverts in case of non-existent tokens
+            try IERC721(_assetContract).ownerOf(_tokenId) returns (address _owner) {
+                owner = _owner;
+            } catch {}
+
+            isValid = owner == _tokenOwner;
+        }
     }
 
     /// @dev Validates that `_tokenOwner` owns and has approved Marketplace to transfer NFTs.
