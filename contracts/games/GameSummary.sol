@@ -61,6 +61,7 @@ contract GameSummary is
     string public compoundURI;
 
     bool public compoundURIEnabled;
+    bool public isOneTokenPerWallet = true;
 
     string public name;
     string public symbol;
@@ -260,7 +261,7 @@ contract GameSummary is
         return tokenId;
     }
 
-    function addNewToken(LibGameSummary.GameSummaryCreate memory _token) public onlyRole(DEV_CONFIG_ROLE) {
+    function _addNewToken(LibGameSummary.GameSummaryCreate memory _token) internal {
         tokenExists[_token.tokenId] = true;
 
         storeIds[_token.tokenId] = _token.storeId;
@@ -301,6 +302,14 @@ contract GameSummary is
     ) private returns (uint256) {
         uint256 _id = getTokenId(_storeId, _playerId, _gameId);
 
+        if (isOneTokenPerWallet && balanceOf(to, _id) > 0) {
+            revert("AlreadyMinted");
+        }
+
+        if (isTokenMintPaused[_id]) {
+            revert("TokenMintPaused");
+        }
+
         if (!isTokenExist(_id)) {
             LibGameSummary.GameSummaryCreate memory gameSummaryCreate = LibGameSummary.GameSummaryCreate({
                 tokenId: _id,
@@ -309,11 +318,7 @@ contract GameSummary is
                 playerId: _playerId,
                 gameId: _gameId
             });
-            addNewToken(gameSummaryCreate);
-        }
-
-        if (isTokenMintPaused[_id]) {
-            revert("TokenMintPaused");
+            _addNewToken(gameSummaryCreate);
         }
 
         if (soulbound) {
@@ -474,7 +479,10 @@ contract GameSummary is
     }
 
     function uri(uint256 tokenId) public view override returns (string memory) {
-        isTokenExist(tokenId);
+        if (!isTokenExist(tokenId)) {
+            revert("TokenNotExist");
+        }
+
         if (compoundURIEnabled) {
             // "{compoundURI}/0x1234567890123456789012345678901234567890/{tokenId}";
             return

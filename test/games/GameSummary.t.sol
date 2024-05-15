@@ -9,7 +9,7 @@ import { Strings } from "@openzeppelin/contracts/utils/Strings.sol";
 
 import { GameSummary } from "../../contracts/games/GameSummary.sol";
 import { MockERC1155Receiver } from "../../contracts/mocks/MockERC1155Receiver.sol";
-import { LibItems, TestLibItems } from "../../contracts/libraries/LibItems.sol";
+import { LibGameSummary } from "../../contracts/libraries/LibGameSummary.sol";
 
 contract GameSummaryBoundTest is StdCheats, Test {
     using Strings for uint256;
@@ -42,8 +42,11 @@ contract GameSummaryBoundTest is StdCheats, Test {
     bytes public encodedItems2;
 
     uint256 private _seed;
-    LibItems.TokenCreate[] public _tokens;
+    LibGameSummary.GameSummaryCreate[] public _tokens;
     uint256[] public _tokenIds;
+    uint256[] public _storeIds;
+    uint256[] public _playerIds;
+    uint256[] public _gameIds;
 
     uint256 public chainId = 31337;
 
@@ -60,7 +63,7 @@ contract GameSummaryBoundTest is StdCheats, Test {
     ) public returns (uint256, bytes memory) {
         Wallet memory signerWallet = getWallet(signerLabel);
 
-        uint256 _nonce = uint256(keccak256(abi.encodePacked(block.timestamp, block.difficulty, signerWallet.addr))) %
+        uint256 _nonce = uint256(keccak256(abi.encodePacked(block.timestamp, block.prevrandao, signerWallet.addr))) %
             50;
 
         bytes32 message = keccak256(abi.encodePacked(wallet, encodedItems, _nonce));
@@ -94,8 +97,13 @@ contract GameSummaryBoundTest is StdCheats, Test {
         return tokenId;
     }
 
-    function encode(address contractAddress, uint256[] memory itemIds) public view returns (bytes memory) {
-        return (abi.encode(contractAddress, chainId, itemIds));
+    function encode(
+        address contractAddress,
+        uint256[] memory storeIds,
+        uint256[] memory playerIds,
+        uint256[] memory gameIds
+    ) public view returns (bytes memory) {
+        return (abi.encode(contractAddress, chainId, _storeIds, _playerIds, _gameIds));
     }
 
     function toHexString(uint256 value, uint256 length) internal pure returns (string memory) {
@@ -140,94 +148,87 @@ contract GameSummaryBoundTest is StdCheats, Test {
             uint256 _gameId = generateRandomGameId();
             uint256 _tokenId = generateTokenId(_storeId, _playerId, _gameId);
 
-            LibItems.TokenCreate memory _token = LibItems.TokenCreate({
-                tokenId: _tokenId,
-                tokenUri: string(abi.encodePacked("https://something.com", "/", _tokenId.toString()))
-            });
-
-            _tokens.push(_token);
+            _storeIds.push(_storeId);
+            _playerIds.push(_playerId);
+            _gameIds.push(_gameId);
             _tokenIds.push(_tokenId);
         }
 
-        gameSummary.addNewTokens(_tokens);
+        uint256[] memory _storeIds1 = new uint256[](3);
+        _storeIds1[0] = _storeIds[0];
+        _storeIds1[1] = _storeIds[1];
+        _storeIds1[2] = _storeIds[2];
 
-        uint256[] memory _itemIds1 = new uint256[](3);
-        _itemIds1[0] = _tokenIds[0];
-        _itemIds1[1] = _tokenIds[1];
-        _itemIds1[2] = _tokenIds[2];
+        uint256[] memory _playerIds1 = new uint256[](3);
+        _playerIds1[0] = _playerIds[0];
+        _playerIds1[1] = _playerIds[1];
+        _playerIds1[2] = _playerIds[2];
 
-        encodedItems1 = encode(address(gameSummary), _itemIds1);
+        uint256[] memory _gameIds1 = new uint256[](3);
+        _gameIds1[0] = _gameIds[0];
+        _gameIds1[1] = _gameIds[1];
+        _gameIds1[2] = _gameIds[2];
 
-        uint256[] memory _itemIds2 = new uint256[](3);
-        _itemIds2[0] = _tokenIds[3];
-        _itemIds2[1] = _tokenIds[4];
-        _itemIds2[2] = _tokenIds[5];
+        encodedItems1 = encode(address(gameSummary), _storeIds1, _playerIds1, _gameIds1);
 
-        encodedItems2 = encode(address(gameSummary), _itemIds2);
+        uint256[] memory _storeIds2 = new uint256[](3);
+        _storeIds2[0] = _storeIds[3];
+        _storeIds2[1] = _storeIds[4];
+        _storeIds2[2] = _storeIds[5];
+
+        uint256[] memory _playerIds2 = new uint256[](3);
+        _playerIds2[0] = _playerIds[3];
+        _playerIds2[1] = _playerIds[4];
+        _playerIds2[2] = _playerIds[5];
+
+        uint256[] memory _gameIds2 = new uint256[](3);
+        _gameIds2[0] = _gameIds[3];
+        _gameIds2[1] = _gameIds[4];
+        _gameIds2[2] = _gameIds[5];
+
+        encodedItems2 = encode(address(gameSummary), _storeIds2, _playerIds2, _gameIds2);
 
         (nonce, signature) = generateSignature(playerWallet.addr, encodedItems1, minterLabel);
         (nonce2, signature2) = generateSignature(playerWallet2.addr, encodedItems2, minterLabel);
     }
 
     function testTokenExists() public {
-        uint256 _tokenId = generateRandomStoreId();
+        uint256 _storeId = generateRandomStoreId();
+        uint256 _playerId = generateRandomPlayerId();
+        uint256 _gameId = generateRandomGameId();
+        uint256 _tokenId = generateTokenId(_storeId, _playerId, _gameId);
 
-        vm.expectRevert("TokenNotExist");
-        gameSummary.isTokenExist(_tokenId);
+        assertEq(gameSummary.isTokenExist(_tokenId), false);
 
-        vm.expectRevert("TokenNotExist");
-        gameSummary.adminMintId(playerWallet.addr, _tokenId, 1, true);
-
-        LibItems.TokenCreate memory _token = LibItems.TokenCreate({
-            tokenId: _tokenId,
-            tokenUri: string(abi.encodePacked("https://something222.com", "/", _tokenId.toString()))
-        });
-
-        gameSummary.addNewToken(_token);
-        gameSummary.isTokenExist(_tokenId);
-        gameSummary.adminMintId(playerWallet.addr, _tokenId, 1, true);
-    }
-
-    function testAddNewTokens() public {
-        LibItems.TokenCreate[] memory _tokens = new LibItems.TokenCreate[](3);
-
-        skip(36000);
-        for (uint256 i = 0; i < 3; i++) {
-            uint256 _storeId = generateRandomStoreId();
-            uint256 _playerId = generateRandomPlayerId();
-            uint256 _gameId = generateRandomGameId();
-            uint256 _tokenId = generateTokenId(_storeId, _playerId, _gameId);
-
-            LibItems.TokenCreate memory _token = LibItems.TokenCreate({
-                tokenId: _tokenId,
-                tokenUri: string(abi.encodePacked("https://something.com", "/", _tokenId.toString()))
-            });
-
-            _tokens[i] = _token;
-        }
-
-        gameSummary.addNewTokens(_tokens);
+        gameSummary.adminMintId(playerWallet.addr, _storeId, _playerId, _gameId, 1, true);
+        assertEq(gameSummary.isTokenExist(_tokenId), true);
     }
 
     function testPauseUnpause() public {
-        uint256 _tokenId = _tokenIds[0];
+        uint256 _storeId = _storeIds[0];
+        uint256 _playerId = _playerIds[0];
+        uint256 _gameId = _gameIds[0];
+        uint256 _tokenId = gameSummary.getTokenId(_storeId, _playerId, _gameId);
 
         gameSummary.pause();
         vm.expectRevert("Pausable: paused");
-        gameSummary.adminMintId(address(this), _tokenId, 1, true);
+        gameSummary.adminMintId(address(this), _storeId, _playerId, _gameId, 1, true);
         gameSummary.unpause();
 
-        gameSummary.adminMintId(address(mockERC1155Receiver), _tokenId, 1, true);
+        gameSummary.adminMintId(address(mockERC1155Receiver), _storeId, _playerId, _gameId, 1, true);
         assertEq(gameSummary.balanceOf(address(mockERC1155Receiver), _tokenId), 1);
     }
 
     function testPauseUnpauseSpecificToken() public {
-        uint256 _tokenId = _tokenIds[0];
+        uint256 _storeId = _storeIds[0];
+        uint256 _playerId = _playerIds[0];
+        uint256 _gameId = _gameIds[0];
+        uint256 _tokenId = gameSummary.getTokenId(_storeId, _playerId, _gameId);
 
         gameSummary.updateTokenMintPaused(_tokenId, true);
 
         vm.expectRevert("TokenMintPaused");
-        gameSummary.adminMintId(address(mockERC1155Receiver), _tokenId, 1, true);
+        gameSummary.adminMintId(address(mockERC1155Receiver), _storeId, _playerId, _gameId, 1, true);
 
         vm.expectRevert("TokenMintPaused");
         gameSummary.adminMint(address(mockERC1155Receiver), encodedItems1, true);
@@ -284,24 +285,23 @@ contract GameSummaryBoundTest is StdCheats, Test {
         assertEq(gameSummary.balanceOf(minterWallet.addr, _tokenIds[3]), 1);
     }
 
+    function testMintMoreThanOneTokenPerWallet() public {
+        uint256 _storeId = _storeIds[0];
+        uint256 _playerId = _playerIds[0];
+        uint256 _gameId = _gameIds[0];
+        uint256 _tokenId = gameSummary.getTokenId(_storeId, _playerId, _gameId);
+
+        gameSummary.adminMintId(address(mockERC1155Receiver), _storeId, _playerId, _gameId, 1, true);
+        assertEq(gameSummary.balanceOf(address(mockERC1155Receiver), _tokenId), 1);
+
+        vm.expectRevert("AlreadyMinted");
+        gameSummary.adminMintId(address(mockERC1155Receiver), _storeId, _playerId, _gameId, 1, true);
+    }
+
     function testMintMoreThanLimit() public {
         vm.expectRevert("ExceedMaxMint");
         vm.prank(playerWallet.addr);
         gameSummary.mint(encodedItems1, 2, true, nonce, signature);
-    }
-
-    function testMintInvalidTokenId() public {
-        uint256[] memory _itemIds3 = new uint256[](3);
-        _itemIds3[0] = 1233;
-        _itemIds3[1] = 3322;
-
-        bytes memory encodedItems3 = encode(address(gameSummary), _itemIds3);
-
-        (uint256 _nonce, bytes memory _signature) = generateSignature(playerWallet.addr, encodedItems3, minterLabel);
-
-        vm.expectRevert("TokenNotExist");
-        vm.prank(playerWallet.addr);
-        gameSummary.mint(encodedItems3, 1, true, _nonce, _signature);
     }
 
     function testAdminMintNotMinterRole() public {
@@ -320,17 +320,25 @@ contract GameSummaryBoundTest is StdCheats, Test {
     }
 
     function testAdminMintIdNotMinterRole() public {
-        uint256 _tokenId = _tokenIds[0];
+        uint256 _storeId = _storeIds[0];
+        uint256 _playerId = _playerIds[0];
+        uint256 _gameId = _gameIds[0];
+        uint256 _tokenId = gameSummary.getTokenId(_storeId, _playerId, _gameId);
+
         vm.expectRevert(
             "AccessControl: account 0x44e97af4418b7a17aabd8090bea0a471a366305c is missing role 0x9f2df0fed2c77648de5860a4cc508cd0818c85b8b8a1ab4ceeef8d981c8956a6"
         );
         vm.prank(playerWallet.addr);
-        gameSummary.adminMintId(playerWallet.addr, _tokenId, 1, true);
+        gameSummary.adminMintId(playerWallet.addr, _storeId, _playerId, _gameId, 1, true);
     }
 
     function testAdminMintId() public {
-        uint256 _tokenId = _tokenIds[0];
-        gameSummary.adminMintId(playerWallet.addr, _tokenId, 1, true);
+        uint256 _storeId = _storeIds[0];
+        uint256 _playerId = _playerIds[0];
+        uint256 _gameId = _gameIds[0];
+        uint256 _tokenId = gameSummary.getTokenId(_storeId, _playerId, _gameId);
+
+        gameSummary.adminMintId(playerWallet.addr, _storeId, _playerId, _gameId, 1, true);
         assertEq(gameSummary.balanceOf(playerWallet.addr, _tokenIds[0]), 1);
     }
 
@@ -524,31 +532,10 @@ contract GameSummaryBoundTest is StdCheats, Test {
         uint256 _playerId = generateRandomPlayerId();
         uint256 _gameId = generateRandomGameId();
         uint256 _tokenId = generateTokenId(_storeId, _playerId, _gameId);
-        LibItems.TokenCreate memory _token = LibItems.TokenCreate({ tokenId: _tokenId, tokenUri: "" });
 
-        gameSummary.addNewToken(_token);
-
+        gameSummary.adminMintId(playerWallet.addr, _storeId, _playerId, _gameId, 1, false);
         gameSummary.setCompoundURIEnabled(false);
-
         assertEq(gameSummary.uri(_tokenId), string(abi.encodePacked("MISSING_BASE_URL", "/", _tokenId.toString())));
-    }
-
-    function testTokenURIIfTokenIdExistWithSpeficTokenURI() public {
-        uint256 _storeId = generateRandomStoreId();
-        uint256 _playerId = generateRandomPlayerId();
-        uint256 _gameId = generateRandomGameId();
-        uint256 _tokenId = generateTokenId(_storeId, _playerId, _gameId);
-
-        LibItems.TokenCreate memory _token = LibItems.TokenCreate({
-            tokenId: _tokenId,
-            tokenUri: "ipfs://specific-token-uri.com"
-        });
-
-        gameSummary.addNewToken(_token);
-
-        gameSummary.setCompoundURIEnabled(false);
-
-        assertEq(gameSummary.uri(_tokenId), "ipfs://specific-token-uri.com");
     }
 
     function testUpdateTokenBaseURIFailNotDevConfigRole() public {
@@ -566,10 +553,8 @@ contract GameSummaryBoundTest is StdCheats, Test {
         uint256 _playerId = generateRandomPlayerId();
         uint256 _gameId = generateRandomGameId();
         uint256 _tokenId = generateTokenId(_storeId, _playerId, _gameId);
-        LibItems.TokenCreate memory _token = LibItems.TokenCreate({ tokenId: _tokenId, tokenUri: "" });
 
-        gameSummary.addNewToken(_token);
-
+        gameSummary.adminMintId(playerWallet.addr, _storeId, _playerId, _gameId, 1, false);
         gameSummary.setCompoundURIEnabled(false);
 
         string memory newBaseURI = "https://something-new.com";
@@ -582,44 +567,14 @@ contract GameSummaryBoundTest is StdCheats, Test {
         );
     }
 
-    function testUpdateTokenURIFailNoDevConfigRole() public {
-        string memory newTokenUri = "https://something-new.com/232";
-
-        vm.expectRevert(
-            "AccessControl: account 0x44e97af4418b7a17aabd8090bea0a471a366305c is missing role 0x3b359cf0b4471a5de84269135285268e64ac56f52d3161392213003a780ad63b"
-        );
-        vm.prank(playerWallet.addr);
-        gameSummary.updateTokenUri(0, newTokenUri);
-    }
-
-    function testUpdateTokenURIPass() public {
-        uint256 _storeId = generateRandomStoreId();
-        uint256 _playerId = generateRandomPlayerId();
-        uint256 _gameId = generateRandomGameId();
-        uint256 _tokenId = generateTokenId(_storeId, _playerId, _gameId);
-
-        LibItems.TokenCreate memory _token = LibItems.TokenCreate({ tokenId: _tokenId, tokenUri: "" });
-
-        gameSummary.addNewToken(_token);
-
-        gameSummary.setCompoundURIEnabled(false);
-
-        string memory newTokenUri = "https://something-new.com/232";
-
-        assertEq(gameSummary.uri(_tokenId), string(abi.encodePacked("MISSING_BASE_URL", "/", _tokenId.toString())));
-        gameSummary.updateTokenUri(_tokenId, newTokenUri);
-        assertEq(gameSummary.uri(_tokenId), "https://something-new.com/232");
-    }
-
     function testUpdateCompountURIPass() public {
         uint256 _storeId = generateRandomStoreId();
         uint256 _playerId = generateRandomPlayerId();
         uint256 _gameId = generateRandomGameId();
         uint256 _tokenId = generateTokenId(_storeId, _playerId, _gameId);
 
-        LibItems.TokenCreate memory _token = LibItems.TokenCreate({ tokenId: _tokenId, tokenUri: "" });
+        gameSummary.adminMintId(playerWallet.addr, _storeId, _playerId, _gameId, 1, false);
 
-        gameSummary.addNewToken(_token);
         string memory newCompoundUri = "https://something-new.com/232";
 
         assertEq(
@@ -629,7 +584,11 @@ contract GameSummaryBoundTest is StdCheats, Test {
                     "https://example.api.com/",
                     Strings.toHexString(uint160(address(gameSummary)), 20),
                     "/",
-                    _tokenId.toString()
+                    Strings.toString(_storeId),
+                    "-",
+                    Strings.toString(_playerId),
+                    "-",
+                    Strings.toString(_gameId)
                 )
             )
         );
@@ -643,15 +602,22 @@ contract GameSummaryBoundTest is StdCheats, Test {
                     "https://something-new.com/232/",
                     Strings.toHexString(uint160(address(gameSummary)), 20),
                     "/",
-                    _tokenId.toString()
+                    Strings.toString(_storeId),
+                    "-",
+                    Strings.toString(_playerId),
+                    "-",
+                    Strings.toString(_gameId)
                 )
             )
         );
     }
 
     function testNonSoulboundTokenTransfer() public {
-        uint256 _tokenId = _tokenIds[0];
-        gameSummary.adminMintId(playerWallet.addr, _tokenId, 1, false);
+        uint256 _storeId = _storeIds[0];
+        uint256 _playerId = _playerIds[0];
+        uint256 _gameId = _gameIds[0];
+        uint256 _tokenId = gameSummary.getTokenId(_storeId, _playerId, _gameId);
+        gameSummary.adminMintId(playerWallet.addr, _storeId, _playerId, _gameId, 1, false);
 
         vm.prank(playerWallet.addr);
         gameSummary.safeTransferFrom(playerWallet.addr, minterWallet.addr, _tokenId, 1, "");
@@ -661,8 +627,11 @@ contract GameSummaryBoundTest is StdCheats, Test {
     }
 
     function testSoulboundTokenNotTransfer() public {
-        uint256 _tokenId = _tokenIds[0];
-        gameSummary.adminMintId(playerWallet.addr, _tokenId, 1, true);
+        uint256 _storeId = _storeIds[0];
+        uint256 _playerId = _playerIds[0];
+        uint256 _gameId = _gameIds[0];
+        uint256 _tokenId = gameSummary.getTokenId(_storeId, _playerId, _gameId);
+        gameSummary.adminMintId(playerWallet.addr, _storeId, _playerId, _gameId, 1, true);
 
         vm.expectRevert(
             "Achievo1155Soulbound: The amount of soulbounded tokens is more than the amount of tokens to be transferred"
@@ -676,8 +645,11 @@ contract GameSummaryBoundTest is StdCheats, Test {
     }
 
     function testSoulboundTokenTransferOnlyWhitelistAddresses() public {
-        uint256 _tokenId = _tokenIds[0];
-        gameSummary.adminMintId(playerWallet.addr, _tokenId, 1, true);
+        uint256 _storeId = _storeIds[0];
+        uint256 _playerId = _playerIds[0];
+        uint256 _gameId = _gameIds[0];
+        uint256 _tokenId = gameSummary.getTokenId(_storeId, _playerId, _gameId);
+        gameSummary.adminMintId(playerWallet.addr, _storeId, _playerId, _gameId, 1, true);
 
         vm.expectRevert(
             "Achievo1155Soulbound: The amount of soulbounded tokens is more than the amount of tokens to be transferred"
@@ -704,79 +676,98 @@ contract GameSummaryBoundTest is StdCheats, Test {
 
     function testgetAllItems() public {
         gameSummary.setCompoundURIEnabled(false);
-
-        bytes memory encodedItemsAll = encode(address(gameSummary), _tokenIds);
+        bytes memory encodedItemsAll = encode(address(gameSummary), _storeIds, _playerIds, _gameIds);
         gameSummary.adminMint(playerWallet.addr, encodedItemsAll, false);
 
-        string memory newTokenUri = "https://something-new.com/232";
-        gameSummary.updateTokenUri(_tokenIds[23], newTokenUri);
-        assertEq(gameSummary.uri(_tokenIds[23]), "https://something-new.com/232");
-
         vm.prank(playerWallet.addr);
-        LibItems.TokenReturn[] memory allTokensInfo = gameSummary.getAllItems();
+        LibGameSummary.GameSummaryReturn[] memory allTokensInfo = gameSummary.getAllItems();
         assertEq(allTokensInfo.length, 1300);
 
         vm.prank(playerWallet.addr);
-        gameSummary.safeTransferFrom(playerWallet.addr, minterWallet.addr, _tokenIds[24], 1, "");
+        gameSummary.safeTransferFrom(playerWallet.addr, minterWallet.addr, _tokenIds[14], 1, "");
 
         vm.prank(playerWallet.addr);
-        LibItems.TokenReturn[] memory allTokensInfo2 = gameSummary.getAllItems();
+        LibGameSummary.GameSummaryReturn[] memory allTokensInfo2 = gameSummary.getAllItems();
         assertEq(allTokensInfo2.length, 1299);
 
         for (uint256 i = 0; i < allTokensInfo.length; i++) {
             assertEq(allTokensInfo[i].tokenId, _tokenIds[i]);
 
-            if (i == 23) {
-                assertEq(allTokensInfo[i].tokenUri, newTokenUri);
-                assertEq(allTokensInfo[i].amount, 1);
-            } else {
-                assertEq(allTokensInfo[i].amount, 1);
-                assertEq(
-                    allTokensInfo[i].tokenUri,
-                    string(abi.encodePacked("https://something.com", "/", _tokenIds[i].toString()))
-                );
+            assertEq(allTokensInfo[i].amount, 1);
+            assertEq(allTokensInfo[i].tokenUri, string(abi.encodePacked("MISSING_BASE_URL/", _tokenIds[i].toString())));
+        }
+
+        gameSummary.setCompoundURIEnabled(true);
+
+        LibGameSummary.GameSummaryReturn[] memory allTokensInfoAfter = gameSummary.getAllItemsAdmin(playerWallet.addr);
+        for (uint256 i = 0; i < allTokensInfoAfter.length; i++) {
+            assertEq(allTokensInfoAfter[i].tokenId, _tokenIds[i]);
+            if (i != 14) {
+                assertEq(allTokensInfoAfter[i].amount, 1);
             }
+            assertEq(
+                allTokensInfoAfter[i].tokenUri,
+                string(
+                    abi.encodePacked(
+                        "https://example.api.com/",
+                        Strings.toHexString(uint160(address(gameSummary)), 20),
+                        "/",
+                        Strings.toString(_storeIds[i]),
+                        "-",
+                        Strings.toString(_playerIds[i]),
+                        "-",
+                        Strings.toString(_gameIds[i])
+                    )
+                )
+            );
         }
 
         vm.prank(minterWallet.addr);
-        LibItems.TokenReturn[] memory allTokensInfo3 = gameSummary.getAllItems();
+        LibGameSummary.GameSummaryReturn[] memory allTokensInfo3 = gameSummary.getAllItems();
         assertEq(allTokensInfo3.length, 1);
     }
 
     function testgetAllItemsAdmin() public {
         gameSummary.setCompoundURIEnabled(false);
-        bytes memory encodedItemsAll = encode(address(gameSummary), _tokenIds);
+        bytes memory encodedItemsAll = encode(address(gameSummary), _storeIds, _playerIds, _gameIds);
         gameSummary.adminMint(playerWallet.addr, encodedItemsAll, false);
 
-        string memory newTokenUri = "https://something-new.com/232";
-        gameSummary.updateTokenUri(_tokenIds[23], newTokenUri);
-        assertEq(gameSummary.uri(_tokenIds[23]), "https://something-new.com/232");
-
-        LibItems.TokenReturn[] memory allTokensInfo = gameSummary.getAllItemsAdmin(playerWallet.addr);
+        LibGameSummary.GameSummaryReturn[] memory allTokensInfo = gameSummary.getAllItemsAdmin(playerWallet.addr);
         assertEq(allTokensInfo.length, 1300);
 
         vm.prank(playerWallet.addr);
-        gameSummary.safeTransferFrom(playerWallet.addr, minterWallet.addr, _tokenIds[24], 1, "");
-
-        LibItems.TokenReturn[] memory allTokensInfo2 = gameSummary.getAllItemsAdmin(playerWallet.addr);
-        assertEq(allTokensInfo2.length, 1300);
+        gameSummary.safeTransferFrom(playerWallet.addr, minterWallet.addr, _tokenIds[14], 1, "");
 
         for (uint256 i = 0; i < allTokensInfo.length; i++) {
             assertEq(allTokensInfo[i].tokenId, _tokenIds[i]);
 
-            if (i == 23) {
-                assertEq(allTokensInfo[i].tokenUri, newTokenUri);
-                assertEq(allTokensInfo[i].amount, 1);
-            } else {
-                assertEq(allTokensInfo[i].amount, 1);
-                assertEq(
-                    allTokensInfo[i].tokenUri,
-                    string(abi.encodePacked("https://something.com", "/", _tokenIds[i].toString()))
-                );
-            }
+            assertEq(allTokensInfo[i].amount, 1);
+            assertEq(allTokensInfo[i].tokenUri, string(abi.encodePacked("MISSING_BASE_URL/", _tokenIds[i].toString())));
         }
 
-        LibItems.TokenReturn[] memory allTokensInfo3 = gameSummary.getAllItemsAdmin(minterWallet.addr);
-        assertEq(allTokensInfo3.length, 1300);
+        gameSummary.setCompoundURIEnabled(true);
+
+        LibGameSummary.GameSummaryReturn[] memory allTokensInfoAfter = gameSummary.getAllItemsAdmin(playerWallet.addr);
+        for (uint256 i = 0; i < allTokensInfoAfter.length; i++) {
+            assertEq(allTokensInfoAfter[i].tokenId, _tokenIds[i]);
+            if (i != 14) {
+                assertEq(allTokensInfoAfter[i].amount, 1);
+            }
+            assertEq(
+                allTokensInfoAfter[i].tokenUri,
+                string(
+                    abi.encodePacked(
+                        "https://example.api.com/",
+                        Strings.toHexString(uint160(address(gameSummary)), 20),
+                        "/",
+                        Strings.toString(_storeIds[i]),
+                        "-",
+                        Strings.toString(_playerIds[i]),
+                        "-",
+                        Strings.toString(_gameIds[i])
+                    )
+                )
+            );
+        }
     }
 }
