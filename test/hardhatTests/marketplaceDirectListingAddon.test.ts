@@ -175,6 +175,26 @@ describe('Marketplace: Direct Listing Addon', function () {
                     status: Status.CREATED,
                 };
             });
+            describe('Cancel Offer For Listing', function () {
+                it('Should cancel a offer made for a direct listing', async function () {
+                    expect(await mockERC20.balanceOf(buyer.address)).to.be.equal(buyerBalance - offer.totalPrice);
+                    expect(await mockERC20.balanceOf(marketplaceAddress)).to.be.equal(offer.totalPrice);
+                    await expect(
+                        directListingAddon.connect(buyer).cancelOfferForListing(offer.offerId)
+                    ).to.emit(directListingAddon, 'CancelledOffer').withArgs(buyer.address, offer.offerId);
+                    expect(await mockERC20.balanceOf(buyer.address)).to.be.equal(buyerBalance);
+                    expect(await mockERC20.balanceOf(marketplaceAddress)).to.be.equal(0);
+                });
+                it('Should revert if try to cancel it twice', async function () {
+                    await expect(directListingAddon.connect(buyer).cancelOfferForListing(offer.offerId)).to.emit(
+                        directListingAddon,
+                        'CancelledOffer'
+                    );
+                    await expect(
+                        directListingAddon.connect(buyer).cancelOfferForListing(offer.offerId)
+                    ).to.be.revertedWith('Marketplace: invalid offer.');
+                });
+            })
             describe('Accept Offer For Listing', function () {
                 it('Should accept a offer made for a direct listing', async function () {
                     expect(await mockERC20.balanceOf(buyer.address)).to.be.equal(buyerBalance - offer.totalPrice);
@@ -194,6 +214,16 @@ describe('Marketplace: Direct Listing Addon', function () {
                             offer.offeror,
                             offer.quantity,
                             offer.totalPrice
+                        )
+                        .to.emit(directListingAddon, 'AcceptedOffer')
+                        .withArgs(
+                            offer.offeror,
+                            offer.offerId,
+                            offer.assetContract,
+                            offer.tokenId,
+                            listing.listingCreator,
+                            offer.quantity,
+                            offer.totalPrice
                         );
 
                     expect(await mockERC20.balanceOf(buyer.address)).to.be.equal(buyerBalance - offer.totalPrice);
@@ -203,7 +233,31 @@ describe('Marketplace: Direct Listing Addon', function () {
                 });
                 it('Should revert if there its invalid offer', async function () {
                     await expect(
-                      directListingAddon.connect(seller).acceptOfferForListing(listing.listingId, 0)
+                        directListingAddon.connect(seller).acceptOfferForListing(listing.listingId, 0)
+                    ).to.be.revertedWith('Marketplace: invalid offer.');
+                });
+                it('Should revert if caller is not the listing creator', async function () {
+                    await expect(
+                        directListingAddon.connect(buyer).acceptOfferForListing(listing.listingId, offer.offerId)
+                    ).to.be.revertedWith('Marketplace: not listing creator.');
+                });
+                it('Should revert if offer is not made for the listing', async function () {
+                    await mockERC721.mint(seller.address);
+                    await mockERC721.connect(seller).setApprovalForAll(marketplaceAddress, true);
+                    const newListingParams = {...listingParams, tokenId: 1};
+                    const newListingId = await directListing.connect(seller).createListing.staticCall(newListingParams);
+                    await directListing.connect(seller).createListing(newListingParams);
+                    await directListing
+                        .connect(seller)
+                        .approveCurrencyForListing(newListingId, mockERC20Address, newListingParams.pricePerToken);
+                    await expect(
+                        directListingAddon.connect(seller).acceptOfferForListing(newListingId, offer.offerId)
+                    ).to.be.revertedWith('Marketplace: Offer not made for listing.');
+                });
+                it('Should revert if offer is cancelled', async function () {
+                    await directListingAddon.connect(buyer).cancelOfferForListing(offer.offerId);
+                    await expect(
+                        directListingAddon.connect(seller).acceptOfferForListing(listing.listingId, offer.offerId)
                     ).to.be.revertedWith('Marketplace: invalid offer.');
                 });
             });
