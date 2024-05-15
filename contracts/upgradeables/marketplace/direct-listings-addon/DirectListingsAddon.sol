@@ -67,13 +67,15 @@ contract DirectListingsAddon is IDirectListingsAddon, ReentrancyGuard, ERC2771Co
     function makeOfferForListing(
         uint256 _listingId,
         uint256 _expirationTimestamp,
-        uint256 _totalPrice
+        uint256 _totalPrice,
+        uint256 _quantity
     ) external onlyExistingListing(_listingId) returns (uint256 _offerId) {
         IDirectListings.Listing memory listing = LibStorage.directListingsStorage().listings[_listingId];
         _offerId = LibOffers.getNextOfferId();
         address _offeror = _msgSender();
 
         require(_expirationTimestamp + 60 minutes > block.timestamp, "Marketplace: invalid expiration timestamp.");
+        require(_quantity > 0 && _quantity <= listing.quantity, "Marketplace: invalid quantity.");
 
         IOffers.Offer memory _offer = IOffers.Offer({
             offerId: _offerId,
@@ -81,7 +83,7 @@ contract DirectListingsAddon is IDirectListingsAddon, ReentrancyGuard, ERC2771Co
             assetContract: listing.assetContract,
             tokenId: listing.tokenId,
             tokenType: IOffers.TokenType(uint(listing.tokenType)),
-            quantity: listing.quantity,
+            quantity: _quantity,
             currency: listing.currency,
             totalPrice: _totalPrice,
             expirationTimestamp: _expirationTimestamp,

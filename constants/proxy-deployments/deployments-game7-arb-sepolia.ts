@@ -132,7 +132,7 @@ export const GAME7_ARB_SEPOLIA_CONTRACTS: DeploymentProxyContract[] = [
                     implementation: `CONTRACT_${CONTRACT_NAME.DirectListingsAddonExtension}`,
                 },
                 functionsToInclude: [
-                    'makeOfferForListing(uint256,uint256,uint256)',
+                    'makeOfferForListing(uint256,uint256,uint256,uint256)',
                     'acceptOfferForListing(uint256,uint256)',
                     'cancelOfferForListing(uint256)',
                 ],

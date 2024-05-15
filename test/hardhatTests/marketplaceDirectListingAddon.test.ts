@@ -3,6 +3,7 @@ import {
     DirectListingsAddon,
     DirectListingsLogic,
     Marketplace,
+    MockERC1155,
     MockERC20,
     MockERC721,
     OffersLogic,
@@ -20,12 +21,12 @@ describe('Marketplace: Direct Listing Addon', function () {
     let directListingAddon: DirectListingsAddon;
     let marketplace: Marketplace;
     let mockERC20: MockERC20;
-    let mockERC721: MockERC721;
+    let mockERC1155: MockERC1155;
     let deployer: SignerWithAddress;
     let seller: SignerWithAddress;
     let buyer: SignerWithAddress;
 
-    let mockERC721Address: string;
+    let mockERC1155Address: string;
     let mockERC20Address: string;
     let marketplaceAddress: string;
     let blockTimestamp: number;
@@ -33,23 +34,23 @@ describe('Marketplace: Direct Listing Addon', function () {
     const tokenId = 0;
     const buyerBalance = toWei('1000');
     const totalPrice = toWei('10');
-    const quantity = 1;
+    const quantity = 10;
 
     beforeEach(async function () {
         [deployer, buyer, seller] = await ethers.getSigners();
 
-        [marketplace, mockERC20, mockERC721] = await loadFixture(deployMarketplaceContracts);
+        [marketplace, mockERC20, , mockERC1155] = await loadFixture(deployMarketplaceContracts);
 
         marketplaceAddress = await marketplace.getAddress();
         mockERC20Address = await mockERC20.getAddress();
-        mockERC721Address = await mockERC721.getAddress();
+        mockERC1155Address = await mockERC1155.getAddress();
         blockTimestamp = await time.latest();
-
-        await mockERC721.mint(seller.address);
-        await mockERC721.connect(seller).setApprovalForAll(marketplaceAddress, true);
 
         await mockERC20.mint(buyer.address, buyerBalance);
         await mockERC20.connect(buyer).approve(marketplaceAddress, buyerBalance);
+
+        await mockERC1155.mint(seller.address, tokenId, quantity, '0x');
+        await mockERC1155.connect(seller).setApprovalForAll(marketplaceAddress, true);
 
         directListing = await ethers.getContractAt('DirectListingsLogic', marketplaceAddress);
         directListingAddon = await ethers.getContractAt('DirectListingsAddon', marketplaceAddress);
@@ -61,7 +62,7 @@ describe('Marketplace: Direct Listing Addon', function () {
 
         beforeEach(async function () {
             listingParams = {
-                assetContract: mockERC721Address,
+                assetContract: mockERC1155Address,
                 tokenId: tokenId,
                 quantity,
                 currency: mockERC20Address,
@@ -87,7 +88,7 @@ describe('Marketplace: Direct Listing Addon', function () {
                 listingCreator: seller.address,
                 assetContract: listingParams.assetContract,
                 currency: listingParams.currency,
-                tokenType: TokenType.ERC721,
+                tokenType: TokenType.ERC1155,
                 status: Status.CREATED,
                 reserved: listingParams.reserved,
             };
@@ -106,7 +107,7 @@ describe('Marketplace: Direct Listing Addon', function () {
                 it('Should make a offer for a direct listing', async function () {
                     const offerId = await directListingAddon
                         .connect(buyer)
-                        .makeOfferForListing.staticCall(listing.listingId, offerExpirationTimestamp, offerTotalPrice);
+                        .makeOfferForListing.staticCall(listing.listingId, offerExpirationTimestamp, offerTotalPrice, quantity);
                     const offer = {
                         offerId: offerId,
                         tokenId: listing.tokenId,
@@ -116,35 +117,35 @@ describe('Marketplace: Direct Listing Addon', function () {
                         offeror: buyer.address,
                         assetContract: listing.assetContract,
                         currency: listing.currency,
-                        tokenType: TokenType.ERC721,
+                        tokenType: TokenType.ERC1155,
                         status: Status.CREATED,
                     };
                     expect(await mockERC20.balanceOf(buyer.address)).to.be.equal(buyerBalance);
                     expect(await mockERC20.balanceOf(marketplaceAddress)).to.be.equal(0);
-                    expect(await mockERC721.ownerOf(listing.tokenId)).to.be.equal(seller.address);
+                    expect(await mockERC1155.balanceOf(seller.address, listing.tokenId)).to.be.equal(quantity);
                     await expect(
                         directListingAddon
                             .connect(buyer)
-                            .makeOfferForListing(listing.listingId, offerExpirationTimestamp, offerTotalPrice)
+                            .makeOfferForListing(listing.listingId, offerExpirationTimestamp, offerTotalPrice, quantity)
                     )
                         .to.emit(directListingAddon, 'NewOffer')
                         .withArgs(buyer.address, offerId, listing.assetContract, Object.values(offer));
                     expect(await mockERC20.balanceOf(buyer.address)).to.be.equal(buyerBalance - offerTotalPrice);
                     expect(await mockERC20.balanceOf(marketplaceAddress)).to.be.equal(offerTotalPrice);
-                    expect(await mockERC721.ownerOf(listing.tokenId)).to.be.equal(seller.address);
+                    expect(await mockERC1155.balanceOf(seller.address, listing.tokenId)).to.be.equal(quantity);
                 });
                 it('Should revert if offer is made for a listing that does not exist', async function () {
                     await expect(
                         directListingAddon
                             .connect(buyer)
-                            .makeOfferForListing(999, offerExpirationTimestamp, offerTotalPrice)
+                            .makeOfferForListing(999, offerExpirationTimestamp, offerTotalPrice, quantity)
                     ).to.be.revertedWith('Marketplace: invalid listing.');
                 });
                 it('Should revert if timestamp is older that one hour', async function () {
                     await expect(
                         directListingAddon
                             .connect(buyer)
-                            .makeOfferForListing(listing.listingId, blockTimestamp - ONE_DAY, offerTotalPrice)
+                            .makeOfferForListing(listing.listingId, blockTimestamp - ONE_DAY, offerTotalPrice, quantity)
                     ).to.be.revertedWith('Marketplace: invalid expiration timestamp.');
                 });
             });
@@ -158,10 +159,10 @@ describe('Marketplace: Direct Listing Addon', function () {
 
                 const offerId = await directListingAddon
                     .connect(buyer)
-                    .makeOfferForListing.staticCall(listing.listingId, offerExpirationTimestamp, offerTotalPrice);
+                    .makeOfferForListing.staticCall(listing.listingId, offerExpirationTimestamp, offerTotalPrice, quantity);
                 await directListingAddon
                     .connect(buyer)
-                    .makeOfferForListing(listing.listingId, offerExpirationTimestamp, offerTotalPrice);
+                    .makeOfferForListing(listing.listingId, offerExpirationTimestamp, offerTotalPrice, quantity);
                 offer = {
                     offerId: offerId,
                     tokenId: listing.tokenId,
@@ -171,7 +172,7 @@ describe('Marketplace: Direct Listing Addon', function () {
                     offeror: buyer.address,
                     assetContract: listing.assetContract,
                     currency: listing.currency,
-                    tokenType: TokenType.ERC721,
+                    tokenType: TokenType.ERC1155,
                     status: Status.CREATED,
                 };
             });
@@ -179,9 +180,9 @@ describe('Marketplace: Direct Listing Addon', function () {
                 it('Should cancel a offer made for a direct listing', async function () {
                     expect(await mockERC20.balanceOf(buyer.address)).to.be.equal(buyerBalance - offer.totalPrice);
                     expect(await mockERC20.balanceOf(marketplaceAddress)).to.be.equal(offer.totalPrice);
-                    await expect(
-                        directListingAddon.connect(buyer).cancelOfferForListing(offer.offerId)
-                    ).to.emit(directListingAddon, 'CancelledOffer').withArgs(buyer.address, offer.offerId);
+                    await expect(directListingAddon.connect(buyer).cancelOfferForListing(offer.offerId))
+                        .to.emit(directListingAddon, 'CancelledOffer')
+                        .withArgs(buyer.address, offer.offerId);
                     expect(await mockERC20.balanceOf(buyer.address)).to.be.equal(buyerBalance);
                     expect(await mockERC20.balanceOf(marketplaceAddress)).to.be.equal(0);
                 });
@@ -194,13 +195,14 @@ describe('Marketplace: Direct Listing Addon', function () {
                         directListingAddon.connect(buyer).cancelOfferForListing(offer.offerId)
                     ).to.be.revertedWith('Marketplace: invalid offer.');
                 });
-            })
+            });
             describe('Accept Offer For Listing', function () {
                 it('Should accept a offer made for a direct listing', async function () {
                     expect(await mockERC20.balanceOf(buyer.address)).to.be.equal(buyerBalance - offer.totalPrice);
                     expect(await mockERC20.balanceOf(seller.address)).to.be.equal(0);
                     expect(await mockERC20.balanceOf(marketplaceAddress)).to.be.equal(offer.totalPrice);
-                    expect(await mockERC721.ownerOf(listing.tokenId)).to.be.equal(seller.address);
+                    expect(await mockERC1155.balanceOf(seller.address, listing.tokenId)).to.be.equal(quantity);
+                    expect(await mockERC1155.balanceOf(buyer.address, listing.tokenId)).to.be.equal(0);
 
                     await expect(
                         directListingAddon.connect(seller).acceptOfferForListing(listing.listingId, offer.offerId)
@@ -229,7 +231,178 @@ describe('Marketplace: Direct Listing Addon', function () {
                     expect(await mockERC20.balanceOf(buyer.address)).to.be.equal(buyerBalance - offer.totalPrice);
                     expect(await mockERC20.balanceOf(marketplaceAddress)).to.be.equal(0);
                     expect(await mockERC20.balanceOf(seller.address)).to.be.equal(offer.totalPrice);
-                    expect(await mockERC721.ownerOf(listing.tokenId)).to.be.equal(buyer.address);
+                    expect(await mockERC1155.balanceOf(seller.address, listing.tokenId)).to.be.equal(0);
+                    expect(await mockERC1155.balanceOf(buyer.address, listing.tokenId)).to.be.equal(quantity);
+                });
+                it('Should accept a offer made for a direct listing with partial quantity', async function () {
+                    const partialQuantity = quantity / 2;
+                    const partialTotalPrice = toWei('4.5');
+                    const partialOfferId = await directListingAddon
+                        .connect(buyer)
+                        .makeOfferForListing.staticCall(listing.listingId, blockTimestamp + ONE_DAY, partialTotalPrice, partialQuantity);
+                    await directListingAddon
+                        .connect(buyer)
+                        .makeOfferForListing(listing.listingId, blockTimestamp + ONE_DAY, partialTotalPrice, partialQuantity);
+                    const partialOffer = {
+                        offerId: partialOfferId,
+                        tokenId: listing.tokenId,
+                        quantity: partialQuantity,
+                        totalPrice: partialTotalPrice,
+                        expirationTimestamp: blockTimestamp + ONE_DAY,
+                        offeror: buyer.address,
+                        assetContract: listing.assetContract,
+                        currency: listing.currency,
+                        tokenType: TokenType.ERC1155,
+                        status: Status.CREATED,
+                    };
+
+                    expect(await mockERC20.balanceOf(buyer.address)).to.be.equal(
+                        buyerBalance - offer.totalPrice - partialTotalPrice
+                    );
+                    expect(await mockERC20.balanceOf(seller.address)).to.be.equal(0);
+                    expect(await mockERC20.balanceOf(marketplaceAddress)).to.be.equal(
+                        offer.totalPrice + partialTotalPrice
+                    );
+                    expect(await mockERC1155.balanceOf(seller.address, listing.tokenId)).to.be.equal(quantity);
+                    expect(await mockERC1155.balanceOf(buyer.address, listing.tokenId)).to.be.equal(0);
+
+                    await expect(
+                        directListingAddon
+                            .connect(seller)
+                            .acceptOfferForListing(listing.listingId, partialOfferId)
+                    )
+                        .to.emit(directListingAddon, 'NewSale')
+                        .withArgs(
+                            listing.listingCreator,
+                            listing.listingId,
+                            listing.assetContract,
+                            listing.tokenId,
+                            partialOffer.offeror,
+                            partialOffer.quantity,
+                            partialOffer.totalPrice
+                        )
+                        .to.emit(directListingAddon, 'AcceptedOffer')
+                        .withArgs(
+                            partialOffer.offeror,
+                            partialOffer.offerId,
+                            partialOffer.assetContract,
+                            partialOffer.tokenId,
+                            listing.listingCreator,
+                            partialOffer.quantity,
+                            partialOffer.totalPrice
+                        );
+
+                    expect(await mockERC20.balanceOf(buyer.address)).to.be.equal(
+                        buyerBalance - offer.totalPrice - partialTotalPrice
+                    );
+                    expect(await mockERC20.balanceOf(marketplaceAddress)).to.be.equal(offer.totalPrice);
+                    expect(await mockERC20.balanceOf(seller.address)).to.be.equal(partialTotalPrice);
+                });
+                it('Should accept two offers made for a direct listing with partial quantity', async function () {
+                    const partialQuantity = quantity / 2;
+                    const partialTotalPrice = toWei('4.5');
+                    const partialOfferId = await directListingAddon
+                        .connect(buyer)
+                        .makeOfferForListing.staticCall(listing.listingId, blockTimestamp + ONE_DAY, partialTotalPrice, partialQuantity);
+                    await directListingAddon
+                        .connect(buyer)
+                        .makeOfferForListing(listing.listingId, blockTimestamp + ONE_DAY, partialTotalPrice, partialQuantity);
+                    const partialOffer = {
+                        offerId: partialOfferId,
+                        tokenId: listing.tokenId,
+                        quantity: partialQuantity,
+                        totalPrice: partialTotalPrice,
+                        expirationTimestamp: blockTimestamp + ONE_DAY,
+                        offeror: buyer.address,
+                        assetContract: listing.assetContract,
+                        currency: listing.currency,
+                        tokenType: TokenType.ERC1155,
+                        status: Status.CREATED,
+                    };
+
+                    const secondPartialQuantity = quantity / 2;
+                    const secondPartialTotalPrice = toWei('4.5');
+                    const secondPartialOfferId = await directListingAddon
+                        .connect(buyer)
+                        .makeOfferForListing.staticCall(listing.listingId, blockTimestamp + ONE_DAY, secondPartialTotalPrice, secondPartialQuantity);
+                    await directListingAddon
+                        .connect(buyer)
+                        .makeOfferForListing(listing.listingId, blockTimestamp + ONE_DAY, secondPartialTotalPrice, secondPartialQuantity);
+                    const secondPartialOffer = {
+                        offerId: secondPartialOfferId,
+                        tokenId: listing.tokenId,
+                        quantity: secondPartialQuantity,
+                        totalPrice: secondPartialTotalPrice,
+                        expirationTimestamp: blockTimestamp + ONE_DAY,
+                        offeror: buyer.address,
+                        assetContract: listing.assetContract,
+                        currency: listing.currency,
+                        tokenType: TokenType.ERC1155,
+                        status: Status.CREATED,
+                    };
+
+                    expect(await mockERC20.balanceOf(buyer.address)).to.be.equal(
+                        buyerBalance - offer.totalPrice - partialTotalPrice - secondPartialTotalPrice
+                    );
+                    expect(await mockERC20.balanceOf(seller.address)).to.be.equal(0);
+                    expect(await mockERC20.balanceOf(marketplaceAddress)).to.be.equal(
+                        offer.totalPrice + partialTotalPrice + secondPartialTotalPrice
+                    );
+                    expect(await mockERC1155.balanceOf(seller.address, listing.tokenId)).to.be.equal(quantity);
+                    expect(await mockERC1155.balanceOf(buyer.address, listing.tokenId)).to.be.equal(0);
+
+
+                    await expect(
+                        directListingAddon
+                            .connect(seller)
+                            .acceptOfferForListing(listing.listingId, partialOfferId)
+                    )
+                        .to.emit(directListingAddon, 'NewSale')
+                        .withArgs(
+                            listing.listingCreator,
+                            listing.listingId,
+                            listing.assetContract,
+                            listing.tokenId,
+                            partialOffer.offeror,
+                            partialOffer.quantity,
+                            partialOffer.totalPrice
+                        )
+                        .to.emit(directListingAddon, 'AcceptedOffer')
+                        .withArgs(
+                            partialOffer.offeror,
+                            partialOffer.offerId,
+                            partialOffer.assetContract,
+                            partialOffer.tokenId,
+                            listing.listingCreator,
+                            partialOffer.quantity,
+                            partialOffer.totalPrice
+                        );
+
+                    await expect(
+                        directListingAddon
+                            .connect(seller)
+                            .acceptOfferForListing(listing.listingId, secondPartialOfferId)
+                    )
+                        .to.emit(directListingAddon, 'NewSale')
+                        .withArgs(
+                            listing.listingCreator,
+                            listing.listingId,
+                            listing.assetContract,
+                            listing.tokenId,
+                            secondPartialOffer.offeror,
+                            secondPartialOffer.quantity,
+                            secondPartialOffer.totalPrice
+                        )
+                        .to.emit(directListingAddon, 'AcceptedOffer')
+                        .withArgs(
+                            secondPartialOffer.offeror,
+                            secondPartialOffer.offerId,
+                            secondPartialOffer.assetContract,
+                            secondPartialOffer.tokenId,
+                            listing.listingCreator,
+                            secondPartialOffer.quantity,
+                            secondPartialOffer.totalPrice
+                        );
                 });
                 it('Should revert if there its invalid offer', async function () {
                     await expect(
@@ -242,9 +415,10 @@ describe('Marketplace: Direct Listing Addon', function () {
                     ).to.be.revertedWith('Marketplace: not listing creator.');
                 });
                 it('Should revert if offer is not made for the listing', async function () {
-                    await mockERC721.mint(seller.address);
-                    await mockERC721.connect(seller).setApprovalForAll(marketplaceAddress, true);
-                    const newListingParams = {...listingParams, tokenId: 1};
+                    const newTokenId = 1;
+                    await mockERC1155.mint(seller.address, newTokenId, quantity, '0x');
+                    await mockERC1155.connect(seller).setApprovalForAll(marketplaceAddress, true);
+                    const newListingParams = { ...listingParams, tokenId: newTokenId };
                     const newListingId = await directListing.connect(seller).createListing.staticCall(newListingParams);
                     await directListing.connect(seller).createListing(newListingParams);
                     await directListing
