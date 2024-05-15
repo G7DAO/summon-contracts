@@ -55,7 +55,7 @@ describe('Marketplace: Direct Listing Addon', function () {
         directListingAddon = await ethers.getContractAt('DirectListingsAddon', marketplaceAddress);
     });
 
-    describe.only('When Direct Listing exists', function () {
+    describe('When Direct Listing exists', function () {
         let listingParams: ListingParameters;
         let listing: Listing;
 
