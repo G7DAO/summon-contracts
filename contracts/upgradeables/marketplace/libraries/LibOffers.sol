@@ -11,7 +11,6 @@ library LibOffers {
 
     /// @dev Returns the next offer Id.
     function getNextOfferId() internal returns (uint256 id) {
-        id = LibStorage.offersStorage().totalOffers;
-        LibStorage.offersStorage().totalOffers += 1;
+        id = ++LibStorage.offersStorage().totalOffers;
     }
 }
