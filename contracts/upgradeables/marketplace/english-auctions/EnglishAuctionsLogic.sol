@@ -227,7 +227,7 @@ contract EnglishAuctionsLogic is IEnglishAuctions, ReentrancyGuard, ERC2771Conte
 
     function getAllAuctions(uint256 _startId, uint256 _endId) external view returns (Auction[] memory _allAuctions) {
         if(_englishAuctionsStorage().totalAuctions == 0) return _allAuctions;
-        require(_startId <= _endId && _endId < _englishAuctionsStorage().totalAuctions, "invalid range");
+        require(_startId <= _endId && _endId <= _englishAuctionsStorage().totalAuctions, "invalid range");
 
         _allAuctions = new Auction[](_endId - _startId + 1);
 
@@ -241,7 +241,7 @@ contract EnglishAuctionsLogic is IEnglishAuctions, ReentrancyGuard, ERC2771Conte
         uint256 _endId
     ) external view returns (Auction[] memory _validAuctions) {
         if(_englishAuctionsStorage().totalAuctions == 0) return _validAuctions;
-        require(_startId <= _endId && _endId < _englishAuctionsStorage().totalAuctions, "invalid range");
+        require(_startId <= _endId && _endId <= _englishAuctionsStorage().totalAuctions, "invalid range");
 
         Auction[] memory _auctions = new Auction[](_endId - _startId + 1);
         uint256 _auctionCount;
