@@ -481,11 +481,9 @@ export const DirectListingExtensionArgs = {
 export const DirectListingAddonArgs = {
     MAINNET: {
         // _tokenAddress: 'FILL_ME',
-        // _devWallet: 'DEPLOYER_WALLET',
     },
     TESTNET: {
         _tokenAddress: MAR20_G7_TESTNET,
-        _devWallet: 'DEPLOYER_WALLET',
     },
 };
 

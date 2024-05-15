@@ -17,52 +17,8 @@ library LibDirectListings {
     /// @dev The max bps of the contract. So, 10_000 == 100 %
     uint64 private constant MAX_BPS = 10_000;
 
-    /// @dev Validates that `_tokenOwner` owns and has approved Marketplace to transfer NFTs.
-    function validateOwnershipAndApproval(
-        address _tokenOwner,
-        address _assetContract,
-        uint256 _tokenId,
-        uint256 _quantity,
-        IDirectListings.TokenType _tokenType
-    ) external view returns (bool isValid) {
-        address market = address(this);
-
-        if (_tokenType == IDirectListings.TokenType.ERC1155) {
-            isValid =
-                IERC1155(_assetContract).balanceOf(_tokenOwner, _tokenId) >= _quantity &&
-                IERC1155(_assetContract).isApprovedForAll(_tokenOwner, market);
-        } else if (_tokenType == IDirectListings.TokenType.ERC721) {
-            address owner;
-            address operator;
-
-            // failsafe for reverts in case of non-existent tokens
-            try IERC721(_assetContract).ownerOf(_tokenId) returns (address _owner) {
-                owner = _owner;
-
-                // Nesting the approval check inside this try block, to run only if owner check doesn't revert.
-                // If the previous check for owner fails, then the return value will always evaluate to false.
-                try IERC721(_assetContract).getApproved(_tokenId) returns (address _operator) {
-                    operator = _operator;
-                } catch {}
-            } catch {}
-
-            isValid =
-                owner == _tokenOwner &&
-                (operator == market || IERC721(_assetContract).isApprovedForAll(_tokenOwner, market));
-        }
-    }
-
-    /// @dev Validates that `_tokenOwner` owns and has approved Marketplace to transfer the appropriate amount of currency
-    function _validateERC20BalAndAllowance(address _tokenOwner, address _currency, uint256 _amount) internal view {
-        require(
-            IERC20(_currency).balanceOf(_tokenOwner) >= _amount &&
-            IERC20(_currency).allowance(_tokenOwner, address(this)) >= _amount,
-            "!BAL20"
-        );
-    }
-
     /// @dev Transfers tokens listed for sale in a direct or auction listing.
-    function transferListingTokens(address _from, address _to, uint256 _quantity, IDirectListings.Listing memory _listing) external {
+    function transferListingTokens(address _from, address _to, uint256 _quantity, IDirectListings.Listing memory _listing) internal {
         if (_listing.tokenType == IDirectListings.TokenType.ERC1155) {
             IERC1155(_listing.assetContract).safeTransferFrom(_from, _to, _listing.tokenId, _quantity, "");
         } else if (_listing.tokenType == IDirectListings.TokenType.ERC721) {
@@ -78,7 +34,7 @@ library LibDirectListings {
         uint256 _totalPayoutAmount,
         IDirectListings.Listing memory _listing,
         address _nativeTokenWrapper
-    ) external {
+    ) internal {
         uint256 amountRemaining;
 
         // Payout platform fee
@@ -141,15 +97,6 @@ library LibDirectListings {
             _payee,
             amountRemaining,
             _nativeTokenWrapper
-        );
-    }
-
-    /// @dev Validates that `_tokenOwner` owns and has approved Markeplace to transfer the appropriate amount of currency
-    function validateERC20BalAndAllowance(address _tokenOwner, address _currency, uint256 _amount) external view {
-        require(
-            IERC20(_currency).balanceOf(_tokenOwner) >= _amount &&
-            IERC20(_currency).allowance(_tokenOwner, address(this)) >= _amount,
-            "!BAL20"
         );
     }
 }

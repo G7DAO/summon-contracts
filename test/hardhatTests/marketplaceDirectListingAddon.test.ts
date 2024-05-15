@@ -16,7 +16,6 @@ import { ONE_DAY } from './helpers/constants';
 import { expect } from 'chai';
 
 describe('Marketplace: Direct Listing Addon', function () {
-    let offersLogic: OffersLogic;
     let directListing: DirectListingsLogic;
     let directListingAddon: DirectListingsAddon;
     let marketplace: Marketplace;
@@ -52,16 +51,14 @@ describe('Marketplace: Direct Listing Addon', function () {
         await mockERC20.mint(buyer.address, buyerBalance);
         await mockERC20.connect(buyer).approve(marketplaceAddress, buyerBalance);
 
-        offersLogic = await ethers.getContractAt('OffersLogic', marketplaceAddress);
         directListing = await ethers.getContractAt('DirectListingsLogic', marketplaceAddress);
         directListingAddon = await ethers.getContractAt('DirectListingsAddon', marketplaceAddress);
     });
 
-    describe('When Offer and Direct Listing exists', function () {
-        let offer: Offer;
-        let offerParams: OfferParams;
+    describe.only('When Direct Listing exists', function () {
         let listingParams: ListingParameters;
         let listing: Listing;
+
         beforeEach(async function () {
             listingParams = {
                 assetContract: mockERC721Address,
@@ -94,55 +91,122 @@ describe('Marketplace: Direct Listing Addon', function () {
                 status: Status.CREATED,
                 reserved: listingParams.reserved,
             };
-
-            offerParams = {
-                assetContract: mockERC721Address,
-                tokenId: tokenId,
-                quantity,
-                currency: mockERC20Address,
-                totalPrice,
-                expirationTimestamp: blockTimestamp + ONE_DAY,
-            };
-            const offerId = await offersLogic.connect(buyer).makeOffer.staticCall(offerParams);
-            await offersLogic.connect(buyer).makeOffer(offerParams);
-            offer = {
-                offerId: offerId,
-                tokenId: offerParams.tokenId,
-                quantity: offerParams.quantity,
-                totalPrice: offerParams.totalPrice,
-                expirationTimestamp: offerParams.expirationTimestamp,
-                offeror: buyer.address,
-                assetContract: offerParams.assetContract,
-                currency: offerParams.currency,
-                tokenType: TokenType.ERC721,
-                status: Status.CREATED,
-            };
         });
 
-        it('Should buy asset in Direct Listing with Offer', async function () {
-            await directListingAddon.connect(seller).approveOfferForListing(listing.listingId, offer.offerId, true);
-            await expect(directListingAddon.connect(buyer).buyFromListingWithOffer(listing.listingId, offer.offerId))
-                .to.emit(directListingAddon, 'NewSale')
-                .withArgs(
-                    listing.listingCreator,
-                    listing.listingId,
-                    listing.assetContract,
-                    listing.tokenId,
-                    offer.offeror,
-                    offer.quantity,
-                    offer.totalPrice
-                );
+        describe('When offer NOT exists', function () {
+            let offerExpirationTimestamp: number;
+            let offerTotalPrice: bigint;
+
+            beforeEach(async function () {
+                offerExpirationTimestamp = blockTimestamp + ONE_DAY;
+                offerTotalPrice = toWei('9');
+            });
+
+            describe('Make Offer For Listing', function () {
+                it('Should make a offer for a direct listing', async function () {
+                    const offerId = await directListingAddon
+                        .connect(buyer)
+                        .makeOfferForListing.staticCall(listing.listingId, offerExpirationTimestamp, offerTotalPrice);
+                    const offer = {
+                        offerId: offerId,
+                        tokenId: listing.tokenId,
+                        quantity: listing.quantity,
+                        totalPrice: offerTotalPrice,
+                        expirationTimestamp: offerExpirationTimestamp,
+                        offeror: buyer.address,
+                        assetContract: listing.assetContract,
+                        currency: listing.currency,
+                        tokenType: TokenType.ERC721,
+                        status: Status.CREATED,
+                    };
+                    expect(await mockERC20.balanceOf(buyer.address)).to.be.equal(buyerBalance);
+                    expect(await mockERC20.balanceOf(marketplaceAddress)).to.be.equal(0);
+                    expect(await mockERC721.ownerOf(listing.tokenId)).to.be.equal(seller.address);
+                    await expect(
+                        directListingAddon
+                            .connect(buyer)
+                            .makeOfferForListing(listing.listingId, offerExpirationTimestamp, offerTotalPrice)
+                    )
+                        .to.emit(directListingAddon, 'NewOffer')
+                        .withArgs(buyer.address, offerId, listing.assetContract, Object.values(offer));
+                    expect(await mockERC20.balanceOf(buyer.address)).to.be.equal(buyerBalance - offerTotalPrice);
+                    expect(await mockERC20.balanceOf(marketplaceAddress)).to.be.equal(offerTotalPrice);
+                    expect(await mockERC721.ownerOf(listing.tokenId)).to.be.equal(seller.address);
+                });
+                it('Should revert if offer is made for a listing that does not exist', async function () {
+                    await expect(
+                        directListingAddon
+                            .connect(buyer)
+                            .makeOfferForListing(999, offerExpirationTimestamp, offerTotalPrice)
+                    ).to.be.revertedWith('Marketplace: invalid listing.');
+                });
+                it('Should revert if timestamp is older that one hour', async function () {
+                    await expect(
+                        directListingAddon
+                            .connect(buyer)
+                            .makeOfferForListing(listing.listingId, blockTimestamp - ONE_DAY, offerTotalPrice)
+                    ).to.be.revertedWith('Marketplace: invalid expiration timestamp.');
+                });
+            });
         });
-        it('Should revert if offer is not valid', async function () {
-            await directListingAddon.connect(seller).approveOfferForListing(listing.listingId, offer.offerId, true);
-            await expect(
-                directListingAddon.connect(buyer).buyFromListingWithOffer(listing.listingId, offer.offerId + BigInt(1))
-            ).to.be.revertedWith('Marketplace: invalid offer.');
-        });
-        it('Should revert if offer is not approved', async function () {
-            await expect(
-                directListingAddon.connect(buyer).buyFromListingWithOffer(listing.listingId, offer.offerId)
-            ).to.be.revertedWith('offer not approved');
+
+        describe('When offer exists', function () {
+            let offer: Offer;
+            beforeEach(async function () {
+                const offerExpirationTimestamp = blockTimestamp + ONE_DAY;
+                const offerTotalPrice = toWei('9');
+
+                const offerId = await directListingAddon
+                    .connect(buyer)
+                    .makeOfferForListing.staticCall(listing.listingId, offerExpirationTimestamp, offerTotalPrice);
+                await directListingAddon
+                    .connect(buyer)
+                    .makeOfferForListing(listing.listingId, offerExpirationTimestamp, offerTotalPrice);
+                offer = {
+                    offerId: offerId,
+                    tokenId: listing.tokenId,
+                    quantity: listing.quantity,
+                    totalPrice: offerTotalPrice,
+                    expirationTimestamp: offerExpirationTimestamp,
+                    offeror: buyer.address,
+                    assetContract: listing.assetContract,
+                    currency: listing.currency,
+                    tokenType: TokenType.ERC721,
+                    status: Status.CREATED,
+                };
+            });
+            describe('Accept Offer For Listing', function () {
+                it('Should accept a offer made for a direct listing', async function () {
+                    expect(await mockERC20.balanceOf(buyer.address)).to.be.equal(buyerBalance - offer.totalPrice);
+                    expect(await mockERC20.balanceOf(seller.address)).to.be.equal(0);
+                    expect(await mockERC20.balanceOf(marketplaceAddress)).to.be.equal(offer.totalPrice);
+                    expect(await mockERC721.ownerOf(listing.tokenId)).to.be.equal(seller.address);
+
+                    await expect(
+                        directListingAddon.connect(seller).acceptOfferForListing(listing.listingId, offer.offerId)
+                    )
+                        .to.emit(directListingAddon, 'NewSale')
+                        .withArgs(
+                            listing.listingCreator,
+                            listing.listingId,
+                            listing.assetContract,
+                            listing.tokenId,
+                            offer.offeror,
+                            offer.quantity,
+                            offer.totalPrice
+                        );
+
+                    expect(await mockERC20.balanceOf(buyer.address)).to.be.equal(buyerBalance - offer.totalPrice);
+                    expect(await mockERC20.balanceOf(marketplaceAddress)).to.be.equal(0);
+                    expect(await mockERC20.balanceOf(seller.address)).to.be.equal(offer.totalPrice);
+                    expect(await mockERC721.ownerOf(listing.tokenId)).to.be.equal(buyer.address);
+                });
+                it('Should revert if there its invalid offer', async function () {
+                    await expect(
+                      directListingAddon.connect(seller).acceptOfferForListing(listing.listingId, 0)
+                    ).to.be.revertedWith('Marketplace: invalid offer.');
+                });
+            });
         });
     });
 });

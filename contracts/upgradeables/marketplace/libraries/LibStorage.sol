@@ -10,17 +10,17 @@ import {OffersStorage} from "../offers/OffersStorage.sol";
  */
 library LibStorage {
     /// @dev Returns the Offers storage.
-    function offersStorage() public pure returns (OffersStorage.Data storage data) {
+    function offersStorage() internal pure returns (OffersStorage.Data storage data) {
         data = OffersStorage.data();
     }
 
     /// @dev Returns the Direct Listings Addon storage.
-    function directListingsAddonStorage() public pure returns (DirectListingsAddonStorage.Data storage data) {
+    function directListingsAddonStorage() internal pure returns (DirectListingsAddonStorage.Data storage data) {
         data = DirectListingsAddonStorage.data();
     }
 
     /// @dev Returns the DirectListings storage.
-    function directListingsStorage() public pure returns (DirectListingsStorage.Data storage data) {
+    function directListingsStorage() internal pure returns (DirectListingsStorage.Data storage data) {
         data = DirectListingsStorage.data();
     }
 }

@@ -139,35 +139,11 @@ contract DirectListingsAddon is IDirectListingsAddon, ReentrancyGuard, ERC2771Co
             "Marketplace: not within sale window."
         );
 
-        require(
-            LibDirectListings.validateOwnershipAndApproval(
-                listing.listingCreator,
-                listing.assetContract,
-                listing.tokenId,
-                offer.quantity,
-                listing.tokenType
-            ),
-            "Marketplace: not owner or approved tokens."
-        );
-
-        uint256 targetTotalPrice;
-
-        if (LibStorage.directListingsStorage().currencyPriceForListing[_listingId][offer.currency] > 0) {
-            targetTotalPrice =
-                offer.quantity *
-                LibStorage.directListingsStorage().currencyPriceForListing[_listingId][offer.currency];
-        } else {
-            require(offer.currency == listing.currency, "Marketplace: Paying in invalid currency.");
-        }
-
-        require(offer.totalPrice == targetTotalPrice, "Marketplace: Unexpected total price");
-
         // Check: buyer owns and has approved sufficient currency for sale.
         if (offer.currency == CurrencyTransferLib.NATIVE_TOKEN) {
             require(msg.value == offer.totalPrice, "Marketplace: msg.value must exactly be the total price.");
         } else {
             require(msg.value == 0, "Marketplace: invalid native tokens sent.");
-            LibDirectListings.validateERC20BalAndAllowance(buyer, offer.currency, offer.totalPrice);
         }
 
         if (listing.quantity == offer.quantity) {
