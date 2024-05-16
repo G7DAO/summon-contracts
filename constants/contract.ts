@@ -33,7 +33,7 @@ export enum PROXY_CONTRACT_TYPE {
 export enum CONTRACT_PROXY_CONTRACT_NAME {
     AchievoProxy = 'AchievoProxy',
     Diamond = 'Diamond',
-    MarketplaceAchievoProxy = 'MarketplaceAchievoProxy',
+    AchievoProxyMarketplace = 'AchievoProxyMarketplace',
 }
 
 export enum CONTRACT_PROXY_FILE_NAME {

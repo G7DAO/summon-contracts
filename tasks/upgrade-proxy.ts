@@ -76,7 +76,7 @@ task('upgrade-proxy', 'Upgrade Smart contracts')
                 log('\n');
 
                 const chainId = hre.network.config.chainId!;
-                const dbContract = await getContractFromDB(name, chainId);
+                const dbContract = await getContractFromDB(proxyDeployment.proxyContractName, chainId);
                 if (!dbContract) {
                     throw new Error(`Contract ${name} not found in DB for chain ${chainId}`);
                 }
