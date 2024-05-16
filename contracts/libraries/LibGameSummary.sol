@@ -1,10 +1,5 @@
-// SPDX-License-Identifier: UNLICENSED
-///@notice This contract is for mock for WETH token.
+// SPDX-License-Identifier: MIT
 pragma solidity ^0.8.17;
-
-/**
- * Author: Achievo Team - (https://achievo.xyz/)
- */
 
 // MMMMNkc. .,oKWMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMM
 // MWXd,.      .cONMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMM
@@ -21,30 +16,21 @@ pragma solidity ^0.8.17;
 // MMNx'.dWMMK;.:0WMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMM
 // MMMM0cdNMM0cdNMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMM
 
-import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
-import "@openzeppelin/contracts/token/ERC20/extensions/ERC20Burnable.sol";
-
-contract MockERC20 is ERC20Burnable {
-    constructor(string memory name, string memory symbol) ERC20(name, symbol) {}
-
-    function mint(address account, uint256 amount) public {
-        _mint(account, amount);
+library LibGameSummary {
+    struct GameSummaryCreate {
+        uint256 tokenId;
+        string tokenUri;
+        uint256 storeId;
+        uint256 playerId;
+        uint256 gameId;
     }
 
-    function decimals() public view virtual override returns (uint8) {
-        return 18;
-    }
-
-    function supportsInterface(bytes4 interfaceId) public view virtual returns (bool) {
-        return interfaceId == type(IERC20).interfaceId;
-    }
-
-    function deposit() public payable {
-        _mint(msg.sender, msg.value);
-    }
-
-    function withdraw(uint256 amount) public {
-        _burn(msg.sender, amount);
-        payable(msg.sender).transfer(amount);
+    struct GameSummaryReturn {
+        uint256 tokenId;
+        string tokenUri;
+        uint256 storeId;
+        uint256 playerId;
+        uint256 gameId;
+        uint256 amount;
     }
 }

@@ -17,8 +17,7 @@ pragma solidity ^0.8.17;
 // MMMM0cdNMM0cdNMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMM
 
 /**
- * Authors: Omar Garcia
- * GitHub: https://github.com/ogarciarevett
+ * Author: Achievo Team - (https://achievo.xyz/)
  */
 
 import { ERC1155 } from "@openzeppelin/contracts/token/ERC1155/ERC1155.sol";

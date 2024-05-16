@@ -258,10 +258,24 @@ export const ERC20ChainlinkPaymasterArgs = {
 
 export const GameSummaryArgs = {
     MAINNET: {
-        _uri: 'FILL_ME',
+        _name: 'GameSummary',
+        _symbol: 'GS',
+        _defaultTokenURI: 'FILL_ME',
+        _contractURI: 'FILL_ME',
+        _compoundURI: 'https://api.achievo.xyz/v1/uri/achievements',
+        _maxPerMint: 1,
+        _isPaused: false,
+        _devWallet: 'DEPLOYER_WALLET',
     },
     TESTNET: {
-        _uri: 'FILL_ME',
+        _name: 'GameSummary',
+        _symbol: 'GS',
+        _defaultTokenURI: 'FILL_ME',
+        _contractURI: 'FILL_ME',
+        _compoundURI: 'https://staging-api.achievo.xyz/v1/uri/achievements',
+        _maxPerMint: 1,
+        _isPaused: false,
+        _devWallet: 'DEPLOYER_WALLET',
     },
 };
 

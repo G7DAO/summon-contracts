@@ -2,8 +2,7 @@
 pragma solidity ^0.8.17;
 
 /**
- * Author: Omar <ogarciarevett>(https://github.com/ogarciarevett)
- * Co-Authors: Max <vasinl124>(https://github.com/vasinl124)
+ * Author: Achievo Team - (https://achievo.xyz/)
  */
 
 // MMMMNkc. .,oKWMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMM
@@ -37,7 +36,6 @@ import {
     ERC721EnumerableUpgradeable
 } from "@openzeppelin/contracts-upgradeable/token/ERC721/extensions/ERC721EnumerableUpgradeable.sol";
 import { Achievo721SoulboundUpgradeable } from "../ercs/extensions/Achievo721SoulboundUpgradeable.sol";
-
 
 contract ERC721SoulboundV1 is
     Initializable,

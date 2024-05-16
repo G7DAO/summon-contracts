@@ -2,8 +2,7 @@
 pragma solidity ^0.8.17;
 
 /**
- * Author: Max vasinl124(https://github.com/vasinl124)
- * Co-Authors: Omar ogarciarevett(https://github.com/ogarciarevett)
+ * Author: Achievo Team - (https://achievo.xyz/)
  */
 
 // MMMMNkc. .,oKWMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMM
@@ -409,7 +408,9 @@ contract ERC1155Soulbound is
         }
     }
 
-    function supportsInterface(bytes4 interfaceId) public view override(ERC2981, ERC1155, AccessControl) returns (bool) {
+    function supportsInterface(
+        bytes4 interfaceId
+    ) public view override(ERC2981, ERC1155, AccessControl) returns (bool) {
         return super.supportsInterface(interfaceId);
     }
 

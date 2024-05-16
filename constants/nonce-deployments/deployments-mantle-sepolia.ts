@@ -1,4 +1,4 @@
-import { HelloWorldArgs, LootDropArgs, RewardTokenArgs } from '@constants/constructor-args';
+import { LootDropArgs, RewardTokenArgs, GameSummaryArgs } from '@constants/constructor-args';
 import { CONTRACT_FILE_NAME, CONTRACT_NAME, CONTRACT_TYPE } from '@constants/contract';
 import { TENANT } from '@constants/tenant';
 
@@ -36,16 +36,16 @@ export const MANTLE_SEPOLIA_CONTRACTS: DeploymentContract[] = [
         args: RewardTokenArgs.TESTNET,
     },
     {
-        contractFileName: CONTRACT_FILE_NAME.HelloWorld,
-        type: CONTRACT_TYPE.HelloWorld,
-        name: CONTRACT_NAME.HelloWorld,
+        contractFileName: CONTRACT_FILE_NAME.GameSummary,
+        type: CONTRACT_TYPE.GameSummary,
+        name: CONTRACT_NAME.GameSummary,
         chain,
         networkType,
-        tenants: [TENANT.Game7],
+        tenants: [TENANT.HyperPlay],
         verify: true,
         upgradable: false,
         dependencies: [],
         functionCalls: [],
-        args: HelloWorldArgs.TESTNET,
+        args: GameSummaryArgs.TESTNET,
     },
 ];
