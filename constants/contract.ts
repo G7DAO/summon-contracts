@@ -33,6 +33,7 @@ export enum PROXY_CONTRACT_TYPE {
 export enum CONTRACT_PROXY_CONTRACT_NAME {
     AchievoProxy = 'AchievoProxy',
     Diamond = 'Diamond',
+    AchievoProxyMarketplace = 'AchievoProxyMarketplace',
 }
 
 export enum CONTRACT_PROXY_FILE_NAME {
@@ -106,13 +107,14 @@ export enum CONTRACT_NAME {
     MartinERC20 = 'MockERC20',
     Marketplace = 'Marketplace',
     EnglishAuctionsExtension = 'EnglishAuctionsExtension',
-    OffersExtension = 'OffersExtension'
+    OffersExtension = 'OffersExtension',
+    AchievoProxyMarketplace = 'AchievoProxyMarketplace'
 }
 
 export enum CONTRACT_UPGRADABLE_NAME {
     LegacyAvatar = 'LegacyAvatarUpgradable',
-    Avatars = 'AvatarsUpgradable',
-    Items = 'ItemsUpgradable',
+    Avatars = 'AvatarsUpgradeable',
+    Items = 'ItemsUpgradeable',
     ItemsRoyaltiesV2 = 'ItemsRoyaltiesV2',
     Levels = 'LevelsUpgradable',
     PaymasterChainlink = 'PaymasterChainlinkUpgradable',
@@ -123,7 +125,7 @@ export enum CONTRACT_UPGRADABLE_NAME {
     BridgeZkSync = 'BridgeUpgradeableZkSync',
     ZkSpork = 'ZkSpork',
     SkillTree = 'SkillTreeUpgradable',
-    RewardItemsUpgradable = 'RewardItemsUpgradable',
+    RewardItemsUpgradeable = 'RewardItemsUpgradeable',
     Marketplace = 'Marketplace',
 }
 

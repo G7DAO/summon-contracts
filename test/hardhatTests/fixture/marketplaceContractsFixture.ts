@@ -49,7 +49,7 @@ export async function deployMarketplaceContracts(): Promise<
     );
 
     // switch to the proxy contract values
-    const proxyContract = contract;
+    const proxyContract = {...contract}
     proxyContract.contractFileName = contract.proxyContractFileName;
     proxyContract.name = contract.proxyContractName;
     proxyContract.proxyContractArgs.implementation = deployedImplementation.contractAddress;

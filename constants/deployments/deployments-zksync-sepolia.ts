@@ -127,7 +127,7 @@ export const ZKSYNC_SEPOLIA_CONTRACTS: DeploymentContract[] = [
     {
         contractFileName: CONTRACT_UPGRADABLE_FILE_NAME.ERC1155RewardSoulbound,
         type: CONTRACT_TYPE.RewardItems,
-        name: CONTRACT_UPGRADABLE_NAME.RewardItemsUpgradable,
+        name: CONTRACT_UPGRADABLE_NAME.RewardItemsUpgradeable,
         chain,
         networkType,
         tenants: [TENANT.Game7],

@@ -32,7 +32,7 @@ export const GAME7_ARB_SEPOLIA_CONTRACTS: DeploymentProxyContract[] = [
         dependencies: [],
         functionCalls: [],
         proxyContractFileName: CONTRACT_PROXY_FILE_NAME.AchievoProxy,
-        proxyContractName: CONTRACT_PROXY_CONTRACT_NAME.AchievoProxy,
+        proxyContractName: CONTRACT_PROXY_CONTRACT_NAME.AchievoProxyMarketplace,
         proxyContractType: PROXY_CONTRACT_TYPE.EIP1967,
         proxyInitializeFunctionName: 'initialize',
         encodeInitializeFunctionArgs: ['DEV_WALLET', 'contractURI', [], 'DEV_WALLET', 0],
