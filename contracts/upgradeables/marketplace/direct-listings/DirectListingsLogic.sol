@@ -361,75 +361,75 @@ contract DirectListingsLogic is IDirectListings, ReentrancyGuard, ERC2771Context
         );
     }
 
-    //    /// @notice Buy NFTs from a listing checking the approval of the seller.
-    //    function buyFromListingWithApproval(
-    //        uint256 _listingId,
-    //        address _buyFor,
-    //        uint256 _quantity,
-    //        address _currency,
-    //        uint256 _expectedTotalPrice
-    //    ) external payable nonReentrant onlyExistingListing(_listingId) {
-    //        Listing memory listing = _directListingsStorage().listings[_listingId];
-    //        address buyer = _msgSender();
-    //
-    //        require(
-    //            !listing.reserved || _directListingsStorage().isBuyerApprovedForListing[_listingId][buyer],
-    //            "buyer not approved"
-    //        );
-    //        require(_quantity > 0 && _quantity <= listing.quantity, "Buying invalid quantity");
-    //        require(
-    //            block.timestamp < listing.endTimestamp && block.timestamp >= listing.startTimestamp,
-    //            "not within sale window."
-    //        );
-    //
-    //        require(
-    //            _validateOwnershipAndApproval(
-    //                listing.listingCreator,
-    //                listing.assetContract,
-    //                listing.tokenId,
-    //                _quantity,
-    //                listing.tokenType
-    //            ),
-    //            "Marketplace: not owner or approved tokens."
-    //        );
-    //
-    //        uint256 targetTotalPrice;
-    //
-    //        if (_directListingsStorage().currencyPriceForListing[_listingId][_currency] > 0) {
-    //            targetTotalPrice = _quantity * _directListingsStorage().currencyPriceForListing[_listingId][_currency];
-    //        } else {
-    //            require(_currency == listing.currency, "Paying in invalid currency.");
-    //            targetTotalPrice = _quantity * listing.pricePerToken;
-    //        }
-    //
-    //        require(targetTotalPrice == _expectedTotalPrice, "Unexpected total price");
-    //
-    //        // Check: buyer owns and has approved sufficient currency for sale.
-    //        if (_currency == CurrencyTransferLib.NATIVE_TOKEN) {
-    //            require(msg.value == targetTotalPrice, "Marketplace: msg.value must exactly be the total price.");
-    //        } else {
-    //            require(msg.value == 0, "Marketplace: invalid native tokens sent.");
-    //            _validateERC20BalAndAllowance(buyer, _currency, targetTotalPrice);
-    //        }
-    //
-    //        if (listing.quantity == _quantity) {
-    //            _directListingsStorage().listings[_listingId].status = IDirectListings.Status.COMPLETED;
-    //        }
-    //        _directListingsStorage().listings[_listingId].quantity -= _quantity;
-    //
-    //        _payout(buyer, listing.listingCreator, _currency, targetTotalPrice, listing);
-    //        _transferListingTokens(_buyFor, _quantity, listing);
-    //
-    //        emit NewSale(
-    //            listing.listingCreator,
-    //            listing.listingId,
-    //            listing.assetContract,
-    //            listing.tokenId,
-    //            buyer,
-    //            _quantity,
-    //            targetTotalPrice
-    //        );
-    //    }
+//    /// @notice Buy NFTs from a listing checking the approval of the seller.
+//    function buyFromListingWithApproval(
+//        uint256 _listingId,
+//        address _buyFor,
+//        uint256 _quantity,
+//        address _currency,
+//        uint256 _expectedTotalPrice
+//    ) external payable nonReentrant onlyExistingListing(_listingId) {
+//        Listing memory listing = _directListingsStorage().listings[_listingId];
+//        address buyer = _msgSender();
+//
+//        require(
+//            !listing.reserved || _directListingsStorage().isBuyerApprovedForListing[_listingId][buyer],
+//            "buyer not approved"
+//        );
+//        require(_quantity > 0 && _quantity <= listing.quantity, "Buying invalid quantity");
+//        require(
+//            block.timestamp < listing.endTimestamp && block.timestamp >= listing.startTimestamp,
+//            "not within sale window."
+//        );
+//
+//        require(
+//            _validateOwnershipAndApproval(
+//                listing.listingCreator,
+//                listing.assetContract,
+//                listing.tokenId,
+//                _quantity,
+//                listing.tokenType
+//            ),
+//            "Marketplace: not owner or approved tokens."
+//        );
+//
+//        uint256 targetTotalPrice;
+//
+//        if (_directListingsStorage().currencyPriceForListing[_listingId][_currency] > 0) {
+//            targetTotalPrice = _quantity * _directListingsStorage().currencyPriceForListing[_listingId][_currency];
+//        } else {
+//            require(_currency == listing.currency, "Paying in invalid currency.");
+//            targetTotalPrice = _quantity * listing.pricePerToken;
+//        }
+//
+//        require(targetTotalPrice == _expectedTotalPrice, "Unexpected total price");
+//
+//        // Check: buyer owns and has approved sufficient currency for sale.
+//        if (_currency == CurrencyTransferLib.NATIVE_TOKEN) {
+//            require(msg.value == targetTotalPrice, "Marketplace: msg.value must exactly be the total price.");
+//        } else {
+//            require(msg.value == 0, "Marketplace: invalid native tokens sent.");
+//            _validateERC20BalAndAllowance(buyer, _currency, targetTotalPrice);
+//        }
+//
+//        if (listing.quantity == _quantity) {
+//            _directListingsStorage().listings[_listingId].status = IDirectListings.Status.COMPLETED;
+//        }
+//        _directListingsStorage().listings[_listingId].quantity -= _quantity;
+//
+//        _payout(buyer, listing.listingCreator, _currency, targetTotalPrice, listing);
+//        _transferListingTokens(_buyFor, _quantity, listing);
+//
+//        emit NewSale(
+//            listing.listingCreator,
+//            listing.listingId,
+//            listing.assetContract,
+//            listing.tokenId,
+//            buyer,
+//            _quantity,
+//            targetTotalPrice
+//        );
+//    }
 
     /// @notice Buy NFTs from a listing without approval but with a signature.
     function buyFromListingWithSignature(
