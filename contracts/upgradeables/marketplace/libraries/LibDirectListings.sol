@@ -18,11 +18,11 @@ library LibDirectListings {
     uint64 private constant MAX_BPS = 10_000;
 
     /// @dev Transfers tokens listed for sale in a direct or auction listing.
-    function transferListingTokens(address _from, address _to, uint256 _quantity, IDirectListings.Listing memory _listing) internal {
+    function transferListingTokens(address _to, uint256 _quantity, IDirectListings.Listing memory _listing) internal {
         if (_listing.tokenType == IDirectListings.TokenType.ERC1155) {
-            IERC1155(_listing.assetContract).safeTransferFrom(_from, _to, _listing.tokenId, _quantity, "");
+            IERC1155(_listing.assetContract).safeTransferFrom(address(this), _to, _listing.tokenId, _quantity, "");
         } else if (_listing.tokenType == IDirectListings.TokenType.ERC721) {
-            IERC721(_listing.assetContract).safeTransferFrom(_from, _to, _listing.tokenId, "");
+            IERC721(_listing.assetContract).safeTransferFrom(address(this), _to, _listing.tokenId, "");
         }
     }
 

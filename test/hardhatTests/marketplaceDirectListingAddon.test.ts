@@ -27,6 +27,7 @@ describe('Marketplace: Direct Listing Addon', function () {
     const buyerBalance = toWei('1000');
     const totalPrice = toWei('10');
     const quantity = 10;
+    const sftBalance = 1000;
 
     beforeEach(async function () {
         [deployer, buyer, seller] = await ethers.getSigners();
@@ -41,7 +42,7 @@ describe('Marketplace: Direct Listing Addon', function () {
         await mockERC20.mint(buyer.address, buyerBalance);
         await mockERC20.connect(buyer).approve(marketplaceAddress, buyerBalance);
 
-        await mockERC1155.mint(seller.address, tokenId, quantity, '0x');
+        await mockERC1155.mint(seller.address, tokenId, sftBalance, '0x');
         await mockERC1155.connect(seller).setApprovalForAll(marketplaceAddress, true);
 
         directListing = await ethers.getContractAt('DirectListingsLogic', marketplaceAddress);
@@ -119,7 +120,7 @@ describe('Marketplace: Direct Listing Addon', function () {
                     };
                     expect(await mockERC20.balanceOf(buyer.address)).to.be.equal(buyerBalance);
                     expect(await mockERC20.balanceOf(marketplaceAddress)).to.be.equal(0);
-                    expect(await mockERC1155.balanceOf(seller.address, listing.tokenId)).to.be.equal(quantity);
+                    expect(await mockERC1155.balanceOf(seller.address, listing.tokenId)).to.be.equal(sftBalance - quantity);
                     await expect(
                         directListingAddon
                             .connect(buyer)
@@ -129,7 +130,7 @@ describe('Marketplace: Direct Listing Addon', function () {
                         .withArgs(buyer.address, offerId, listing.assetContract, Object.values(offer));
                     expect(await mockERC20.balanceOf(buyer.address)).to.be.equal(buyerBalance - offerTotalPrice);
                     expect(await mockERC20.balanceOf(marketplaceAddress)).to.be.equal(offerTotalPrice);
-                    expect(await mockERC1155.balanceOf(seller.address, listing.tokenId)).to.be.equal(quantity);
+                    expect(await mockERC1155.balanceOf(seller.address, listing.tokenId)).to.be.equal(sftBalance - quantity);
                 });
                 it('Should revert if offer is made for a listing that does not exist', async function () {
                     await expect(
@@ -203,7 +204,7 @@ describe('Marketplace: Direct Listing Addon', function () {
                     expect(await mockERC20.balanceOf(buyer.address)).to.be.equal(buyerBalance - offer.totalPrice);
                     expect(await mockERC20.balanceOf(seller.address)).to.be.equal(0);
                     expect(await mockERC20.balanceOf(marketplaceAddress)).to.be.equal(offer.totalPrice);
-                    expect(await mockERC1155.balanceOf(seller.address, listing.tokenId)).to.be.equal(quantity);
+                    expect(await mockERC1155.balanceOf(seller.address, listing.tokenId)).to.be.equal(sftBalance - quantity);
                     expect(await mockERC1155.balanceOf(buyer.address, listing.tokenId)).to.be.equal(0);
 
                     await expect(
@@ -233,7 +234,7 @@ describe('Marketplace: Direct Listing Addon', function () {
                     expect(await mockERC20.balanceOf(buyer.address)).to.be.equal(buyerBalance - offer.totalPrice);
                     expect(await mockERC20.balanceOf(marketplaceAddress)).to.be.equal(0);
                     expect(await mockERC20.balanceOf(seller.address)).to.be.equal(offer.totalPrice);
-                    expect(await mockERC1155.balanceOf(seller.address, listing.tokenId)).to.be.equal(0);
+                    expect(await mockERC1155.balanceOf(seller.address, listing.tokenId)).to.be.equal(sftBalance - quantity);
                     expect(await mockERC1155.balanceOf(buyer.address, listing.tokenId)).to.be.equal(quantity);
                 });
 
@@ -272,6 +273,7 @@ describe('Marketplace: Direct Listing Addon', function () {
                     let secondPartialOffer: Offer;
                     let initialBuyerBalance: bigint;
                     let initialMarketplaceBalance: bigint;
+                    let initialSftBalance: bigint;
                     const initialSellerBalance = 0;
 
                     beforeEach(async function () {
@@ -339,12 +341,13 @@ describe('Marketplace: Direct Listing Addon', function () {
 
                         initialBuyerBalance = buyerBalance - offer.totalPrice - partialOffer.totalPrice - secondPartialOffer.totalPrice;
                         initialMarketplaceBalance = offer.totalPrice + partialOffer.totalPrice + secondPartialOffer.totalPrice;
+                        initialSftBalance = BigInt(sftBalance - quantity);
                     });
                     it('Should accept a offer made for a direct listing with partial quantity', async function () {
                         expect(await mockERC20.balanceOf(buyer.address)).to.be.equal(initialBuyerBalance);
                         expect(await mockERC20.balanceOf(seller.address)).to.be.equal(initialSellerBalance);
                         expect(await mockERC20.balanceOf(marketplaceAddress)).to.be.equal(initialMarketplaceBalance);
-                        expect(await mockERC1155.balanceOf(seller.address, listing.tokenId)).to.be.equal(quantity);
+                        expect(await mockERC1155.balanceOf(seller.address, listing.tokenId)).to.be.equal(initialSftBalance);
                         expect(await mockERC1155.balanceOf(buyer.address, listing.tokenId)).to.be.equal(0);
 
                         await expect(
@@ -381,7 +384,7 @@ describe('Marketplace: Direct Listing Addon', function () {
                         expect(await mockERC20.balanceOf(buyer.address)).to.be.equal(initialBuyerBalance);
                         expect(await mockERC20.balanceOf(seller.address)).to.be.equal(initialSellerBalance);
                         expect(await mockERC20.balanceOf(marketplaceAddress)).to.be.equal(initialMarketplaceBalance);
-                        expect(await mockERC1155.balanceOf(seller.address, listing.tokenId)).to.be.equal(quantity);
+                        expect(await mockERC1155.balanceOf(seller.address, listing.tokenId)).to.be.equal(initialSftBalance);
                         expect(await mockERC1155.balanceOf(buyer.address, listing.tokenId)).to.be.equal(0);
 
                         await expect(
@@ -440,7 +443,7 @@ describe('Marketplace: Direct Listing Addon', function () {
                         expect(await mockERC20.balanceOf(buyer.address)).to.be.equal(initialBuyerBalance);
                         expect(await mockERC20.balanceOf(seller.address)).to.be.equal(0);
                         expect(await mockERC20.balanceOf(marketplaceAddress)).to.be.equal(initialMarketplaceBalance);
-                        expect(await mockERC1155.balanceOf(seller.address, listing.tokenId)).to.be.equal(quantity);
+                        expect(await mockERC1155.balanceOf(seller.address, listing.tokenId)).to.be.equal(initialSftBalance);
                         expect(await mockERC1155.balanceOf(buyer.address, listing.tokenId)).to.be.equal(0);
 
                         await expect(

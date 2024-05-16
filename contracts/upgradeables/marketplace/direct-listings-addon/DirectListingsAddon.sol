@@ -158,7 +158,7 @@ contract DirectListingsAddon is IDirectListingsAddon, ReentrancyGuard, ERC2771Co
         LibStorage.offersStorage().offers[_offerId].status = IOffers.Status.COMPLETED;
 
         LibDirectListings.payout(address(this), listing.listingCreator, offer.currency, offer.totalPrice, listing, nativeTokenWrapper);
-        LibDirectListings.transferListingTokens(listing.listingCreator, buyer, offer.quantity, listing);
+        LibDirectListings.transferListingTokens(buyer, offer.quantity, listing);
 
         emit NewSale(
             listing.listingCreator,
