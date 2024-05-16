@@ -10,11 +10,12 @@ import { TENANT } from '@constants/tenant';
 import { DeploymentProxyContract } from '../../types/deployment-type';
 import { NETWORK_TYPE, NetworkName } from '../network';
 import {
+    DirectListingAddonArgs,
     DirectListingExtensionArgs,
     EnglishAuctionsExtensionArgs,
     MarketplaceArgs,
-    OffersExtensionArgs,
-} from '@constants/constructor-args';
+    OffersExtensionArgs
+} from "@constants/constructor-args";
 
 const chain = NetworkName.Game7OrbitArbSepolia;
 const networkType = NETWORK_TYPE.TESTNET;
@@ -117,6 +118,23 @@ export const GAME7_ARB_SEPOLIA_CONTRACTS: DeploymentProxyContract[] = [
                     'getOffer(uint256)',
                     'getAllOffers(uint256,uint256)',
                     'getAllValidOffers(uint256,uint256)',
+                ],
+            },
+            {
+                contractFileName: CONTRACT_FILE_NAME.DirectListingsAddonExtension,
+                type: CONTRACT_TYPE.DirectListingsAddonExtension,
+                name: CONTRACT_NAME.DirectListingsAddonExtension,
+                verify: true,
+                extensionArgs: DirectListingAddonArgs.TESTNET,
+                metadata: {
+                    name: 'DirectListingsAddon',
+                    metadataURI: 'ipfs://{hash}',
+                    implementation: `CONTRACT_${CONTRACT_NAME.DirectListingsAddonExtension}`,
+                },
+                functionsToInclude: [
+                    'makeOfferForListing(uint256,uint256,uint256,uint256)',
+                    'acceptOfferForListing(uint256,uint256)',
+                    'cancelOfferForListing(uint256)',
                 ],
             },
         ],

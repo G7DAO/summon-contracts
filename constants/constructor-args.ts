@@ -478,6 +478,15 @@ export const DirectListingExtensionArgs = {
     },
 };
 
+export const DirectListingAddonArgs = {
+    MAINNET: {
+        // _tokenAddress: 'FILL_ME',
+    },
+    TESTNET: {
+        _tokenAddress: MAR20_G7_TESTNET,
+    },
+};
+
 export const MarketplaceArgs = {
     MAINNET: {
         // This will be filled in the deploy script
