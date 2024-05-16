@@ -339,7 +339,7 @@ describe('Marketplace: Offers', function () {
                 });
                 describe('getAllOffers', function () {
                     it('Should return all offers', async function () {
-                        expect(await offersLogic.getAllOffers(0, 0)).to.be.deep.equal([Object.values(offer)]);
+                        expect(await offersLogic.getAllOffers(1, 1)).to.be.deep.equal([Object.values(offer)]);
                     });
                     it('Should revert if start id is greater than total offers', async function () {
                         await expect(offersLogic.getAllOffers(1, 0)).to.be.revertedWith('invalid range');
@@ -347,7 +347,7 @@ describe('Marketplace: Offers', function () {
                 });
                 describe('getAllValidOffers', function () {
                     it('Should return all valid offers', async function () {
-                        expect(await offersLogic.getAllValidOffers(0, 0)).to.be.deep.equal([Object.values(offer)]);
+                        expect(await offersLogic.getAllValidOffers(1, 1)).to.be.deep.equal([Object.values(offer)]);
                     });
                     it('Should revert if start id is greater than total offers', async function () {
                         await expect(offersLogic.getAllValidOffers(1, 0)).to.be.revertedWith('invalid range');

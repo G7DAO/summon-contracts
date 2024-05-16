@@ -209,7 +209,7 @@ describe('EnglishAuction', function () {
                 });
                 describe('getAllAuctions', function () {
                     it('Should get all Auctions', async function () {
-                        expect(await englishAuction.getAllAuctions(0, 0)).to.be.deep.equal([Object.values(auction)]);
+                        expect(await englishAuction.getAllAuctions(1, 1)).to.be.deep.equal([Object.values(auction)]);
                     });
                     it('Should NOT get all Auctions if start index is greater than end index', async function () {
                         await expect(englishAuction.getAllAuctions(1, 0)).to.be.revertedWith('invalid range');
@@ -220,7 +220,7 @@ describe('EnglishAuction', function () {
                 });
                 describe('getAllValidAuctions', function () {
                     it('Should get all valid Auctions', async function () {
-                        expect(await englishAuction.getAllValidAuctions(0, 0)).to.be.deep.equal([
+                        expect(await englishAuction.getAllValidAuctions(1, 1)).to.be.deep.equal([
                             Object.values(auction),
                         ]);
                     });

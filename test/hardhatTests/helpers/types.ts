@@ -62,3 +62,29 @@ export type Offer = {
     tokenType: TokenType;
     status: Status;
 }
+
+export type ListingParameters = {
+    assetContract: string;
+    tokenId: number;
+    quantity: number;
+    currency: string;
+    pricePerToken: bigint;
+    startTimestamp: number;
+    endTimestamp: number;
+    reserved: boolean;
+}
+
+export type Listing = {
+    listingId: bigint;
+    tokenId: number;
+    quantity: number;
+    pricePerToken: bigint;
+    startTimestamp: number;
+    endTimestamp: number;
+    listingCreator: string;
+    assetContract: string;
+    currency: string;
+    tokenType: TokenType;
+    status: Status;
+    reserved: boolean;
+}
