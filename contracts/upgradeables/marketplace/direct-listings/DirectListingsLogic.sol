@@ -235,6 +235,13 @@ contract DirectListingsLogic is IDirectListings, ReentrancyGuard, ERC2771Context
 
     /// @notice Cancel a listing.
     function cancelListing(uint256 _listingId) external onlyExistingListing(_listingId) onlyListingCreator(_msgSender(), _listingId) {
+        if(_directListingsStorage().listings[_listingId].status == IDirectListings.Status.COMPLETED) {
+            revert("Marketplace: cannot cancel a completed listing.");
+        }
+
+        if(_directListingsStorage().listings[_listingId].status == IDirectListings.Status.CANCELLED) {
+            revert("Marketplace: listing already cancelled.");
+        }
         _directListingsStorage().listings[_listingId].status = IDirectListings.Status.CANCELLED;
         _transferListingTokensToCreator(_directListingsStorage().listings[_listingId]);
         emit CancelledListing(_msgSender(), _listingId);
@@ -242,6 +249,12 @@ contract DirectListingsLogic is IDirectListings, ReentrancyGuard, ERC2771Context
 
     /// @notice Cancel a listing.
     function adminCancelListing(address listingCreator, uint256 _listingId) external onlyManagerRole {
+        if(_directListingsStorage().listings[_listingId].status == IDirectListings.Status.COMPLETED) {
+            revert("Marketplace: cannot cancel a completed listing.");
+        }
+        if(_directListingsStorage().listings[_listingId].status == IDirectListings.Status.CANCELLED) {
+            revert("Marketplace: listing already cancelled.");
+        }
         _directListingsStorage().listings[_listingId].status = IDirectListings.Status.CANCELLED;
         _transferListingTokensToCreator(_directListingsStorage().listings[_listingId]);
         emit CancelledListing(listingCreator, _listingId);
