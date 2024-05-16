@@ -240,6 +240,13 @@ contract DirectListingsLogic is IDirectListings, ReentrancyGuard, ERC2771Context
         emit CancelledListing(_msgSender(), _listingId);
     }
 
+    /// @notice Cancel a listing.
+    function adminCancelListing(address listingCreator, uint256 _listingId) external onlyManagerRole {
+        _directListingsStorage().listings[_listingId].status = IDirectListings.Status.CANCELLED;
+        _transferListingTokensToCreator(_directListingsStorage().listings[_listingId]);
+        emit CancelledListing(listingCreator, _listingId);
+    }
+
     /// @notice Approve a buyer to buy from a reserved listing.
     function approveBuyerForListing(
         uint256 _listingId,

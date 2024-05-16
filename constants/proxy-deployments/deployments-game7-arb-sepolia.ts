@@ -62,6 +62,7 @@ export const GAME7_ARB_SEPOLIA_CONTRACTS: DeploymentProxyContract[] = [
                     'updateListing(uint256,(address,uint256,uint256,address,uint256,uint128,uint128,bool))',
                     'adminUpdateListing(uint256,(address,uint256,uint256,address,uint256,uint128,uint128,bool),address)',
                     'cancelListing(uint256)',
+                    'adminCancelListing(address,uint256)',
                     'approveBuyerForListing(uint256,address,bool)',
                     'approveCurrencyForListing(uint256,address,uint256)',
                     'buyFromListing(uint256,address,uint256,address,uint256)',
