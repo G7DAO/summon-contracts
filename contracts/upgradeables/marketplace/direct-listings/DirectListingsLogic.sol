@@ -533,7 +533,7 @@ contract DirectListingsLogic is IDirectListings, ReentrancyGuard, ERC2771Context
         return id;
     }
 
-    function _verifyContractChainIdAndDecode(uint256 listingId, bytes calldata data) private view {
+    function _verifyContractChainIdAndDecode(uint256 _listingId, bytes calldata data) private view {
         uint256 currentChainId = getChainID();
         (address contractAddress, uint256 chainId, uint256 listingId) = _decodeData(data);
 
@@ -541,7 +541,7 @@ contract DirectListingsLogic is IDirectListings, ReentrancyGuard, ERC2771Context
             revert InvalidSeed();
         }
 
-        if(listingId != listingId) {
+        if (_listingId != listingId) {
             revert InvalidListingId();
         }
     }

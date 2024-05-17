@@ -43,6 +43,8 @@ import { Achievo1155SoulboundUpgradeable } from "../ercs/extensions/Achievo1155S
 import { ERCWhitelistSignatureUpgradeable } from "../ercs/ERCWhitelistSignatureUpgradeable.sol";
 import { LibItems } from "../../libraries/LibItems.sol";
 
+error InvalidSeed();
+
 contract ERC1155RoyaltiesSoulboundV1 is
     Initializable,
     ERC1155BurnableUpgradeable,
@@ -189,13 +191,36 @@ contract ERC1155RoyaltiesSoulboundV1 is
         return true;
     }
 
-    function decodeData(bytes calldata _data) public view onlyRole(DEV_CONFIG_ROLE) returns (uint256[] memory) {
+    function getChainID() public view returns (uint256) {
+        uint256 id;
+        assembly {
+            id := chainid()
+        }
+        return id;
+    }
+
+    function _verifyContractChainIdAndDecode(bytes calldata data) private view returns (uint256[] memory) {
+        uint256 currentChainId = getChainID();
+        (address contractAddress, uint256 chainId, uint256[] memory tokenIds) = _decodeData(data);
+
+        if (chainId != currentChainId || contractAddress != address(this)) {
+            revert InvalidSeed();
+        }
+        return tokenIds;
+    }
+
+    function decodeData(
+        bytes calldata _data
+    ) public view onlyRole(DEV_CONFIG_ROLE) returns (address, uint256, uint256[] memory) {
         return _decodeData(_data);
     }
 
-    function _decodeData(bytes calldata _data) private view returns (uint256[] memory) {
-        uint256[] memory itemIds = abi.decode(_data, (uint256[]));
-        return itemIds;
+    function _decodeData(bytes calldata _data) private view returns (address, uint256, uint256[] memory) {
+        (address contractAddress, uint256 chainId, uint256[] memory _itemIds) = abi.decode(
+            _data,
+            (address, uint256, uint256[])
+        );
+        return (contractAddress, chainId, _itemIds);
     }
 
     function pause() external onlyRole(MANAGER_ROLE) {
@@ -291,12 +316,12 @@ contract ERC1155RoyaltiesSoulboundV1 is
         uint256 nonce,
         bytes calldata signature
     ) external nonReentrant signatureCheck(_msgSender(), nonce, data, signature) maxPerMintCheck(amount) whenNotPaused {
-        uint256[] memory _tokenIds = _decodeData(data);
+        uint256[] memory _tokenIds = _verifyContractChainIdAndDecode(data);
         _mintBatch(_msgSender(), _tokenIds, amount, soulbound);
     }
 
     function adminMint(address to, bytes calldata data, bool soulbound) external onlyRole(MINTER_ROLE) whenNotPaused {
-        uint256[] memory _tokenIds = _decodeData(data);
+        uint256[] memory _tokenIds = _verifyContractChainIdAndDecode(data);
         _mintBatch(to, _tokenIds, 1, soulbound);
     }
 

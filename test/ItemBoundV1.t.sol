@@ -50,6 +50,8 @@ contract ItemBoundV1Test is StdCheats, Test {
     LibItems.TokenCreate[] public _tokens;
     uint256[] public _tokenIds;
 
+    uint256 public chainId = 31337;
+
     function getWallet(string memory walletLabel) public returns (Wallet memory) {
         (address addr, uint256 privateKey) = makeAddrAndKey(walletLabel);
         Wallet memory wallet = Wallet(addr, privateKey);
@@ -106,8 +108,8 @@ contract ItemBoundV1Test is StdCheats, Test {
         }
     }
 
-    function encode(uint256[] memory itemIds) public pure returns (bytes memory) {
-        return (abi.encode(itemIds));
+    function encode(address contractAddress, uint256[] memory itemIds) public view returns (bytes memory) {
+        return (abi.encode(contractAddress, chainId, itemIds));
     }
 
     function deployContract() public returns (ERC1155RoyaltiesSoulboundV1) {
@@ -159,14 +161,14 @@ contract ItemBoundV1Test is StdCheats, Test {
         _itemIds1[1] = _tokenIds[1];
         _itemIds1[2] = _tokenIds[2];
 
-        encodedItems1 = encode(_itemIds1);
+        encodedItems1 = encode(address(itemBoundProxy), _itemIds1);
 
         uint256[] memory _itemIds2 = new uint256[](3);
         _itemIds2[0] = _tokenIds[3];
         _itemIds2[1] = _tokenIds[4];
         _itemIds2[2] = _tokenIds[5];
 
-        encodedItems2 = encode(_itemIds2);
+        encodedItems2 = encode(address(itemBoundProxy), _itemIds2);
 
         (nonce, signature) = generateSignature(playerWallet.addr, encodedItems1, minterLabel);
         (nonce2, signature2) = generateSignature(playerWallet2.addr, encodedItems2, minterLabel);
@@ -297,7 +299,7 @@ contract ItemBoundV1Test is StdCheats, Test {
         _itemIds3[0] = 1233;
         _itemIds3[1] = 3322;
 
-        bytes memory encodedItems3 = encode(_itemIds3);
+        bytes memory encodedItems3 = encode(address(itemBoundProxy), _itemIds3);
 
         (uint256 _nonce, bytes memory _signature) = generateSignature(playerWallet.addr, encodedItems3, minterLabel);
 
@@ -720,7 +722,7 @@ contract ItemBoundV1Test is StdCheats, Test {
     }
 
     function testgetAllItems() public {
-        bytes memory encodedItemsAll = encode(_tokenIds);
+        bytes memory encodedItemsAll = encode(address(itemBoundProxy), _tokenIds);
         itemBoundProxy.adminMint(playerWallet.addr, encodedItemsAll, false);
 
         string memory newTokenUri = "https://something-new.com/232";
@@ -759,7 +761,7 @@ contract ItemBoundV1Test is StdCheats, Test {
     }
 
     function testgetAllItemsAdmin() public {
-        bytes memory encodedItemsAll = encode(_tokenIds);
+        bytes memory encodedItemsAll = encode(address(itemBoundProxy), _tokenIds);
         itemBoundProxy.adminMint(playerWallet.addr, encodedItemsAll, false);
 
         string memory newTokenUri = "https://something-new.com/232";

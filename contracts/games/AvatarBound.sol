@@ -154,9 +154,8 @@ contract AvatarBound is
         uint256 nonce,
         bytes calldata data,
         bytes calldata signature
-    ) public nonReentrant whenNotPaused {
+    ) public nonReentrant signatureCheck(_msgSender(), nonce, data, signature) whenNotPaused {
         require(mintNftGatingEnabled, "NFT gating mint is not enabled");
-        require(_verifySignature(_msgSender(), nonce, data, signature), "Invalid signature");
         require(
             IOpenMint(gatingNFTAddress).ownerOf(nftGatingId) == _msgSender(),
             "Sender does not own the required NFT"
@@ -181,9 +180,8 @@ contract AvatarBound is
         uint256 nonce,
         bytes calldata data,
         bytes calldata signature
-    ) public nonReentrant whenNotPaused {
+    ) public nonReentrant signatureCheck(_msgSender(), nonce, data, signature) whenNotPaused {
         require(mintNftWithoutGatingEnabled, "Minting without nft gating is not enabled");
-        require(_verifySignature(_msgSender(), nonce, data, signature), "Invalid signature");
         mint(_msgSender(), baseSkinId);
 
         if (mintRandomItemEnabled) {
@@ -440,13 +438,5 @@ contract AvatarBound is
 
     function removeWhitelistSigner(address signer) external onlyRole(DEV_CONFIG_ROLE) {
         _removeWhitelistSigner(signer);
-    }
-
-    function _decodeData(bytes calldata _data) private view returns (uint256[] memory) {
-        return abi.decode(_data, (uint256[]));
-    }
-
-    function decodeData(bytes calldata _data) public view onlyRole(DEV_CONFIG_ROLE) returns (uint256[] memory) {
-        return _decodeData(_data);
     }
 }

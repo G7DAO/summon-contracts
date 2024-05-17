@@ -34,6 +34,8 @@ contract AvatarBoundV1Test is StdCheats, Test {
     uint256 public specialItemId = 777888;
     uint256 public defaultItemId = 100001;
 
+    uint256 public chainId = 31337;
+
     struct Wallet {
         address addr;
         uint256 privateKey;
@@ -80,8 +82,8 @@ contract AvatarBoundV1Test is StdCheats, Test {
         return random;
     }
 
-    function encode(uint256[] memory itemIds) public pure returns (bytes memory) {
-        return (abi.encode(itemIds));
+    function encode(address contractAddress, uint256[] memory itemIds) public view returns (bytes memory) {
+        return (abi.encode(contractAddress, chainId, itemIds));
     }
 
     function generateSignature(
@@ -101,7 +103,7 @@ contract AvatarBoundV1Test is StdCheats, Test {
         return (_nonce, abi.encodePacked(r, s, v));
     }
 
-    function setupItems() internal returns (bytes memory) {
+    function setupItems(address itemAddress) internal returns (bytes memory) {
         for (uint256 i = 0; i < 10; i++) {
             uint256 _tokenId = generateRandomItemId(); // totally random
             uint256 _level = generateRandomLevel(); // level 1-10
@@ -127,7 +129,7 @@ contract AvatarBoundV1Test is StdCheats, Test {
 
         itemBound.addNewTokens(_tokens);
 
-        encodedItems = encode(_tokenItemsIds);
+        encodedItems = encode(itemAddress, _tokenItemsIds);
         return encodedItems;
     }
 
@@ -182,7 +184,7 @@ contract AvatarBoundV1Test is StdCheats, Test {
             "QmPrH4o5q9uB8DGiFd9oDSuT3TnLiCzsFXT4wXQbpUr6c8"
         );
 
-        encodedItems = setupItems();
+        encodedItems = setupItems(address(itemBound));
 
         avatarBound = deployAvatarBoundV1Contract();
 
