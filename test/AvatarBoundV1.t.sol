@@ -103,7 +103,7 @@ contract AvatarBoundV1Test is StdCheats, Test {
         return (_nonce, abi.encodePacked(r, s, v));
     }
 
-    function setupItems(address itemAddress) internal returns (bytes memory) {
+    function setupItems(address avatarBound) internal returns (bytes memory) {
         for (uint256 i = 0; i < 10; i++) {
             uint256 _tokenId = generateRandomItemId(); // totally random
             uint256 _level = generateRandomLevel(); // level 1-10
@@ -129,7 +129,7 @@ contract AvatarBoundV1Test is StdCheats, Test {
 
         itemBound.addNewTokens(_tokens);
 
-        encodedItems = encode(itemAddress, _tokenItemsIds);
+        encodedItems = encode(avatarBound, _tokenItemsIds);
         return encodedItems;
     }
 
@@ -184,9 +184,9 @@ contract AvatarBoundV1Test is StdCheats, Test {
             "QmPrH4o5q9uB8DGiFd9oDSuT3TnLiCzsFXT4wXQbpUr6c8"
         );
 
-        encodedItems = setupItems(address(itemBound));
-
         avatarBound = deployAvatarBoundV1Contract();
+
+        encodedItems = setupItems(address(avatarBound));
 
         capsuleNft.grantRole(capsuleNft.MINTER_ROLE(), address(avatarBound));
         capsuleNft.grantRole(capsuleNft.MINTER_ROLE(), address(minterWallet.addr));
