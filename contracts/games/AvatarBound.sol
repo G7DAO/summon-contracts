@@ -35,6 +35,8 @@ import { ERCWhitelistSignature } from "../ercs/ERCWhitelistSignature.sol";
 import { IItemBound } from "../interfaces/IItemBound.sol";
 import { IOpenMint } from "../interfaces/IOpenMint.sol";
 
+error InvalidSeed();
+
 contract AvatarBound is
     ERC721URIStorage,
     ERC721Enumerable,
@@ -160,6 +162,8 @@ contract AvatarBound is
             IOpenMint(gatingNFTAddress).ownerOf(nftGatingId) == _msgSender(),
             "Sender does not own the required NFT"
         );
+        uint256[] memory _itemIds = _verifyContractChainIdAndDecode(data);
+
         mint(_msgSender(), baseSkinId);
 
         if (revealNftGatingEnabled) {
@@ -167,7 +171,7 @@ contract AvatarBound is
         }
 
         if (mintRandomItemEnabled) {
-            mintRandomItem(_msgSender(), data);
+            _mintRandomItem(_msgSender(), _itemIds);
         }
 
         if (mintSpecialItemEnabled) {
@@ -182,10 +186,12 @@ contract AvatarBound is
         bytes calldata signature
     ) public nonReentrant signatureCheck(_msgSender(), nonce, data, signature) whenNotPaused {
         require(mintNftWithoutGatingEnabled, "Minting without nft gating is not enabled");
+        uint256[] memory _itemIds = _verifyContractChainIdAndDecode(data);
+
         mint(_msgSender(), baseSkinId);
 
         if (mintRandomItemEnabled) {
-            mintRandomItem(_msgSender(), data);
+            _mintRandomItem(_msgSender(), _itemIds);
         }
 
         if (mintDefaultItemEnabled) {
@@ -222,7 +228,11 @@ contract AvatarBound is
         }
     }
 
-    function mintRandomItem(address to, bytes calldata data) private {
+    function _mintRandomItem(address to, uint256[] memory _itemIds) private {
+        // encode item ids data
+        uint256 currentChainId = getChainID();
+        bytes memory data = abi.encode(itemsNFTAddress, currentChainId, _itemIds);
+
         IItemBound(itemsNFTAddress).adminMint(to, data, false);
         emit RandomItemMinted(to, data, itemsNFTAddress);
     }
@@ -438,5 +448,37 @@ contract AvatarBound is
 
     function removeWhitelistSigner(address signer) external onlyRole(DEV_CONFIG_ROLE) {
         _removeWhitelistSigner(signer);
+    }
+
+    function getChainID() public view returns (uint256) {
+        uint256 id;
+        assembly {
+            id := chainid()
+        }
+        return id;
+    }
+
+    function _verifyContractChainIdAndDecode(bytes calldata data) private view returns (uint256[] memory) {
+        uint256 currentChainId = getChainID();
+        (address contractAddress, uint256 chainId, uint256[] memory tokenIds) = _decodeData(data);
+
+        if (chainId != currentChainId || contractAddress != address(this)) {
+            revert InvalidSeed();
+        }
+        return tokenIds;
+    }
+
+    function decodeData(
+        bytes calldata _data
+    ) public view onlyRole(DEV_CONFIG_ROLE) returns (address, uint256, uint256[] memory) {
+        return _decodeData(_data);
+    }
+
+    function _decodeData(bytes calldata _data) private view returns (address, uint256, uint256[] memory) {
+        (address contractAddress, uint256 chainId, uint256[] memory _itemIds) = abi.decode(
+            _data,
+            (address, uint256, uint256[])
+        );
+        return (contractAddress, chainId, _itemIds);
     }
 }
