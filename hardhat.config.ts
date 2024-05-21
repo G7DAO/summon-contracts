@@ -4,6 +4,7 @@ import { HardhatUserConfig } from 'hardhat/config';
 import '@nomicfoundation/hardhat-toolbox';
 import '@typechain/hardhat';
 import 'hardhat-contract-sizer';
+import 'solidity-coverage';
 // This adds support for typescript paths mappings
 import 'tsconfig-paths/register';
 import '@openzeppelin/hardhat-upgrades';
@@ -27,6 +28,9 @@ const config: HardhatUserConfig = {
             optimizer: {
                 enabled: true,
                 runs: 1,
+                details: {
+                    yul: true,
+                },
             },
             viaIR: true,
         },

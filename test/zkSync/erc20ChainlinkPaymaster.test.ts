@@ -13,7 +13,7 @@ dotenv.config();
 // load wallet private key from env file
 const PRIVATE_KEY = process.env.PRIVATE_KEY || '0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80';
 
-describe('ERC20ChainlinkPaymaster', function () {
+describe('@skipCoverage ERC20ChainlinkPaymaster', function () {
     let provider: Provider;
     let minterAccount: Wallet;
     let deployer: Deployer;
