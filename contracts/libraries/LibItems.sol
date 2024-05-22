@@ -22,11 +22,6 @@ library LibItems {
         string tierName;
     }
 
-    struct TokenCreate {
-        uint256 tokenId;
-        string tokenUri;
-    }
-
     enum RewardType {
         ETHER,
         ERC20,
@@ -57,7 +52,7 @@ library LibItems {
         uint256 maxSupply; // 0 mean unlimited
     }
 
-    struct TokenCreateWithRoyalty {
+    struct TokenCreate {
         uint256 tokenId;
         string tokenUri;
         address receiver;
