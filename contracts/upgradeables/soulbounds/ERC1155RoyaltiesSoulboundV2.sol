@@ -1,9 +1,11 @@
-// SPDX-License-Identifier: UNLICENSED
+// SPDX-License-Identifier: MIT
 pragma solidity ^0.8.17;
 
 /**
  * Author: Achievo Team - (https://achievo.xyz/)
  */
+
+//TODO: This contract is deprecated USE THE ERC1155SoulboundV1.sol
 
 // MMMMNkc. .,oKWMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMM
 // MWXd,.      .cONMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMM
@@ -20,32 +22,46 @@ pragma solidity ^0.8.17;
 // MMNx'.dWMMK;.:0WMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMM
 // MMMM0cdNMM0cdNMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMM
 
-import { ERC1155 } from "@openzeppelin/contracts/token/ERC1155/ERC1155.sol";
-import { ERC1155Burnable } from "@openzeppelin/contracts/token/ERC1155/extensions/ERC1155Burnable.sol";
-import { ERC1155Supply } from "@openzeppelin/contracts/token/ERC1155/extensions/ERC1155Supply.sol";
-import { AccessControl } from "@openzeppelin/contracts/access/AccessControl.sol";
-import { Pausable } from "@openzeppelin/contracts/security/Pausable.sol";
-import { Strings } from "@openzeppelin/contracts/utils/Strings.sol";
-import { ERC2981 } from "@openzeppelin/contracts/token/common/ERC2981.sol";
-import { ECDSA } from "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
-import { ReentrancyGuard } from "@openzeppelin/contracts/security/ReentrancyGuard.sol";
+import { Initializable } from "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
+import { ERC1155Upgradeable } from "@openzeppelin/contracts-upgradeable/token/ERC1155/ERC1155Upgradeable.sol";
+import {
+    ERC1155BurnableUpgradeable
+} from "@openzeppelin/contracts-upgradeable/token/ERC1155/extensions/ERC1155BurnableUpgradeable.sol";
+import {
+    ERC1155SupplyUpgradeable
+} from "@openzeppelin/contracts-upgradeable/token/ERC1155/extensions/ERC1155SupplyUpgradeable.sol";
+import { AccessControlUpgradeable } from "@openzeppelin/contracts-upgradeable/access/AccessControlUpgradeable.sol";
+import { PausableUpgradeable } from "@openzeppelin/contracts-upgradeable/security/PausableUpgradeable.sol";
+import { StringsUpgradeable } from "@openzeppelin/contracts-upgradeable/utils/StringsUpgradeable.sol";
+import { ERC2981Upgradeable } from "@openzeppelin/contracts-upgradeable/token/common/ERC2981Upgradeable.sol";
+import { ECDSAUpgradeable } from "@openzeppelin/contracts-upgradeable/utils/cryptography/ECDSAUpgradeable.sol";
+import {
+    ReentrancyGuardUpgradeable
+} from "@openzeppelin/contracts-upgradeable/security/ReentrancyGuardUpgradeable.sol";
 
-import { Achievo1155Soulbound } from "../ercs/extensions/Achievo1155Soulbound.sol";
-import { ERCWhitelistSignature } from "../ercs/ERCWhitelistSignature.sol";
-import { LibItems } from "../libraries/LibItems.sol";
+import { Achievo1155SoulboundUpgradeable } from "../ercs/extensions/Achievo1155SoulboundUpgradeable.sol";
+import { ERCWhitelistSignatureUpgradeable } from "../ercs/ERCWhitelistSignatureUpgradeable.sol";
+import { LibItems } from "../../libraries/LibItems.sol";
 
 error InvalidSeed();
+error InvalidInput();
+error AddressIsZero();
+error ExceedMaxMint();
 error MissingRole();
+error TokenNotExist();
+error TokenMintPaused();
+error DuplicateID();
 
-contract ERC1155RoyaltiesSoulbound is
-    ERC1155Burnable,
-    ERC1155Supply,
-    Achievo1155Soulbound,
-    ERC2981,
-    ERCWhitelistSignature,
-    AccessControl,
-    Pausable,
-    ReentrancyGuard
+contract ERC1155RoyaltiesSoulboundV2 is
+    Initializable,
+    ERC1155BurnableUpgradeable,
+    ERC1155SupplyUpgradeable,
+    Achievo1155SoulboundUpgradeable,
+    ERC2981Upgradeable,
+    ERCWhitelistSignatureUpgradeable,
+    AccessControlUpgradeable,
+    PausableUpgradeable,
+    ReentrancyGuardUpgradeable
 {
     event ContractURIChanged(string indexed uri);
 
@@ -57,7 +73,7 @@ contract ERC1155RoyaltiesSoulbound is
     string private baseURI;
     string public name;
     string public symbol;
-    using Strings for uint256;
+    using StringsUpgradeable for uint256;
 
     uint256 public MAX_PER_MINT;
 
@@ -71,16 +87,21 @@ contract ERC1155RoyaltiesSoulbound is
 
     modifier maxPerMintCheck(uint256 amount) {
         if (amount > MAX_PER_MINT) {
-            revert("ExceedMaxMint");
+            revert ExceedMaxMint();
         }
         _;
     }
 
     event Minted(address indexed to, uint256[] tokenIds, uint256 amount, bool soulbound);
-    event MintedId(address indexed to, uint256 tokenId, uint256 amount, bool soulbound);
+    event MintedId(address indexed to, uint256 indexed tokenId, uint256 amount, bool soulbound);
     event TokenAdded(uint256 indexed tokenId);
 
-    constructor(
+    /// @custom:oz-upgrades-unsafe-allow constructor
+    constructor() {
+        _disableInitializers();
+    }
+
+    function initialize(
         string memory _name,
         string memory _symbol,
         string memory _initBaseURI,
@@ -88,13 +109,21 @@ contract ERC1155RoyaltiesSoulbound is
         uint256 _maxPerMint,
         bool _isPaused,
         address devWallet
-    ) ERC1155(_initBaseURI) {
-        require(devWallet != address(0), "AddressIsZero");
+    ) public initializer {
+        __ERC1155_init("");
+        __ReentrancyGuard_init();
+        __AccessControl_init();
+        __Achievo1155SoulboundUpgradable_init();
+        __ERCWhitelistSignatureUpgradeable_init();
+
+        if (devWallet == address(0)) {
+            revert AddressIsZero();
+        }
 
         _grantRole(DEFAULT_ADMIN_ROLE, devWallet);
-        _grantRole(DEV_CONFIG_ROLE, devWallet);
         _grantRole(MINTER_ROLE, devWallet);
         _grantRole(MANAGER_ROLE, devWallet);
+        _grantRole(DEV_CONFIG_ROLE, devWallet);
         _addWhitelistSigner(devWallet);
 
         name = _name;
@@ -141,7 +170,7 @@ contract ERC1155RoyaltiesSoulbound is
 
     function isTokenExist(uint256 _tokenId) public view returns (bool) {
         if (!tokenExists[_tokenId]) {
-            revert("TokenNotExist");
+            revert TokenNotExist();
         }
         return true;
     }
@@ -216,7 +245,7 @@ contract ERC1155RoyaltiesSoulbound is
         string[] calldata _tokenUris
     ) public onlyRole(DEV_CONFIG_ROLE) {
         if (_tokenIds.length != _tokenUris.length) {
-            revert("InvalidInput");
+            revert InvalidInput();
         }
         for (uint256 i = 0; i < _tokenIds.length; i++) {
             updateTokenUri(_tokenIds[i], _tokenUris[i]);
@@ -232,7 +261,7 @@ contract ERC1155RoyaltiesSoulbound is
             uint256 _id = _tokenIds[i];
             isTokenExist(_id);
             if (isTokenMintPaused[_id]) {
-                revert("TokenMintPaused");
+                revert TokenMintPaused();
             }
 
             if (soulbound) {
@@ -269,7 +298,7 @@ contract ERC1155RoyaltiesSoulbound is
         isTokenExist(id);
 
         if (isTokenMintPaused[id]) {
-            revert("TokenMintPaused");
+            revert TokenMintPaused();
         }
 
         if (soulbound) {
@@ -287,7 +316,7 @@ contract ERC1155RoyaltiesSoulbound is
         uint256[] memory ids,
         uint256[] memory amounts,
         bytes memory data
-    ) internal virtual override(ERC1155, ERC1155Supply) {
+    ) internal virtual override(ERC1155Upgradeable, ERC1155SupplyUpgradeable) {
         super._beforeTokenTransfer(operator, from, to, ids, amounts, data);
     }
 
@@ -317,7 +346,7 @@ contract ERC1155RoyaltiesSoulbound is
             uint256 id = _ids[i];
 
             if (tokenIdProcessed[_from][id]) {
-                revert("ERC1155: duplicate ID");
+                revert DuplicateID();
             }
 
             tokenIdProcessed[_from][id] = true;
@@ -356,7 +385,7 @@ contract ERC1155RoyaltiesSoulbound is
         nonReentrant
         soulboundCheckAndSync(to, address(0), tokenId, amount, balanceOf(to, tokenId))
     {
-        ERC1155Burnable.burn(to, tokenId, amount);
+        ERC1155BurnableUpgradeable.burn(to, tokenId, amount);
     }
 
     function burnBatch(
@@ -374,13 +403,13 @@ contract ERC1155RoyaltiesSoulbound is
             uint256 id = tokenIds[i];
 
             if (tokenIdProcessed[to][id]) {
-                revert("ERC1155: duplicate ID");
+                revert DuplicateID();
             }
 
             tokenIdProcessed[to][id] = true;
         }
 
-        ERC1155Burnable.burnBatch(to, tokenIds, amounts);
+        ERC1155BurnableUpgradeable.burnBatch(to, tokenIds, amounts);
 
         // Reset processed status after the transfer is completed
         for (uint256 i = 0; i < tokenIds.length; i++) {
@@ -391,7 +420,7 @@ contract ERC1155RoyaltiesSoulbound is
 
     function supportsInterface(
         bytes4 interfaceId
-    ) public view override(ERC1155, ERC2981, AccessControl) returns (bool) {
+    ) public view override(ERC1155Upgradeable, ERC2981Upgradeable, AccessControlUpgradeable) returns (bool) {
         return super.supportsInterface(interfaceId);
     }
 
@@ -412,11 +441,7 @@ contract ERC1155RoyaltiesSoulbound is
         _setDefaultRoyalty(receiver, feeBasisPoints);
     }
 
-    function setTokenRoyalty(
-        uint256 tokenId,
-        address receiver,
-        uint256 feeBasisPoints
-    ) external onlyRole(MANAGER_ROLE) {
+    function setTokenRoyalty(uint256 tokenId, address receiver, uint96 feeBasisPoints) external onlyRole(MANAGER_ROLE) {
         _setTokenRoyalty(tokenId, receiver, uint96(feeBasisPoints));
     }
 
@@ -449,4 +474,7 @@ contract ERC1155RoyaltiesSoulbound is
     function removeWhitelistSigner(address signer) external onlyRole(DEV_CONFIG_ROLE) {
         _removeWhitelistSigner(signer);
     }
+
+    // Reserved storage space to allow for layout changes in the future.
+    uint256[37] private __gap;
 }

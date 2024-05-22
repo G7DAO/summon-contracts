@@ -52,6 +52,11 @@ library LibItems {
         uint256 maxSupply; // 0 mean unlimited
     }
 
+    struct TokenCreateLegacy {
+        uint256 tokenId;
+        string tokenUri;
+    }
+
     struct TokenCreate {
         uint256 tokenId;
         string tokenUri;

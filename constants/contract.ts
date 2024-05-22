@@ -68,7 +68,7 @@ export enum CONTRACT_FILE_NAME {
 export enum CONTRACT_UPGRADABLE_FILE_NAME {
     LegacyAvatar = 'LegacyAvatarUpgradeableV1',
     Avatars = 'AvatarBoundV1',
-    ERC1155RoyaltiesSoulbound = 'ERC1155RoyaltiesSoulboundV1',
+    ERC1155RoyaltiesSoulbound = 'ERC1155RoyaltiesSoulboundV2',
     Levels = 'LevelsBoundV1',
     ERC20ChainlinkPaymaster = 'ERC20ChainlinkPaymasterV2',
     ERC1155Soulbound = 'ERC1155SoulboundV1',

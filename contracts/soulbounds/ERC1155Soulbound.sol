@@ -34,6 +34,8 @@ import { Achievo1155Soulbound } from "../ercs/extensions/Achievo1155Soulbound.so
 import { ERCWhitelistSignature } from "../ercs/ERCWhitelistSignature.sol";
 import { LibItems } from "../libraries/LibItems.sol";
 
+error MissingRole();
+
 contract ERC1155Soulbound is
     ERC1155Burnable,
     ERC1155Supply,
@@ -103,38 +105,11 @@ contract ERC1155Soulbound is
         if (_isPaused) _pause();
     }
 
-    function getAllItems() public view returns (LibItems.TokenReturn[] memory) {
-        uint256 totalTokens = itemIds.length;
-        LibItems.TokenReturn[] memory tokenReturns = new LibItems.TokenReturn[](totalTokens);
-
-        uint index;
-        for (uint i = 0; i < totalTokens; i++) {
-            uint256 tokenId = itemIds[i];
-            uint256 amount = balanceOf(_msgSender(), tokenId);
-
-            if (amount > 0) {
-                LibItems.TokenReturn memory tokenReturn = LibItems.TokenReturn({
-                    tokenId: tokenId,
-                    tokenUri: uri(tokenId),
-                    amount: amount
-                });
-                tokenReturns[index] = tokenReturn;
-                index++;
-            }
+    function getAllItems(address _owner) public view returns (LibItems.TokenReturn[] memory) {
+        bool isAdmin = hasRole(MINTER_ROLE, _msgSender());
+        if (!isAdmin && _owner != _msgSender()) {
+            revert MissingRole();
         }
-
-        // truncate the array
-        LibItems.TokenReturn[] memory returnsTruncated = new LibItems.TokenReturn[](index);
-        for (uint i = 0; i < index; i++) {
-            returnsTruncated[i] = tokenReturns[i];
-        }
-
-        return returnsTruncated;
-    }
-
-    function getAllItemsAdmin(
-        address _owner
-    ) public view onlyRole(MINTER_ROLE) returns (LibItems.TokenReturn[] memory) {
         uint256 totalTokens = itemIds.length;
         LibItems.TokenReturn[] memory tokenReturns = new LibItems.TokenReturn[](totalTokens);
 
@@ -143,13 +118,15 @@ contract ERC1155Soulbound is
             uint256 tokenId = itemIds[i];
             uint256 amount = balanceOf(_owner, tokenId);
 
-            LibItems.TokenReturn memory tokenReturn = LibItems.TokenReturn({
-                tokenId: tokenId,
-                tokenUri: uri(tokenId),
-                amount: amount
-            });
-            tokenReturns[index] = tokenReturn;
-            index++;
+            if (isAdmin || amount > 0) {
+                LibItems.TokenReturn memory tokenReturn = LibItems.TokenReturn({
+                    tokenId: tokenId,
+                    tokenUri: uri(tokenId),
+                    amount: amount
+                });
+                tokenReturns[index] = tokenReturn;
+                index++;
+            }
         }
 
         // truncate the array
@@ -185,39 +162,19 @@ contract ERC1155Soulbound is
         _unpause();
     }
 
-    function addNewTokenWithRoyalty(LibItems.TokenCreateWithRoyalty calldata _token) public onlyRole(DEV_CONFIG_ROLE) {
-        if (_token.receiver == address(0)) {
-            revert("ReceiverAddressZero");
-        }
-
-        if (bytes(_token.tokenUri).length > 0) {
-            tokenUris[_token.tokenId] = _token.tokenUri;
-        }
-
-        tokenExists[_token.tokenId] = true;
-
-        itemIds.push(_token.tokenId);
-
-        _setTokenRoyalty(_token.tokenId, _token.receiver, uint96(_token.feeBasisPoints));
-    }
-
     function addNewToken(LibItems.TokenCreate calldata _token) public onlyRole(DEV_CONFIG_ROLE) {
         if (bytes(_token.tokenUri).length > 0) {
             tokenUris[_token.tokenId] = _token.tokenUri;
+        }
+
+        if (_token.receiver != address(0)) {
+            _setTokenRoyalty(_token.tokenId, _token.receiver, uint96(_token.feeBasisPoints));
         }
 
         tokenExists[_token.tokenId] = true;
 
         itemIds.push(_token.tokenId);
         emit TokenAdded(_token.tokenId);
-    }
-
-    function addNewTokensWithRoyalty(
-        LibItems.TokenCreateWithRoyalty[] calldata _tokens
-    ) external onlyRole(DEV_CONFIG_ROLE) {
-        for (uint256 i = 0; i < _tokens.length; i++) {
-            addNewTokenWithRoyalty(_tokens[i]);
-        }
     }
 
     function addNewTokens(LibItems.TokenCreate[] calldata _tokens) external onlyRole(DEV_CONFIG_ROLE) {

@@ -13,6 +13,15 @@ import { LibItems, TestLibItems } from "../contracts/libraries/LibItems.sol";
 import { ERC1155RoyaltiesSoulboundV1 } from "../contracts/upgradeables/soulbounds/ERC1155RoyaltiesSoulboundV1.sol";
 import { MockERC1155Receiver } from "../contracts/mocks/MockERC1155Receiver.sol";
 
+error InvalidSeed();
+error InvalidInput();
+error AddressIsZero();
+error ExceedMaxMint();
+error MissingRole();
+error TokenNotExist();
+error TokenMintPaused();
+error DuplicateID();
+
 contract ItemBoundV1Test is StdCheats, Test {
     using Strings for uint256;
 
@@ -147,7 +156,9 @@ contract ItemBoundV1Test is StdCheats, Test {
 
             LibItems.TokenCreate memory _token = LibItems.TokenCreate({
                 tokenId: _tokenId,
-                tokenUri: string(abi.encodePacked("https://something.com", "/", _tokenId.toString()))
+                tokenUri: string(abi.encodePacked("https://something.com", "/", _tokenId.toString())),
+                receiver: address(0),
+                feeBasisPoints: 0
             });
 
             _tokens.push(_token);
@@ -177,15 +188,17 @@ contract ItemBoundV1Test is StdCheats, Test {
     function testTokenExists() public {
         uint256 _tokenId = generateRandomItemId();
 
-        vm.expectRevert("TokenNotExist");
+        vm.expectRevert(TokenNotExist.selector);
         itemBoundProxy.isTokenExist(_tokenId);
 
-        vm.expectRevert("TokenNotExist");
+        vm.expectRevert(TokenNotExist.selector);
         itemBoundProxy.adminMintId(playerWallet.addr, _tokenId, 1, true);
 
         LibItems.TokenCreate memory _token = LibItems.TokenCreate({
             tokenId: _tokenId,
-            tokenUri: string(abi.encodePacked("https://something222.com", "/", _tokenId.toString()))
+            tokenUri: string(abi.encodePacked("https://something222.com", "/", _tokenId.toString())),
+            receiver: address(0),
+            feeBasisPoints: 0
         });
 
         itemBoundProxy.addNewToken(_token);
@@ -204,7 +217,9 @@ contract ItemBoundV1Test is StdCheats, Test {
 
             LibItems.TokenCreate memory _token = LibItems.TokenCreate({
                 tokenId: _tokenId,
-                tokenUri: string(abi.encodePacked("https://something.com", "/", _tokenId.toString()))
+                tokenUri: string(abi.encodePacked("https://something.com", "/", _tokenId.toString())),
+                receiver: address(0),
+                feeBasisPoints: 0
             });
 
             _tokens[i] = _token;
@@ -230,13 +245,13 @@ contract ItemBoundV1Test is StdCheats, Test {
 
         itemBoundProxy.updateTokenMintPaused(_tokenId, true);
 
-        vm.expectRevert("TokenMintPaused");
+        vm.expectRevert(TokenMintPaused.selector);
         itemBoundProxy.adminMintId(address(mockERC1155Receiver), _tokenId, 1, true);
 
-        vm.expectRevert("TokenMintPaused");
+        vm.expectRevert(TokenMintPaused.selector);
         itemBoundProxy.adminMint(address(mockERC1155Receiver), encodedItems1, true);
 
-        vm.expectRevert("TokenMintPaused");
+        vm.expectRevert(TokenMintPaused.selector);
         vm.prank(playerWallet.addr);
         itemBoundProxy.mint(encodedItems1, 1, true, nonce, signature);
 
@@ -289,7 +304,7 @@ contract ItemBoundV1Test is StdCheats, Test {
     }
 
     function testMintMoreThanLimit() public {
-        vm.expectRevert("ExceedMaxMint");
+        vm.expectRevert(ExceedMaxMint.selector);
         vm.prank(playerWallet.addr);
         itemBoundProxy.mint(encodedItems1, 2, true, nonce, signature);
     }
@@ -303,7 +318,7 @@ contract ItemBoundV1Test is StdCheats, Test {
 
         (uint256 _nonce, bytes memory _signature) = generateSignature(playerWallet.addr, encodedItems3, minterLabel);
 
-        vm.expectRevert("TokenNotExist");
+        vm.expectRevert(TokenNotExist.selector);
         vm.prank(playerWallet.addr);
         itemBoundProxy.mint(encodedItems3, 1, true, _nonce, _signature);
     }
@@ -507,7 +522,7 @@ contract ItemBoundV1Test is StdCheats, Test {
         _amount3[0] = 1;
         _amount3[1] = 1;
 
-        vm.expectRevert("ERC1155: duplicate ID");
+        vm.expectRevert(DuplicateID.selector);
         vm.prank(playerWallet.addr);
         itemBoundProxy.safeBatchTransferFrom(playerWallet.addr, minterWallet.addr, _itemIds3, _amount3, "");
 
@@ -519,7 +534,7 @@ contract ItemBoundV1Test is StdCheats, Test {
     }
 
     function testTokenURIIfTokenIdNotExist() public {
-        vm.expectRevert("TokenNotExist");
+        vm.expectRevert(TokenNotExist.selector);
         itemBoundProxy.uri(1);
     }
 
@@ -528,7 +543,12 @@ contract ItemBoundV1Test is StdCheats, Test {
         uint256 _level = generateRandomLevel(); // level 1-10
         TestLibItems.Tier _tier = generateRandomTier(); // tier 0-4
 
-        LibItems.TokenCreate memory _token = LibItems.TokenCreate({ tokenId: _tokenId, tokenUri: "" });
+        LibItems.TokenCreate memory _token = LibItems.TokenCreate({
+            tokenId: _tokenId,
+            tokenUri: "",
+            receiver: address(0),
+            feeBasisPoints: 0
+        });
 
         itemBoundProxy.addNewToken(_token);
 
@@ -542,7 +562,9 @@ contract ItemBoundV1Test is StdCheats, Test {
 
         LibItems.TokenCreate memory _token = LibItems.TokenCreate({
             tokenId: _tokenId,
-            tokenUri: "ipfs://specific-token-uri.com"
+            tokenUri: "ipfs://specific-token-uri.com",
+            receiver: address(0),
+            feeBasisPoints: 0
         });
 
         itemBoundProxy.addNewToken(_token);
@@ -565,7 +587,12 @@ contract ItemBoundV1Test is StdCheats, Test {
         uint256 _level = generateRandomLevel(); // level 1-10
         TestLibItems.Tier _tier = generateRandomTier(); // tier 0-4
 
-        LibItems.TokenCreate memory _token = LibItems.TokenCreate({ tokenId: _tokenId, tokenUri: "" });
+        LibItems.TokenCreate memory _token = LibItems.TokenCreate({
+            tokenId: _tokenId,
+            tokenUri: "",
+            receiver: address(0),
+            feeBasisPoints: 0
+        });
 
         itemBoundProxy.addNewToken(_token);
 
@@ -594,7 +621,12 @@ contract ItemBoundV1Test is StdCheats, Test {
         uint256 _level = generateRandomLevel(); // level 1-10
         TestLibItems.Tier _tier = generateRandomTier(); // tier 0-4
 
-        LibItems.TokenCreate memory _token = LibItems.TokenCreate({ tokenId: _tokenId, tokenUri: "" });
+        LibItems.TokenCreate memory _token = LibItems.TokenCreate({
+            tokenId: _tokenId,
+            tokenUri: "",
+            receiver: address(0),
+            feeBasisPoints: 0
+        });
 
         itemBoundProxy.addNewToken(_token);
 
@@ -730,14 +762,14 @@ contract ItemBoundV1Test is StdCheats, Test {
         assertEq(itemBoundProxy.uri(_tokenIds[23]), "https://something-new.com/232");
 
         vm.prank(playerWallet.addr);
-        LibItems.TokenReturn[] memory allTokensInfo = itemBoundProxy.getAllItems();
+        LibItems.TokenReturn[] memory allTokensInfo = itemBoundProxy.getAllItems(playerWallet.addr);
         assertEq(allTokensInfo.length, 1300);
 
         vm.prank(playerWallet.addr);
         itemBoundProxy.safeTransferFrom(playerWallet.addr, minterWallet.addr, _tokenIds[24], 1, "");
 
         vm.prank(playerWallet.addr);
-        LibItems.TokenReturn[] memory allTokensInfo2 = itemBoundProxy.getAllItems();
+        LibItems.TokenReturn[] memory allTokensInfo2 = itemBoundProxy.getAllItems(playerWallet.addr);
         assertEq(allTokensInfo2.length, 1299);
 
         for (uint256 i = 0; i < allTokensInfo.length; i++) {
@@ -756,7 +788,7 @@ contract ItemBoundV1Test is StdCheats, Test {
         }
 
         vm.prank(minterWallet.addr);
-        LibItems.TokenReturn[] memory allTokensInfo3 = itemBoundProxy.getAllItems();
+        LibItems.TokenReturn[] memory allTokensInfo3 = itemBoundProxy.getAllItems(minterWallet.addr);
         assertEq(allTokensInfo3.length, 1);
     }
 
@@ -768,13 +800,13 @@ contract ItemBoundV1Test is StdCheats, Test {
         itemBoundProxy.updateTokenUri(_tokenIds[23], newTokenUri);
         assertEq(itemBoundProxy.uri(_tokenIds[23]), "https://something-new.com/232");
 
-        LibItems.TokenReturn[] memory allTokensInfo = itemBoundProxy.getAllItemsAdmin(playerWallet.addr);
+        LibItems.TokenReturn[] memory allTokensInfo = itemBoundProxy.getAllItems(playerWallet.addr);
         assertEq(allTokensInfo.length, 1300);
 
         vm.prank(playerWallet.addr);
         itemBoundProxy.safeTransferFrom(playerWallet.addr, minterWallet.addr, _tokenIds[24], 1, "");
 
-        LibItems.TokenReturn[] memory allTokensInfo2 = itemBoundProxy.getAllItemsAdmin(playerWallet.addr);
+        LibItems.TokenReturn[] memory allTokensInfo2 = itemBoundProxy.getAllItems(playerWallet.addr);
         assertEq(allTokensInfo2.length, 1300);
 
         for (uint256 i = 0; i < allTokensInfo.length; i++) {
@@ -792,7 +824,7 @@ contract ItemBoundV1Test is StdCheats, Test {
             }
         }
 
-        LibItems.TokenReturn[] memory allTokensInfo3 = itemBoundProxy.getAllItemsAdmin(minterWallet.addr);
+        LibItems.TokenReturn[] memory allTokensInfo3 = itemBoundProxy.getAllItems(minterWallet.addr);
         assertEq(allTokensInfo3.length, 1300);
     }
 }
