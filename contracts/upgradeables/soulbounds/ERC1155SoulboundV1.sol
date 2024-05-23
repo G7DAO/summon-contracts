@@ -206,7 +206,7 @@ contract ERC1155SoulboundV1 is
         _unpause();
     }
 
-    function addNewToken(LibItems.TokenCreate calldata _token) public onlyRole(DEV_CONFIG_ROLE) {
+    function addNewToken(LibItems.TokenCreateLegacy calldata _token) public onlyRole(DEV_CONFIG_ROLE) {
         if (bytes(_token.tokenUri).length > 0) {
             tokenUris[_token.tokenId] = _token.tokenUri;
         }
@@ -217,7 +217,7 @@ contract ERC1155SoulboundV1 is
         emit TokenAdded(_token.tokenId);
     }
 
-    function addNewTokens(LibItems.TokenCreate[] calldata _tokens) external onlyRole(DEV_CONFIG_ROLE) {
+    function addNewTokens(LibItems.TokenCreateLegacy[] calldata _tokens) external onlyRole(DEV_CONFIG_ROLE) {
         for (uint256 i = 0; i < _tokens.length; i++) {
             addNewToken(_tokens[i]);
         }
@@ -450,7 +450,7 @@ contract ERC1155SoulboundV1 is
         _removeWhitelistSigner(signer);
     }
 
-    function addNewTokenWithRoyalty(LibItems.TokenCreateWithRoyalty calldata _token) public onlyRole(DEV_CONFIG_ROLE) {
+    function addNewTokenWithRoyalty(LibItems.TokenCreate calldata _token) public onlyRole(DEV_CONFIG_ROLE) {
         if (_token.receiver == address(0)) {
             revert("ReceiverAddressZero");
         }
@@ -466,9 +466,7 @@ contract ERC1155SoulboundV1 is
         _setTokenRoyalty(_token.tokenId, _token.receiver, uint96(_token.feeBasisPoints));
     }
 
-    function addNewTokensWithRoyalty(
-        LibItems.TokenCreateWithRoyalty[] calldata _tokens
-    ) external onlyRole(DEV_CONFIG_ROLE) {
+    function addNewTokensWithRoyalty(LibItems.TokenCreate[] calldata _tokens) external onlyRole(DEV_CONFIG_ROLE) {
         for (uint256 i = 0; i < _tokens.length; i++) {
             addNewTokenWithRoyalty(_tokens[i]);
         }

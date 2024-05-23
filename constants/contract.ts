@@ -134,5 +134,5 @@ export enum CONTRACT_UPGRADABLE_NAME {
 
 export enum CONTRACT_EXTENSION_NAME {
     DirectListingExtension = 'DirectListingExtension',
-    EnglishAuctionsExtension = 'EnglishAuctionsExtension'
+    EnglishAuctionsExtension = 'EnglishAuctionsExtension',
 }

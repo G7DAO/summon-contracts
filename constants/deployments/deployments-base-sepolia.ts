@@ -1,4 +1,4 @@
-import { BUIDLArgs, ERC20Args, ERC20DecimalsAgs } from '@constants/constructor-args';
+import { AvatarBoundV1Args, ERC20DecimalsAgs, ItemBoundArgs, LevelsBoundV1Args } from '@constants/constructor-args';
 import { CONTRACT_TYPE, CONTRACT_UPGRADABLE_FILE_NAME, CONTRACT_UPGRADABLE_NAME } from '@constants/contract';
 import { TENANT } from '@constants/tenant';
 
@@ -21,5 +21,65 @@ export const BASE_SEPOLIA_CONTRACTS: DeploymentContract[] = [
         dependencies: [],
         functionCalls: [],
         args: ERC20DecimalsAgs.TESTNET,
+    },
+    {
+        contractFileName: CONTRACT_UPGRADABLE_FILE_NAME.Levels,
+        type: CONTRACT_TYPE.Levels,
+        name: CONTRACT_UPGRADABLE_NAME.Levels,
+        chain,
+        networkType,
+        tenants: [TENANT.Game7],
+        verify: true,
+        upgradable: true,
+        dependencies: [CONTRACT_UPGRADABLE_NAME.Items, CONTRACT_UPGRADABLE_NAME.Avatars],
+        args: LevelsBoundV1Args.TESTNET,
+    },
+    {
+        contractFileName: CONTRACT_UPGRADABLE_FILE_NAME.Avatars,
+        type: CONTRACT_TYPE.Avatars,
+        name: CONTRACT_UPGRADABLE_NAME.Avatars,
+        chain,
+        networkType,
+        tenants: [TENANT.Game7],
+        verify: true,
+        upgradable: true,
+        dependencies: [CONTRACT_UPGRADABLE_NAME.Items, CONTRACT_UPGRADABLE_NAME.Levels],
+        functionCalls: [
+            {
+                contractName: CONTRACT_UPGRADABLE_NAME.Avatars,
+                functionName: 'setDefaultItemId',
+                args: [10001],
+            },
+            {
+                contractName: CONTRACT_UPGRADABLE_NAME.Avatars,
+                functionName: 'setSpecialItemId',
+                args: [10002],
+            },
+        ],
+        args: AvatarBoundV1Args.TESTNET,
+    },
+    {
+        contractFileName: CONTRACT_UPGRADABLE_FILE_NAME.ERC1155RoyaltiesSoulbound,
+        type: CONTRACT_TYPE.Items,
+        name: CONTRACT_UPGRADABLE_NAME.Items,
+        chain,
+        networkType,
+        tenants: [TENANT.Game7],
+        verify: true,
+        upgradable: true,
+        dependencies: [CONTRACT_UPGRADABLE_NAME.Avatars],
+        functionCalls: [
+            {
+                contractName: CONTRACT_UPGRADABLE_NAME.Items,
+                functionName: 'grantRole',
+                args: ['MINTER_ROLE', `CONTRACT_${CONTRACT_UPGRADABLE_NAME.Avatars}`],
+            },
+            {
+                contractName: CONTRACT_UPGRADABLE_NAME.Items,
+                functionName: 'grantRole',
+                args: ['MINTER_ROLE', `CONTRACT_${CONTRACT_UPGRADABLE_NAME.Levels}`],
+            },
+        ],
+        args: ItemBoundArgs.TESTNET,
     },
 ];

@@ -43,6 +43,15 @@ import { Achievo1155SoulboundUpgradeable } from "../ercs/extensions/Achievo1155S
 import { ERCWhitelistSignatureUpgradeable } from "../ercs/ERCWhitelistSignatureUpgradeable.sol";
 import { LibItems } from "../../libraries/LibItems.sol";
 
+error InvalidSeed();
+error InvalidInput();
+error AddressIsZero();
+error ExceedMaxMint();
+error MissingRole();
+error TokenNotExist();
+error TokenMintPaused();
+error DuplicateID();
+
 contract ERC1155RoyaltiesSoulboundV2 is
     Initializable,
     ERC1155BurnableUpgradeable,
@@ -76,6 +85,14 @@ contract ERC1155RoyaltiesSoulboundV2 is
 
     mapping(address => mapping(uint256 => bool)) private tokenIdProcessed;
 
+    modifier maxPerMintCheck(uint256 amount) {
+        if (amount > MAX_PER_MINT) {
+            revert ExceedMaxMint();
+        }
+        _;
+    }
+
+    event Minted(address indexed to, uint256[] tokenIds, uint256 amount, bool soulbound);
     event MintedId(address indexed to, uint256 indexed tokenId, uint256 amount, bool soulbound);
     event TokenAdded(uint256 indexed tokenId);
 
@@ -99,7 +116,9 @@ contract ERC1155RoyaltiesSoulboundV2 is
         __Achievo1155SoulboundUpgradable_init();
         __ERCWhitelistSignatureUpgradeable_init();
 
-        require(devWallet != address(0), "AddressIsZero");
+        if (devWallet == address(0)) {
+            revert AddressIsZero();
+        }
 
         _grantRole(DEFAULT_ADMIN_ROLE, devWallet);
         _grantRole(MINTER_ROLE, devWallet);
@@ -116,16 +135,20 @@ contract ERC1155RoyaltiesSoulboundV2 is
         if (_isPaused) _pause();
     }
 
-    function getAllItems() public view returns (LibItems.TokenReturn[] memory) {
+    function getAllItems(address _owner) public view returns (LibItems.TokenReturn[] memory) {
+        bool isAdmin = hasRole(MINTER_ROLE, _msgSender());
+        if (!isAdmin && _owner != _msgSender()) {
+            revert MissingRole();
+        }
         uint256 totalTokens = itemIds.length;
         LibItems.TokenReturn[] memory tokenReturns = new LibItems.TokenReturn[](totalTokens);
 
         uint index;
         for (uint i = 0; i < totalTokens; i++) {
             uint256 tokenId = itemIds[i];
-            uint256 amount = balanceOf(_msgSender(), tokenId);
+            uint256 amount = balanceOf(_owner, tokenId);
 
-            if (amount > 0) {
+            if (isAdmin || amount > 0) {
                 LibItems.TokenReturn memory tokenReturn = LibItems.TokenReturn({
                     tokenId: tokenId,
                     tokenUri: uri(tokenId),
@@ -147,18 +170,41 @@ contract ERC1155RoyaltiesSoulboundV2 is
 
     function isTokenExist(uint256 _tokenId) public view returns (bool) {
         if (!tokenExists[_tokenId]) {
-            revert("TokenNotExist");
+            revert TokenNotExist();
         }
         return true;
     }
 
-    function decodeData(bytes calldata _data) public view onlyRole(DEV_CONFIG_ROLE) returns (uint256[] memory) {
+    function getChainID() public view returns (uint256) {
+        uint256 id;
+        assembly {
+            id := chainid()
+        }
+        return id;
+    }
+
+    function _verifyContractChainIdAndDecode(bytes calldata data) private view returns (uint256[] memory) {
+        uint256 currentChainId = getChainID();
+        (address contractAddress, uint256 chainId, uint256[] memory tokenIds) = _decodeData(data);
+
+        if (chainId != currentChainId || contractAddress != address(this)) {
+            revert InvalidSeed();
+        }
+        return tokenIds;
+    }
+
+    function decodeData(
+        bytes calldata _data
+    ) public view onlyRole(DEV_CONFIG_ROLE) returns (address, uint256, uint256[] memory) {
         return _decodeData(_data);
     }
 
-    function _decodeData(bytes calldata _data) private view returns (uint256[] memory) {
-        uint256[] memory itemIds = abi.decode(_data, (uint256[]));
-        return itemIds;
+    function _decodeData(bytes calldata _data) private view returns (address, uint256, uint256[] memory) {
+        (address contractAddress, uint256 chainId, uint256[] memory _itemIds) = abi.decode(
+            _data,
+            (address, uint256, uint256[])
+        );
+        return (contractAddress, chainId, _itemIds);
     }
 
     function pause() external onlyRole(MANAGER_ROLE) {
@@ -174,6 +220,10 @@ contract ERC1155RoyaltiesSoulboundV2 is
             tokenUris[_token.tokenId] = _token.tokenUri;
         }
 
+        if (_token.receiver != address(0)) {
+            _setTokenRoyalty(_token.tokenId, _token.receiver, uint96(_token.feeBasisPoints));
+        }
+
         tokenExists[_token.tokenId] = true;
 
         itemIds.push(_token.tokenId);
@@ -186,30 +236,6 @@ contract ERC1155RoyaltiesSoulboundV2 is
         }
     }
 
-    function addNewTokenWithRoyalty(LibItems.TokenCreateWithRoyalty calldata _token) public onlyRole(DEV_CONFIG_ROLE) {
-        if (_token.receiver == address(0)) {
-            revert("ReceiverAddressZero");
-        }
-
-        if (bytes(_token.tokenUri).length > 0) {
-            tokenUris[_token.tokenId] = _token.tokenUri;
-        }
-
-        tokenExists[_token.tokenId] = true;
-
-        itemIds.push(_token.tokenId);
-
-        _setTokenRoyalty(_token.tokenId, _token.receiver, uint96(_token.feeBasisPoints));
-    }
-
-    function addNewTokensWithRoyalty(
-        LibItems.TokenCreateWithRoyalty[] calldata _tokens
-    ) external onlyRole(DEV_CONFIG_ROLE) {
-        for (uint256 i = 0; i < _tokens.length; i++) {
-            addNewTokenWithRoyalty(_tokens[i]);
-        }
-    }
-
     function updateTokenUri(uint256 _tokenId, string calldata _tokenUri) public onlyRole(DEV_CONFIG_ROLE) {
         tokenUris[_tokenId] = _tokenUri;
     }
@@ -219,7 +245,7 @@ contract ERC1155RoyaltiesSoulboundV2 is
         string[] calldata _tokenUris
     ) public onlyRole(DEV_CONFIG_ROLE) {
         if (_tokenIds.length != _tokenUris.length) {
-            revert("InvalidInput");
+            revert InvalidInput();
         }
         for (uint256 i = 0; i < _tokenIds.length; i++) {
             updateTokenUri(_tokenIds[i], _tokenUris[i]);
@@ -228,6 +254,39 @@ contract ERC1155RoyaltiesSoulboundV2 is
 
     function updateTokenMintPaused(uint256 _tokenId, bool _isTokenMintPaused) public onlyRole(MANAGER_ROLE) {
         isTokenMintPaused[_tokenId] = _isTokenMintPaused;
+    }
+
+    function _mintBatch(address to, uint256[] memory _tokenIds, uint256 amount, bool soulbound) private {
+        for (uint256 i = 0; i < _tokenIds.length; i++) {
+            uint256 _id = _tokenIds[i];
+            isTokenExist(_id);
+            if (isTokenMintPaused[_id]) {
+                revert TokenMintPaused();
+            }
+
+            if (soulbound) {
+                _soulbound(to, _id, amount);
+            }
+
+            _mint(to, _id, amount, "");
+        }
+        emit Minted(to, _tokenIds, amount, soulbound);
+    }
+
+    function mint(
+        bytes calldata data,
+        uint256 amount,
+        bool soulbound,
+        uint256 nonce,
+        bytes calldata signature
+    ) external nonReentrant signatureCheck(_msgSender(), nonce, data, signature) maxPerMintCheck(amount) whenNotPaused {
+        uint256[] memory _tokenIds = _verifyContractChainIdAndDecode(data);
+        _mintBatch(_msgSender(), _tokenIds, amount, soulbound);
+    }
+
+    function adminMint(address to, bytes calldata data, bool soulbound) external onlyRole(MINTER_ROLE) whenNotPaused {
+        uint256[] memory _tokenIds = _verifyContractChainIdAndDecode(data);
+        _mintBatch(to, _tokenIds, 1, soulbound);
     }
 
     function adminMintId(
@@ -239,7 +298,7 @@ contract ERC1155RoyaltiesSoulboundV2 is
         isTokenExist(id);
 
         if (isTokenMintPaused[id]) {
-            revert("TokenMintPaused");
+            revert TokenMintPaused();
         }
 
         if (soulbound) {
@@ -287,7 +346,7 @@ contract ERC1155RoyaltiesSoulboundV2 is
             uint256 id = _ids[i];
 
             if (tokenIdProcessed[_from][id]) {
-                revert("ERC1155: duplicate ID");
+                revert DuplicateID();
             }
 
             tokenIdProcessed[_from][id] = true;
@@ -344,7 +403,7 @@ contract ERC1155RoyaltiesSoulboundV2 is
             uint256 id = tokenIds[i];
 
             if (tokenIdProcessed[to][id]) {
-                revert("ERC1155: duplicate ID");
+                revert DuplicateID();
             }
 
             tokenIdProcessed[to][id] = true;
@@ -372,6 +431,10 @@ contract ERC1155RoyaltiesSoulboundV2 is
         } else {
             return string(abi.encodePacked(baseURI, "/", tokenId.toString()));
         }
+    }
+
+    function updateBaseUri(string memory _baseURI) external onlyRole(DEV_CONFIG_ROLE) {
+        baseURI = _baseURI;
     }
 
     function setRoyaltyInfo(address receiver, uint96 feeBasisPoints) external onlyRole(MANAGER_ROLE) {
