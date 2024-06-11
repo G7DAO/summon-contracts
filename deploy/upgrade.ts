@@ -68,8 +68,6 @@ export default async function (
         throw new Error(`File ${contract.contractName}.sol not found`);
     }
 
-    const relativeContractPath = path.relative('', contractPath);
-
     if (contract.verify) {
         log('Waiting for contract to be confirmed...');
         await achievoContract.deploymentTransaction()?.wait(5); // wait for 5 confirmations
@@ -77,11 +75,15 @@ export default async function (
         log('=====================================================');
         log(`Verifying ${contract.type}(${contract.contractName}) for ${tenant} on ${networkName}`);
         log('=====================================================');
-        await hre.run('verify:verify', {
-            address: contractAddress,
-            contract: `${relativeContractPath}:${contract.contractName}`,
-            constructorArguments: name ? [`${name}${tenant}`, ...restArgs] : restArgs,
-        });
+        try {
+            await hre.run('verify:verify', {
+                address: contractAddress,
+                contract: `${contractPath}:${contract.contractName}`,
+                constructorArguments: name ? [`${name}${tenant}`, ...restArgs] : restArgs,
+            });
+        } catch (error) {
+            console.warn(error);
+        }
     }
 
     // Read the file content

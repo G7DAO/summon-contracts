@@ -2,7 +2,6 @@ export enum CONTRACT_TYPE {
     LegacyAvatar = 'LegacyAvatar',
     Avatars = 'Avatars',
     Items = 'Items',
-    RewardItems = 'RewardItems',
     Levels = 'Levels',
     FreeMint = 'FreeMint',
     Paymaster = 'Paymaster',
@@ -46,7 +45,6 @@ export enum CONTRACT_FILE_NAME {
     GameSummary = 'GameSummary',
     Avatars = 'AvatarBound',
     ERC1155RoyaltiesSoulbound = 'ERC1155RoyaltiesSoulbound',
-    ERC1155RewardSoulbound = 'ERC1155RewardSoulbound',
     Levels = 'LevelsBound',
     FreeMint = 'FreeMint',
     ERC20ChainlinkPaymaster = 'ERC20ChainlinkPaymaster',
@@ -75,7 +73,6 @@ export enum CONTRACT_UPGRADABLE_FILE_NAME {
     Staker = 'ERC20StakeV1',
     Bridge = 'ERC20BridgeV1',
     BurnableToken = 'BurnableTokenV1',
-    ERC1155RewardSoulbound = 'ERC1155RewardSoulboundV1',
     Marketplace = 'Marketplace',
 }
 
@@ -90,7 +87,6 @@ export enum CONTRACT_UPGRADABLE_FILE_NAME_V2 {
 export enum CONTRACT_NAME {
     Avatars = 'Avatars',
     Items = 'Items',
-    RewardItems = 'RewardItems',
     Levels = 'Levels',
     FreeMint = 'FreeMint',
     PaymasterChainlink = 'PaymasterChainlink',
@@ -128,7 +124,6 @@ export enum CONTRACT_UPGRADABLE_NAME {
     BridgeZkSync = 'BridgeUpgradeableZkSync',
     ZkSpork = 'ZkSpork',
     SkillTree = 'SkillTreeUpgradable',
-    RewardItemsUpgradeable = 'RewardItemsUpgradeable',
     Marketplace = 'Marketplace',
 }
 

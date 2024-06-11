@@ -37,6 +37,8 @@ export const createDefaultFolders = (chain: string) => {
 };
 
 export const getFilePath = (folderPath: string, fileName: string): string | null => {
+    const projectRoot = path.resolve(__dirname, '..'); // Assuming your project root is one directory above the current file
+
     const entries = fs.readdirSync(folderPath, { withFileTypes: true });
 
     for (const entry of entries) {
@@ -44,9 +46,9 @@ export const getFilePath = (folderPath: string, fileName: string): string | null
 
         if (entry.isDirectory()) {
             const nestedFilePath = getFilePath(resolvedPath, fileName);
-            if (nestedFilePath) return nestedFilePath;
+            if (nestedFilePath) return path.relative(projectRoot, nestedFilePath);
         } else if (entry.isFile() && entry.name === fileName) {
-            return resolvedPath;
+            return path.relative(projectRoot, resolvedPath);
         }
     }
 
