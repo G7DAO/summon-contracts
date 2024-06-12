@@ -6,7 +6,6 @@ import {
     BurnableTokenV1Args,
     ERC20ChainlinkPaymasterArgs,
     ItemBoundArgs,
-    ItemsRewardBoundArgs,
     LevelsBoundArgs,
     LevelsBoundV1Args,
     LootDropArgs,
@@ -126,125 +125,6 @@ export const ZKSYNC_MAINNET_CONTRACTS: DeploymentContract[] = [
             },
         ],
         args: ItemBoundArgs.MAINNET,
-    },
-    {
-        contractFileName: CONTRACT_FILE_NAME.ERC1155RewardSoulbound,
-        type: CONTRACT_TYPE.RewardItems,
-        name: CONTRACT_NAME.RewardItems,
-        chain,
-        networkType,
-        tenants: [TENANT.Game7],
-        verify: true,
-        upgradable: false,
-        dependencies: [],
-        functionCalls: [
-            {
-                contractName: CONTRACT_NAME.RewardItems,
-                functionName: 'addNewTokens',
-                args: [
-                    [
-                        {
-                            tokenId: 1,
-                            rewardAmount: 0,
-                            rewardERC20: '0x4b6021A15cB4E76DD40dE7B0d316A6a7fb613C05',
-                            isEther: false,
-                            tokenUri:
-                                'https://achievo.mypinata.cloud/ipfs/QmT86CwHwRzUh9zBj6qvDB7P2Gn2wUK6BnJrn2RzESq3e3',
-                        },
-                        {
-                            tokenId: 2,
-                            rewardAmount: 250,
-                            rewardERC20: '0x4b6021A15cB4E76DD40dE7B0d316A6a7fb613C05',
-                            isEther: false,
-                            tokenUri:
-                                'https://achievo.mypinata.cloud/ipfs/QmUozJH2gikBkWrn3y8ei2Tqg4KjW3edQ3aq8mdFruS8oj/dice2.svg',
-                        },
-                        {
-                            tokenId: 3,
-                            rewardAmount: 150,
-                            rewardERC20: '0x4b6021A15cB4E76DD40dE7B0d316A6a7fb613C05',
-                            isEther: false,
-                            tokenUri:
-                                'https://achievo.mypinata.cloud/ipfs/QmUozJH2gikBkWrn3y8ei2Tqg4KjW3edQ3aq8mdFruS8oj/dice3.svg',
-                        },
-                        {
-                            tokenId: 4,
-                            rewardAmount: 100,
-                            rewardERC20: '0x4b6021A15cB4E76DD40dE7B0d316A6a7fb613C05',
-                            isEther: false,
-                            tokenUri:
-                                'https://achievo.mypinata.cloud/ipfs/QmUozJH2gikBkWrn3y8ei2Tqg4KjW3edQ3aq8mdFruS8oj/dice4.svg',
-                        },
-                        {
-                            tokenId: 5,
-                            rewardAmount: 75,
-                            rewardERC20: '0x4b6021A15cB4E76DD40dE7B0d316A6a7fb613C05',
-                            isEther: false,
-                            tokenUri:
-                                'https://achievo.mypinata.cloud/ipfs/QmUozJH2gikBkWrn3y8ei2Tqg4KjW3edQ3aq8mdFruS8oj/dice5.svg',
-                        },
-                        {
-                            tokenId: 6,
-                            rewardAmount: 50,
-                            rewardERC20: '0x4b6021A15cB4E76DD40dE7B0d316A6a7fb613C05',
-                            isEther: false,
-                            tokenUri:
-                                'https://achievo.mypinata.cloud/ipfs/QmUozJH2gikBkWrn3y8ei2Tqg4KjW3edQ3aq8mdFruS8oj/dice6.svg',
-                        },
-                        {
-                            tokenId: 7,
-                            rewardAmount: 25,
-                            rewardERC20: '0x4b6021A15cB4E76DD40dE7B0d316A6a7fb613C05',
-                            isEther: false,
-                            tokenUri:
-                                'https://achievo.mypinata.cloud/ipfs/QmUozJH2gikBkWrn3y8ei2Tqg4KjW3edQ3aq8mdFruS8oj/dice7.svg',
-                        },
-                        {
-                            tokenId: 8,
-                            rewardAmount: 50,
-                            rewardERC20: '0x4b6021A15cB4E76DD40dE7B0d316A6a7fb613C05',
-                            isEther: false,
-                            tokenUri:
-                                'https://achievo.mypinata.cloud/ipfs/QmUozJH2gikBkWrn3y8ei2Tqg4KjW3edQ3aq8mdFruS8oj/dice8.svg',
-                        },
-                        {
-                            tokenId: 9,
-                            rewardAmount: 75,
-                            rewardERC20: '0x4b6021A15cB4E76DD40dE7B0d316A6a7fb613C05',
-                            isEther: false,
-                            tokenUri:
-                                'https://achievo.mypinata.cloud/ipfs/QmUozJH2gikBkWrn3y8ei2Tqg4KjW3edQ3aq8mdFruS8oj/dice9.svg',
-                        },
-                        {
-                            tokenId: 10,
-                            rewardAmount: 100,
-                            rewardERC20: '0x4b6021A15cB4E76DD40dE7B0d316A6a7fb613C05',
-                            isEther: false,
-                            tokenUri:
-                                'https://achievo.mypinata.cloud/ipfs/QmUozJH2gikBkWrn3y8ei2Tqg4KjW3edQ3aq8mdFruS8oj/dice10.svg',
-                        },
-                        {
-                            tokenId: 11,
-                            rewardAmount: 150,
-                            rewardERC20: '0x4b6021A15cB4E76DD40dE7B0d316A6a7fb613C05',
-                            isEther: false,
-                            tokenUri:
-                                'https://achievo.mypinata.cloud/ipfs/QmUozJH2gikBkWrn3y8ei2Tqg4KjW3edQ3aq8mdFruS8oj/dice11.svg',
-                        },
-                        {
-                            tokenId: 12,
-                            rewardAmount: 200,
-                            rewardERC20: '0x4b6021A15cB4E76DD40dE7B0d316A6a7fb613C05',
-                            isEther: false,
-                            tokenUri:
-                                'https://achievo.mypinata.cloud/ipfs/QmUozJH2gikBkWrn3y8ei2Tqg4KjW3edQ3aq8mdFruS8oj/dice12.svg',
-                        },
-                    ],
-                ],
-                contractAddress: '0x7A82a6944c41AC8b8f15DE40A08967c5cF979881',
-            },
-        ],
-        args: ItemsRewardBoundArgs.MAINNET,
     },
     {
         contractFileName: CONTRACT_FILE_NAME.Levels,

@@ -8,6 +8,8 @@ import 'solidity-coverage';
 // This adds support for typescript paths mappings
 import 'tsconfig-paths/register';
 import '@openzeppelin/hardhat-upgrades';
+import '@nomicfoundation/hardhat-verify';
+
 import { log } from '@helpers/logger';
 import './tasks';
 import { ChainId, NetworkName, rpcUrls } from '@constants/network';

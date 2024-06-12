@@ -103,23 +103,6 @@ export const ItemBoundIronWorksArgs: Soulbound1155Args = {
     },
 };
 
-export const ItemsRewardBoundArgs = {
-    MAINNET: {
-        name: 'Roll For Initiative',
-        symbol: 'R4I',
-        defaultRewardId: 1,
-        isPaused: false,
-        devWallet: 'DEPLOYER_WALLET',
-    },
-    TESTNET: {
-        name: 'Roll For Initiative',
-        symbol: 'R4I',
-        defaultRewardId: 1,
-        isPaused: false,
-        devWallet: 'DEPLOYER_WALLET',
-    },
-};
-
 export const NFTGatingArgs = {
     MAINNET: {
         name: 'Achievo NFT Gating Admin Access',

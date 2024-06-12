@@ -2,18 +2,19 @@ import fs from 'fs';
 import { exec } from 'node:child_process';
 import path from 'path';
 
+import { PROXY_CONTRACT_TYPE } from '@constants/contract';
 import { ChainId, NetworkName, Currency, NetworkExplorer, rpcUrls, NetworkConfigFile } from '@constants/network';
+import { PROXY_ADMIN_ABI_PATH } from '@constants/proxy-deployments';
 import { encryptPrivateKey } from '@helpers/encrypt';
+import { getFilePath } from '@helpers/folder';
 import { log } from '@helpers/logger';
 import { Deployer } from '@matterlabs/hardhat-zksync-deploy';
 import * as ethers from 'ethers';
 import { HardhatRuntimeEnvironment } from 'hardhat/types';
+import { Deployment } from 'types/deployment-type';
 import { Wallet } from 'zksync-ethers';
 
 import getZkWallet from './getWallet';
-import { PROXY_CONTRACT_TYPE } from '@constants/contract';
-import { Deployment } from 'types/deployment-type';
-import { PROXY_ADMIN_ABI_PATH } from '@constants/proxy-deployments';
 
 const { Wallet: EthersWallet } = ethers;
 
@@ -32,7 +33,7 @@ export default async function (
     const networkName = hre.network.name as NetworkName;
     const networkNameKey = Object.keys(NetworkName)[Object.values(NetworkName).indexOf(networkName)]; // get NetworkName Key from Value
     const chainId = ChainId[networkNameKey as keyof typeof ChainId];
-    const rpcUrl = rpcUrls[chainId as keyof typeof rpcUrls];
+    const rpcUrl = rpcUrls[chainId];
     const currency = Currency[networkNameKey as keyof typeof Currency];
     const blockExplorerBaseUrl = NetworkExplorer[networkNameKey as keyof typeof NetworkExplorer];
 
@@ -94,19 +95,30 @@ export default async function (
     log('=====================================================');
 
     if (contract.verify) {
-        await new Promise((resolve, reject) => {
-            const networkConfigFile = NetworkConfigFile[networkNameKey as keyof typeof NetworkConfigFile];
-            exec(
-                `npx hardhat verify --network ${contract.chain} ${contractAddress} --config ${networkConfigFile}`,
-                (error, stdout, stderr) => {
-                    if (error) {
-                        console.warn(error);
-                        reject(error);
-                    }
-                    resolve(stdout ? stdout : stderr);
+        try {
+            await new Promise((resolve, reject) => {
+                const networkConfigFile = NetworkConfigFile[networkNameKey as keyof typeof NetworkConfigFile];
+
+                const contractPath = getFilePath('contracts', `${contract.contractFileName}.sol`);
+
+                if (!contractPath) {
+                    throw new Error(`File ${contract.contractFileName}.sol not found`);
                 }
-            );
-        });
+
+                exec(
+                    `npx hardhat verify --network ${contract.chain} ${contractAddress} --contract ${contractPath}:${contract.contractFileName} --config ${networkConfigFile}`,
+                    (error, stdout, stderr) => {
+                        if (error) {
+                            console.log('error->', error);
+                            reject(error);
+                        }
+                        resolve(stdout ? stdout : stderr);
+                    }
+                );
+            });
+        } catch (error) {
+            console.warn('error::', error);
+        }
     }
 
     // Read the file content
