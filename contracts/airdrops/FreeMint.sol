@@ -24,9 +24,9 @@ pragma solidity ^0.8.17;
 import "@openzeppelin/contracts/token/ERC721/extensions/ERC721Enumerable.sol";
 import "@openzeppelin/contracts/token/ERC721/extensions/ERC721URIStorage.sol";
 import "@openzeppelin/contracts/access/AccessControl.sol";
-import "@openzeppelin/contracts/utils/Counters.sol";
-import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
+import "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
 import "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
+import "@openzeppelin/contracts/utils/cryptography/MessageHashUtils.sol";
 
 contract FreeMint is ERC721URIStorage, ERC721Enumerable, AccessControl, ReentrancyGuard {
     bytes32 public constant MINTER_ROLE = keccak256("MINTER_ROLE");
@@ -51,8 +51,7 @@ contract FreeMint is ERC721URIStorage, ERC721Enumerable, AccessControl, Reentran
     event FreeMinted(address indexed to);
     event NFTRevealed(uint256 indexed tokenId);
 
-    using Counters for Counters.Counter;
-    Counters.Counter private _tokenIdCounter;
+    uint256 private _tokenIdCounter;
 
     modifier noLocked() {
         require(LOCKED_CONTRACT == false, "OpenMintZk: Sorry, this contract is locked");
@@ -115,7 +114,7 @@ contract FreeMint is ERC721URIStorage, ERC721Enumerable, AccessControl, Reentran
 
     function recoverSigner(uint256 nonce, bytes memory signature) public view returns (address) {
         bytes32 message = keccak256(abi.encodePacked(msg.sender, nonce));
-        bytes32 hash = ECDSA.toEthSignedMessageHash(message);
+        bytes32 hash = MessageHashUtils.toEthSignedMessageHash(message);
         address receivedAddress = ECDSA.recover(hash, signature);
         return receivedAddress;
     }
@@ -123,11 +122,11 @@ contract FreeMint is ERC721URIStorage, ERC721Enumerable, AccessControl, Reentran
     function mint(address to) private {
         require(to != address(0), "OpenMintZk: mint to the zero address");
         require(!addressesMinted[to], "OpenMintZk: Sorry, This address already has a token");
-        uint256 tokenId = _tokenIdCounter.current();
+        uint256 tokenId = _tokenIdCounter;
         _safeMint(to, tokenId);
         _setTokenURI(tokenId, unrevealedURI);
         addressesMinted[to] = true;
-        _tokenIdCounter.increment();
+        _tokenIdCounter++;
         emit FreeMinted(to);
     }
 
@@ -176,17 +175,16 @@ contract FreeMint is ERC721URIStorage, ERC721Enumerable, AccessControl, Reentran
         }
     }
 
-    function _beforeTokenTransfer(
-        address from,
+    function _update(
         address to,
         uint256 tokenId,
-        uint256 batch
-    ) internal override(ERC721, ERC721Enumerable) {
-        super._beforeTokenTransfer(from, to, tokenId, batch);
+        address auth
+    ) internal override(ERC721, ERC721Enumerable) returns (address) {
+        return super._update(to, tokenId, auth);
     }
 
-    function _burn(uint256 tokenId) internal override(ERC721, ERC721URIStorage) nonReentrant {
-        super._burn(tokenId);
+    function _increaseBalance(address account, uint128 value) internal override(ERC721, ERC721Enumerable) {
+        super._increaseBalance(account, value);
     }
 
     function _baseURI() internal view override returns (string memory) {
@@ -213,5 +211,10 @@ contract FreeMint is ERC721URIStorage, ERC721Enumerable, AccessControl, Reentran
         bytes4 interfaceId
     ) public view override(ERC721URIStorage, ERC721Enumerable, AccessControl) returns (bool) {
         return super.supportsInterface(interfaceId);
+    }
+
+    // Function to check if a token exists
+    function _exists(uint256 tokenId) internal view returns (bool) {
+        return _ownerOf(tokenId) != address(0);
     }
 }

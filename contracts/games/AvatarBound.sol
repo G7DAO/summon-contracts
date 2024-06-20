@@ -25,8 +25,8 @@ import { ERC721URIStorage } from "@openzeppelin/contracts/token/ERC721/extension
 import { ERC721Enumerable } from "@openzeppelin/contracts/token/ERC721/extensions/ERC721Enumerable.sol";
 import { IERC721 } from "@openzeppelin/contracts/token/ERC721/IERC721.sol";
 import { AccessControl } from "@openzeppelin/contracts/access/AccessControl.sol";
-import { Pausable } from "@openzeppelin/contracts/security/Pausable.sol";
-import { ReentrancyGuard } from "@openzeppelin/contracts/security/ReentrancyGuard.sol";
+import { Pausable } from "@openzeppelin/contracts/utils/Pausable.sol";
+import { ReentrancyGuard } from "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
 import { ECDSA } from "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
 import { Strings } from "@openzeppelin/contracts/utils/Strings.sol";
 
@@ -387,23 +387,21 @@ contract AvatarBound is
         emit CompoundURIChanged(_compoundURI, _msgSender());
     }
 
-    function _beforeTokenTransfer(
-        address from,
+    function _update(
         address to,
         uint256 tokenId,
-        uint256 batch
-    ) internal override(ERC721, ERC721Enumerable) soulboundAddressCheck(from) {
-        super._beforeTokenTransfer(from, to, tokenId, batch);
+        address auth
+    ) internal override(ERC721, ERC721Enumerable) soulboundAddressCheck(_ownerOf(tokenId)) returns (address) {
+        return super._update(to, tokenId, auth);
+    }
+
+    function _increaseBalance(address account, uint128 value) internal override(ERC721, ERC721Enumerable) {
+        super._increaseBalance(account, value);
     }
 
     function transferFrom(address from, address to, uint256 tokenId) public override(IERC721, ERC721) nonReentrant {
         revert("You can't transfer this token");
         super.transferFrom(from, to, tokenId);
-    }
-
-    function safeTransferFrom(address from, address to, uint256 tokenId) public override(IERC721, ERC721) nonReentrant {
-        revert("You can't transfer this token");
-        super.safeTransferFrom(from, to, tokenId, "");
     }
 
     function safeTransferFrom(
@@ -415,8 +413,6 @@ contract AvatarBound is
         revert("You can't transfer this token");
         super._safeTransfer(from, to, tokenId, data);
     }
-
-    function _burn(uint256 tokenId) internal override(ERC721, ERC721URIStorage) {}
 
     function tokenURI(uint256 tokenId) public view override(ERC721, ERC721URIStorage) returns (string memory) {
         if (compoundURIEnabled) {

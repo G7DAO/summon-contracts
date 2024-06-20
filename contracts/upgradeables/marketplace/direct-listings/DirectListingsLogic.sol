@@ -10,7 +10,7 @@ import "@openzeppelin/contracts/token/ERC1155/IERC1155.sol";
 import "@openzeppelin/contracts/token/ERC721/IERC721.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/interfaces/IERC2981.sol";
-import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
+import "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
 
 // ====== Internal imports ======
 import { ERCWhitelistSignature } from "../../../ercs/ERCWhitelistSignature.sol";
@@ -159,7 +159,12 @@ contract DirectListingsLogic is IDirectListings, ReentrancyGuard, ERC2771Context
     function updateListing(
         uint256 _listingId,
         ListingParameters memory _params
-    ) external onlyExistingListing(_listingId) onlyAssetRole(_params.assetContract) onlyListingCreator(_msgSender(), _listingId) {
+    )
+        external
+        onlyExistingListing(_listingId)
+        onlyAssetRole(_params.assetContract)
+        onlyListingCreator(_msgSender(), _listingId)
+    {
         _updateListing(_listingId, _params, _msgSender());
     }
 
@@ -168,7 +173,13 @@ contract DirectListingsLogic is IDirectListings, ReentrancyGuard, ERC2771Context
         uint256 _listingId,
         ListingParameters memory _params,
         address listingCreator
-    ) external onlyManagerRole onlyExistingListing(_listingId) onlyAssetRole(_params.assetContract) onlyListingCreator(listingCreator, _listingId) {
+    )
+        external
+        onlyManagerRole
+        onlyExistingListing(_listingId)
+        onlyAssetRole(_params.assetContract)
+        onlyListingCreator(listingCreator, _listingId)
+    {
         _updateListing(_listingId, _params, listingCreator);
     }
 
@@ -234,12 +245,14 @@ contract DirectListingsLogic is IDirectListings, ReentrancyGuard, ERC2771Context
     }
 
     /// @notice Cancel a listing.
-    function cancelListing(uint256 _listingId) external onlyExistingListing(_listingId) onlyListingCreator(_msgSender(), _listingId) {
-        if(_directListingsStorage().listings[_listingId].status == IDirectListings.Status.COMPLETED) {
+    function cancelListing(
+        uint256 _listingId
+    ) external onlyExistingListing(_listingId) onlyListingCreator(_msgSender(), _listingId) {
+        if (_directListingsStorage().listings[_listingId].status == IDirectListings.Status.COMPLETED) {
             revert("Marketplace: cannot cancel a completed listing.");
         }
 
-        if(_directListingsStorage().listings[_listingId].status == IDirectListings.Status.CANCELLED) {
+        if (_directListingsStorage().listings[_listingId].status == IDirectListings.Status.CANCELLED) {
             revert("Marketplace: listing already cancelled.");
         }
         _directListingsStorage().listings[_listingId].status = IDirectListings.Status.CANCELLED;
@@ -249,10 +262,10 @@ contract DirectListingsLogic is IDirectListings, ReentrancyGuard, ERC2771Context
 
     /// @notice Cancel a listing.
     function adminCancelListing(address listingCreator, uint256 _listingId) external onlyManagerRole {
-        if(_directListingsStorage().listings[_listingId].status == IDirectListings.Status.COMPLETED) {
+        if (_directListingsStorage().listings[_listingId].status == IDirectListings.Status.COMPLETED) {
             revert("Marketplace: cannot cancel a completed listing.");
         }
-        if(_directListingsStorage().listings[_listingId].status == IDirectListings.Status.CANCELLED) {
+        if (_directListingsStorage().listings[_listingId].status == IDirectListings.Status.CANCELLED) {
             revert("Marketplace: listing already cancelled.");
         }
         _directListingsStorage().listings[_listingId].status = IDirectListings.Status.CANCELLED;
@@ -334,12 +347,7 @@ contract DirectListingsLogic is IDirectListings, ReentrancyGuard, ERC2771Context
         );
 
         require(
-            _validateOwnership(
-                address(this), 
-                listing.assetContract, 
-                listing.tokenId, 
-                _quantity, 
-                listing.tokenType),
+            _validateOwnership(address(this), listing.assetContract, listing.tokenId, _quantity, listing.tokenType),
             "Marketplace: token is not owned by marketplace."
         );
 
@@ -381,75 +389,75 @@ contract DirectListingsLogic is IDirectListings, ReentrancyGuard, ERC2771Context
         );
     }
 
-//    /// @notice Buy NFTs from a listing checking the approval of the seller.
-//    function buyFromListingWithApproval(
-//        uint256 _listingId,
-//        address _buyFor,
-//        uint256 _quantity,
-//        address _currency,
-//        uint256 _expectedTotalPrice
-//    ) external payable nonReentrant onlyExistingListing(_listingId) {
-//        Listing memory listing = _directListingsStorage().listings[_listingId];
-//        address buyer = _msgSender();
-//
-//        require(
-//            !listing.reserved || _directListingsStorage().isBuyerApprovedForListing[_listingId][buyer],
-//            "buyer not approved"
-//        );
-//        require(_quantity > 0 && _quantity <= listing.quantity, "Buying invalid quantity");
-//        require(
-//            block.timestamp < listing.endTimestamp && block.timestamp >= listing.startTimestamp,
-//            "not within sale window."
-//        );
-//
-//        require(
-//            _validateOwnershipAndApproval(
-//                listing.listingCreator,
-//                listing.assetContract,
-//                listing.tokenId,
-//                _quantity,
-//                listing.tokenType
-//            ),
-//            "Marketplace: not owner or approved tokens."
-//        );
-//
-//        uint256 targetTotalPrice;
-//
-//        if (_directListingsStorage().currencyPriceForListing[_listingId][_currency] > 0) {
-//            targetTotalPrice = _quantity * _directListingsStorage().currencyPriceForListing[_listingId][_currency];
-//        } else {
-//            require(_currency == listing.currency, "Paying in invalid currency.");
-//            targetTotalPrice = _quantity * listing.pricePerToken;
-//        }
-//
-//        require(targetTotalPrice == _expectedTotalPrice, "Unexpected total price");
-//
-//        // Check: buyer owns and has approved sufficient currency for sale.
-//        if (_currency == CurrencyTransferLib.NATIVE_TOKEN) {
-//            require(msg.value == targetTotalPrice, "Marketplace: msg.value must exactly be the total price.");
-//        } else {
-//            require(msg.value == 0, "Marketplace: invalid native tokens sent.");
-//            _validateERC20BalAndAllowance(buyer, _currency, targetTotalPrice);
-//        }
-//
-//        if (listing.quantity == _quantity) {
-//            _directListingsStorage().listings[_listingId].status = IDirectListings.Status.COMPLETED;
-//        }
-//        _directListingsStorage().listings[_listingId].quantity -= _quantity;
-//
-//        _payout(buyer, listing.listingCreator, _currency, targetTotalPrice, listing);
-//        _transferListingTokens(_buyFor, _quantity, listing);
-//
-//        emit NewSale(
-//            listing.listingCreator,
-//            listing.listingId,
-//            listing.assetContract,
-//            listing.tokenId,
-//            buyer,
-//            _quantity,
-//            targetTotalPrice
-//        );
-//    }
+    //    /// @notice Buy NFTs from a listing checking the approval of the seller.
+    //    function buyFromListingWithApproval(
+    //        uint256 _listingId,
+    //        address _buyFor,
+    //        uint256 _quantity,
+    //        address _currency,
+    //        uint256 _expectedTotalPrice
+    //    ) external payable nonReentrant onlyExistingListing(_listingId) {
+    //        Listing memory listing = _directListingsStorage().listings[_listingId];
+    //        address buyer = _msgSender();
+    //
+    //        require(
+    //            !listing.reserved || _directListingsStorage().isBuyerApprovedForListing[_listingId][buyer],
+    //            "buyer not approved"
+    //        );
+    //        require(_quantity > 0 && _quantity <= listing.quantity, "Buying invalid quantity");
+    //        require(
+    //            block.timestamp < listing.endTimestamp && block.timestamp >= listing.startTimestamp,
+    //            "not within sale window."
+    //        );
+    //
+    //        require(
+    //            _validateOwnershipAndApproval(
+    //                listing.listingCreator,
+    //                listing.assetContract,
+    //                listing.tokenId,
+    //                _quantity,
+    //                listing.tokenType
+    //            ),
+    //            "Marketplace: not owner or approved tokens."
+    //        );
+    //
+    //        uint256 targetTotalPrice;
+    //
+    //        if (_directListingsStorage().currencyPriceForListing[_listingId][_currency] > 0) {
+    //            targetTotalPrice = _quantity * _directListingsStorage().currencyPriceForListing[_listingId][_currency];
+    //        } else {
+    //            require(_currency == listing.currency, "Paying in invalid currency.");
+    //            targetTotalPrice = _quantity * listing.pricePerToken;
+    //        }
+    //
+    //        require(targetTotalPrice == _expectedTotalPrice, "Unexpected total price");
+    //
+    //        // Check: buyer owns and has approved sufficient currency for sale.
+    //        if (_currency == CurrencyTransferLib.NATIVE_TOKEN) {
+    //            require(msg.value == targetTotalPrice, "Marketplace: msg.value must exactly be the total price.");
+    //        } else {
+    //            require(msg.value == 0, "Marketplace: invalid native tokens sent.");
+    //            _validateERC20BalAndAllowance(buyer, _currency, targetTotalPrice);
+    //        }
+    //
+    //        if (listing.quantity == _quantity) {
+    //            _directListingsStorage().listings[_listingId].status = IDirectListings.Status.COMPLETED;
+    //        }
+    //        _directListingsStorage().listings[_listingId].quantity -= _quantity;
+    //
+    //        _payout(buyer, listing.listingCreator, _currency, targetTotalPrice, listing);
+    //        _transferListingTokens(_buyFor, _quantity, listing);
+    //
+    //        emit NewSale(
+    //            listing.listingCreator,
+    //            listing.listingId,
+    //            listing.assetContract,
+    //            listing.tokenId,
+    //            buyer,
+    //            _quantity,
+    //            targetTotalPrice
+    //        );
+    //    }
 
     /// @notice Buy NFTs from a listing without approval but with a signature.
     function buyFromListingWithSignature(
@@ -461,7 +469,13 @@ contract DirectListingsLogic is IDirectListings, ReentrancyGuard, ERC2771Context
         uint256 nonce,
         bytes calldata signature,
         bytes calldata data
-    ) external payable nonReentrant signatureCheck(_msgSender(), nonce, data, signature) onlyExistingListing(_listingId) {
+    )
+        external
+        payable
+        nonReentrant
+        signatureCheck(_msgSender(), nonce, data, signature)
+        onlyExistingListing(_listingId)
+    {
         _verifyContractChainIdAndDecode(_listingId, data);
         Listing memory listing = _directListingsStorage().listings[_listingId];
         address buyer = _msgSender();
@@ -473,13 +487,7 @@ contract DirectListingsLogic is IDirectListings, ReentrancyGuard, ERC2771Context
         );
 
         require(
-            _validateOwnership(
-                address(this), 
-                listing.assetContract, 
-                listing.tokenId, 
-                _quantity, 
-                listing.tokenType
-                ),
+            _validateOwnership(address(this), listing.assetContract, listing.tokenId, _quantity, listing.tokenType),
             "Marketplace: asset not owned by marketplace."
         );
 
@@ -547,13 +555,9 @@ contract DirectListingsLogic is IDirectListings, ReentrancyGuard, ERC2771Context
     }
 
     function _decodeData(bytes calldata _data) private view returns (address, uint256, uint256) {
-        (address contractAddress, uint256 chainId, uint256 listingId) = abi.decode(
-            _data, 
-            (address, uint256, uint256)
-            );
+        (address contractAddress, uint256 chainId, uint256 listingId) = abi.decode(_data, (address, uint256, uint256));
         return (contractAddress, chainId, listingId);
     }
-
 
     /*///////////////////////////////////////////////////////////////
                             View functions
@@ -698,7 +702,6 @@ contract DirectListingsLogic is IDirectListings, ReentrancyGuard, ERC2771Context
         }
     }
 
-
     /// @dev Validates that `_tokenOwner` owns and has approved Markeplace to transfer the appropriate amount of currency
     function _validateERC20BalAndAllowance(address _tokenOwner, address _currency, uint256 _amount) internal view {
         require(
@@ -720,9 +723,20 @@ contract DirectListingsLogic is IDirectListings, ReentrancyGuard, ERC2771Context
     /// @dev Transfers tokens listed for sale in a direct or auction listing.
     function _transferListingTokensToCreator(Listing memory _listing) internal {
         if (_listing.tokenType == TokenType.ERC1155) {
-            IERC1155(_listing.assetContract).safeTransferFrom(address(this), _listing.listingCreator, _listing.tokenId, _listing.quantity, "");
+            IERC1155(_listing.assetContract).safeTransferFrom(
+                address(this),
+                _listing.listingCreator,
+                _listing.tokenId,
+                _listing.quantity,
+                ""
+            );
         } else if (_listing.tokenType == TokenType.ERC721) {
-            IERC721(_listing.assetContract).safeTransferFrom(address(this), _listing.listingCreator, _listing.tokenId, "");
+            IERC721(_listing.assetContract).safeTransferFrom(
+                address(this),
+                _listing.listingCreator,
+                _listing.tokenId,
+                ""
+            );
         }
     }
 

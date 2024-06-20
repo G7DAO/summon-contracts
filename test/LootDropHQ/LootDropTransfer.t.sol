@@ -7,6 +7,7 @@ import "forge-std/console.sol";
 
 import { Strings } from "@openzeppelin/contracts/utils/Strings.sol";
 import { ECDSA } from "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
+import { MessageHashUtils } from "@openzeppelin/contracts/utils/cryptography/MessageHashUtils.sol";
 
 import { LootDrop } from "../../contracts/soulbounds/LootDrop.sol";
 import { AdminERC1155Soulbound } from "../../contracts/soulbounds/AdminERC1155Soulbound.sol";
@@ -89,11 +90,11 @@ contract LootDropTransferTest is StdCheats, Test {
     ) public returns (uint256, bytes memory) {
         Wallet memory signerWallet = getWallet(signerLabel);
 
-        uint256 _nonce = uint256(keccak256(abi.encodePacked(block.timestamp, block.difficulty, signerWallet.addr))) %
-                    50;
+        uint256 _nonce = uint256(keccak256(abi.encodePacked(block.timestamp, block.prevrandao, signerWallet.addr))) %
+            50;
 
         bytes32 message = keccak256(abi.encodePacked(wallet, encodedItems, _nonce));
-        bytes32 hash = ECDSA.toEthSignedMessageHash(message);
+        bytes32 hash = MessageHashUtils.toEthSignedMessageHash(message);
 
         (uint8 v, bytes32 r, bytes32 s) = vm.sign(signerWallet.privateKey, hash);
         return (_nonce, abi.encodePacked(r, s, v));

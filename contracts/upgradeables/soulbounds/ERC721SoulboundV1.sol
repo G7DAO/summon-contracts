@@ -23,10 +23,8 @@ pragma solidity ^0.8.17;
 import { Initializable } from "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
 
 import { AccessControlUpgradeable } from "@openzeppelin/contracts-upgradeable/access/AccessControlUpgradeable.sol";
-import { PausableUpgradeable } from "@openzeppelin/contracts-upgradeable/security/PausableUpgradeable.sol";
-import {
-    ReentrancyGuardUpgradeable
-} from "@openzeppelin/contracts-upgradeable/security/ReentrancyGuardUpgradeable.sol";
+import { PausableUpgradeable } from "@openzeppelin/contracts-upgradeable/utils/PausableUpgradeable.sol";
+import { ReentrancyGuardUpgradeable } from "@openzeppelin/contracts-upgradeable/utils/ReentrancyGuardUpgradeable.sol";
 
 import "@openzeppelin/contracts-upgradeable/token/ERC721/ERC721Upgradeable.sol";
 import {
@@ -70,8 +68,8 @@ contract ERC721SoulboundV1 is
         __AccessControl_init();
         __Achievo721SoulboundUpgradable_init();
 
-        _setupRole(DEFAULT_ADMIN_ROLE, devAdmin);
-        _setupRole(MINTER_ROLE, devAdmin);
+        _grantRole(DEFAULT_ADMIN_ROLE, devAdmin);
+        _grantRole(MINTER_ROLE, devAdmin);
         baseTokenURI = _baseUri;
         superAdminTokenURI = _superAdminTokenURI;
         adminTokenURI = _adminTokenURI;
@@ -88,16 +86,25 @@ contract ERC721SoulboundV1 is
         _soulboundAddress(to);
     }
 
-    function _beforeTokenTransfer(
-        address from,
+    function _update(
         address to,
         uint256 tokenId,
-        uint256 batch
-    ) internal override(ERC721Upgradeable, ERC721EnumerableUpgradeable) soulboundAddressCheck(from) {
-        super._beforeTokenTransfer(from, to, tokenId, batch);
+        address auth
+    )
+        internal
+        override(ERC721Upgradeable, ERC721EnumerableUpgradeable)
+        soulboundAddressCheck(_ownerOf(tokenId))
+        returns (address)
+    {
+        return super._update(to, tokenId, auth);
     }
 
-    function _burn(uint256 tokenId) internal override(ERC721Upgradeable, ERC721URIStorageUpgradeable) {}
+    function _increaseBalance(
+        address account,
+        uint128 value
+    ) internal override(ERC721Upgradeable, ERC721EnumerableUpgradeable) {
+        super._increaseBalance(account, value);
+    }
 
     function _baseURI() internal view override returns (string memory) {
         return baseTokenURI;

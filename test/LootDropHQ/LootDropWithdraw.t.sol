@@ -7,12 +7,14 @@ import "forge-std/console.sol";
 
 import { Strings } from "@openzeppelin/contracts/utils/Strings.sol";
 import { ECDSA } from "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
+import { IAccessControl } from "@openzeppelin/contracts/access/IAccessControl.sol";
+import { IERC721Errors, IERC1155Errors } from "@openzeppelin/contracts/interfaces/draft-IERC6093.sol";
 
 import { LootDrop } from "../../contracts/soulbounds/LootDrop.sol";
 import { AdminERC1155Soulbound } from "../../contracts/soulbounds/AdminERC1155Soulbound.sol";
 import { MockERC1155Receiver } from "../../contracts/mocks/MockERC1155Receiver.sol";
-import {MockERC20} from "../../contracts/mocks/MockErc20.sol";
-import {MockERC721} from "../../contracts/mocks/MockErc721.sol";
+import { MockERC20 } from "../../contracts/mocks/MockErc20.sol";
+import { MockERC721 } from "../../contracts/mocks/MockErc721.sol";
 import { MockERC1155 } from "../../contracts/mocks/MockErc1155.sol";
 import { LibItems, TestLibItems } from "../../contracts/libraries/LibItems.sol";
 
@@ -75,6 +77,10 @@ contract LootDropWithdrawTest is StdCheats, Test {
 
     uint256 public chainId = 31337;
 
+    bytes32 public constant MINTER_ROLE = keccak256("MINTER_ROLE");
+    bytes32 public constant DEV_CONFIG_ROLE = keccak256("DEV_CONFIG_ROLE");
+    bytes32 public constant MANAGER_ROLE = keccak256("MANAGER_ROLE");
+
     function getWallet(string memory walletLabel) public returns (Wallet memory) {
         (address addr, uint256 privateKey) = makeAddrAndKey(walletLabel);
         Wallet memory wallet = Wallet(addr, privateKey);
@@ -133,8 +139,13 @@ contract LootDropWithdrawTest is StdCheats, Test {
         _amount1[0] = 1000000000000000000;
 
         vm.expectRevert(
-            "AccessControl: account 0x44e97af4418b7a17aabd8090bea0a471a366305c is missing role 0x241ecf16d79d0f8dbfb92cbc07fe17840425976cf0667f022fe9877caa831b08"
+            abi.encodeWithSelector(
+                IAccessControl.AccessControlUnauthorizedAccount.selector,
+                playerWallet.addr,
+                MANAGER_ROLE
+            )
         );
+
         vm.prank(playerWallet.addr);
         lootDrop.withdrawAssets(LibItems.RewardType.ETHER, address(0), address(0), _tokenIds1, _amount1);
     }
@@ -242,7 +253,10 @@ contract LootDropWithdrawTest is StdCheats, Test {
         uint256[] memory _amount1 = new uint256[](1);
         _amount1[0] = 0; // ignore amount
 
-        vm.expectRevert("ERC721: caller is not token owner or approved");
+        vm.expectRevert(
+            abi.encodeWithSelector(IERC721Errors.ERC721InsufficientApproval.selector, address(lootDrop), 10)
+        );
+
         lootDrop.withdrawAssets(
             LibItems.RewardType.ERC721,
             playerWallet2.addr,
@@ -253,7 +267,7 @@ contract LootDropWithdrawTest is StdCheats, Test {
     }
 
     function testWithdrawERC721InvalidTokenIdShouldFail() public {
-        vm.expectRevert("ERC721: invalid token ID");
+        vm.expectRevert(abi.encodeWithSelector(IERC721Errors.ERC721NonexistentToken.selector, 20));
         mockERC721.ownerOf(20);
 
         uint256[] memory _tokenIds1 = new uint256[](1);
@@ -262,7 +276,8 @@ contract LootDropWithdrawTest is StdCheats, Test {
         uint256[] memory _amount1 = new uint256[](1);
         _amount1[0] = 0; // ignore amount
 
-        vm.expectRevert("ERC721: invalid token ID");
+        vm.expectRevert(abi.encodeWithSelector(IERC721Errors.ERC721NonexistentToken.selector, _tokenIds1[0]));
+
         lootDrop.withdrawAssets(
             LibItems.RewardType.ERC721,
             playerWallet2.addr,
@@ -318,7 +333,10 @@ contract LootDropWithdrawTest is StdCheats, Test {
             assertEq(balances[i], 10);
         }
 
-        vm.expectRevert("ERC1155: insufficient balance for transfer");
+        vm.expectRevert(
+            abi.encodeWithSelector(IERC1155Errors.ERC1155InsufficientBalance.selector, address(lootDrop), 10, 11, 456)
+        );
+
         lootDrop.withdrawAssets(
             LibItems.RewardType.ERC1155,
             playerWallet2.addr,
@@ -351,7 +369,10 @@ contract LootDropWithdrawTest is StdCheats, Test {
             assertEq(balances[i], 0);
         }
 
-        vm.expectRevert("ERC1155: insufficient balance for transfer");
+        vm.expectRevert(
+            abi.encodeWithSelector(IERC1155Errors.ERC1155InsufficientBalance.selector, address(lootDrop), 0, 2, 888)
+        );
+
         lootDrop.withdrawAssets(
             LibItems.RewardType.ERC1155,
             playerWallet2.addr,

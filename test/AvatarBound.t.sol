@@ -4,6 +4,8 @@ pragma solidity ^0.8.17;
 import { Test, console } from "forge-std/Test.sol";
 import { Strings } from "@openzeppelin/contracts/utils/Strings.sol";
 import { ECDSA } from "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
+import { MessageHashUtils } from "@openzeppelin/contracts/utils/cryptography/MessageHashUtils.sol";
+import { Pausable } from "@openzeppelin/contracts/utils/Pausable.sol";
 
 import { AvatarBound } from "../contracts/games/AvatarBound.sol";
 import { ERC1155RoyaltiesSoulbound } from "../contracts/soulbounds/ERC1155RoyaltiesSoulbound.sol";
@@ -79,22 +81,22 @@ contract AvatarBoundTest is Test {
 
     function generateSignature(
         address wallet,
-        bytes memory encodedItems,
+        bytes memory _encodedItems,
         string memory signerLabel
     ) public returns (uint256, bytes memory) {
         Wallet memory signerWallet = getWallet(signerLabel);
 
-        uint256 _nonce = uint256(keccak256(abi.encodePacked(block.timestamp, block.difficulty, signerWallet.addr))) %
+        uint256 _nonce = uint256(keccak256(abi.encodePacked(block.timestamp, block.prevrandao, signerWallet.addr))) %
             50;
 
-        bytes32 message = keccak256(abi.encodePacked(wallet, encodedItems, _nonce));
-        bytes32 hash = ECDSA.toEthSignedMessageHash(message);
+        bytes32 message = keccak256(abi.encodePacked(wallet, _encodedItems, _nonce));
+        bytes32 hash = MessageHashUtils.toEthSignedMessageHash(message);
 
         (uint8 v, bytes32 r, bytes32 s) = vm.sign(signerWallet.privateKey, hash);
         return (_nonce, abi.encodePacked(r, s, v));
     }
 
-    function setupItems(address avatarBound) internal returns (bytes memory) {
+    function setupItems(address _avatarBound) internal returns (bytes memory) {
         for (uint256 i = 0; i < 10; i++) {
             uint256 _tokenId = generateRandomItemId(); // totally random
             uint256 _level = generateRandomLevel(); // level 1-10
@@ -132,7 +134,7 @@ contract AvatarBoundTest is Test {
 
         itemBound.addNewTokens(_tokens);
 
-        encodedItems = encode(avatarBound, _tokenItemsIds);
+        encodedItems = encode(_avatarBound, _tokenItemsIds);
         return encodedItems;
     }
 
@@ -267,7 +269,7 @@ contract AvatarBoundTest is Test {
         avatarBound.grantRole(avatarBound.MINTER_ROLE(), address(this));
         avatarBound.setBaseSkin(1, "ipfs://{hash}/1.glb");
         avatarBound.pause();
-        vm.expectRevert("Pausable: paused");
+        vm.expectRevert(abi.encodeWithSelector(Pausable.EnforcedPause.selector));
         avatarBound.adminMint(address(this), 1);
         vm.stopPrank();
     }

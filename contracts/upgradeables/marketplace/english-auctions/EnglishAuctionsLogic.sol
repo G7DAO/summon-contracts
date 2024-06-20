@@ -9,7 +9,7 @@ import "./EnglishAuctionsStorage.sol";
 import "@openzeppelin/contracts/utils/Context.sol";
 import "@openzeppelin/contracts/utils/introspection/IERC165.sol";
 import "@openzeppelin/contracts/token/ERC1155/IERC1155.sol";
-import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
+import "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
 
 import "@openzeppelin/contracts/token/ERC721/IERC721.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
@@ -226,7 +226,7 @@ contract EnglishAuctionsLogic is IEnglishAuctions, ReentrancyGuard, ERC2771Conte
     }
 
     function getAllAuctions(uint256 _startId, uint256 _endId) external view returns (Auction[] memory _allAuctions) {
-        if(_englishAuctionsStorage().totalAuctions == 0) return _allAuctions;
+        if (_englishAuctionsStorage().totalAuctions == 0) return _allAuctions;
         require(_startId <= _endId && _endId <= _englishAuctionsStorage().totalAuctions, "invalid range");
 
         _allAuctions = new Auction[](_endId - _startId + 1);
@@ -240,7 +240,7 @@ contract EnglishAuctionsLogic is IEnglishAuctions, ReentrancyGuard, ERC2771Conte
         uint256 _startId,
         uint256 _endId
     ) external view returns (Auction[] memory _validAuctions) {
-        if(_englishAuctionsStorage().totalAuctions == 0) return _validAuctions;
+        if (_englishAuctionsStorage().totalAuctions == 0) return _validAuctions;
         require(_startId <= _endId && _endId <= _englishAuctionsStorage().totalAuctions, "invalid range");
 
         Auction[] memory _auctions = new Auction[](_endId - _startId + 1);

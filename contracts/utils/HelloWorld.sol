@@ -8,7 +8,7 @@ contract HelloWorld is Initializable, AccessControl {
     uint256 public randomNumber;
 
     constructor(address developerAdmin) {
-        _setupRole(DEFAULT_ADMIN_ROLE, developerAdmin);
+        _grantRole(DEFAULT_ADMIN_ROLE, developerAdmin);
     }
 
     function initialize(uint256 _randomNumber) public initializer onlyRole(DEFAULT_ADMIN_ROLE) {

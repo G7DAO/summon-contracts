@@ -96,13 +96,13 @@ contract Marketplace is
         _setupContractURI(_contractURI);
         _setupPlatformFeeInfo(_platformFeeRecipient, _platformFeeBps);
 
-        _setupRole(DEFAULT_ADMIN_ROLE, _defaultAdmin);
-        _setupRole(EXTENSION_ROLE, _defaultAdmin);
-        _setupRole(keccak256("MANAGER_ROLE"), _defaultAdmin);
-        _setupRole(keccak256("LISTER_ROLE"), address(0));
-        _setupRole(keccak256("ASSET_ROLE"), address(0));
-        _setupRole(keccak256("MANAGER_ROLE"), address(0));
-        _setupRole(EXTENSION_ROLE, _defaultAdmin);
+        _grantRole(DEFAULT_ADMIN_ROLE, _defaultAdmin);
+        _grantRole(EXTENSION_ROLE, _defaultAdmin);
+        _grantRole(keccak256("MANAGER_ROLE"), _defaultAdmin);
+        _grantRole(keccak256("LISTER_ROLE"), address(0));
+        _grantRole(keccak256("ASSET_ROLE"), address(0));
+        _grantRole(keccak256("MANAGER_ROLE"), address(0));
+        _grantRole(EXTENSION_ROLE, _defaultAdmin);
         _setRoleAdmin(EXTENSION_ROLE, EXTENSION_ROLE);
     }
 
@@ -124,9 +124,7 @@ contract Marketplace is
                         ERC 165 / 721 / 1155 logic
     //////////////////////////////////////////////////////////////*/
 
-    function supportsInterface(
-        bytes4 interfaceId
-    ) public view virtual override(IERC165, ERC1155Receiver) returns (bool) {
+    function supportsInterface(bytes4 interfaceId) public view virtual override(IERC165, ERC1155Holder) returns (bool) {
         return
             interfaceId == type(IERC1155Receiver).interfaceId ||
             interfaceId == type(IERC721Receiver).interfaceId ||

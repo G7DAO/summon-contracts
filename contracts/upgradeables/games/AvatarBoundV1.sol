@@ -20,13 +20,19 @@ pragma solidity ^0.8.17;
 // MMNx'.dWMMK;.:0WMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMM
 // MMMM0cdNMM0cdNMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMM
 
-import "@openzeppelin/contracts-upgradeable/token/ERC721/extensions/ERC721URIStorageUpgradeable.sol";
-import "@openzeppelin/contracts-upgradeable/token/ERC721/extensions/ERC721EnumerableUpgradeable.sol";
-import "@openzeppelin/contracts-upgradeable/access/AccessControlUpgradeable.sol";
-import "@openzeppelin/contracts-upgradeable/security/PausableUpgradeable.sol";
-import "@openzeppelin/contracts-upgradeable/security/ReentrancyGuardUpgradeable.sol";
-import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
-import "@openzeppelin/contracts/utils/Strings.sol";
+import { IERC721 } from "@openzeppelin/contracts/token/ERC721/IERC721.sol";
+import { ERC721Upgradeable } from "@openzeppelin/contracts-upgradeable/token/ERC721/ERC721Upgradeable.sol";
+import {
+    ERC721URIStorageUpgradeable
+} from "@openzeppelin/contracts-upgradeable/token/ERC721/extensions/ERC721URIStorageUpgradeable.sol";
+import {
+    ERC721EnumerableUpgradeable
+} from "@openzeppelin/contracts-upgradeable/token/ERC721/extensions/ERC721EnumerableUpgradeable.sol";
+import { AccessControlUpgradeable } from "@openzeppelin/contracts-upgradeable/access/AccessControlUpgradeable.sol";
+import { PausableUpgradeable } from "@openzeppelin/contracts-upgradeable/utils/PausableUpgradeable.sol";
+import { ReentrancyGuardUpgradeable } from "@openzeppelin/contracts-upgradeable/utils/ReentrancyGuardUpgradeable.sol";
+import { Initializable } from "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
+import { Strings } from "@openzeppelin/contracts/utils/Strings.sol";
 import { Achievo721SoulboundUpgradeable } from "../ercs/extensions/Achievo721SoulboundUpgradeable.sol";
 import { ERCWhitelistSignatureUpgradeable } from "../ercs/ERCWhitelistSignatureUpgradeable.sol";
 import { IOpenMint } from "../../interfaces/IOpenMint.sol";
@@ -404,30 +410,33 @@ contract AvatarBoundV1 is
         emit CompoundURIChanged(_compoundURI, _msgSender());
     }
 
-    function _beforeTokenTransfer(
-        address from,
+    function _update(
         address to,
         uint256 tokenId,
-        uint256 batch
-    ) internal override(ERC721Upgradeable, ERC721EnumerableUpgradeable) soulboundAddressCheck(from) {
-        super._beforeTokenTransfer(from, to, tokenId, batch);
+        address auth
+    )
+        internal
+        override(ERC721Upgradeable, ERC721EnumerableUpgradeable)
+        soulboundAddressCheck(_ownerOf(tokenId))
+        returns (address)
+    {
+        // revert("You can't transfer this token");
+        return super._update(to, tokenId, auth);
+    }
+
+    function _increaseBalance(
+        address account,
+        uint128 value
+    ) internal override(ERC721Upgradeable, ERC721EnumerableUpgradeable) {
+        super._increaseBalance(account, value);
     }
 
     function transferFrom(
         address from,
         address to,
         uint256 tokenId
-    ) public override(IERC721Upgradeable, ERC721Upgradeable) nonReentrant {
+    ) public override(IERC721, ERC721Upgradeable) nonReentrant {
         revert("You can't transfer this token");
-    }
-
-    function safeTransferFrom(
-        address from,
-        address to,
-        uint256 tokenId
-    ) public override(IERC721Upgradeable, ERC721Upgradeable) nonReentrant {
-        revert("You can't transfer this token");
-        super.safeTransferFrom(from, to, tokenId, "");
     }
 
     function safeTransferFrom(
@@ -435,12 +444,10 @@ contract AvatarBoundV1 is
         address to,
         uint256 tokenId,
         bytes memory data
-    ) public override(IERC721Upgradeable, ERC721Upgradeable) nonReentrant {
+    ) public override(IERC721, ERC721Upgradeable) nonReentrant {
         revert("You can't transfer this token");
         super._safeTransfer(from, to, tokenId, data);
     }
-
-    function _burn(uint256 tokenId) internal override(ERC721Upgradeable, ERC721URIStorageUpgradeable) {}
 
     function tokenURI(
         uint256 tokenId

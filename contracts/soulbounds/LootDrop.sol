@@ -27,13 +27,13 @@ import { IERC20 } from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import { SafeERC20 } from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import { ERC1155Burnable } from "@openzeppelin/contracts/token/ERC1155/extensions/ERC1155Burnable.sol";
 import { ERC1155Supply } from "@openzeppelin/contracts/token/ERC1155/extensions/ERC1155Supply.sol";
-import { ERC1155Receiver } from "@openzeppelin/contracts/token/ERC1155/utils/ERC1155Receiver.sol";
+import { ERC1155Holder } from "@openzeppelin/contracts/token/ERC1155/utils/ERC1155Holder.sol";
 import { ERC721Holder } from "@openzeppelin/contracts/token/ERC721/utils/ERC721Holder.sol";
 import { AccessControl } from "@openzeppelin/contracts/access/AccessControl.sol";
-import { Pausable } from "@openzeppelin/contracts/security/Pausable.sol";
+import { Pausable } from "@openzeppelin/contracts/utils/Pausable.sol";
 import { Strings } from "@openzeppelin/contracts/utils/Strings.sol";
 import { ECDSA } from "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
-import { ReentrancyGuard } from "@openzeppelin/contracts/security/ReentrancyGuard.sol";
+import { ReentrancyGuard } from "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
 import { Initializable } from "@openzeppelin/contracts/proxy/utils/Initializable.sol";
 
 import { AdminERC1155Soulbound } from "../soulbounds/AdminERC1155Soulbound.sol";
@@ -59,7 +59,7 @@ contract LootDrop is
     Pausable,
     ReentrancyGuard,
     Initializable,
-    ERC1155Receiver,
+    ERC1155Holder,
     ERC721Holder
 {
     bytes32 public constant MINTER_ROLE = keccak256("MINTER_ROLE");
@@ -551,28 +551,8 @@ contract LootDrop is
         }
     }
 
-    function supportsInterface(bytes4 interfaceId) public view override(AccessControl, ERC1155Receiver) returns (bool) {
+    function supportsInterface(bytes4 interfaceId) public view override(AccessControl, ERC1155Holder) returns (bool) {
         return super.supportsInterface(interfaceId);
-    }
-
-    function onERC1155Received(
-        address operator,
-        address from,
-        uint256 id,
-        uint256 value,
-        bytes calldata data
-    ) public pure override returns (bytes4) {
-        return this.onERC1155Received.selector;
-    }
-
-    function onERC1155BatchReceived(
-        address operator,
-        address from,
-        uint256[] calldata ids,
-        uint256[] calldata values,
-        bytes calldata data
-    ) public pure override returns (bytes4) {
-        return this.onERC1155BatchReceived.selector;
     }
 
     // Function to receive Ether. msg.data must be empty

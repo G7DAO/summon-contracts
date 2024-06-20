@@ -26,7 +26,7 @@ import { ERC1155Supply } from "@openzeppelin/contracts/token/ERC1155/extensions/
 import { AccessControl } from "@openzeppelin/contracts/access/AccessControl.sol";
 import { Strings } from "@openzeppelin/contracts/utils/Strings.sol";
 import { ERC2981 } from "@openzeppelin/contracts/token/common/ERC2981.sol";
-import { ReentrancyGuard } from "@openzeppelin/contracts/security/ReentrancyGuard.sol";
+import { ReentrancyGuard } from "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
 import { Initializable } from "@openzeppelin/contracts/proxy/utils/Initializable.sol";
 
 import { Achievo1155Soulbound } from "../ercs/extensions/Achievo1155Soulbound.sol";
@@ -163,15 +163,13 @@ contract AdminERC1155Soulbound is
         }
     }
 
-    function _beforeTokenTransfer(
-        address operator,
+    function _update(
         address from,
         address to,
         uint256[] memory ids,
-        uint256[] memory amounts,
-        bytes memory data
+        uint256[] memory values
     ) internal virtual override(ERC1155, ERC1155Supply) {
-        super._beforeTokenTransfer(operator, from, to, ids, amounts, data);
+        super._update(from, to, ids, values);
     }
 
     function safeTransferFrom(

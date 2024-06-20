@@ -34,8 +34,8 @@ contract Whitelist is AccessControl {
     mapping(address => WhitelistData) public list;
 
     constructor(address developerAdmin) {
-        _setupRole(DEFAULT_ADMIN_ROLE, developerAdmin);
-        _setupRole(MANAGER_ROLE, developerAdmin);
+        _grantRole(DEFAULT_ADMIN_ROLE, developerAdmin);
+        _grantRole(MANAGER_ROLE, developerAdmin);
     }
 
     event AddedToWhitelist(address indexed account);

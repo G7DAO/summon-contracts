@@ -7,13 +7,15 @@ import "forge-std/console.sol";
 
 import { Strings } from "@openzeppelin/contracts/utils/Strings.sol";
 import { ECDSA } from "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
+import { MessageHashUtils } from "@openzeppelin/contracts/utils/cryptography/MessageHashUtils.sol";
+import { IERC721Errors } from "@openzeppelin/contracts/interfaces/draft-IERC6093.sol";
 import { ERC721Holder } from "@openzeppelin/contracts/token/ERC721/utils/ERC721Holder.sol";
 
 import { LootDrop } from "../../contracts/soulbounds/LootDrop.sol";
 import { AdminERC1155Soulbound } from "../../contracts/soulbounds/AdminERC1155Soulbound.sol";
 import { MockERC1155Receiver } from "../../contracts/mocks/MockERC1155Receiver.sol";
-import {MockERC20} from "../../contracts/mocks/MockErc20.sol";
-import {MockERC721} from "../../contracts/mocks/MockErc721.sol";
+import { MockERC20 } from "../../contracts/mocks/MockErc20.sol";
+import { MockERC721 } from "../../contracts/mocks/MockErc721.sol";
 import { MockERC1155 } from "../../contracts/mocks/MockErc1155.sol";
 import { LibItems, TestLibItems } from "../../contracts/libraries/LibItems.sol";
 
@@ -91,11 +93,11 @@ contract LootDropClaimTest is StdCheats, Test, MockERC1155Receiver, ERC721Holder
     ) public returns (uint256, bytes memory) {
         Wallet memory signerWallet = getWallet(signerLabel);
 
-        uint256 _nonce = uint256(keccak256(abi.encodePacked(block.timestamp, block.difficulty, signerWallet.addr))) %
+        uint256 _nonce = uint256(keccak256(abi.encodePacked(block.timestamp, block.prevrandao, signerWallet.addr))) %
             50;
 
         bytes32 message = keccak256(abi.encodePacked(wallet, encodedItems, _nonce));
-        bytes32 hash = ECDSA.toEthSignedMessageHash(message);
+        bytes32 hash = MessageHashUtils.toEthSignedMessageHash(message);
 
         (uint8 v, bytes32 r, bytes32 s) = vm.sign(signerWallet.privateKey, hash);
         return (_nonce, abi.encodePacked(r, s, v));
@@ -289,7 +291,9 @@ contract LootDropClaimTest is StdCheats, Test, MockERC1155Receiver, ERC721Holder
 
         // Claim
         vm.prank(playerWallet.addr);
-        vm.expectRevert("ERC721: caller is not token owner or approved");
+        vm.expectRevert(
+            abi.encodeWithSelector(IERC721Errors.ERC721InsufficientApproval.selector, address(lootDrop), 1)
+        );
         lootDrop.claimRewards(_tokenIds);
     }
 

@@ -20,14 +20,14 @@ pragma solidity ^0.8.17;
 // MMNx'.dWMMK;.:0WMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMM
 // MMMM0cdNMM0cdNMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMM
 
-import "@openzeppelin/contracts/token/ERC721/ERC721.sol";
-import "@openzeppelin/contracts/token/ERC721/extensions/ERC721URIStorage.sol";
-import "@openzeppelin/contracts/token/ERC721/extensions/ERC721Enumerable.sol";
-import "@openzeppelin/contracts/token/ERC721/IERC721.sol";
-import "@openzeppelin/contracts/access/AccessControl.sol";
-import "@openzeppelin/contracts/security/Pausable.sol";
-import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
-import "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
+import { ERC721 } from "@openzeppelin/contracts/token/ERC721/ERC721.sol";
+import { ERC721URIStorage } from "@openzeppelin/contracts/token/ERC721/extensions/ERC721URIStorage.sol";
+import { ERC721Enumerable } from "@openzeppelin/contracts/token/ERC721/extensions/ERC721Enumerable.sol";
+import { IERC721 } from "@openzeppelin/contracts/token/ERC721/IERC721.sol";
+import { AccessControl } from "@openzeppelin/contracts/access/AccessControl.sol";
+import { Pausable } from "@openzeppelin/contracts/utils/Pausable.sol";
+import { ReentrancyGuard } from "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
+import { ECDSA } from "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
 import { Achievo721Soulbound } from "../ercs/extensions/Achievo721Soulbound.sol";
 
 contract ERC721Soulbound is
@@ -52,8 +52,8 @@ contract ERC721Soulbound is
         string memory _adminTokenURI,
         string memory _superAdminTokenURI
     ) ERC721(_name, _symbol) {
-        _setupRole(DEFAULT_ADMIN_ROLE, devAdmin);
-        _setupRole(MINTER_ROLE, devAdmin);
+        _grantRole(DEFAULT_ADMIN_ROLE, devAdmin);
+        _grantRole(MINTER_ROLE, devAdmin);
         baseTokenURI = _baseUri;
         superAdminTokenURI = _superAdminTokenURI;
         adminTokenURI = _adminTokenURI;
@@ -70,16 +70,17 @@ contract ERC721Soulbound is
         _soulboundAddress(to);
     }
 
-    function _beforeTokenTransfer(
-        address from,
+    function _update(
         address to,
         uint256 tokenId,
-        uint256 batch
-    ) internal override(ERC721, ERC721Enumerable) soulboundAddressCheck(from) {
-        super._beforeTokenTransfer(from, to, tokenId, batch);
+        address auth
+    ) internal override(ERC721, ERC721Enumerable) soulboundAddressCheck(_ownerOf(tokenId)) returns (address) {
+        return super._update(to, tokenId, auth);
     }
 
-    function _burn(uint256 tokenId) internal override(ERC721, ERC721URIStorage) {}
+    function _increaseBalance(address account, uint128 value) internal override(ERC721, ERC721Enumerable) {
+        super._increaseBalance(account, value);
+    }
 
     function _baseURI() internal view override returns (string memory) {
         return baseTokenURI;

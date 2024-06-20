@@ -378,6 +378,7 @@ export const RewardTokenArgs = {
         _defaultTokenURI: 'FILL_ME',
         _contractURI: 'FILL_ME',
         _devWallet: 'DEPLOYER_WALLET',
+        _lootDropAddress: `CONTRACT_${CONTRACT_NAME.LootDrop}`,
     },
     TESTNET: {
         _name: 'RainToken',
@@ -385,6 +386,7 @@ export const RewardTokenArgs = {
         _defaultTokenURI: 'FILL_ME',
         _contractURI: 'FILL_ME',
         _devWallet: 'DEPLOYER_WALLET',
+        _lootDropAddress: `CONTRACT_${CONTRACT_NAME.LootDrop}`,
     },
 };
 
