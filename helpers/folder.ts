@@ -1,7 +1,7 @@
 import fs from 'fs';
 import path from 'path';
 
-import { ABI_PATH, ABI_PATH_ZK, ACHIEVO_TMP_DIR } from '@constants/deployments';
+import { ABI_PATH, ACHIEVO_TMP_DIR } from '@constants/deployments';
 
 export const createDefaultFolders = (chain: string) => {
     if (!chain) {
@@ -55,9 +55,8 @@ export const getFilePath = (folderPath: string, fileName: string): string | null
     return null;
 };
 
-export const getABIFilePath = (isZkSync: boolean, contractFileName: string): string | null => {
-    const folder = isZkSync ? ABI_PATH_ZK : ABI_PATH;
-    const abiPath = getFilePath(folder, `${contractFileName}.json`);
+export const getABIFilePath = (contractFileName: string): string | null => {
+    const abiPath = getFilePath(ABI_PATH, `${contractFileName}.json`);
 
     if (!abiPath) {
         throw new Error(`File ${contractFileName}.json not found`);

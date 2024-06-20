@@ -64,7 +64,7 @@ export async function populateParam(
             const deploymentPayloadContent = fs.readFileSync(filePathDeploymentLatest, 'utf8');
             deploymentPayload = JSON.parse(deploymentPayloadContent);
         } else {
-            const abiPath = getABIFilePath(hre.network.zksync, contract?.contractFileName);
+            const abiPath = getABIFilePath(contract?.contractFileName);
 
             // @ts-ignore-next-line
             // eslint-disable-next-line
@@ -117,7 +117,7 @@ const deployOne = async (
     // @ts-ignore-next-line
     const constructorArgs = await populateConstructorArgs(hre, contract.args, tenant);
 
-    const abiPath = getABIFilePath(hre.network.zksync, contract.contractFileName);
+    const abiPath = getABIFilePath(contract.contractFileName);
 
     let goingToDeploy = true;
     if (!force) {

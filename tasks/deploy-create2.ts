@@ -1,4 +1,5 @@
 import fs from 'fs';
+import { exec } from 'node:child_process';
 import path from 'path';
 
 import { CONTRACT_FILE_NAME } from '@constants/contract';
@@ -6,14 +7,12 @@ import { ChainId, Currency, NetworkConfigFile, NetworkExplorer, NetworkName, rpc
 import { TENANT } from '@constants/tenant';
 import { submitContractDeploymentsToDB } from '@helpers/contract';
 import { encryptPrivateKey } from '@helpers/encrypt';
-import { createDefaultFolders, getABIFilePath, getFilePath } from '@helpers/folder';
+import { createDefaultFolders, getABIFilePath } from '@helpers/folder';
 import { log } from '@helpers/logger';
+import * as ethers from 'ethers';
 import { task, types } from 'hardhat/config';
 import { HardhatRuntimeEnvironment } from 'hardhat/types';
 import { Deployment } from 'types/deployment-type';
-import { Provider as zkProvider, Wallet as zkWallet, ContractFactory as zkContractFactory } from 'zksync-ethers';
-import * as ethers from 'ethers';
-import { exec } from 'node:child_process';
 
 const { DETERMINISTIC_DEPLOYER_PRIVATE_KEY = '', PRIVATE_KEY = '' } = process.env;
 
@@ -28,8 +27,7 @@ const deployOne = async (
 ): Promise<Deployment> => {
     const encryptedPrivateKey = await encryptPrivateKey(DETERMINISTIC_DEPLOYER_PRIVATE_KEY);
 
-    const isZkSync = networkName.toLowerCase().includes('zksync');
-    const abiPath = getABIFilePath(isZkSync, contractFileName);
+    const abiPath = getABIFilePath(contractFileName);
 
     const networkNameKey = Object.keys(NetworkName)[Object.values(NetworkName).indexOf(networkName as NetworkName)];
     const chainId = ChainId[networkNameKey as keyof typeof ChainId];
@@ -37,31 +35,13 @@ const deployOne = async (
     const rpcUrl = rpcUrls[chainId];
     const currency = Currency[networkNameKey as keyof typeof Currency];
 
-    let achievoContract;
-    let deployerWallet: zkWallet | ethers.ethers.Wallet;
-    let managerWallet: zkWallet | ethers.ethers.Wallet;
-
     const abiContent = fs.readFileSync(path.resolve(abiPath as string), 'utf8');
-    const { abi: contractAbi, bytecode } = JSON.parse(abiContent);
+    const { abi: contractAbi } = JSON.parse(abiContent);
 
-    if (isZkSync) {
-        const ethNetworkName = networkName.split('zkSync')[1].toLowerCase() || 'mainnet';
-        const ethNetworkNameKey =
-            Object.keys(NetworkName)[Object.values(NetworkName).indexOf(ethNetworkName as NetworkName)];
-        const ethChainId = ChainId[ethNetworkNameKey as keyof typeof ChainId];
-        const ethRpcUrl = rpcUrls[ethChainId];
-        const provider = new zkProvider(rpcUrl);
-        const ethProvider = hre.ethers.getDefaultProvider(ethRpcUrl);
-        deployerWallet = new zkWallet(DETERMINISTIC_DEPLOYER_PRIVATE_KEY, provider, ethProvider);
-        managerWallet = new zkWallet(PRIVATE_KEY, provider, ethProvider);
-        const factory = new zkContractFactory(contractAbi, bytecode, deployerWallet);
-        achievoContract = await factory.deploy(managerWallet.address);
-    } else {
-        const provider = new hre.ethers.JsonRpcProvider(rpcUrl);
-        deployerWallet = new hre.ethers.Wallet(DETERMINISTIC_DEPLOYER_PRIVATE_KEY, provider);
-        managerWallet = new hre.ethers.Wallet(PRIVATE_KEY, provider);
-        achievoContract = await hre.ethers.deployContract(contractFileName, [managerWallet.address], deployerWallet);
-    }
+    const provider = new hre.ethers.JsonRpcProvider(rpcUrl);
+    const deployerWallet = new hre.ethers.Wallet(DETERMINISTIC_DEPLOYER_PRIVATE_KEY, provider);
+    const managerWallet = new hre.ethers.Wallet(PRIVATE_KEY, provider);
+    const achievoContract = await hre.ethers.deployContract(contractFileName, [managerWallet.address], deployerWallet);
 
     await achievoContract.waitForDeployment();
 

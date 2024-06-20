@@ -28,14 +28,6 @@ export const logExplorerAddress = (chainId: number, address: string) => {
             log('https://explorer.sepolia.mantle.xyz/address/' + address);
             break;
         }
-        case ChainId.ZkSync: {
-            log('https://explorer.zksync.io/address/' + address);
-            break;
-        }
-        case ChainId.ZkSyncSepolia: {
-            log('https://sepolia.explorer.zksync.io/address/' + address);
-            break;
-        }
         default: {
             return new Error('Chain Id provided do not supported.');
         }

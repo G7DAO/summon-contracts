@@ -1,33 +1,24 @@
-import { task, types } from 'hardhat/config';
-import { HardhatRuntimeEnvironment } from 'hardhat/types';
 import fs from 'fs';
 import path from 'path';
 
-import { executeFunctionCallBatch, getContractFromDB, submitContractDeploymentsToDB } from '@helpers/contract';
-import { encryptPrivateKey } from '@helpers/encrypt';
+import { CONTRACT_NAME, PROXY_CONTRACT_TYPE } from '@constants/contract';
+import { ACHIEVO_TMP_DIR } from '@constants/deployments';
+import { CONTRACTS } from '@constants/proxy-deployments';
+import { TENANT } from '@constants/tenant';
+import { isAlreadyDeployed, writeChecksumToFile } from '@helpers/checksum';
+import { executeFunctionCallBatch, submitContractDeploymentsToDB } from '@helpers/contract';
+import { ExtensionFunction } from '@helpers/extensions';
 import { createDefaultFolders, getABIFilePath } from '@helpers/folder';
 import { log } from '@helpers/logger';
 import getWallet from 'deploy/getWallet';
-import { ChainId, Currency, NetworkConfigFile, NetworkExplorer, NetworkName, rpcUrls } from '@constants/network';
-import { CONTRACT_NAME, PROXY_CONTRACT_TYPE } from '@constants/contract';
-import { TENANT } from '@constants/tenant';
-import {
-    Deployment,
-    DeploymentContract,
-    DeploymentExtensionContract,
-    DeploymentProxyContract,
-} from 'types/deployment-type';
-import { exec } from 'node:child_process';
-import { CONTRACTS } from '@constants/proxy-deployments';
-import { ACHIEVO_TMP_DIR } from '@constants/deployments';
-import { isAlreadyDeployed, writeChecksumToFile } from '@helpers/checksum';
-import deployUpgradeable from '../deploy/deployUpgradeable';
-import deploy from '../deploy/deploy';
-import { encoder } from '@helpers/encoder';
-import { ExtensionFunction } from '@helpers/extensions';
-import { populateParam, prepFunctionOne } from './deploy';
 import { Contract } from 'ethers';
-import { proxy } from 'typechain-types/@openzeppelin/contracts';
+import { task, types } from 'hardhat/config';
+import { HardhatRuntimeEnvironment } from 'hardhat/types';
+import { Deployment, DeploymentExtensionContract, DeploymentProxyContract } from 'types/deployment-type';
+
+import deploy from '../deploy/deploy';
+
+import { prepFunctionOne } from './deploy';
 
 const { PRIVATE_KEY = '' } = process.env;
 
@@ -48,7 +39,7 @@ export async function populateProxyParam(
     const chain = hre.network.name;
     let value = param;
 
-    if(param === 'FILL_ME') {
+    if (param === 'FILL_ME') {
         throw new Error('Parameter is with FILL_ME value, please update it');
     }
 
@@ -97,7 +88,7 @@ export async function populateProxyParam(
             throw new Error(`Contract ${name} not found`);
         }
 
-        const goingToDeploy = !isAlreadyDeployed(contract, tenant as string);
+        const goingToDeploy = !isAlreadyDeployed(contract, tenant);
 
         console.log('goingToDeploy->', name, goingToDeploy);
 
@@ -112,7 +103,7 @@ export async function populateProxyParam(
             const deploymentPayloadContent = fs.readFileSync(filePathDeploymentLatest, 'utf8');
             deploymentPayload = JSON.parse(deploymentPayloadContent);
         } else {
-            const abiPath = getABIFilePath(hre.network.zksync, contract?.contractFileName);
+            const abiPath = getABIFilePath(contract?.contractFileName);
 
             // @ts-ignore-next-line
             // eslint-disable-next-line
@@ -120,7 +111,7 @@ export async function populateProxyParam(
                 hre,
                 // @ts-ignore-next-line
                 contract.args,
-                tenant as string
+                tenant
             );
 
             deploymentPayload = await deploy(hre, contract, constructorArgs, abiPath as string, tenant);
@@ -169,14 +160,7 @@ export const deployOneWithExtensions = async (
     // @ts-ignore-next-line
     const constructorArgs = await populateProxyConstructorArgs(hre, contract.implementationArgs, tenant, contract);
 
-    const isZkSync = hre.network.zksync;
-
-    if (isZkSync) {
-        // TODO: Implement zkSync, not supported yet
-        throw new Error(`SKIPPED: ${contract?.name} ZKSync not supported yet`);
-    }
-
-    const abiPath = getABIFilePath(isZkSync, contract.contractFileName);
+    const abiPath = getABIFilePath(contract.contractFileName);
 
     if (!abiPath) {
         throw new Error(`ABI not found for ${contract.contractFileName}`);
@@ -214,14 +198,7 @@ export const deployOne = async (
         implementationContract
     );
 
-    const isZkSync = hre.network.zksync;
-
-    if (isZkSync) {
-        // TODO: Implement zkSync, not supported yet
-        throw new Error(`SKIPPED: ${contract?.name} ZKSync not supported yet`);
-    }
-
-    const abiPath = getABIFilePath(isZkSync, contract.contractFileName);
+    const abiPath = getABIFilePath(contract.contractFileName);
 
     if (!abiPath) {
         throw new Error(`ABI not found for ${contract.contractFileName}`);
@@ -315,8 +292,8 @@ task('deploy-proxy', 'Deploys Smart contracts with proxy')
                             extension.contractFileName,
                             deployedExtensionContract.contractAddress
                         );
-                        
-                        let functions: ExtensionFunction[] = [];
+
+                        const functions: ExtensionFunction[] = [];
 
                         for (const func of extension.functionsToInclude) {
                             const selector = contractInstance.getFunction(func).getFragment().selector;
@@ -369,7 +346,7 @@ task('deploy-proxy', 'Deploys Smart contracts with proxy')
                             );
 
                             const proxyDeployment = await deployOne(hre, proxyContract, tenant, implementationContract);
-                            
+
                             proxyDeployment.name = `${proxyDeployment.name}${deployedImplementation.name}`;
                             proxyDeployment.upgradable = true;
                             proxyDeployment.proxyType = PROXY_CONTRACT_TYPE.EIP1967;
