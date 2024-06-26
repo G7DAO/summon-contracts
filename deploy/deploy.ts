@@ -82,10 +82,7 @@ export default async function (
 
     if (contract.verify) {
         log('Waiting for contract to be confirmed...');
-        if (
-            hre.network.name === NetworkName.Game7OrbitArbSepolia ||
-            hre.network.name === NetworkName.Game7OrbitBaseSepolia
-        ) {
+        if (hre.network.name === NetworkName.Game7OrbitArbSepolia || hre.network.name === NetworkName.Game7Testnet) {
             // This L3 provided network requires only 1 confirmation
             await achievoContract.deploymentTransaction()?.wait(1); // wait for 1 confirmation
         } else {
