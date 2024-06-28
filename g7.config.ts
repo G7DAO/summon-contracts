@@ -17,10 +17,10 @@ defaultConfig.networks = {
         accounts: [PRIVATE_KEY],
         chainId: ChainId.Game7OrbitArbSepolia,
     },
-    [NetworkName.Game7OrbitBaseSepolia]: {
-        url: rpcUrls[ChainId.Game7OrbitBaseSepolia],
+    [NetworkName.Game7Testnet]: {
+        url: rpcUrls[ChainId.Game7Testnet],
         accounts: [PRIVATE_KEY],
-        chainId: ChainId.Game7OrbitBaseSepolia,
+        chainId: ChainId.Game7Testnet,
     },
 };
 
@@ -36,11 +36,11 @@ defaultConfig.etherscan = {
             },
         },
         {
-            network: NetworkName.Game7OrbitBaseSepolia,
-            chainId: ChainId.Game7OrbitBaseSepolia,
+            network: NetworkName.Game7Testnet,
+            chainId: ChainId.Game7Testnet,
             urls: {
-                apiURL: `${NetworkExplorer.Game7OrbitBaseSepolia}/api`,
-                browserURL: NetworkExplorer.Game7OrbitBaseSepolia,
+                apiURL: `${NetworkExplorer.Game7Testnet}/api`,
+                browserURL: NetworkExplorer.Game7Testnet,
             },
         },
         // TODO: Add mainnet later
