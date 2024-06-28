@@ -5,23 +5,6 @@ import { ChainId } from './network';
 const MAR20_G7_TESTNET = '0x9BcdFD72F0434B1cA3b2E8BB96592ceEc22A85e7';
 const IRON_G7_ARB_SEPOLIA_NATIVE_TOKEN = '0x4EdD6ddeAf8f259dba75AC8C5C89ee7564201170';
 
-const PYTH_USDC_PRICE_ID_TESTNET = '0x41f3625971ca2ed2263e78573fe5ce23e13d2558ed3f2e47ab0f84fb9e7ae722';
-const PYTH_ETH_PRICE_ID_TESTNET = '0xca80ba6dc32e08d06f1aa886011eed1d77c77be9eb761cc10d72b7d0a2fd57a6';
-const PYTH_ORACLE_ADDRESS_TESTNET = '0x8739d5024B5143278E2b15Bd9e7C26f6CEc658F1';
-
-const PYTH_USDC_PRICE_ID_MAINNET = '0xeaa020c61cc479712813461ce153894a96a6c00b21ed0cfc2798d1f9a9e9c94a';
-const PYTH_ETH_PRICE_ID_MAINNET = '0xff61491a931112ddf1bd8147cd1b641375f79f5825126d665480874634fd0ace';
-const PYTH_ORACLE_ADDRESS_MAINNET = '0xf087c864AEccFb6A2Bf1Af6A0382B0d0f6c5D834';
-
-const CHAINLINK_USDC_PRICE_ID_TESTNET = '0x1844478CA634f3a762a2E71E3386837Bd50C947F';
-const CHAINLINK_ETH_PRICE_ID_TESTNET = '0xfEefF7c3fB57d18C5C6Cdd71e45D2D0b4F9377bF';
-
-const CHAINLINK_USDC_PRICE_ID_MAINNET = '0x1824D297C6d6D311A204495277B63e943C2D376E';
-const CHAINLINK_ETH_PRICE_ID_MAINNET = '0x6D41d1dc818112880b40e26BD6FD347E41008eDA';
-
-const ZKSYNC_MAINNET_ERC20_USDC = '0x1d17CBcF0D6D143135aE902365D2E5e2A16538D4';
-const ZKSYNC_TESTNET_ERC20_OUSDC = '0x4b6021A15cB4E76DD40dE7B0d316A6a7fb613C05';
-
 export interface ConstructorArgs {
     name: string;
     symbol: string;
@@ -207,38 +190,6 @@ export const OpenMintArgs = {
     },
 };
 
-export const ERC20PythPaymasterArgs = {
-    MAINNET: {
-        erc20Address: ZKSYNC_MAINNET_ERC20_USDC,
-        usdcPriceId: PYTH_USDC_PRICE_ID_MAINNET,
-        ethPriceId: PYTH_ETH_PRICE_ID_MAINNET,
-        pythOracleAddress: PYTH_ORACLE_ADDRESS_MAINNET,
-    },
-    TESTNET: {
-        erc20Address: ZKSYNC_TESTNET_ERC20_OUSDC,
-        usdcPriceId: PYTH_USDC_PRICE_ID_TESTNET,
-        ethPriceId: PYTH_ETH_PRICE_ID_TESTNET,
-        pythOracleAddress: PYTH_ORACLE_ADDRESS_TESTNET,
-    },
-};
-
-export const ERC20ChainlinkPaymasterArgs = {
-    MAINNET: {
-        erc20Address: ZKSYNC_MAINNET_ERC20_USDC,
-        erc20FeedId: CHAINLINK_USDC_PRICE_ID_MAINNET,
-        ethFeedId: CHAINLINK_ETH_PRICE_ID_MAINNET,
-        fixedPrice: 1,
-        useChainLink: true,
-    },
-    TESTNET: {
-        erc20Address: ZKSYNC_TESTNET_ERC20_OUSDC,
-        erc20FeedId: CHAINLINK_USDC_PRICE_ID_TESTNET,
-        ethFeedId: CHAINLINK_ETH_PRICE_ID_TESTNET,
-        fixedPrice: 1,
-        useChainLink: true,
-    },
-};
-
 export const GameSummaryArgs = {
     MAINNET: {
         _name: 'GameSummary',
@@ -283,25 +234,12 @@ export const BridgePolygonV1Args = {
     MAINNET: {
         developerAdmin: 'DEPLOYER_WALLET',
         chainIdFrom: ChainId.Polygon,
-        chainIdTo: ChainId.ZkSync,
+        chainIdTo: ChainId.Game7OrbitArbSepolia, // TODO * chain to mainnet
     },
     TESTNET: {
         developerAdmin: 'DEPLOYER_WALLET',
         chainIdFrom: ChainId.PolygonMumbai,
-        chainIdTo: ChainId.ZkSyncSepolia,
-    },
-};
-
-export const BridgeZkSyncV1Args = {
-    MAINNET: {
-        developerAdmin: 'DEPLOYER_WALLET',
-        chainIdFrom: ChainId.ZkSync,
-        chainIdTo: ChainId.Polygon,
-    },
-    TESTNET: {
-        developerAdmin: 'DEPLOYER_WALLET',
-        chainIdFrom: ChainId.ZkSyncSepolia,
-        chainIdTo: ChainId.PolygonMumbai,
+        chainIdTo: ChainId.Game7OrbitArbSepolia,
     },
 };
 
@@ -440,6 +378,7 @@ export const RewardTokenArgs = {
         _defaultTokenURI: 'FILL_ME',
         _contractURI: 'FILL_ME',
         _devWallet: 'DEPLOYER_WALLET',
+        _lootDropAddress: `CONTRACT_${CONTRACT_NAME.LootDrop}`,
     },
     TESTNET: {
         _name: 'RainToken',
@@ -447,6 +386,7 @@ export const RewardTokenArgs = {
         _defaultTokenURI: 'FILL_ME',
         _contractURI: 'FILL_ME',
         _devWallet: 'DEPLOYER_WALLET',
+        _lootDropAddress: `CONTRACT_${CONTRACT_NAME.LootDrop}`,
     },
 };
 

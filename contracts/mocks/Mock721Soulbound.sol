@@ -30,13 +30,12 @@ contract Mock721Soulbound is ERC721, Achievo721Soulbound {
         _soulboundToken(tokenId);
     }
 
-    function _beforeTokenTransfer(
-        address from,
+    function _update(
         address to,
         uint256 tokenId,
-        uint256 batch
-    ) internal override(ERC721) soulboundTokenCheck(tokenId) {
-        super._beforeTokenTransfer(from, to, tokenId, batch);
+        address auth
+    ) internal override(ERC721) soulboundTokenCheck(tokenId) returns (address) {
+        return super._update(to, tokenId, auth);
     }
 
     function supportsInterface(bytes4 interfaceId) public view override(ERC721) returns (bool) {

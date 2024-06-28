@@ -12,7 +12,6 @@ import "@openzeppelin/contracts-upgradeable/token/ERC721/extensions/ERC721URISto
 import "@openzeppelin/contracts-upgradeable/token/ERC721/extensions/ERC721BurnableUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/access/AccessControlUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
-import "@openzeppelin/contracts-upgradeable/utils/CountersUpgradeable.sol";
 
 contract LegacyAvatarUpgradeableV1 is
     Initializable,
@@ -26,10 +25,8 @@ contract LegacyAvatarUpgradeableV1 is
         _disableInitializers();
     }
 
-    using CountersUpgradeable for CountersUpgradeable.Counter;
-
     bytes32 public constant MINTER_ROLE = keccak256("MINTER_ROLE");
-    CountersUpgradeable.Counter private _tokenIdCounter;
+    uint256 private _tokenIdCounter;
 
     mapping(uint256 => bool) private _soulboundTokens;
 
@@ -44,28 +41,27 @@ contract LegacyAvatarUpgradeableV1 is
     }
 
     function safeMint(address to, string memory uri) public onlyRole(MINTER_ROLE) {
-        uint256 tokenId = _tokenIdCounter.current();
-        _tokenIdCounter.increment();
+        uint256 tokenId = _tokenIdCounter;
+        _tokenIdCounter++;
         _safeMint(to, tokenId);
         _setTokenURI(tokenId, uri);
         _soulboundTokens[tokenId] = true;
     }
 
-    function _beforeTokenTransfer(
-        address from,
+    function _update(
         address to,
         uint256 tokenId,
-        uint256 batchSize
-    ) internal override(ERC721Upgradeable, ERC721EnumerableUpgradeable) {
-        // Disallow transfers for soulbound tokens
+        address auth
+    ) internal override(ERC721Upgradeable, ERC721EnumerableUpgradeable) returns (address) {
         require(!_soulboundTokens[tokenId], "This token is soulbound and cannot be transferred");
-        super._beforeTokenTransfer(from, to, tokenId, batchSize);
+        return super._update(to, tokenId, auth);
     }
 
-    function _burn(uint256 tokenId) internal override(ERC721Upgradeable, ERC721URIStorageUpgradeable) {
-        // Disallow transfers for soulbound tokens
-        require(!_soulboundTokens[tokenId], "This token is soulbound and cannot be burned");
-        super._burn(tokenId);
+    function _increaseBalance(
+        address account,
+        uint128 value
+    ) internal override(ERC721Upgradeable, ERC721EnumerableUpgradeable) {
+        super._increaseBalance(account, value);
     }
 
     function tokenURI(

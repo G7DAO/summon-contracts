@@ -16,7 +16,7 @@ const upgradeOne = async (
     contract: DeploymentContract,
     tenant: string
 ): Promise<Deployment> => {
-    const abiPath = getABIFilePath(hre.network.zksync, contract.contractName);
+    const abiPath = getABIFilePath(contract.contractName);
     const filePathDeploymentLatest = path.resolve(
         `${ACHIEVO_TMP_DIR}/${contract.chain}/${contract.upgradable ? 'upgradeables/' : ''}deployments-${
             contract.type

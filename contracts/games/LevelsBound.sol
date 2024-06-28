@@ -22,7 +22,7 @@ pragma solidity ^0.8.17;
 
 import { ERC1155 } from "@openzeppelin/contracts/token/ERC1155/ERC1155.sol";
 import { Ownable } from "@openzeppelin/contracts/access/Ownable.sol";
-import { ReentrancyGuard } from "@openzeppelin/contracts/security/ReentrancyGuard.sol";
+import { ReentrancyGuard } from "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
 import { AccessControl } from "@openzeppelin/contracts/access/AccessControl.sol";
 import { ERCWhitelistSignature } from "../ercs/ERCWhitelistSignature.sol";
 import { IItemBound } from "../interfaces/IItemBound.sol";
@@ -49,10 +49,10 @@ contract LevelsBound is ERC1155, Ownable, ReentrancyGuard, ERCWhitelistSignature
         address developerAdmin,
         bool _mintRandomItemEnabled,
         address _itemsNFTAddress
-    ) ERC1155("") {
+    ) ERC1155("") Ownable(_msgSender()) {
         _grantRole(DEFAULT_ADMIN_ROLE, developerAdmin);
-        _setupRole(MINTER_ROLE, developerAdmin);
-        _setupRole(DEV_CONFIG_ROLE, developerAdmin);
+        _grantRole(MINTER_ROLE, developerAdmin);
+        _grantRole(DEV_CONFIG_ROLE, developerAdmin);
         _addWhitelistSigner(developerAdmin);
 
         name = _name;

@@ -24,11 +24,11 @@ import { ERC1155 } from "@openzeppelin/contracts/token/ERC1155/ERC1155.sol";
 import { ERC1155Burnable } from "@openzeppelin/contracts/token/ERC1155/extensions/ERC1155Burnable.sol";
 import { ERC1155Supply } from "@openzeppelin/contracts/token/ERC1155/extensions/ERC1155Supply.sol";
 import { AccessControl } from "@openzeppelin/contracts/access/AccessControl.sol";
-import { Pausable } from "@openzeppelin/contracts/security/Pausable.sol";
+import { Pausable } from "@openzeppelin/contracts/utils/Pausable.sol";
 import { Strings } from "@openzeppelin/contracts/utils/Strings.sol";
 import { ECDSA } from "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
 import { ERC2981 } from "@openzeppelin/contracts/token/common/ERC2981.sol";
-import { ReentrancyGuard } from "@openzeppelin/contracts/security/ReentrancyGuard.sol";
+import { ReentrancyGuard } from "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
 
 import { Achievo1155Soulbound } from "../ercs/extensions/Achievo1155Soulbound.sol";
 import { ERCWhitelistSignature } from "../ercs/ERCWhitelistSignature.sol";
@@ -150,8 +150,7 @@ contract ERC1155Soulbound is
     }
 
     function _decodeData(bytes calldata _data) private view returns (uint256[] memory) {
-        uint256[] memory itemIds = abi.decode(_data, (uint256[]));
-        return itemIds;
+        return abi.decode(_data, (uint256[]));
     }
 
     function pause() external onlyRole(MANAGER_ROLE) {
@@ -256,15 +255,13 @@ contract ERC1155Soulbound is
         emit MintedId(to, id, amount, soulbound);
     }
 
-    function _beforeTokenTransfer(
-        address operator,
+    function _update(
         address from,
         address to,
         uint256[] memory ids,
-        uint256[] memory amounts,
-        bytes memory data
+        uint256[] memory values
     ) internal virtual override(ERC1155, ERC1155Supply) {
-        super._beforeTokenTransfer(operator, from, to, ids, amounts, data);
+        super._update(from, to, ids, values);
     }
 
     function safeTransferFrom(

@@ -8,13 +8,9 @@ import { PROXY_ADMIN_ABI_PATH } from '@constants/proxy-deployments';
 import { encryptPrivateKey } from '@helpers/encrypt';
 import { getFilePath } from '@helpers/folder';
 import { log } from '@helpers/logger';
-import { Deployer } from '@matterlabs/hardhat-zksync-deploy';
 import * as ethers from 'ethers';
 import { HardhatRuntimeEnvironment } from 'hardhat/types';
 import { Deployment } from 'types/deployment-type';
-import { Wallet } from 'zksync-ethers';
-
-import getZkWallet from './getWallet';
 
 const { Wallet: EthersWallet } = ethers;
 
@@ -53,29 +49,17 @@ export default async function (
     log('=====================================================');
 
     // @ts-ignore
-    let wallet: Wallet | EthersWallet;
     let achievoContract;
-    let artifact;
 
-    const isZkSync = hre.network.zksync;
-
-    if (isZkSync) {
-        wallet = getZkWallet(PRIVATE_KEY);
-        const deployer = new Deployer(hre, wallet);
-        artifact = await deployer.loadArtifact(contract.contractFileName);
-        const args = Object.values(constructorArgs);
-        achievoContract = await hre.zkUpgrades.deployProxy(deployer.zkWallet as any, artifact, [...args]);
+    // @ts-ignore
+    const wallet = new EthersWallet(PRIVATE_KEY, hre.ethers.provider);
+    const artifact = await hre.ethers.getContractFactory(contract.contractFileName);
+    if (!name) {
+        // @ts-ignore
+        achievoContract = await hre.upgrades.deployProxy(artifact, [...restArgs]);
     } else {
         // @ts-ignore
-        wallet = new EthersWallet(PRIVATE_KEY, hre.ethers.provider);
-        artifact = await hre.ethers.getContractFactory(contract.contractFileName);
-        if (!name) {
-            // @ts-ignore
-            achievoContract = await hre.upgrades.deployProxy(artifact, [...restArgs]);
-        } else {
-            // @ts-ignore
-            achievoContract = await hre.upgrades.deployProxy(artifact, [`${tenant}${name}`, ...restArgs]);
-        }
+        achievoContract = await hre.upgrades.deployProxy(artifact, [`${tenant}${name}`, ...restArgs]);
     }
 
     await achievoContract.waitForDeployment();

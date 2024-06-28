@@ -5,8 +5,11 @@ import "forge-std/Test.sol";
 import "forge-std/StdCheats.sol";
 import { Strings } from "@openzeppelin/contracts/utils/Strings.sol";
 import { ECDSA } from "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
+import { MessageHashUtils } from "@openzeppelin/contracts/utils/cryptography/MessageHashUtils.sol";
+import { IAccessControl } from "@openzeppelin/contracts/access/IAccessControl.sol";
+import { IERC1155Errors } from "@openzeppelin/contracts/interfaces/draft-IERC6093.sol";
 import { Strings } from "@openzeppelin/contracts/utils/Strings.sol";
-
+import { Pausable } from "@openzeppelin/contracts/utils/Pausable.sol";
 import { GameSummary } from "../../contracts/games/GameSummary.sol";
 import { MockERC1155Receiver } from "../../contracts/mocks/MockERC1155Receiver.sol";
 import { LibGameSummary } from "../../contracts/libraries/LibGameSummary.sol";
@@ -50,6 +53,9 @@ contract GameSummaryBoundTest is StdCheats, Test {
 
     uint256 public chainId = 31337;
 
+    bytes32 public constant MINTER_ROLE = keccak256("MINTER_ROLE");
+    bytes32 public constant DEV_CONFIG_ROLE = keccak256("DEV_CONFIG_ROLE");
+
     function getWallet(string memory walletLabel) public returns (Wallet memory) {
         (address addr, uint256 privateKey) = makeAddrAndKey(walletLabel);
         Wallet memory wallet = Wallet(addr, privateKey);
@@ -67,7 +73,7 @@ contract GameSummaryBoundTest is StdCheats, Test {
             50;
 
         bytes32 message = keccak256(abi.encodePacked(wallet, encodedItems, _nonce));
-        bytes32 hash = ECDSA.toEthSignedMessageHash(message);
+        bytes32 hash = MessageHashUtils.toEthSignedMessageHash(message);
 
         (uint8 v, bytes32 r, bytes32 s) = vm.sign(signerWallet.privateKey, hash);
         return (_nonce, abi.encodePacked(r, s, v));
@@ -211,7 +217,7 @@ contract GameSummaryBoundTest is StdCheats, Test {
         uint256 _tokenId = gameSummary.getTokenId(_storeId, _playerId, _gameId);
 
         gameSummary.pause();
-        vm.expectRevert("Pausable: paused");
+        vm.expectRevert(abi.encodeWithSelector(Pausable.EnforcedPause.selector));
         gameSummary.adminMintId(address(this), _storeId, _playerId, _gameId, 1, true);
         gameSummary.unpause();
 
@@ -306,7 +312,11 @@ contract GameSummaryBoundTest is StdCheats, Test {
 
     function testAdminMintNotMinterRole() public {
         vm.expectRevert(
-            "AccessControl: account 0x44e97af4418b7a17aabd8090bea0a471a366305c is missing role 0x9f2df0fed2c77648de5860a4cc508cd0818c85b8b8a1ab4ceeef8d981c8956a6"
+            abi.encodeWithSelector(
+                IAccessControl.AccessControlUnauthorizedAccount.selector,
+                playerWallet.addr,
+                MINTER_ROLE
+            )
         );
         vm.prank(playerWallet.addr);
         gameSummary.adminMint(playerWallet.addr, encodedItems1, true);
@@ -324,10 +334,14 @@ contract GameSummaryBoundTest is StdCheats, Test {
         uint256 _playerId = _playerIds[0];
         uint256 _gameId = _gameIds[0];
         uint256 _tokenId = gameSummary.getTokenId(_storeId, _playerId, _gameId);
-
         vm.expectRevert(
-            "AccessControl: account 0x44e97af4418b7a17aabd8090bea0a471a366305c is missing role 0x9f2df0fed2c77648de5860a4cc508cd0818c85b8b8a1ab4ceeef8d981c8956a6"
+            abi.encodeWithSelector(
+                IAccessControl.AccessControlUnauthorizedAccount.selector,
+                playerWallet.addr,
+                MINTER_ROLE
+            )
         );
+
         vm.prank(playerWallet.addr);
         gameSummary.adminMintId(playerWallet.addr, _storeId, _playerId, _gameId, 1, true);
     }
@@ -347,7 +361,14 @@ contract GameSummaryBoundTest is StdCheats, Test {
         gameSummary.mint(encodedItems1, 1, false, nonce, signature);
         assertEq(gameSummary.balanceOf(playerWallet.addr, _tokenIds[0]), 1);
 
-        vm.expectRevert("ERC1155: caller is not token owner or approved");
+        vm.expectRevert(
+            abi.encodeWithSelector(
+                IERC1155Errors.ERC1155MissingApprovalForAll.selector,
+                playerWallet2.addr,
+                playerWallet.addr
+            )
+        );
+
         vm.prank(playerWallet2.addr);
         gameSummary.burn(playerWallet.addr, _tokenIds[0], 1);
     }
@@ -420,7 +441,13 @@ contract GameSummaryBoundTest is StdCheats, Test {
         gameSummary.mint(encodedItems1, 1, false, nonce, signature);
         assertEq(gameSummary.balanceOf(playerWallet.addr, _tokenIds[0]), 1);
 
-        vm.expectRevert("ERC1155: caller is not token owner or approved");
+        vm.expectRevert(
+            abi.encodeWithSelector(
+                IERC1155Errors.ERC1155MissingApprovalForAll.selector,
+                playerWallet2.addr,
+                playerWallet.addr
+            )
+        );
         vm.prank(playerWallet2.addr);
         gameSummary.burnBatch(playerWallet.addr, _itemIds1, _amount1);
     }
@@ -542,7 +569,11 @@ contract GameSummaryBoundTest is StdCheats, Test {
         string memory newBaseURI = "https://something-new.com";
 
         vm.expectRevert(
-            "AccessControl: account 0x44e97af4418b7a17aabd8090bea0a471a366305c is missing role 0x3b359cf0b4471a5de84269135285268e64ac56f52d3161392213003a780ad63b"
+            abi.encodeWithSelector(
+                IAccessControl.AccessControlUnauthorizedAccount.selector,
+                playerWallet.addr,
+                DEV_CONFIG_ROLE
+            )
         );
         vm.prank(playerWallet.addr);
         gameSummary.setBaseUri(newBaseURI);

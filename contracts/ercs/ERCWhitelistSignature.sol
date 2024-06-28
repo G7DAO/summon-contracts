@@ -21,6 +21,7 @@ pragma solidity ^0.8.17;
 // MMMM0cdNMM0cdNMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMM
 
 import "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
+import "@openzeppelin/contracts/utils/cryptography/MessageHashUtils.sol";
 
 contract ERCWhitelistSignature {
     mapping(address => bool) public whitelistSigners;
@@ -60,7 +61,7 @@ contract ERCWhitelistSignature {
         bytes calldata signature
     ) internal pure virtual returns (address) {
         bytes32 message = keccak256(abi.encodePacked(to, data, nonce));
-        bytes32 hash = ECDSA.toEthSignedMessageHash(message);
+        bytes32 hash = MessageHashUtils.toEthSignedMessageHash(message);
         address signer = ECDSA.recover(hash, signature);
         return signer;
     }

@@ -99,7 +99,7 @@ contract Permissions is IPermissions {
         if (_permissionsStorage()._hasRole[role][account]) {
             revert("Can only grant to non holders");
         }
-        _setupRole(role, account);
+        _grantRole(role, account);
     }
 
     /**
@@ -138,7 +138,7 @@ contract Permissions is IPermissions {
     }
 
     /// @dev Sets up `role` for `account`
-    function _setupRole(bytes32 role, address account) internal virtual {
+    function _grantRole(bytes32 role, address account) internal virtual {
         _permissionsStorage()._hasRole[role][account] = true;
         emit RoleGranted(role, account, _msgSender());
     }

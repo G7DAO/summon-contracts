@@ -22,9 +22,9 @@ pragma solidity ^0.8.17;
 // MMMM0cdNMM0cdNMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMM
 
 import "../../interfaces/IERC20Decimals.sol";
-import "@openzeppelin/contracts-upgradeable/security/PausableUpgradeable.sol";
+import "@openzeppelin/contracts-upgradeable/utils/PausableUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/token/ERC20/ERC20Upgradeable.sol";
-import "@openzeppelin/contracts-upgradeable/security/ReentrancyGuardUpgradeable.sol";
+import "@openzeppelin/contracts-upgradeable/utils/ReentrancyGuardUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
 import { ERCWhitelistSignatureUpgradeable } from "../ercs/ERCWhitelistSignatureUpgradeable.sol";
 import { AccessControlUpgradeable } from "@openzeppelin/contracts-upgradeable/access/AccessControlUpgradeable.sol";
@@ -91,7 +91,12 @@ contract ERC20StakeV1 is
         require(success, "TransferFailed");
     }
 
-    function stake(uint256 nonce, bytes calldata data, bytes calldata signature, uint256 amount) public nonReentrant whenNotPaused {
+    function stake(
+        uint256 nonce,
+        bytes calldata data,
+        bytes calldata signature,
+        uint256 amount
+    ) public nonReentrant whenNotPaused {
         require(_verifySignature(_msgSender(), nonce, data, signature), "Invalid signature");
         transferRegularTokens(_msgSender(), amount);
         _mint(_msgSender(), amount);
@@ -119,15 +124,11 @@ contract ERC20StakeV1 is
         emit Unstaked(_msgSender(), amount);
     }
 
-    function _beforeTokenTransfer(
-        address from,
-        address to,
-        uint256 amount
-    ) internal virtual override(ERC20Upgradeable) {
-        if(from != address(0) && to != address(0)) {
+    function _update(address from, address to, uint256 amount) internal virtual override(ERC20Upgradeable) {
+        if (from != address(0) && to != address(0)) {
             revert("TransfersNotAllowed");
         }
-        super._beforeTokenTransfer(from, to, amount);
+        super._update(from, to, amount);
     }
 
     function decimals() public view virtual override returns (uint8) {

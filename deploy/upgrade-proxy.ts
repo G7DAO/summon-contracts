@@ -15,7 +15,7 @@ export async function deployExtension(
     extension: DeploymentExtensionContract,
     tenant: TENANT
 ): Promise<DeployedExtension> {
-    const abiPath = getABIFilePath(hre.network.zksync, extension.contractFileName)!;
+    const abiPath = getABIFilePath(extension.contractFileName)!;
     let constructorArgs;
     if (extension.extensionArgs) {
         constructorArgs = await populateConstructorArgs(hre, extension.extensionArgs, tenant);

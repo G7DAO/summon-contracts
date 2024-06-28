@@ -7,7 +7,9 @@ import "forge-std/StdCheats.sol";
 
 import { ERC1967Proxy } from "@openzeppelin/contracts/proxy/ERC1967/ERC1967Proxy.sol";
 import { Strings } from "@openzeppelin/contracts/utils/Strings.sol";
-import { ECDSAUpgradeable } from "@openzeppelin/contracts-upgradeable/utils/cryptography/ECDSAUpgradeable.sol";
+import { ECDSA } from "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
+import { MessageHashUtils } from "@openzeppelin/contracts/utils/cryptography/MessageHashUtils.sol";
+import { Pausable } from "@openzeppelin/contracts/utils/Pausable.sol";
 
 import { LibItems, TestLibItems } from "../contracts/libraries/LibItems.sol";
 import { AvatarBoundV1 } from "../contracts/upgradeables/games/AvatarBoundV1.sol";
@@ -88,22 +90,22 @@ contract AvatarBoundV1Test is StdCheats, Test {
 
     function generateSignature(
         address wallet,
-        bytes memory encodedItems,
+        bytes memory _encodedItems,
         string memory signerLabel
     ) public returns (uint256, bytes memory) {
         Wallet memory signerWallet = getWallet(signerLabel);
 
-        uint256 _nonce = uint256(keccak256(abi.encodePacked(block.timestamp, block.difficulty, signerWallet.addr))) %
+        uint256 _nonce = uint256(keccak256(abi.encodePacked(block.timestamp, block.prevrandao, signerWallet.addr))) %
             50;
 
-        bytes32 message = keccak256(abi.encodePacked(wallet, encodedItems, _nonce));
-        bytes32 hash = ECDSAUpgradeable.toEthSignedMessageHash(message);
+        bytes32 message = keccak256(abi.encodePacked(wallet, _encodedItems, _nonce));
+        bytes32 hash = MessageHashUtils.toEthSignedMessageHash(message);
 
         (uint8 v, bytes32 r, bytes32 s) = vm.sign(signerWallet.privateKey, hash);
         return (_nonce, abi.encodePacked(r, s, v));
     }
 
-    function setupItems(address avatarBound) internal returns (bytes memory) {
+    function setupItems(address _avatarBound) internal returns (bytes memory) {
         for (uint256 i = 0; i < 10; i++) {
             uint256 _tokenId = generateRandomItemId(); // totally random
             uint256 _level = generateRandomLevel(); // level 1-10
@@ -141,7 +143,7 @@ contract AvatarBoundV1Test is StdCheats, Test {
 
         itemBound.addNewTokens(_tokens);
 
-        encodedItems = encode(avatarBound, _tokenItemsIds);
+        encodedItems = encode(_avatarBound, _tokenItemsIds);
         return encodedItems;
     }
 
@@ -293,7 +295,7 @@ contract AvatarBoundV1Test is StdCheats, Test {
         avatarBound.grantRole(avatarBound.MINTER_ROLE(), address(this));
         avatarBound.setBaseSkin(1, "ipfs://{hash}/1.glb");
         avatarBound.pause();
-        vm.expectRevert("Pausable: paused");
+        vm.expectRevert(abi.encodeWithSelector(Pausable.EnforcedPause.selector));
         avatarBound.adminMint(address(this), 1);
         vm.stopPrank();
     }

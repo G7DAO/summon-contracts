@@ -1,7 +1,7 @@
 import { log } from '@helpers/logger';
-import { Wallet } from 'zksync-ethers';
+import { Wallet } from 'ethers';
 
-export default function getZkWallet(privateKey: string) {
+export default function getWallet(privateKey: string) {
     // Initialize the wallet.
     const wallet = new Wallet(privateKey);
 

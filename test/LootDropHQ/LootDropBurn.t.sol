@@ -7,12 +7,13 @@ import "forge-std/console.sol";
 
 import { Strings } from "@openzeppelin/contracts/utils/Strings.sol";
 import { ECDSA } from "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
-
+import { MessageHashUtils } from "@openzeppelin/contracts/utils/cryptography/MessageHashUtils.sol";
+import { IERC1155Errors } from "@openzeppelin/contracts/interfaces/draft-IERC6093.sol";
 import { LootDrop } from "../../contracts/soulbounds/LootDrop.sol";
 import { AdminERC1155Soulbound } from "../../contracts/soulbounds/AdminERC1155Soulbound.sol";
 import { MockERC1155Receiver } from "../../contracts/mocks/MockERC1155Receiver.sol";
-import {MockERC20} from "../../contracts/mocks/MockErc20.sol";
-import {MockERC721} from "../../contracts/mocks/MockErc721.sol";
+import { MockERC20 } from "../../contracts/mocks/MockErc20.sol";
+import { MockERC721 } from "../../contracts/mocks/MockErc721.sol";
 import { MockERC1155 } from "../../contracts/mocks/MockErc1155.sol";
 import { LibItems, TestLibItems } from "../../contracts/libraries/LibItems.sol";
 
@@ -89,11 +90,11 @@ contract LootDropBurnTest is StdCheats, Test {
     ) public returns (uint256, bytes memory) {
         Wallet memory signerWallet = getWallet(signerLabel);
 
-        uint256 _nonce = uint256(keccak256(abi.encodePacked(block.timestamp, block.difficulty, signerWallet.addr))) %
+        uint256 _nonce = uint256(keccak256(abi.encodePacked(block.timestamp, block.prevrandao, signerWallet.addr))) %
             50;
 
         bytes32 message = keccak256(abi.encodePacked(wallet, encodedItems, _nonce));
-        bytes32 hash = ECDSA.toEthSignedMessageHash(message);
+        bytes32 hash = MessageHashUtils.toEthSignedMessageHash(message);
 
         (uint8 v, bytes32 r, bytes32 s) = vm.sign(signerWallet.privateKey, hash);
         return (_nonce, abi.encodePacked(r, s, v));
@@ -207,7 +208,13 @@ contract LootDropBurnTest is StdCheats, Test {
         lootDrop.mint(encodedItems1, false, nonce, signature, false);
         assertEq(itemBound.balanceOf(playerWallet.addr, _tokenIds[0]), 1);
 
-        vm.expectRevert("ERC1155: caller is not token owner or approved");
+        vm.expectRevert(
+            abi.encodeWithSelector(
+                IERC1155Errors.ERC1155MissingApprovalForAll.selector,
+                playerWallet2.addr,
+                playerWallet.addr
+            )
+        );
         vm.prank(playerWallet2.addr);
         itemBound.burn(playerWallet.addr, _tokenIds[0], 1);
     }
@@ -280,7 +287,14 @@ contract LootDropBurnTest is StdCheats, Test {
         lootDrop.mint(encodedItems1, false, nonce, signature, false);
         assertEq(itemBound.balanceOf(playerWallet.addr, _tokenIds[0]), 1);
 
-        vm.expectRevert("ERC1155: caller is not token owner or approved");
+        vm.expectRevert(
+            abi.encodeWithSelector(
+                IERC1155Errors.ERC1155MissingApprovalForAll.selector,
+                playerWallet2.addr,
+                playerWallet.addr
+            )
+        );
+
         vm.prank(playerWallet2.addr);
         itemBound.burnBatch(playerWallet.addr, _itemIds1, _amount1);
     }

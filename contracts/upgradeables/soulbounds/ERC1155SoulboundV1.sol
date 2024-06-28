@@ -29,15 +29,12 @@ import {
     ERC1155SupplyUpgradeable
 } from "@openzeppelin/contracts-upgradeable/token/ERC1155/extensions/ERC1155SupplyUpgradeable.sol";
 import { AccessControlUpgradeable } from "@openzeppelin/contracts-upgradeable/access/AccessControlUpgradeable.sol";
-import { PausableUpgradeable } from "@openzeppelin/contracts-upgradeable/security/PausableUpgradeable.sol";
-import { StringsUpgradeable } from "@openzeppelin/contracts-upgradeable/utils/StringsUpgradeable.sol";
+import { PausableUpgradeable } from "@openzeppelin/contracts-upgradeable/utils/PausableUpgradeable.sol";
+import { Strings } from "@openzeppelin/contracts/utils/Strings.sol";
 import { ERC2981Upgradeable } from "@openzeppelin/contracts-upgradeable/token/common/ERC2981Upgradeable.sol";
-import { ECDSAUpgradeable } from "@openzeppelin/contracts-upgradeable/utils/cryptography/ECDSAUpgradeable.sol";
 import { ERC2981Upgradeable } from "@openzeppelin/contracts-upgradeable/token/common/ERC2981Upgradeable.sol";
 
-import {
-    ReentrancyGuardUpgradeable
-} from "@openzeppelin/contracts-upgradeable/security/ReentrancyGuardUpgradeable.sol";
+import { ReentrancyGuardUpgradeable } from "@openzeppelin/contracts-upgradeable/utils/ReentrancyGuardUpgradeable.sol";
 
 import { Achievo1155SoulboundUpgradeable } from "../ercs/extensions/Achievo1155SoulboundUpgradeable.sol";
 import { ERCWhitelistSignatureUpgradeable } from "../ercs/ERCWhitelistSignatureUpgradeable.sol";
@@ -64,7 +61,7 @@ contract ERC1155SoulboundV1 is
     string private baseURI;
     string public name;
     string public symbol;
-    using StringsUpgradeable for uint256;
+    using Strings for uint256;
 
     uint256 public MAX_PER_MINT;
 
@@ -194,8 +191,7 @@ contract ERC1155SoulboundV1 is
     }
 
     function _decodeData(bytes calldata _data) private view returns (uint256[] memory) {
-        uint256[] memory itemIds = abi.decode(_data, (uint256[]));
-        return itemIds;
+        return abi.decode(_data, (uint256[]));
     }
 
     function pause() external onlyRole(MANAGER_ROLE) {
@@ -296,15 +292,13 @@ contract ERC1155SoulboundV1 is
         emit MintedId(to, id, amount, soulbound);
     }
 
-    function _beforeTokenTransfer(
-        address operator,
+    function _update(
         address from,
         address to,
         uint256[] memory ids,
-        uint256[] memory amounts,
-        bytes memory data
+        uint256[] memory values
     ) internal virtual override(ERC1155Upgradeable, ERC1155SupplyUpgradeable) {
-        super._beforeTokenTransfer(operator, from, to, ids, amounts, data);
+        super._update(from, to, ids, values);
     }
 
     function safeTransferFrom(

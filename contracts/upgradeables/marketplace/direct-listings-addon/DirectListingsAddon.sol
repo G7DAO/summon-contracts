@@ -1,16 +1,15 @@
 // SPDX-License-Identifier: Apache-2.0
 pragma solidity ^0.8.11;
 
-import {IOffers, IDirectListings, IOffers, IDirectListingsAddon} from "../../../interfaces/IMarketplace.sol";
-import {CurrencyTransferLib} from "../../../libraries/CurrencyTransferLib.sol";
-import {ReentrancyGuard} from "@openzeppelin/contracts/security/ReentrancyGuard.sol";
+import { IOffers, IDirectListings, IOffers, IDirectListingsAddon } from "../../../interfaces/IMarketplace.sol";
+import { CurrencyTransferLib } from "../../../libraries/CurrencyTransferLib.sol";
+import { ReentrancyGuard } from "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
 
-import {ERC2771ContextConsumer} from "../../../ercs/extensions/ERC2771ContextConsumer.sol";
+import { ERC2771ContextConsumer } from "../../../ercs/extensions/ERC2771ContextConsumer.sol";
 
-
-import {LibStorage} from "../libraries/LibStorage.sol";
-import {LibOffers} from "../libraries/LibOffers.sol";
-import {LibDirectListings} from "../libraries/LibDirectListings.sol";
+import { LibStorage } from "../libraries/LibStorage.sol";
+import { LibOffers } from "../libraries/LibOffers.sol";
+import { LibDirectListings } from "../libraries/LibDirectListings.sol";
 
 /**
  * @title Direct Listings Addon
@@ -23,7 +22,10 @@ contract DirectListingsAddon is IDirectListingsAddon, ReentrancyGuard, ERC2771Co
 
     /// @dev Checks whether an auction exists.
     modifier onlyExistingOffer(uint256 _offerId) {
-        require(LibStorage.offersStorage().offers[_offerId].status == IOffers.Status.CREATED, "Marketplace: invalid offer.");
+        require(
+            LibStorage.offersStorage().offers[_offerId].status == IOffers.Status.CREATED,
+            "Marketplace: invalid offer."
+        );
         _;
     }
 
@@ -107,7 +109,10 @@ contract DirectListingsAddon is IDirectListingsAddon, ReentrancyGuard, ERC2771Co
 
     // @notice Cancel an offer for a listing.
     function cancelOfferForListing(uint256 _offerId) external onlyExistingOffer(_offerId) onlyOfferor(_offerId) {
-        require(LibStorage.offersStorage().offers[_offerId].status == IOffers.Status.CREATED, "Marketplace: invalid offer.");
+        require(
+            LibStorage.offersStorage().offers[_offerId].status == IOffers.Status.CREATED,
+            "Marketplace: invalid offer."
+        );
 
         IOffers.Offer storage _offer = LibStorage.offersStorage().offers[_offerId];
         _offer.status = IOffers.Status.CANCELLED;
@@ -133,7 +138,10 @@ contract DirectListingsAddon is IDirectListingsAddon, ReentrancyGuard, ERC2771Co
         IOffers.Offer memory offer = LibStorage.offersStorage().offers[_offerId];
 
         require(_msgSender() == listing.listingCreator, "Marketplace: not listing creator.");
-        require(LibStorage.directListingsAddonStorage().isOfferMadeForListing[_listingId][_offerId], "Marketplace: Offer not made for listing.");
+        require(
+            LibStorage.directListingsAddonStorage().isOfferMadeForListing[_listingId][_offerId],
+            "Marketplace: Offer not made for listing."
+        );
         require(offer.status == IOffers.Status.CREATED, "Marketplace: invalid offer.");
         require(offer.quantity <= listing.quantity, "Marketplace: invalid quantity.");
 
@@ -157,7 +165,14 @@ contract DirectListingsAddon is IDirectListingsAddon, ReentrancyGuard, ERC2771Co
         LibStorage.directListingsStorage().listings[_listingId].quantity -= offer.quantity;
         LibStorage.offersStorage().offers[_offerId].status = IOffers.Status.COMPLETED;
 
-        LibDirectListings.payout(address(this), listing.listingCreator, offer.currency, offer.totalPrice, listing, nativeTokenWrapper);
+        LibDirectListings.payout(
+            address(this),
+            listing.listingCreator,
+            offer.currency,
+            offer.totalPrice,
+            listing,
+            nativeTokenWrapper
+        );
         LibDirectListings.transferListingTokens(buyer, offer.quantity, listing);
 
         emit NewSale(

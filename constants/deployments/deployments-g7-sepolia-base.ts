@@ -5,7 +5,7 @@ import { TENANT } from '@constants/tenant';
 import { DeploymentContract } from '../../types/deployment-type';
 import { NETWORK_TYPE, NetworkName } from '../network';
 
-const chain = NetworkName.ZkSyncSepolia;
+const chain = NetworkName.Game7OrbitBaseSepolia;
 const networkType = NETWORK_TYPE.TESTNET;
 
 export const G7_SEPOLIA_BASE_CONTRACTS: DeploymentContract[] = [

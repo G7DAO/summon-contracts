@@ -20,7 +20,8 @@ pragma solidity ^0.8.17;
 // MMNx'.dWMMK;.:0WMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMM
 // MMMM0cdNMM0cdNMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMM
 
-import "@openzeppelin/contracts-upgradeable/utils/cryptography/ECDSAUpgradeable.sol";
+import "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
+import "@openzeppelin/contracts/utils/cryptography/MessageHashUtils.sol";
 import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
 
 contract ERCWhitelistSignatureUpgradeable is Initializable {
@@ -65,8 +66,8 @@ contract ERCWhitelistSignatureUpgradeable is Initializable {
         bytes calldata signature
     ) internal pure virtual returns (address) {
         bytes32 message = keccak256(abi.encodePacked(to, data, nonce));
-        bytes32 hash = ECDSAUpgradeable.toEthSignedMessageHash(message);
-        address signer = ECDSAUpgradeable.recover(hash, signature);
+        bytes32 hash = MessageHashUtils.toEthSignedMessageHash(message);
+        address signer = ECDSA.recover(hash, signature);
         return signer;
     }
 

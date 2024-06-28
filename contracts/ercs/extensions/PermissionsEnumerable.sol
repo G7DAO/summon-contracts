@@ -105,8 +105,8 @@ contract PermissionsEnumerable is IPermissionsEnumerable, Permissions {
 
     /// @dev Grants `role` to `account`, and adds `account` to {roleMembers}
     ///      See {_addMember}
-    function _setupRole(bytes32 role, address account) internal virtual override {
-        super._setupRole(role, account);
+    function _grantRole(bytes32 role, address account) internal virtual override {
+        super._grantRole(role, account);
         _addMember(role, account);
     }
 

@@ -5,7 +5,6 @@ import { ChainId, NetworkName, Currency, NetworkExplorer, rpcUrls } from '@const
 import { encryptPrivateKey } from '@helpers/encrypt';
 import { getFilePath } from '@helpers/folder';
 import { log } from '@helpers/logger';
-import { Deployer } from '@matterlabs/hardhat-zksync-deploy';
 import { HardhatRuntimeEnvironment } from 'hardhat/types';
 
 import getWallet from './getWallet';
@@ -49,13 +48,7 @@ export default async function (
 
     const wallet = getWallet(PRIVATE_KEY);
 
-    if (hre.network.zksync) {
-        const deployer = new Deployer(hre, wallet);
-        const ContractNewVersion = await deployer.loadArtifact(contract.contractName);
-        achievoContract = await hre.zkUpgrades.upgradeProxy(deployer.zkWallet, proxyAddress, ContractNewVersion);
-    } else {
-        // TODO : support upgrade to non zksync chain
-    }
+    throw new Error('Not implemented yet'); // TODO : implement upgrade to non zksync chain
 
     log(`AvatarBound upgraded to =>  ${contract.name} - ${contract.version}`);
 

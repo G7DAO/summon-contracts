@@ -5,7 +5,6 @@ import { ChainId, NetworkName, Currency, NetworkExplorer, rpcUrls } from '@const
 import { encryptPrivateKey } from '@helpers/encrypt';
 import { getFilePath } from '@helpers/folder';
 import { log } from '@helpers/logger';
-import { Deployer } from '@matterlabs/hardhat-zksync-deploy';
 import { HardhatRuntimeEnvironment } from 'hardhat/types';
 
 import getWallet from './getWallet';
@@ -48,25 +47,11 @@ export default async function (
 
     const wallet = getWallet(PRIVATE_KEY);
 
-    if (hre.network.zksync) {
-        const deployer = new Deployer(hre, wallet);
-        const artifact = await deployer.loadArtifact(contract.contractFileName);
-
-        if (name) {
-            achievoContract = await deployer.deploy(artifact, [`${name}${tenant}`, ...restArgs]);
-        } else {
-            achievoContract = await deployer.deploy(artifact, restArgs);
-        }
+    if (name) {
+        achievoContract = await hre.ethers.deployContract(contract.contractFileName, [`${name}${tenant}`, ...restArgs]);
     } else {
-        if (name) {
-            achievoContract = await hre.ethers.deployContract(contract.contractFileName, [
-                `${name}${tenant}`,
-                ...restArgs,
-            ]);
-        } else {
-            console.info('Constructor arguments:', JSON.stringify(restArgs, null, 2));
-            achievoContract = await hre.ethers.deployContract(contract.contractFileName, restArgs);
-        }
+        console.info('Constructor arguments:', JSON.stringify(restArgs, null, 2));
+        achievoContract = await hre.ethers.deployContract(contract.contractFileName, restArgs);
     }
 
     await achievoContract.waitForDeployment();

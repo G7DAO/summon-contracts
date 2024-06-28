@@ -7,22 +7,16 @@ import { ChainId, Currency, NetworkConfigFile, NetworkExplorer, NetworkName, rpc
 import { CONTRACTS } from '@constants/nonce-deployments';
 import { TENANT } from '@constants/tenant';
 import { getContractFromDB, submitContractDeploymentsToDB } from '@helpers/contract';
+import { encoder } from '@helpers/encoder';
 import { encryptPrivateKey } from '@helpers/encrypt';
 import { getABIFilePath } from '@helpers/folder';
 import { log } from '@helpers/logger';
 import getWallet from 'deploy/getWallet';
 import * as ethers from 'ethers';
+import { Contract } from 'ethers';
 import { task, types } from 'hardhat/config';
 import { HardhatRuntimeEnvironment } from 'hardhat/types';
 import { Deployment, DeploymentContract } from 'types/deployment-type';
-import {
-    utils,
-    Provider as zkProvider,
-    Wallet as zkWallet,
-    ContractFactory as zkContractFactory,
-    Contract,
-} from 'zksync-ethers';
-import { encoder } from '@helpers/encoder';
 
 const { PRIVATE_KEY = '' } = process.env;
 
@@ -33,20 +27,8 @@ if (!PRIVATE_KEY) {
 const wallet = getWallet(PRIVATE_KEY);
 const MINTER_ROLE = '0x9f2df0fed2c77648de5860a4cc508cd0818c85b8b8a1ab4ceeef8d981c8956a6';
 
-const create2Address = (
-    hre: HardhatRuntimeEnvironment,
-    isZkSync: boolean,
-    factoryAddress: string,
-    initCode: string,
-    saltHex: string
-) => {
-    let create2Addr;
-    if (isZkSync) {
-        create2Addr = utils.create2Address(factoryAddress, utils.hashBytecode(initCode), saltHex, '0x'); // zkSync
-    } else {
-        create2Addr = hre.ethers.getCreate2Address(factoryAddress, saltHex, ethers.keccak256(initCode)); // EVM chains
-    }
-
+const create2Address = (hre: HardhatRuntimeEnvironment, factoryAddress: string, initCode: string, saltHex: string) => {
+    const create2Addr = hre.ethers.getCreate2Address(factoryAddress, saltHex, ethers.keccak256(initCode)); // EVM chains
     return create2Addr;
 };
 
@@ -90,75 +72,49 @@ const deployOne = async (
 ): Promise<Deployment> => {
     const encryptedPrivateKey = await encryptPrivateKey(PRIVATE_KEY);
     const saltHex = hre.ethers.keccak256(hre.ethers.toUtf8Bytes(saltString));
-    const isZkSync = networkName.toLowerCase().includes('zksync');
 
-    const abiPath = getABIFilePath(isZkSync, contract.contractFileName);
+    const abiPath = getABIFilePath(contract.contractFileName);
     const abiContent = fs.readFileSync(path.resolve(abiPath as string), 'utf8');
     const { abi: contractAbi, bytecode } = JSON.parse(abiContent);
 
     const networkNameKey = Object.keys(NetworkName)[Object.values(NetworkName).indexOf(networkName)];
     const chainId = ChainId[networkNameKey as keyof typeof ChainId];
     const blockExplorerBaseUrl = NetworkExplorer[networkNameKey as keyof typeof NetworkExplorer];
-    const rpcUrl = rpcUrls[chainId] as string;
+    const rpcUrl = rpcUrls[chainId];
     const currency = Currency[networkNameKey as keyof typeof Currency];
-
-    let deployerWallet;
-    let contractAddress: string;
 
     console.log('chainId', networkName, chainId);
 
-    if (isZkSync) {
-        const ethNetworkName = networkName.split('zkSync')[1].toLowerCase() || 'mainnet';
-        const ethNetworkNameKey =
-            Object.keys(NetworkName)[Object.values(NetworkName).indexOf(ethNetworkName as NetworkName)];
-        const ethChainId = ChainId[ethNetworkNameKey as keyof typeof ChainId];
-        const ethRpcUrl = rpcUrls[ethChainId as ChainId];
+    const factoryContract = await getContractFromDB(CONTRACT_NAME.DETERMINISTIC_FACTORY_CONTRACT, chainId);
 
-        const provider = new zkProvider(rpcUrl);
-        const ethProvider = hre.ethers.getDefaultProvider(ethRpcUrl);
-
-        deployerWallet = new zkWallet(PRIVATE_KEY, provider, ethProvider);
-
-        const factory = new zkContractFactory(contractAbi, bytecode, deployerWallet);
-        const achievoContract = await factory.deploy(deployerWallet.address);
-        await achievoContract.waitForDeployment();
-        contractAddress = await achievoContract.getAddress();
-        console.log('Contract deployed to:', networkName, '::', contractAddress);
-    } else {
-        const factoryContract = await getContractFromDB(CONTRACT_NAME.DETERMINISTIC_FACTORY_CONTRACT, chainId);
-
-        if (!factoryContract) {
-            throw new Error(`Factory contract not found for ${networkName}`);
-        }
-
-        const factoryAddr = factoryContract?.contractAddress;
-
-        if (!factoryAddr) {
-            throw new Error(`Factory address not found for ${networkName}`);
-        }
-
-        const provider = new hre.ethers.JsonRpcProvider(rpcUrl);
-        deployerWallet = new hre.ethers.Wallet(PRIVATE_KEY, provider);
-
-        const initCode = bytecode + encoder(['address'], [deployerWallet.address], 2);
-        const create2Addr = create2Address(hre, isZkSync, factoryAddr, initCode, saltHex);
-        console.log('precomputed address:', networkName, create2Addr);
-
-        const Factory = await hre.ethers.getContractFactory(
-            CONTRACT_NAME.DETERMINISTIC_FACTORY_CONTRACT,
-            deployerWallet
-        );
-        const factory = Factory.attach(factoryAddr) as Contract;
-        const deployment = await factory.deploy(initCode, saltHex);
-        const txReceipt = await deployment.wait();
-
-        // find the log with the name Deployed
-        const log = txReceipt.logs.find((log: { fragment: { name: string } }) => {
-            return log.fragment.name === 'Deployed';
-        });
-        contractAddress = log.args[0];
-        console.log('Contract deployed to:', networkName, '::', contractAddress);
+    if (!factoryContract) {
+        throw new Error(`Factory contract not found for ${networkName}`);
     }
+
+    const factoryAddr = factoryContract?.contractAddress;
+
+    if (!factoryAddr) {
+        throw new Error(`Factory address not found for ${networkName}`);
+    }
+
+    const provider = new hre.ethers.JsonRpcProvider(rpcUrl);
+    const deployerWallet = new hre.ethers.Wallet(PRIVATE_KEY, provider);
+
+    const initCode = bytecode + encoder(['address'], [deployerWallet.address], 2);
+    const create2Addr = create2Address(hre, factoryAddr, initCode, saltHex);
+    console.log('precomputed address:', networkName, create2Addr);
+
+    const Factory = await hre.ethers.getContractFactory(CONTRACT_NAME.DETERMINISTIC_FACTORY_CONTRACT, deployerWallet);
+    const factory = Factory.attach(factoryAddr) as Contract;
+    const deployment = await factory.deploy(initCode, saltHex);
+    const txReceipt = await deployment.wait();
+
+    // find the log with the name Deployed
+    const log = txReceipt.logs.find((log: { fragment: { name: string } }) => {
+        return log.fragment.name === 'Deployed';
+    });
+    const contractAddress = log.args[0];
+    console.log('Contract deployed to:', networkName, '::', contractAddress);
 
     // verify
     if (contract.verify) {
@@ -374,24 +330,9 @@ task('deploy-nonce', 'Deploys Smart contracts to same address across chain')
                 const networkNameKey = Object.keys(NetworkName)[Object.values(NetworkName).indexOf(networkName)];
                 const chainId = ChainId[networkNameKey as keyof typeof ChainId];
                 const rpcUrl = rpcUrls[chainId];
-                const isZkSync = networkName.toLowerCase().includes('zksync');
 
-                let deployerWallet;
-                if (isZkSync) {
-                    const ethNetworkName = networkName.split('zkSync')[1].toLowerCase() || 'mainnet';
-                    const ethNetworkNameKey =
-                        Object.keys(NetworkName)[Object.values(NetworkName).indexOf(ethNetworkName as NetworkName)];
-                    const ethChainId = ChainId[ethNetworkNameKey as keyof typeof ChainId];
-                    const ethRpcUrl = rpcUrls[ethChainId];
-
-                    const provider = new zkProvider(rpcUrl);
-                    const ethProvider = hre.ethers.getDefaultProvider(ethRpcUrl);
-
-                    deployerWallet = new zkWallet(PRIVATE_KEY, provider, ethProvider);
-                } else {
-                    const provider = new hre.ethers.JsonRpcProvider(rpcUrl);
-                    deployerWallet = new hre.ethers.Wallet(PRIVATE_KEY, provider);
-                }
+                const provider = new hre.ethers.JsonRpcProvider(rpcUrl);
+                const deployerWallet = new hre.ethers.Wallet(PRIVATE_KEY, provider);
 
                 const initializeArgs = [];
                 for (const key in deployedContract?.args) {
