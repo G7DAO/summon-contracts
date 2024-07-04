@@ -21,6 +21,7 @@ export interface Soulbound1155Args {
     TESTNET: ConstructorArgs;
 }
 
+
 export const SoulboundBadgesArgs: Soulbound1155Args = {
     MAINNET: {
         name: 'SoulboundBadges',
@@ -352,7 +353,10 @@ export const ERC20DecimalsAgs = {
 
 export const LootDropArgs = {
     MAINNET: {
-        _devWallet: '0x85f56764F58F595D08252b98942554bFB5Eea390',
+        _devWallet: 'DEPLOYER_WALLET',
+        _managerWallet: 'DEPLOYER_WALLET',
+        _minterWallet: 'DEPLOYER_WALLET',
+        _rewardTokenAddress: `CONTRACT_${CONTRACT_NAME.RewardToken}`,
     },
     TESTNET: {
         _devWallet: 'DEPLOYER_WALLET',

@@ -26,6 +26,8 @@ export enum ChainId {
     BaseSepolia = 84532,
     Game7OrbitArbSepolia = 7007007,
     Game7Testnet = 95002,
+    ImmutableZkEvm = 13371,
+    ImmutableZkEvmTestnet = 13473,
 }
 
 export enum NetworkName {
@@ -46,6 +48,8 @@ export enum NetworkName {
     BaseSepolia = 'baseSepolia',
     Game7OrbitArbSepolia = 'game7OrbitArbSepolia',
     Game7Testnet = 'game7Testnet',
+    ImmutableZkEvm = 'immutableZkEvm',
+    ImmutableZkEvmTestnet = 'immutableZkEvmTestnet',
 }
 
 export enum NetworkConfigFile {
@@ -67,6 +71,8 @@ export enum NetworkConfigFile {
     BaseSepolia = 'base.config.ts',
     Game7OrbitArbSepolia = 'g7.config.ts',
     Game7Testnet = 'g7.config.ts',
+    ImmutableZkEvm = 'immutable.config.ts',
+    ImmutableZkEvmTestnet = 'immutable.config.ts',
 }
 
 export enum Currency {
@@ -108,7 +114,9 @@ export enum NetworkExplorer {
     BaseSepolia = 'https://base-sepolia.blockscout.com',
     //  this will change to: testnet.explorer.game7.io
     Game7OrbitArbSepolia = 'https://explorerl2new-game7-arb-anytrust-wcj9hysn7y.t.conduit.xyz',
-    Game7Testnet = 'https://explorer-game7-testnet-2g3y2k9azw.t.conduit.xyz/',
+    Game7Testnet = 'https://explorer-game7-testnet-2g3y2k9azw.t.conduit.xyz',
+    ImmutableZkEvm = 'https://explorer.immutable.com',
+    ImmutableZkEvmTestnet = 'https://explorer.testnet.immutable.com',
 }
 
 export function getTransactionUrl(txHash: string, network: NetworkName): string {
@@ -137,4 +145,6 @@ export const rpcUrls = {
     //  this will change to: rpc.sepolia.game7.io
     [ChainId.Game7OrbitArbSepolia]: 'https://rpc-game7-arb-anytrust-wcj9hysn7y.t.conduit.xyz',
     [ChainId.Game7Testnet]: 'https://rpc-game7-testnet-2g3y2k9azw.t.conduit.xyz/',
+    [ChainId.ImmutableZkEvm]: 'https://rpc.immutable.com',
+    [ChainId.ImmutableZkEvmTestnet]: 'https://rpc.immutable.com',
 };

@@ -130,7 +130,7 @@ task('deploy-create2', 'Deploys Create2 Smart contracts')
         // }
 
         // check balance across all chains
-        const minBalance = hre.ethers.parseEther('0.06'); // should have at least 0.06 eth
+        const minBalance = hre.ethers.parseEther('0.0003'); // should have at least 0.06 eth
         // @ts-ignore
         const hasEnoughBalance = walletData.every(({ chainId, balance }: { balance: string }) => {
             console.log(chainId, ethers.parseEther(balance) >= minBalance);

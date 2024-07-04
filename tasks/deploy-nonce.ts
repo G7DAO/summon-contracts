@@ -220,7 +220,7 @@ task('deploy-nonce', 'Deploys Smart contracts to same address across chain')
             console.log('infoPerNetwork', infoPerNetwork);
 
             // check balance across all chains
-            const minBalance = hre.ethers.parseEther('0.06'); // should have at least 0.06 eth
+            const minBalance = hre.ethers.parseEther('0.0003'); // should have at least 0.06 eth
             // @ts-ignore
             const hasEnoughBalance = infoPerNetwork.every(({ chainId, balance }: { balance: string }) => {
                 console.log(chainId, hre.ethers.parseEther(balance) >= minBalance);

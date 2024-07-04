@@ -1,3 +1,4 @@
+import { ARBITRUM_CONTRACTS } from './deployments-arbitrum';
 import { ARBITRUM_SEPOLIA_CONTRACTS } from './deployments-arbitrum-sepolia';
 import { BASE_MAINNET_CONTRACTS } from './deployments-base-mainnet';
 import { BASE_SEPOLIA_CONTRACTS } from './deployments-base-sepolia';
@@ -9,6 +10,7 @@ import { POLYGON_MUMBAI_CONTRACTS } from './deployments-polygon-mumbai';
 import { SEPOLIA_CONTRACTS } from './deployments-sepolia';
 
 export const CONTRACTS = [
+    ...ARBITRUM_CONTRACTS,
     ...ARBITRUM_SEPOLIA_CONTRACTS,
     ...SEPOLIA_CONTRACTS,
     ...BASE_SEPOLIA_CONTRACTS,
