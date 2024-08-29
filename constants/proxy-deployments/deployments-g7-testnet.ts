@@ -14,13 +14,13 @@ import {
     DirectListingExtensionArgs,
     EnglishAuctionsExtensionArgs,
     MarketplaceArgs,
-    OffersExtensionArgs
-} from "@constants/constructor-args";
+    OffersExtensionArgs,
+} from '@constants/constructor-args';
 
-const chain = NetworkName.Game7OrbitArbSepolia;
+const chain = NetworkName.Game7Testnet;
 const networkType = NETWORK_TYPE.TESTNET;
 
-export const GAME7_ARB_SEPOLIA_CONTRACTS: DeploymentProxyContract[] = [
+export const GAME7_TESTNET: DeploymentProxyContract[] = [
     {
         proxyContractVerify: true,
         verify: true,

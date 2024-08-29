@@ -359,6 +359,7 @@ task('deploy-proxy', 'Deploys Smart contracts with proxy')
                                 abi: deployedImplementation.contractAbi,
                                 address: deployedImplementation.contractAddress,
                             };
+                            // @ts-ignore
                             proxyDeployment.extensions = deployedExtensions.map((extension) => {
                                 return {
                                     name: extension.name,

@@ -59,6 +59,7 @@ export enum CONTRACT_FILE_NAME {
     EnglishAuctionsExtension = 'EnglishAuctionsLogic',
     OffersExtension = 'OffersLogic',
     DirectListingsAddonExtension = 'DirectListingsAddon',
+    Martins = 'Martins',
 }
 
 export enum CONTRACT_UPGRADABLE_FILE_NAME {
@@ -97,7 +98,7 @@ export enum CONTRACT_NAME {
     HelloWorld = 'HelloWorld',
     RewardToken = 'RewardToken',
     DirectListingExtension = 'DirectListingExtension',
-    MartinERC20 = 'MockERC20',
+    MartinsToken = 'Martins',
     Marketplace = 'Marketplace',
     EnglishAuctionsExtension = 'EnglishAuctionsExtension',
     OffersExtension = 'OffersExtension',

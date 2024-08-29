@@ -1,6 +1,6 @@
-import { GAME7_ARB_SEPOLIA_CONTRACTS } from './deployments-game7-arb-sepolia';
+import { GAME7_TESTNET } from './deployments-g7-testnet';
 
-export const CONTRACTS = [...GAME7_ARB_SEPOLIA_CONTRACTS];
+export const CONTRACTS = [...GAME7_TESTNET];
 
 export const ACHIEVO_TMP_DIR = '.achievo';
 export const ABI_PATH = 'artifacts/contracts/';
