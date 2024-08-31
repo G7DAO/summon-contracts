@@ -9,13 +9,7 @@ axios.defaults.headers.post['Content-Type'] = 'application/json';
 
 export const submitContractDeploymentsToDB = async (deployments: Deployment[], tenant: TENANT) => {
     try {
-        deployments.forEach((deployment) => {
-            return {
-                ...deployment,
-                blockchainType: 'EVM',
-            };
-        });
-        await axios.post('/v1/tenants/self/contracts', {
+        await axios.post('/blockchain/v2/tenant-contracts', {
             deployments,
             tenant,
         });
@@ -27,7 +21,7 @@ export const submitContractDeploymentsToDB = async (deployments: Deployment[], t
 
 export const executeFunctionCallBatch = async (calls: FunctionCall[], tenant: TENANT) => {
     try {
-        await axios.post('/v1/admin/contracts/functions', {
+        await axios.post('/blockchain/v2/tenant-contracts/functions', {
             calls,
             tenant,
         });
@@ -41,7 +35,9 @@ export const getContractFromDB = async (
     chainId: number
 ): Promise<Deployment | undefined> => {
     try {
-        const { data } = await axios.get(`/v1/tenants/self/contracts/${name}${chainId ? `?chainId=${chainId}` : ''}`);
+        const { data } = await axios.get(
+            `/blockchain/v2/tenant-contracts/${name}${chainId ? `?chainId=${chainId}` : ''}`
+        );
         if (data.status === 200) {
             return data.data;
         }
