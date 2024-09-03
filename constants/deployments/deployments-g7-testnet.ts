@@ -21,10 +21,10 @@ import { TENANT } from '@constants/tenant';
 import { DeploymentContract } from '../../types/deployment-type';
 import { NETWORK_TYPE, NetworkName } from '../network';
 
-const chain = NetworkName.Game7OrbitArbSepolia;
+const chain = NetworkName.Game7Testnet;
 const networkType = NETWORK_TYPE.TESTNET;
 
-export const G7_SEPOLIA_ARB_CONTRACTS: DeploymentContract[] = [
+export const G7_TESTNET_CONTRACTS: DeploymentContract[] = [
     {
         contractFileName: CONTRACT_FILE_NAME.Avatars,
         type: CONTRACT_TYPE.Avatars,
@@ -103,22 +103,23 @@ export const G7_SEPOLIA_ARB_CONTRACTS: DeploymentContract[] = [
         name: CONTRACT_UPGRADABLE_NAME.Items,
         chain,
         networkType,
-        tenants: [TENANT.Game7],
+        tenants: [TENANT.IronWorks],
         verify: true,
         upgradable: true,
-        dependencies: [CONTRACT_UPGRADABLE_NAME.Avatars],
-        functionCalls: [
-            {
-                contractName: CONTRACT_UPGRADABLE_NAME.Items,
-                functionName: 'grantRole',
-                args: ['MINTER_ROLE', `CONTRACT_${CONTRACT_UPGRADABLE_NAME.Avatars}`],
-            },
-            {
-                contractName: CONTRACT_UPGRADABLE_NAME.Items,
-                functionName: 'grantRole',
-                args: ['MINTER_ROLE', `CONTRACT_${CONTRACT_UPGRADABLE_NAME.Levels}`],
-            },
-        ],
+        dependencies: [],
+        // dependencies: [CONTRACT_UPGRADABLE_NAME.Avatars],
+        // functionCalls: [
+        //     {
+        //         contractName: CONTRACT_UPGRADABLE_NAME.Items,
+        //         functionName: 'grantRole',
+        //         args: ['MINTER_ROLE', `CONTRACT_${CONTRACT_UPGRADABLE_NAME.Avatars}`],
+        //     },
+        //     {
+        //         contractName: CONTRACT_UPGRADABLE_NAME.Items,
+        //         functionName: 'grantRole',
+        //         args: ['MINTER_ROLE', `CONTRACT_${CONTRACT_UPGRADABLE_NAME.Levels}`],
+        //     },
+        // ],
         args: ItemBoundArgs.TESTNET,
     },
     {
@@ -185,9 +186,9 @@ export const G7_SEPOLIA_ARB_CONTRACTS: DeploymentContract[] = [
         args: OpenMintArgs.TESTNET,
     },
     {
-        contractFileName: CONTRACT_FILE_NAME.ERC20,
+        contractFileName: CONTRACT_FILE_NAME.Martins,
         type: CONTRACT_TYPE.ERC20,
-        name: CONTRACT_NAME.MartinERC20,
+        name: CONTRACT_NAME.MartinsToken,
         chain,
         networkType,
         tenants: [TENANT.IronWorks],

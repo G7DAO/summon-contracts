@@ -1,9 +1,8 @@
 import { CONTRACT_NAME, CONTRACT_UPGRADABLE_NAME } from './contract';
 import { ChainId } from './network';
 
-//  TODO: move this to the addresses file @daniel.lima
-const MAR20_G7_TESTNET = '0x9BcdFD72F0434B1cA3b2E8BB96592ceEc22A85e7';
-const IRON_G7_ARB_SEPOLIA_NATIVE_TOKEN = '0x4EdD6ddeAf8f259dba75AC8C5C89ee7564201170';
+const MAR20_G7_TESTNET = '0xd7CD332586D29bD7b9CBdB1ed38BD080C7BFeBC9';
+const G7_NATIVE_TESTNET_TOKEN = '0x10adBf84548F923577Be12146eAc104C899D1E75';
 
 export interface ConstructorArgs {
     name: string;
@@ -234,12 +233,12 @@ export const BridgePolygonV1Args = {
     MAINNET: {
         developerAdmin: 'DEPLOYER_WALLET',
         chainIdFrom: ChainId.Polygon,
-        chainIdTo: ChainId.Game7OrbitArbSepolia, // TODO * chain to mainnet
+        chainIdTo: ChainId.Game7Testnet, // TODO * chain to mainnet
     },
     TESTNET: {
         developerAdmin: 'DEPLOYER_WALLET',
         chainIdFrom: ChainId.PolygonMumbai,
-        chainIdTo: ChainId.Game7OrbitArbSepolia,
+        chainIdTo: ChainId.Game7Testnet,
     },
 };
 
@@ -325,14 +324,8 @@ export const BUIDLArgs = {
 };
 
 export const ERC20Args = {
-    MAINNET: {
-        name: 'FILL_ME',
-        symbol: 'FILL_ME',
-    },
-    TESTNET: {
-        name: 'Martins',
-        symbol: 'MAR20',
-    },
+    MAINNET: {},
+    TESTNET: {},
 };
 
 export const ERC20DecimalsAgs = {
@@ -412,16 +405,14 @@ export const DirectListingAddonArgs = {
 
 export const MarketplaceArgs = {
     MAINNET: {
-        // This will be filled in the deploy script
         extensions: [],
         royaltyEngineAddress: 'FILL_ME',
         nativeTokenWrapper: 'FILL_ME',
     },
     TESTNET: {
-        // This will be filled in the deploy script
         extensions: [],
         royaltyEngineAddress: 'ZERO_ADDRESS',
-        nativeTokenWrapper: IRON_G7_ARB_SEPOLIA_NATIVE_TOKEN,
+        nativeTokenWrapper: G7_NATIVE_TESTNET_TOKEN,
     },
 };
 
@@ -430,7 +421,7 @@ export const EnglishAuctionsExtensionArgs = {
         // _nativeTokenWrapper: 'FILL_ME',
     },
     TESTNET: {
-        _nativeTokenWrapper: IRON_G7_ARB_SEPOLIA_NATIVE_TOKEN,
+        _nativeTokenWrapper: G7_NATIVE_TESTNET_TOKEN,
     },
 };
 

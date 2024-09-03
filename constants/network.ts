@@ -24,8 +24,7 @@ export enum ChainId {
     OPSepolia = 11155420,
     Base = 8453,
     BaseSepolia = 84532,
-    Game7OrbitArbSepolia = 7007007,
-    Game7Testnet = 95002,
+    Game7Testnet = 13746,
 }
 
 export enum NetworkName {
@@ -65,7 +64,6 @@ export enum NetworkConfigFile {
     OPSepolia = 'op.config.ts',
     Base = 'base.config.ts',
     BaseSepolia = 'base.config.ts',
-    Game7OrbitArbSepolia = 'g7.config.ts',
     Game7Testnet = 'g7.config.ts',
 }
 
@@ -86,8 +84,7 @@ export enum Currency {
     Base = 'ETH',
     BaseSepolia = 'ETH',
     Game7Sepolia = 'ETH',
-    Game7OrbitArbSepolia = 'Iron',
-    Game7Testnet = 'G7',
+    Game7Testnet = 'TG7T',
 }
 
 export enum NetworkExplorer {
@@ -106,9 +103,7 @@ export enum NetworkExplorer {
     OPSepolia = 'https://sepolia-optimistic.etherscan.io',
     Base = 'https://basescan.org',
     BaseSepolia = 'https://base-sepolia.blockscout.com',
-    //  this will change to: testnet.explorer.game7.io
-    Game7OrbitArbSepolia = 'https://explorerl2new-game7-arb-anytrust-wcj9hysn7y.t.conduit.xyz',
-    Game7Testnet = 'https://explorer-game7-testnet-2g3y2k9azw.t.conduit.xyz/',
+    Game7Testnet = 'https://explorer-game7-testnet-0ilneybprf.t.conduit.xyz',
 }
 
 export function getTransactionUrl(txHash: string, network: NetworkName): string {
@@ -134,7 +129,5 @@ export const rpcUrls = {
     [ChainId.OPSepolia]: 'https://sepolia.optimism.io',
     [ChainId.Base]: 'https://mainnet.base.org',
     [ChainId.BaseSepolia]: 'https://sepolia.base.org',
-    //  this will change to: rpc.sepolia.game7.io
-    [ChainId.Game7OrbitArbSepolia]: 'https://rpc-game7-arb-anytrust-wcj9hysn7y.t.conduit.xyz',
-    [ChainId.Game7Testnet]: 'https://rpc-game7-testnet-2g3y2k9azw.t.conduit.xyz/',
+    [ChainId.Game7Testnet]: 'https://rpc-game7-testnet-0ilneybprf.t.conduit.xyz',
 };

@@ -12,6 +12,7 @@
         "deploy:create2": "pnpm compile && hardhat --config hardhat.config.ts deploy-create2",
         "deploy:nonce": "pnpm compile && hardhat --config hardhat.config.ts deploy-nonce",
         "deploy:proxy": "pnpm compile && hardhat --config hardhat.config.ts deploy-proxy",
+        "deploy:proxy:g7:testnet": "pnpm compile && hardhat --config g7.config.ts --network game7Testnet deploy-proxy",
         "deploy:sepolia": "pnpm compile && hardhat --config hardhat.config.ts deploy --network sepolia",
         "deploy:arbitrum:one": "pnpm compile && hardhat --config arbitrum.config.ts deploy --network arbitrumOne",
         "deploy:arbitrum:sepolia": "pnpm compile && hardhat --config arbitrum.config.ts deploy --network arbitrumSepolia",
@@ -21,8 +22,7 @@
         "deploy:mantle:sepolia": "pnpm compile && hardhat --config mantle.config.ts deploy --network mantleSepolia",
         "deploy:polygon:mainnet": "pnpm compile && hardhat --config polygon.config.ts deploy --network polygon",
         "deploy:polygon:mumbai": "pnpm compile && hardhat --config polygon.config.ts deploy --network polygonMumbai",
-        "deploy:g7:arb:sepolia": "pnpm compile && hardhat --config g7.config.ts deploy --network game7OrbitArbSepolia",
-        "deploy:g7:base:sepolia": "pnpm compile && hardhat --config g7.config.ts deploy --network game7OrbitBaseSepolia",
+        "deploy:g7:testnet": "pnpm compile && hardhat --config g7.config.ts deploy --network game7Testnet",
         "test:foundry": "forge test -vvv",
         "test": "REPORT_GAS=true hardhat --config hardhat.config.ts test test/hardhatTests/*.ts --network hardhat",
         "test:ci": "hardhat --config hardhat.config.ts test test/hardhatTests/*.ts  --network hardhat",
@@ -32,7 +32,8 @@
         "format:check": "yarn prettier -c ./deploy/**/*.ts ./tasks/**/*.ts ./tests/**/*.ts ./helpers/**/*.ts ./contracts/**/*.sol ",
         "coverage": "TS_NODE_TRANSPILE_ONLY=true SOLIDITY_COVERAGE=true hardhat coverage  --solcoverjs .solcover.ts",
         "coverage:foundry": "forge coverage --report lcov && genhtml lcov.info --branch-coverage --output-dir coverage",
-        "generate:types": "pnpm dlx hardhat typechain"
+        "generate:types": "pnpm dlx hardhat typechain",
+        "deleteme": "pnpm deploy:proxy:g7:testnet --name Marketplace --show-stack-traces"
     },
     "repository": {
         "type": "git",
@@ -70,7 +71,7 @@
         "eslint-plugin-node": "^11.1.0",
         "eslint-plugin-prettier": "^5.1.3",
         "eslint-plugin-unused-imports": "^4.0.0",
-        "hardhat": "^2.22.5",
+        "hardhat": "^2.22.8",
         "hardhat-gas-reporter": "^2.2.0",
         "prettier": "^3.3.2",
         "prettier-plugin-solidity": "^1.3.1",
@@ -91,7 +92,7 @@
         "@pythnetwork/pyth-sdk-solidity": "^3.1.0",
         "axios": "^1.7.2",
         "dotenv": "^16.4.5",
-        "ethers": "^6.13.0",
+        "ethers": "^6.13.2",
         "hardhat-contract-sizer": "^2.10.0"
     }
 }

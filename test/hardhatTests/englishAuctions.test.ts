@@ -38,9 +38,8 @@ describe('EnglishAuction', function () {
     beforeEach(async function () {
         [deployer, lister, bidder, royaltyRecipient] = await ethers.getSigners();
 
-        [marketplace, mockERC20, mockERC721, mockERC1155, mockRoyaltyEngineV1] = await loadFixture(
-            deployMarketplaceContracts
-        );
+        [marketplace, mockERC20, mockERC721, mockERC1155, mockRoyaltyEngineV1] =
+            await loadFixture(deployMarketplaceContracts);
         const marketplaceAddress = await marketplace.getAddress();
 
         await mockERC721.mint(lister.address);
