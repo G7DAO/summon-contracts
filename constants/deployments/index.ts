@@ -7,7 +7,7 @@ import { POLYGON_MAINNET_CONTRACTS } from './deployments-polygon-mainnet';
 import { POLYGON_MUMBAI_CONTRACTS } from './deployments-polygon-mumbai';
 import { SEPOLIA_CONTRACTS } from './deployments-sepolia';
 import { LINEA_MAINNET_CONTRACTS } from '@constants/deployments/deployments-linea-mainnet';
-import { LINEA_SEPOLIA_CONTRACTS } from '@constants/deployments/deployments-linea-testnet';
+import { LINEA_SEPOLIA_CONTRACTS } from '@constants/deployments/deployments-linea-sepolia';
 
 export const CONTRACTS = [
     ...G7_TESTNET_CONTRACTS,

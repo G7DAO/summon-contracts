@@ -1,11 +1,5 @@
 import { ItemBoundArgs } from '@constants/constructor-args';
-import {
-    CONTRACT_TYPE,
-    CONTRACT_NAME,
-    CONTRACT_UPGRADABLE_NAME,
-    CONTRACT_FILE_NAME,
-    CONTRACT_UPGRADABLE_FILE_NAME,
-} from '@constants/contract';
+import { CONTRACT_TYPE, CONTRACT_UPGRADABLE_NAME, CONTRACT_UPGRADABLE_FILE_NAME } from '@constants/contract';
 import { TENANT } from '@constants/tenant';
 
 import { DeploymentContract } from '../../types/deployment-type';

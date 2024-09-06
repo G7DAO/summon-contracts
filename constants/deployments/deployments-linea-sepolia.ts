@@ -1,11 +1,5 @@
-import { ItemBoundArgs, LevelsBoundArgs } from '@constants/constructor-args';
-import {
-    CONTRACT_TYPE,
-    CONTRACT_NAME,
-    CONTRACT_UPGRADABLE_NAME,
-    CONTRACT_FILE_NAME,
-    CONTRACT_UPGRADABLE_FILE_NAME,
-} from '@constants/contract';
+import { ItemBoundArgs } from '@constants/constructor-args';
+import { CONTRACT_TYPE, CONTRACT_UPGRADABLE_NAME, CONTRACT_UPGRADABLE_FILE_NAME } from '@constants/contract';
 import { TENANT } from '@constants/tenant';
 
 import { DeploymentContract } from '../../types/deployment-type';
@@ -22,7 +16,7 @@ export const LINEA_SEPOLIA_CONTRACTS: DeploymentContract[] = [
         chain,
         networkType,
         tenants: [TENANT.Game7],
-        verify: true,
+        verify: false,
         upgradable: true,
         dependencies: [],
         functionCalls: [],
