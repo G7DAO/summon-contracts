@@ -16,7 +16,7 @@ export const LINEA_SEPOLIA_CONTRACTS: DeploymentContract[] = [
         chain,
         networkType,
         tenants: [TENANT.Game7],
-        verify: false,
+        verify: true,
         upgradable: true,
         dependencies: [],
         functionCalls: [],

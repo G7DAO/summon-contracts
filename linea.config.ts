@@ -8,7 +8,7 @@ if (!PRIVATE_KEY) {
     throw new Error('MantleConfig: The private key is required');
 }
 
-log(`Using Game7 L3 Testnet config`);
+log(`Using Linea config`);
 
 defaultConfig.networks = {
     ...defaultConfig.networks,
@@ -44,6 +44,10 @@ defaultConfig.etherscan = {
             },
         },
     ],
+};
+
+defaultConfig.sourcify = {
+    enabled: false,
 };
 
 export default defaultConfig;
