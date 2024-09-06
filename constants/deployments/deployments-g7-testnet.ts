@@ -3,7 +3,6 @@ import {
     AvatarBoundV1Args,
     ERC20Args,
     ItemBoundArgs,
-    ItemBoundIronWorksArgs,
     LevelsBoundArgs,
     LevelsBoundV1Args,
     MarketplaceArgs,
@@ -133,7 +132,7 @@ export const G7_TESTNET_CONTRACTS: DeploymentContract[] = [
         upgradable: false,
         dependencies: [],
         functionCalls: [],
-        args: ItemBoundIronWorksArgs.MAINNET,
+        args: ItemBoundArgs.TESTNET,
     },
     {
         contractFileName: CONTRACT_UPGRADABLE_FILE_NAME.ERC1155RoyaltiesSoulbound,
@@ -146,7 +145,7 @@ export const G7_TESTNET_CONTRACTS: DeploymentContract[] = [
         upgradable: true,
         dependencies: [],
         functionCalls: [],
-        args: ItemBoundIronWorksArgs.MAINNET,
+        args: ItemBoundArgs.TESTNET,
     },
     {
         contractFileName: CONTRACT_FILE_NAME.Levels,
