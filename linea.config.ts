@@ -12,10 +12,15 @@ log(`Using Game7 L3 Testnet config`);
 
 defaultConfig.networks = {
     ...defaultConfig.networks,
-    [NetworkName.Game7Testnet]: {
-        url: rpcUrls[ChainId.Game7Testnet],
+    [NetworkName.LineaSepolia]: {
+        url: rpcUrls[ChainId.LineaSepolia],
         accounts: [PRIVATE_KEY],
-        chainId: ChainId.Game7Testnet,
+        chainId: ChainId.LineaSepolia,
+    },
+    [NetworkName.Linea]: {
+        url: rpcUrls[ChainId.Linea],
+        accounts: [PRIVATE_KEY],
+        chainId: ChainId.Linea,
     },
 };
 
@@ -23,14 +28,21 @@ defaultConfig.etherscan = {
     apiKey: ETHSCAN_API_KEY,
     customChains: [
         {
-            network: NetworkName.Game7Testnet,
-            chainId: ChainId.Game7Testnet,
+            network: NetworkName.Linea,
+            chainId: ChainId.Linea,
             urls: {
-                apiURL: `${NetworkExplorer.Game7Testnet}/api`,
-                browserURL: NetworkExplorer.Game7Testnet,
+                apiURL: `${NetworkExplorer.Linea}/api`,
+                browserURL: NetworkExplorer.Linea,
             },
         },
-        // TODO: Add mainnet later
+        {
+            network: NetworkName.LineaSepolia,
+            chainId: ChainId.LineaSepolia,
+            urls: {
+                apiURL: `${NetworkExplorer.LineaSepolia}/api`,
+                browserURL: NetworkExplorer.LineaSepolia,
+            },
+        },
     ],
 };
 
