@@ -1,7 +1,7 @@
 import { ARBITRUM_SEPOLIA_CONTRACTS } from './deployments-arbitrum-sepolia';
 import { BASE_MAINNET_CONTRACTS } from './deployments-base-mainnet';
 import { BASE_SEPOLIA_CONTRACTS } from './deployments-base-sepolia';
-import { GAME7_ARB_SEPOLIA_CONTRACTS } from './deployments-game7-arb-sepolia';
+import { GAME7_TESTNET_CONTRACTS } from './deployments-game7-testnet';
 import { MANTLE_MAINNET_CONTRACTS } from './deployments-mantle-mainnet';
 import { MANTLE_SEPOLIA_CONTRACTS } from './deployments-mantle-sepolia';
 import { OP_SEPOLIA_CONTRACTS } from './deployments-op-sepolia';
@@ -17,7 +17,7 @@ export const CONTRACTS = [
     ...MANTLE_SEPOLIA_CONTRACTS,
     ...MANTLE_MAINNET_CONTRACTS,
     ...POLYGON_MUMBAI_CONTRACTS,
-    ...GAME7_ARB_SEPOLIA_CONTRACTS,
+    ...GAME7_TESTNET_CONTRACTS,
 ];
 
 export const ACHIEVO_TMP_DIR = '.achievo';
