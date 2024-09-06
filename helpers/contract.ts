@@ -1,4 +1,4 @@
-import { CONTRACT_NAME, CONTRACT_PROXY_CONTRACT_NAME } from "@constants/contract";
+import { CONTRACT_NAME, CONTRACT_PROXY_CONTRACT_NAME } from '@constants/contract';
 import { TENANT } from '@constants/tenant';
 import axios from 'axios';
 import { Deployment, FunctionCall } from 'types/deployment-type';
@@ -9,6 +9,12 @@ axios.defaults.headers.post['Content-Type'] = 'application/json';
 
 export const submitContractDeploymentsToDB = async (deployments: Deployment[], tenant: TENANT) => {
     try {
+        deployments.forEach((deployment) => {
+            return {
+                ...deployment,
+                blockchainType: 'EVM',
+            };
+        });
         await axios.post('/v1/tenants/self/contracts', {
             deployments,
             tenant,
@@ -30,7 +36,10 @@ export const executeFunctionCallBatch = async (calls: FunctionCall[], tenant: TE
     }
 };
 
-export const getContractFromDB = async (name: CONTRACT_NAME | CONTRACT_PROXY_CONTRACT_NAME, chainId: number): Promise<Deployment | undefined> => {
+export const getContractFromDB = async (
+    name: CONTRACT_NAME | CONTRACT_PROXY_CONTRACT_NAME,
+    chainId: number
+): Promise<Deployment | undefined> => {
     try {
         const { data } = await axios.get(`/v1/tenants/self/contracts/${name}${chainId ? `?chainId=${chainId}` : ''}`);
         if (data.status === 200) {
