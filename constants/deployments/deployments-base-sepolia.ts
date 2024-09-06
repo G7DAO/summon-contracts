@@ -1,9 +1,4 @@
-import {
-    AvatarBoundV1Args,
-    ERC20DecimalsAgs,
-    ItemBoundIronWorksArgs,
-    LevelsBoundV1Args,
-} from '@constants/constructor-args';
+import { AvatarBoundV1Args, ERC20DecimalsAgs, ItemBoundArgs, LevelsBoundV1Args } from '@constants/constructor-args';
 import { CONTRACT_TYPE, CONTRACT_UPGRADABLE_FILE_NAME, CONTRACT_UPGRADABLE_NAME } from '@constants/contract';
 import { TENANT } from '@constants/tenant';
 
@@ -85,6 +80,6 @@ export const BASE_SEPOLIA_CONTRACTS: DeploymentContract[] = [
                 args: ['MINTER_ROLE', `CONTRACT_${CONTRACT_UPGRADABLE_NAME.Levels}`],
             },
         ],
-        args: ItemBoundIronWorksArgs.TESTNET,
+        args: ItemBoundArgs.TESTNET,
     },
 ];
