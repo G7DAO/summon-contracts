@@ -140,6 +140,6 @@ export const rpcUrls = {
     [ChainId.Base]: 'https://mainnet.base.org',
     [ChainId.BaseSepolia]: 'https://sepolia.base.org',
     [ChainId.Game7Testnet]: 'https://rpc-game7-testnet-0ilneybprf.t.conduit.xyz',
-    [ChainId.Linea]: 'https://linea-sepolia.infura.io/v3/9aa3d95b3bc440fa88ea12eaa4456161',
-    [ChainId.LineaSepolia]: 'https://linea-sepolia.infura.io/v3/9aa3d95b3bc440fa88ea12eaa4456161',
+    [ChainId.Linea]: 'https://rpc.linea.build',
+    [ChainId.LineaSepolia]: 'https://rpc.sepolia.linea.build',
 };
