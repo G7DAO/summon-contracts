@@ -38,7 +38,7 @@ library LibItems {
     }
 
     struct Reward {
-        RewardType rewardType; // 4 = ether 1 = erc20, 2 = erc721, 3 = erc1155, 4 = erc404
+        RewardType rewardType; // 0 = ether 1 = erc20, 2 = erc721, 3 = erc1155, 4 = erc404
         uint256 rewardAmount; // depending of the erc20 token decimal
         address rewardTokenAddress; // ether is 0x0, USDC, USDT, DAI, NFT, etc
         uint256[] rewardTokenIds; // erc721
