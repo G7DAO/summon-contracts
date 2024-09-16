@@ -112,8 +112,8 @@ export enum NetworkExplorer {
     Base = 'https://basescan.org',
     BaseSepolia = 'https://base-sepolia.blockscout.com',
     Game7Testnet = 'https://explorer-game7-testnet-0ilneybprf.t.conduit.xyz',
-    Linea = 'https://api-explorer.linea.build',
-    LineaSepolia = 'https://api-explorer.sepolia.linea.build',
+    Linea = 'https://api.lineascan.build',
+    LineaSepolia = 'https://api.sepolia.lineascan.build',
 }
 
 export function getTransactionUrl(txHash: string, network: NetworkName): string {
