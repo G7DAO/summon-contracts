@@ -160,6 +160,16 @@ contract AvatarBoundV1 is
         emit AvatarMinted(tokenId, to, baseSkins[baseSkinId]);
     }
 
+    function adminMintWithItems(
+        address to,
+        uint256 baseSkinId,
+        bytes calldata data
+    ) public onlyRole(MINTER_ROLE) whenNotPaused {
+        uint256[] memory _itemIds = _verifyContractChainIdAndDecode(data);
+        mint(to, baseSkinId);
+        _mintRandomItem(to, _itemIds);
+    }
+
     function mintAvatarNftGating(
         uint256 nftGatingId,
         uint256 baseSkinId,
