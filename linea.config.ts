@@ -3,8 +3,8 @@ import { ChainId, NetworkExplorer, NetworkName, rpcUrls } from './constants/netw
 import defaultConfig from './hardhat.config';
 import { log } from '@helpers/logger';
 
-const { PRIVATE_KEY, ETHSCAN_API_KEY } = process.env;
-if (!PRIVATE_KEY) {
+const { PRIVATE_KEY, LINEASCAN_API_KEY } = process.env;
+if (!PRIVATE_KEY || !LINEASCAN_API_KEY) {
     throw new Error('MantleConfig: The private key is required');
 }
 
@@ -25,7 +25,7 @@ defaultConfig.networks = {
 };
 
 defaultConfig.etherscan = {
-    apiKey: ETHSCAN_API_KEY,
+    apiKey: LINEASCAN_API_KEY,
     customChains: [
         {
             network: NetworkName.Linea,
@@ -39,8 +39,8 @@ defaultConfig.etherscan = {
             network: NetworkName.LineaSepolia,
             chainId: ChainId.LineaSepolia,
             urls: {
-                apiURL: `${NetworkExplorer.LineaSepolia}/api`,
-                browserURL: NetworkExplorer.LineaSepolia,
+                apiURL: `https://api-sepolia.lineascan.build/api`,
+                browserURL: 'https://sepolia.lineascan.build/address',
             },
         },
     ],
