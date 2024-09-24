@@ -215,6 +215,16 @@ contract AvatarBoundV1 is
         }
     }
 
+    function adminMintWithItems(
+        address to,
+        uint256 baseSkinId,
+        bytes calldata data
+    ) public onlyRole(MINTER_ROLE) whenNotPaused {
+        uint256[] memory _itemIds = _verifyContractChainIdAndDecode(data);
+        mint(to, baseSkinId);
+        _mintRandomItem(to, _itemIds);
+    }
+
     function adminMint(address to, uint256 baseSkinId) public onlyRole(MINTER_ROLE) whenNotPaused {
         require(balanceOf(to) == 0, "Address already has an Avatar");
         mint(to, baseSkinId);
