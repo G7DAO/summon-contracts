@@ -8,12 +8,12 @@ import getWallet from '../getWallet';
 
 const PRIVATE_KEY = process.env.PRIVATE_KEY || '';
 
-const PROXY_ADDRESS = ''; // TODO * ADD PROXY ADDRESS to upgrade
+const PROXY_ADDRESS = '0x315FA8c7ed4Fc6900411D7A0064c0bab52261993'; // TODO * ADD PROXY ADDRESS to upgrade
 
 if (!PRIVATE_KEY) throw '⛔️ Private key not detected! Add it to the .env file!';
 
 // TODO: change me
-const VERSION = 'V2';
+const VERSION = 'V3';
 
 // TODO: change me
 const CONTRACT_NAME = 'LevelsBound';

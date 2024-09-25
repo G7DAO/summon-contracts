@@ -34,7 +34,7 @@ import { IItemBound } from "../../interfaces/IItemBound.sol";
 
 error InvalidSeed();
 
-contract AvatarBoundV1 is
+contract AvatarBoundV3 is
     Initializable,
     ERC721EnumerableUpgradeable,
     ERC721URIStorageUpgradeable,
@@ -158,6 +158,16 @@ contract AvatarBoundV1 is
         _setTokenURI(tokenId, baseSkins[baseSkinId]);
         _soulboundAddress(to);
         emit AvatarMinted(tokenId, to, baseSkins[baseSkinId]);
+    }
+
+    function adminMintWithItems(
+        address to,
+        uint256 baseSkinId,
+        bytes calldata data
+    ) public onlyRole(MINTER_ROLE) whenNotPaused {
+        uint256[] memory _itemIds = _verifyContractChainIdAndDecode(data);
+        mint(to, baseSkinId);
+        _mintRandomItem(to, _itemIds);
     }
 
     function mintAvatarNftGating(

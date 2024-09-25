@@ -7,7 +7,7 @@ import { exec } from 'node:child_process';
 
 const PRIVATE_KEY = process.env.PRIVATE_KEY || '';
 
-const PROXY_ADDRESS = '0xbF26f57D85f5b0376627752e6dF79648b1937Aa0';
+const PROXY_ADDRESS = '0x023938455d7A9B90984E38d9069fA4b34345a63c';
 
 if (!PRIVATE_KEY) throw '⛔️ Private key not detected! Add it to the .env file!';
 

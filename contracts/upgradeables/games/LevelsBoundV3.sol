@@ -30,7 +30,7 @@ import { ERCWhitelistSignatureUpgradeable } from "../ercs/ERCWhitelistSignatureU
 import { IItemBound } from "../../interfaces/IItemBound.sol";
 import { Achievo1155SoulboundUpgradeable } from "../ercs/extensions/Achievo1155SoulboundUpgradeable.sol";
 
-contract LevelsBoundV2 is
+contract LevelsBoundV3 is
     Initializable,
     ERC1155Upgradeable,
     Achievo1155SoulboundUpgradeable,
@@ -99,6 +99,26 @@ contract LevelsBoundV2 is
         }
         _soulbound(account, level, 1);
         _mint(account, level, 1, "");
+        currentPlayerLevel[account] = level;
+        emit LevelUp(level, account);
+    }
+
+    function adminReplaceLevelAndMintItems(
+        address account,
+        uint256 level,
+        bytes calldata data
+    ) public onlyRole(MINTER_ROLE) {
+        require(currentPlayerLevel[account] != level, "Account already has that level");
+
+        // burn first the current level if exists
+        if (currentPlayerLevel[account] != 0) {
+            burnLevel(account, currentPlayerLevel[account]);
+        }
+        _soulbound(account, level, 1);
+        _mint(account, level, 1, "");
+        if (mintRandomItemEnabled) {
+            mintRandomItem(account, data);
+        }
         currentPlayerLevel[account] = level;
         emit LevelUp(level, account);
     }
