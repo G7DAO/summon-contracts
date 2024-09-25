@@ -107,18 +107,18 @@ export const G7_TESTNET_CONTRACTS: DeploymentContract[] = [
         upgradable: true,
         dependencies: [],
         // dependencies: [CONTRACT_UPGRADABLE_NAME.Avatars],
-        // functionCalls: [
-        //     {
-        //         contractName: CONTRACT_UPGRADABLE_NAME.Items,
-        //         functionName: 'grantRole',
-        //         args: ['MINTER_ROLE', `CONTRACT_${CONTRACT_UPGRADABLE_NAME.Avatars}`],
-        //     },
-        //     {
-        //         contractName: CONTRACT_UPGRADABLE_NAME.Items,
-        //         functionName: 'grantRole',
-        //         args: ['MINTER_ROLE', `CONTRACT_${CONTRACT_UPGRADABLE_NAME.Levels}`],
-        //     },
-        // ],
+        functionCalls: [
+            {
+                contractName: CONTRACT_UPGRADABLE_NAME.Items,
+                functionName: 'grantRole',
+                args: ['MINTER_ROLE', `CONTRACT_${CONTRACT_UPGRADABLE_NAME.Avatars}`],
+            },
+            {
+                contractName: CONTRACT_UPGRADABLE_NAME.Items,
+                functionName: 'grantRole',
+                args: ['MINTER_ROLE', `CONTRACT_${CONTRACT_UPGRADABLE_NAME.Levels}`],
+            },
+        ],
         args: ItemBoundArgs.TESTNET,
     },
     {
