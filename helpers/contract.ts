@@ -9,10 +9,13 @@ axios.defaults.headers.post['Content-Type'] = 'application/json';
 
 export const submitContractDeploymentsToDB = async (deployments: Deployment[], tenant: TENANT) => {
     try {
-        await axios.post('/blockchain/v2/tenant-contracts', {
-            deployments,
-            tenant,
-        });
+        for (const deployment of deployments) {
+            await axios.post('/v2/tenant-contracts', {
+                deployments: [deployment],
+                tenant,
+            });
+            console.log('Deployment submitted to DB:', deployment.name);
+        }
     } catch (error) {
         console.error((error as Error).message);
         throw error;
@@ -21,7 +24,7 @@ export const submitContractDeploymentsToDB = async (deployments: Deployment[], t
 
 export const executeFunctionCallBatch = async (calls: FunctionCall[], tenant: TENANT) => {
     try {
-        await axios.post('/blockchain/v2/tenant-contracts/functions', {
+        await axios.post('/v2/tenant-contracts/functions', {
             calls,
             tenant,
         });
@@ -35,9 +38,7 @@ export const getContractFromDB = async (
     chainId: number
 ): Promise<Deployment | undefined> => {
     try {
-        const { data } = await axios.get(
-            `/blockchain/v2/tenant-contracts/${name}${chainId ? `?chainId=${chainId}` : ''}`
-        );
+        const { data } = await axios.get(`/v2/tenant-contracts/${name}${chainId ? `?chainId=${chainId}` : ''}`);
         if (data.status === 200) {
             return data.data;
         }
