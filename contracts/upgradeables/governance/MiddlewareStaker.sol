@@ -22,6 +22,7 @@ contract MiddlewareStaker is Initializable, AccessControlUpgradeable, Reentrancy
         address user;
         uint256 poolID;
         uint256 amount;
+        bool active; // New property to indicate if the position is active
     }
 
     // Map positionTokenID to PositionInfo
@@ -34,6 +35,7 @@ contract MiddlewareStaker is Initializable, AccessControlUpgradeable, Reentrancy
     error NotYourPosition(address caller);
     error TransferFailed();
     error InvalidAmount();
+    error PositionInactive(uint256 positionTokenID);
 
     // Upgradeable contracts cannot have constructors. Use an initializer instead.
     function initialize(address _stakerContract, address admin) public initializer {
@@ -55,7 +57,8 @@ contract MiddlewareStaker is Initializable, AccessControlUpgradeable, Reentrancy
         positions[positionTokenID] = PositionInfo({
             user: playerAddress,
             poolID: poolID,
-            amount: msg.value
+            amount: msg.value,
+            active: true
         });
 
         // Keep track of user's positions
@@ -66,6 +69,7 @@ contract MiddlewareStaker is Initializable, AccessControlUpgradeable, Reentrancy
     function initiateUnstake(uint256 positionTokenID, address playerAddress) external onlyRole(STAKER_ROLE) nonReentrant {
         PositionInfo storage position = positions[positionTokenID];
         if (position.user != playerAddress) revert NotYourPosition(msg.sender);
+        if (!position.active) revert PositionInactive(positionTokenID);
 
         stakerContract.initiateUnstake(positionTokenID);
     }
@@ -74,6 +78,7 @@ contract MiddlewareStaker is Initializable, AccessControlUpgradeable, Reentrancy
     function unstake(uint256 positionTokenID, address playerAddress) external onlyRole(STAKER_ROLE) nonReentrant {
         PositionInfo storage position = positions[positionTokenID];
         if (position.user != playerAddress) revert NotYourPosition(msg.sender);
+        if (!position.active) revert PositionInactive(positionTokenID);
 
         stakerContract.unstake(positionTokenID);
 
@@ -81,9 +86,12 @@ contract MiddlewareStaker is Initializable, AccessControlUpgradeable, Reentrancy
         (bool success, ) = msg.sender.call{value: position.amount}("");
         if (!success) revert TransferFailed();
 
-        // Remove position from user's positions
+        // Mark the position as inactive instead of deleting it
+        position.active = false;
+
+        // Remove position from user's active positions
         _removeUserPosition(playerAddress, positionTokenID);
-        delete positions[positionTokenID];
+        // Note: Position data is retained in the `positions` mapping
     }
 
     // Helper function to remove position from user's positions
