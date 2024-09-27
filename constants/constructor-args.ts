@@ -416,6 +416,17 @@ export const MarketplaceArgs = {
     },
 };
 
+export const MiddlewareNativeTokenStakerArgs = {
+    MAINNET: {
+        stakerContract: undefined,
+        admin: 'DEPLOYER_WALLET',
+    },
+    TESTNET: {
+        stakerContract: '0xa6B0461b7E54Fa342Be6320D4938295A81f82Cd3',
+        admin: 'DEPLOYER_WALLET',
+    },
+};
+
 export const EnglishAuctionsExtensionArgs = {
     MAINNET: {
         // _nativeTokenWrapper: 'FILL_ME',

@@ -6,6 +6,7 @@ import {
     LevelsBoundArgs,
     LevelsBoundV1Args,
     MarketplaceArgs,
+    MiddlewareNativeTokenStakerArgs,
     OpenMintArgs,
 } from '@constants/constructor-args';
 import {
@@ -221,6 +222,6 @@ export const G7_TESTNET_CONTRACTS: DeploymentContract[] = [
         upgradable: false,
         dependencies: [],
         functionCalls: [],
-        args: MarketplaceArgs.TESTNET,
+        args: MiddlewareNativeTokenStakerArgs.TESTNET,
     },
 ];
