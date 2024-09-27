@@ -4,7 +4,7 @@ import { ethers, upgrades } from 'hardhat';
 import { MiddlewareStakerNativeTokenV1, PositionMetadata, Staker } from '../../typechain-types';
 import { BigNumber, Signer, ZeroAddress } from 'ethers';
 
-describe.only('MiddlewareStakerNativeTokenV1', function () {
+describe('MiddlewareStakerNativeTokenV1', function () {
     let middlewareStaker: MiddlewareStakerNativeTokenV1;
     let mockStaker: Staker;
     let owner: Signer;
