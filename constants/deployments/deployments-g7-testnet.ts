@@ -210,4 +210,17 @@ export const G7_TESTNET_CONTRACTS: DeploymentContract[] = [
         functionCalls: [],
         args: MarketplaceArgs.TESTNET,
     },
+    {
+        contractFileName: CONTRACT_NAME.Staker,
+        type: CONTRACT_TYPE.Staker,
+        name: CONTRACT_UPGRADABLE_NAME.Staker,
+        chain,
+        networkType,
+        tenants: [TENANT.Game7],
+        verify: true,
+        upgradable: false,
+        dependencies: [],
+        functionCalls: [],
+        args: MarketplaceArgs.TESTNET,
+    },
 ];
