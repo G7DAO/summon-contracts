@@ -69,7 +69,7 @@ describe('MiddlewareStakerNativeTokenV1', function () {
 
         // Find the 'Staked' event
         // @ts-ignore
-        const event = events?.find((e) => e.name === 'StakedInMiddleware');
+        const event = events?.find((e) => e.name === 'Staked');
         return event?.args?.positionTokenID;
     }
 
@@ -128,7 +128,7 @@ describe('MiddlewareStakerNativeTokenV1', function () {
 
         // Find the 'Staked' event
         // @ts-ignore
-        const event = events?.find((e) => e.name === 'StakedInMiddleware');
+        const event = events?.find((e) => e.name === 'Staked');
         expect(event).to.not.be.undefined;
 
         const positionTokenID = event!.args.positionTokenID;
@@ -168,7 +168,7 @@ describe('MiddlewareStakerNativeTokenV1', function () {
             .filter((log) => log.address === middlewareStaker.target)
             .map((log) => middlewareStaker.interface.parseLog(log));
 
-        const event = events.find((e) => e.name === 'UnstakeInitiatedInMiddleware');
+        const event = events.find((e) => e.name === 'UnstakeInitiated');
         expect(event).to.not.be.undefined;
         expect(event!.args.user).to.equal(playerAddress);
         expect(event!.args.positionTokenID).to.equal(positionTokenID);
@@ -235,7 +235,7 @@ describe('MiddlewareStakerNativeTokenV1', function () {
             .filter((log) => log.address === middlewareStaker.target)
             .map((log) => middlewareStaker.interface.parseLog(log));
 
-        const event1 = events1?.find((e) => e?.name === 'StakedInMiddleware');
+        const event1 = events1?.find((e) => e?.name === 'Staked');
         expect(event1).to.not.be.undefined;
         const positionTokenID1 = event1!.args.positionTokenID;
 
@@ -247,7 +247,7 @@ describe('MiddlewareStakerNativeTokenV1', function () {
             .filter((log) => log.address === middlewareStaker.target)
             .map((log) => middlewareStaker.interface.parseLog(log));
 
-        const event2 = events2?.find((e) => e?.name === 'StakedInMiddleware');
+        const event2 = events2?.find((e) => e?.name === 'Staked');
         expect(event2).to.not.be.undefined;
         const positionTokenID2 = event2!.args.positionTokenID;
 
@@ -299,7 +299,7 @@ describe('MiddlewareStakerNativeTokenV1', function () {
             .filter((log) => log.address === middlewareStaker.target)
             .map((log) => middlewareStaker.interface.parseLog(log));
 
-        const event = events?.find((e) => e?.name === 'StakedInMiddleware');
+        const event = events?.find((e) => e?.name === 'Staked');
         expect(event).to.not.be.undefined;
         const positionTokenID = event!.args.positionTokenID;
 
@@ -338,7 +338,7 @@ describe('MiddlewareStakerNativeTokenV1', function () {
             .filter((log) => log.address === middlewareStaker.target)
             .map((log) => middlewareStaker.interface.parseLog(log));
 
-        const event = events?.find((e) => e?.name === 'StakedInMiddleware');
+        const event = events?.find((e) => e?.name === 'Staked');
         expect(event).to.not.be.undefined;
         const positionTokenID = event!.args.positionTokenID;
 
