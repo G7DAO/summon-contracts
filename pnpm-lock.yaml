@@ -124,14 +124,14 @@ importers:
         specifier: ^3.3.2
         version: 3.3.2
       prettier-plugin-solidity:
-        specifier: ^1.3.1
-        version: 1.3.1(prettier@3.3.2)
+        specifier: ^1.4.1
+        version: 1.4.1(prettier@3.3.2)
       solhint:
         specifier: ^5.0.1
         version: 5.0.1(typescript@5.4.5)
       solhint-plugin-prettier:
         specifier: ^0.1.0
-        version: 0.1.0(prettier-plugin-solidity@1.3.1(prettier@3.3.2))(prettier@3.3.2)
+        version: 0.1.0(prettier-plugin-solidity@1.4.1(prettier@3.3.2))(prettier@3.3.2)
       solidity-coverage:
         specifier: ^0.8.12
         version: 0.8.12(hardhat@2.22.10(ts-node@10.9.2(@swc/core@1.6.1)(@swc/wasm@1.6.1)(@types/node@20.14.4)(typescript@5.4.5))(typescript@5.4.5))
@@ -628,9 +628,11 @@ packages:
 
   '@openzeppelin/defender-admin-client@1.54.6':
     resolution: {integrity: sha512-P4lxJDySrekWNuPa7FeyW/UmuxnuIXIAGYr5gZnmnMHRsYNaw+XfgkiCDfoGtjEyJbXYxXttYF6iAZhWQPdf1g==}
+    deprecated: This package has been deprecated and will no longer be maintained, please use @openzeppelin/defender-sdk package instead.
 
   '@openzeppelin/defender-base-client@1.54.6':
     resolution: {integrity: sha512-PTef+rMxkM5VQ7sLwLKSjp2DBakYQd661ZJiSRywx+q/nIpm3B/HYGcz5wPZCA5O/QcEP6TatXXDoeMwimbcnw==}
+    deprecated: This package has been deprecated and will no longer be maintained, please use @openzeppelin/defender-sdk package instead.
 
   '@openzeppelin/defender-sdk-base-client@1.13.4':
     resolution: {integrity: sha512-fZjDxdL5WBt6kjKN8j6WlfIsggZKv37W1KoRkT0XwYv7Jslmr22i2qUs8ZreAzATD3ESYQs7YlO7ge0ElqdOKg==}
@@ -744,9 +746,6 @@ packages:
   '@smithy/types@3.1.0':
     resolution: {integrity: sha512-qi4SeCVOUPjhSSZrxxB/mB8DrmuSFUcJnD9KXjuP+7C3LV/KFV4kpuUSH3OHDZgQB9TEH/1sO/Fq/5HyaK9MPw==}
     engines: {node: '>=16.0.0'}
-
-  '@solidity-parser/parser@0.17.0':
-    resolution: {integrity: sha512-Nko8R0/kUo391jsEHHxrGM07QFdnPGvlmox4rmH0kNiNAashItAilhy4Mv4pK5gQmW5f4sXAF58fwJbmlkGcVw==}
 
   '@solidity-parser/parser@0.18.0':
     resolution: {integrity: sha512-yfORGUIPgLck41qyN7nbwJRAx17/jAIXCTanHOJZhB6PJ1iAk/84b/xlsVKFSyNyLXIj0dhppoE0+CRws7wlzA==}
@@ -1877,6 +1876,7 @@ packages:
 
   ethereum-bloom-filters@1.1.0:
     resolution: {integrity: sha512-J1gDRkLpuGNvWYzWslBQR9cDV4nd4kfvVTE/Wy4Kkm4yb3EYRSlyi0eB/inTsSTTVyA0+HyzHgbr95Fn/Z1fSw==}
+    deprecated: do not use this package use package versions above as this can miss some topics
 
   ethereum-cryptography@0.1.3:
     resolution: {integrity: sha512-w8/4x1SGGzc+tO97TASLja6SLd3fRIK2tLVcV2Gx4IB21hE19atll5Cq9o3d0ZmAYC/8aw0ipieTSiekAea4SQ==}
@@ -2978,8 +2978,8 @@ packages:
     resolution: {integrity: sha512-GbK2cP9nraSSUF9N2XwUwqfzlAFlMNYYl+ShE/V+H8a9uNl/oUqB1w2EL54Jh0OlyRSd8RfWYJ3coVS4TROP2w==}
     engines: {node: '>=6.0.0'}
 
-  prettier-plugin-solidity@1.3.1:
-    resolution: {integrity: sha512-MN4OP5I2gHAzHZG1wcuJl0FsLS3c4Cc5494bbg+6oQWBPuEamjwDvmGfFMZ6NFzsh3Efd9UUxeT7ImgjNH4ozA==}
+  prettier-plugin-solidity@1.4.1:
+    resolution: {integrity: sha512-Mq8EtfacVZ/0+uDKTtHZGW3Aa7vEbX/BNx63hmVg6YTiTXSiuKP0amj0G6pGwjmLaOfymWh3QgXEZkjQbU8QRg==}
     engines: {node: '>=16'}
     peerDependencies:
       prettier: '>=2.3.0'
@@ -3300,9 +3300,6 @@ packages:
 
   solidity-ast@0.4.56:
     resolution: {integrity: sha512-HgmsA/Gfklm/M8GFbCX/J1qkVH0spXHgALCNZ8fA8x5X+MFdn/8CP2gr5OVyXjXw6RZTPC/Sxl2RUDQOXyNMeA==}
-
-  solidity-comments-extractor@0.0.8:
-    resolution: {integrity: sha512-htM7Vn6LhHreR+EglVMd2s+sZhcXAirB1Zlyrv5zBuTxieCvjfnRpd7iZk75m/u6NOlEyQ94C6TWbBn2cY7w8g==}
 
   solidity-coverage@0.8.12:
     resolution: {integrity: sha512-8cOB1PtjnjFRqOgwFiD8DaUsYJtVJ6+YdXQtSZDrLGf8cdhhh8xzTtGzVTGeBf15kTv0v7lYPJlV/az7zLEPJw==}
@@ -4859,8 +4856,6 @@ snapshots:
   '@smithy/types@3.1.0':
     dependencies:
       tslib: 2.6.3
-
-  '@solidity-parser/parser@0.17.0': {}
 
   '@solidity-parser/parser@0.18.0': {}
 
@@ -7411,12 +7406,11 @@ snapshots:
     dependencies:
       fast-diff: 1.3.0
 
-  prettier-plugin-solidity@1.3.1(prettier@3.3.2):
+  prettier-plugin-solidity@1.4.1(prettier@3.3.2):
     dependencies:
-      '@solidity-parser/parser': 0.17.0
+      '@solidity-parser/parser': 0.18.0
       prettier: 3.3.2
       semver: 7.6.2
-      solidity-comments-extractor: 0.0.8
 
   prettier@2.8.8: {}
 
@@ -7748,12 +7742,12 @@ snapshots:
     transitivePeerDependencies:
       - debug
 
-  solhint-plugin-prettier@0.1.0(prettier-plugin-solidity@1.3.1(prettier@3.3.2))(prettier@3.3.2):
+  solhint-plugin-prettier@0.1.0(prettier-plugin-solidity@1.4.1(prettier@3.3.2))(prettier@3.3.2):
     dependencies:
       '@prettier/sync': 0.3.0(prettier@3.3.2)
       prettier: 3.3.2
       prettier-linter-helpers: 1.0.0
-      prettier-plugin-solidity: 1.3.1(prettier@3.3.2)
+      prettier-plugin-solidity: 1.4.1(prettier@3.3.2)
 
   solhint@5.0.1(typescript@5.4.5):
     dependencies:
@@ -7783,8 +7777,6 @@ snapshots:
   solidity-ast@0.4.56:
     dependencies:
       array.prototype.findlast: 1.2.5
-
-  solidity-comments-extractor@0.0.8: {}
 
   solidity-coverage@0.8.12(hardhat@2.22.10(ts-node@10.9.2(@swc/core@1.6.1)(@swc/wasm@1.6.1)(@types/node@20.14.4)(typescript@5.4.5))(typescript@5.4.5)):
     dependencies:
