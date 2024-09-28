@@ -31,7 +31,7 @@ importers:
         version: 3.1.0
       axios:
         specifier: ^1.7.2
-        version: 1.7.2(debug@4.3.5)
+        version: 1.7.2(debug@4.3.7)
       dotenv:
         specifier: ^16.4.5
         version: 16.4.5
@@ -47,7 +47,7 @@ importers:
         version: 3.0.6(ethers@6.13.2)(hardhat@2.22.10(ts-node@10.9.2(@swc/core@1.6.1)(@swc/wasm@1.6.1)(@types/node@20.14.4)(typescript@5.4.5))(typescript@5.4.5))
       '@nomicfoundation/hardhat-toolbox':
         specifier: ^5.0.0
-        version: 5.0.0(w3kprjelid553zzbcvf3t7sfyu)
+        version: 5.0.0(izzeznacjf3pytwlno5g5wwzea)
       '@nomicfoundation/hardhat-verify':
         specifier: ^2.0.10
         version: 2.0.10(hardhat@2.22.10(ts-node@10.9.2(@swc/core@1.6.1)(@swc/wasm@1.6.1)(@types/node@20.14.4)(typescript@5.4.5))(typescript@5.4.5))
@@ -85,8 +85,8 @@ importers:
         specifier: ^4.4.1
         version: 4.4.1
       debug:
-        specifier: ^4.3.5
-        version: 4.3.5
+        specifier: ^4.3.7
+        version: 4.3.7
       eslint:
         specifier: ^9.5.0
         version: 9.5.0
@@ -119,7 +119,7 @@ importers:
         version: 2.22.10(ts-node@10.9.2(@swc/core@1.6.1)(@swc/wasm@1.6.1)(@types/node@20.14.4)(typescript@5.4.5))(typescript@5.4.5)
       hardhat-gas-reporter:
         specifier: ^2.2.0
-        version: 2.2.0(debug@4.3.5)(hardhat@2.22.10(ts-node@10.9.2(@swc/core@1.6.1)(@swc/wasm@1.6.1)(@types/node@20.14.4)(typescript@5.4.5))(typescript@5.4.5))(typescript@5.4.5)
+        version: 2.2.0(debug@4.3.7)(hardhat@2.22.10(ts-node@10.9.2(@swc/core@1.6.1)(@swc/wasm@1.6.1)(@types/node@20.14.4)(typescript@5.4.5))(typescript@5.4.5))(typescript@5.4.5)
       prettier:
         specifier: ^3.3.2
         version: 3.3.2
@@ -628,9 +628,11 @@ packages:
 
   '@openzeppelin/defender-admin-client@1.54.6':
     resolution: {integrity: sha512-P4lxJDySrekWNuPa7FeyW/UmuxnuIXIAGYr5gZnmnMHRsYNaw+XfgkiCDfoGtjEyJbXYxXttYF6iAZhWQPdf1g==}
+    deprecated: This package has been deprecated and will no longer be maintained, please use @openzeppelin/defender-sdk package instead.
 
   '@openzeppelin/defender-base-client@1.54.6':
     resolution: {integrity: sha512-PTef+rMxkM5VQ7sLwLKSjp2DBakYQd661ZJiSRywx+q/nIpm3B/HYGcz5wPZCA5O/QcEP6TatXXDoeMwimbcnw==}
+    deprecated: This package has been deprecated and will no longer be maintained, please use @openzeppelin/defender-sdk package instead.
 
   '@openzeppelin/defender-sdk-base-client@1.13.4':
     resolution: {integrity: sha512-fZjDxdL5WBt6kjKN8j6WlfIsggZKv37W1KoRkT0XwYv7Jslmr22i2qUs8ZreAzATD3ESYQs7YlO7ge0ElqdOKg==}
@@ -1519,6 +1521,15 @@ packages:
       supports-color:
         optional: true
 
+  debug@4.3.7:
+    resolution: {integrity: sha512-Er2nc/H7RrMXZBFCEim6TCmMk02Z8vLC2Rbi1KEBggpo0fS6l0S1nnapwmIi3yW/+GOJap1Krg4w0Hg80oCqgQ==}
+    engines: {node: '>=6.0'}
+    peerDependencies:
+      supports-color: '*'
+    peerDependenciesMeta:
+      supports-color:
+        optional: true
+
   decamelize-keys@1.1.1:
     resolution: {integrity: sha512-WiPxgEirIV0/eIOMcnFBA3/IJZAZqKnwAwWyvvdi4lsr1WCN22nhdf/3db3DoZcUjTV2SqfzIwNyp6y2xs3nmg==}
     engines: {node: '>=0.10.0'}
@@ -1877,6 +1888,7 @@ packages:
 
   ethereum-bloom-filters@1.1.0:
     resolution: {integrity: sha512-J1gDRkLpuGNvWYzWslBQR9cDV4nd4kfvVTE/Wy4Kkm4yb3EYRSlyi0eB/inTsSTTVyA0+HyzHgbr95Fn/Z1fSw==}
+    deprecated: do not use this package use package versions above as this can miss some topics
 
   ethereum-cryptography@0.1.3:
     resolution: {integrity: sha512-w8/4x1SGGzc+tO97TASLja6SLd3fRIK2tLVcV2Gx4IB21hE19atll5Cq9o3d0ZmAYC/8aw0ipieTSiekAea4SQ==}
@@ -4070,7 +4082,7 @@ snapshots:
   '@eslint/config-array@0.16.0':
     dependencies:
       '@eslint/object-schema': 2.1.4
-      debug: 4.3.5
+      debug: 4.3.7
       minimatch: 3.1.2
     transitivePeerDependencies:
       - supports-color
@@ -4078,7 +4090,7 @@ snapshots:
   '@eslint/eslintrc@3.1.0':
     dependencies:
       ajv: 6.12.6
-      debug: 4.3.5
+      debug: 4.3.7
       espree: 10.1.0
       globals: 14.0.0
       ignore: 5.3.1
@@ -4529,7 +4541,7 @@ snapshots:
 
   '@nomicfoundation/hardhat-ethers@3.0.6(ethers@6.13.2)(hardhat@2.22.10(ts-node@10.9.2(@swc/core@1.6.1)(@swc/wasm@1.6.1)(@types/node@20.14.4)(typescript@5.4.5))(typescript@5.4.5))':
     dependencies:
-      debug: 4.3.5
+      debug: 4.3.7
       ethers: 6.13.2
       hardhat: 2.22.10(ts-node@10.9.2(@swc/core@1.6.1)(@swc/wasm@1.6.1)(@types/node@20.14.4)(typescript@5.4.5))(typescript@5.4.5)
       lodash.isequal: 4.5.0
@@ -4564,7 +4576,7 @@ snapshots:
       ethereumjs-util: 7.1.5
       hardhat: 2.22.10(ts-node@10.9.2(@swc/core@1.6.1)(@swc/wasm@1.6.1)(@types/node@20.14.4)(typescript@5.4.5))(typescript@5.4.5)
 
-  '@nomicfoundation/hardhat-toolbox@5.0.0(w3kprjelid553zzbcvf3t7sfyu)':
+  '@nomicfoundation/hardhat-toolbox@5.0.0(izzeznacjf3pytwlno5g5wwzea)':
     dependencies:
       '@nomicfoundation/hardhat-chai-matchers': 2.0.7(@nomicfoundation/hardhat-ethers@3.0.6(ethers@6.13.2)(hardhat@2.22.10(ts-node@10.9.2(@swc/core@1.6.1)(@swc/wasm@1.6.1)(@types/node@20.14.4)(typescript@5.4.5))(typescript@5.4.5)))(chai@4.4.1)(ethers@6.13.2)(hardhat@2.22.10(ts-node@10.9.2(@swc/core@1.6.1)(@swc/wasm@1.6.1)(@types/node@20.14.4)(typescript@5.4.5))(typescript@5.4.5))
       '@nomicfoundation/hardhat-ethers': 3.0.6(ethers@6.13.2)(hardhat@2.22.10(ts-node@10.9.2(@swc/core@1.6.1)(@swc/wasm@1.6.1)(@types/node@20.14.4)(typescript@5.4.5))(typescript@5.4.5))
@@ -4579,7 +4591,7 @@ snapshots:
       chai: 4.4.1
       ethers: 6.13.2
       hardhat: 2.22.10(ts-node@10.9.2(@swc/core@1.6.1)(@swc/wasm@1.6.1)(@types/node@20.14.4)(typescript@5.4.5))(typescript@5.4.5)
-      hardhat-gas-reporter: 2.2.0(debug@4.3.5)(hardhat@2.22.10(ts-node@10.9.2(@swc/core@1.6.1)(@swc/wasm@1.6.1)(@types/node@20.14.4)(typescript@5.4.5))(typescript@5.4.5))(typescript@5.4.5)
+      hardhat-gas-reporter: 2.2.0(debug@4.3.7)(hardhat@2.22.10(ts-node@10.9.2(@swc/core@1.6.1)(@swc/wasm@1.6.1)(@types/node@20.14.4)(typescript@5.4.5))(typescript@5.4.5))(typescript@5.4.5)
       solidity-coverage: 0.8.12(hardhat@2.22.10(ts-node@10.9.2(@swc/core@1.6.1)(@swc/wasm@1.6.1)(@types/node@20.14.4)(typescript@5.4.5))(typescript@5.4.5))
       ts-node: 10.9.2(@swc/core@1.6.1)(@swc/wasm@1.6.1)(@types/node@20.14.4)(typescript@5.4.5)
       typechain: 8.3.2(typescript@5.4.5)
@@ -4591,7 +4603,7 @@ snapshots:
       '@ethersproject/address': 5.7.0
       cbor: 8.1.0
       chalk: 2.4.2
-      debug: 4.3.5
+      debug: 4.3.7
       hardhat: 2.22.10(ts-node@10.9.2(@swc/core@1.6.1)(@swc/wasm@1.6.1)(@types/node@20.14.4)(typescript@5.4.5))(typescript@5.4.5)
       lodash.clonedeep: 4.5.0
       semver: 6.3.1
@@ -4659,10 +4671,10 @@ snapshots:
 
   '@openzeppelin/contracts@5.0.2': {}
 
-  '@openzeppelin/defender-admin-client@1.54.6(debug@4.3.5)':
+  '@openzeppelin/defender-admin-client@1.54.6(debug@4.3.7)':
     dependencies:
-      '@openzeppelin/defender-base-client': 1.54.6(debug@4.3.5)
-      axios: 1.7.2(debug@4.3.5)
+      '@openzeppelin/defender-base-client': 1.54.6(debug@4.3.7)
+      axios: 1.7.2(debug@4.3.7)
       ethers: 5.7.2
       lodash: 4.17.21
       node-fetch: 2.7.0
@@ -4672,11 +4684,11 @@ snapshots:
       - encoding
       - utf-8-validate
 
-  '@openzeppelin/defender-base-client@1.54.6(debug@4.3.5)':
+  '@openzeppelin/defender-base-client@1.54.6(debug@4.3.7)':
     dependencies:
       amazon-cognito-identity-js: 6.3.12
       async-retry: 1.3.3
-      axios: 1.7.2(debug@4.3.5)
+      axios: 1.7.2(debug@4.3.7)
       lodash: 4.17.21
       node-fetch: 2.7.0
     transitivePeerDependencies:
@@ -4690,19 +4702,19 @@ snapshots:
     transitivePeerDependencies:
       - encoding
 
-  '@openzeppelin/defender-sdk-deploy-client@1.13.4(debug@4.3.5)':
+  '@openzeppelin/defender-sdk-deploy-client@1.13.4(debug@4.3.7)':
     dependencies:
       '@openzeppelin/defender-sdk-base-client': 1.13.4
-      axios: 1.7.2(debug@4.3.5)
+      axios: 1.7.2(debug@4.3.7)
       lodash: 4.17.21
     transitivePeerDependencies:
       - debug
       - encoding
 
-  '@openzeppelin/defender-sdk-network-client@1.13.4(debug@4.3.5)':
+  '@openzeppelin/defender-sdk-network-client@1.13.4(debug@4.3.7)':
     dependencies:
       '@openzeppelin/defender-sdk-base-client': 1.13.4
-      axios: 1.7.2(debug@4.3.5)
+      axios: 1.7.2(debug@4.3.7)
       lodash: 4.17.21
     transitivePeerDependencies:
       - debug
@@ -4711,14 +4723,14 @@ snapshots:
   '@openzeppelin/hardhat-upgrades@3.1.1(@nomicfoundation/hardhat-ethers@3.0.6(ethers@6.13.2)(hardhat@2.22.10(ts-node@10.9.2(@swc/core@1.6.1)(@swc/wasm@1.6.1)(@types/node@20.14.4)(typescript@5.4.5))(typescript@5.4.5)))(@nomicfoundation/hardhat-verify@2.0.10(hardhat@2.22.10(ts-node@10.9.2(@swc/core@1.6.1)(@swc/wasm@1.6.1)(@types/node@20.14.4)(typescript@5.4.5))(typescript@5.4.5)))(ethers@6.13.2)(hardhat@2.22.10(ts-node@10.9.2(@swc/core@1.6.1)(@swc/wasm@1.6.1)(@types/node@20.14.4)(typescript@5.4.5))(typescript@5.4.5))':
     dependencies:
       '@nomicfoundation/hardhat-ethers': 3.0.6(ethers@6.13.2)(hardhat@2.22.10(ts-node@10.9.2(@swc/core@1.6.1)(@swc/wasm@1.6.1)(@types/node@20.14.4)(typescript@5.4.5))(typescript@5.4.5))
-      '@openzeppelin/defender-admin-client': 1.54.6(debug@4.3.5)
-      '@openzeppelin/defender-base-client': 1.54.6(debug@4.3.5)
+      '@openzeppelin/defender-admin-client': 1.54.6(debug@4.3.7)
+      '@openzeppelin/defender-base-client': 1.54.6(debug@4.3.7)
       '@openzeppelin/defender-sdk-base-client': 1.13.4
-      '@openzeppelin/defender-sdk-deploy-client': 1.13.4(debug@4.3.5)
-      '@openzeppelin/defender-sdk-network-client': 1.13.4(debug@4.3.5)
+      '@openzeppelin/defender-sdk-deploy-client': 1.13.4(debug@4.3.7)
+      '@openzeppelin/defender-sdk-network-client': 1.13.4(debug@4.3.7)
       '@openzeppelin/upgrades-core': 1.34.0
       chalk: 4.1.2
-      debug: 4.3.5
+      debug: 4.3.7
       ethereumjs-util: 7.1.5
       ethers: 6.13.2
       hardhat: 2.22.10(ts-node@10.9.2(@swc/core@1.6.1)(@swc/wasm@1.6.1)(@types/node@20.14.4)(typescript@5.4.5))(typescript@5.4.5)
@@ -4737,7 +4749,7 @@ snapshots:
       cbor: 9.0.2
       chalk: 4.1.2
       compare-versions: 6.1.0
-      debug: 4.3.5
+      debug: 4.3.7
       ethereumjs-util: 7.1.5
       minimist: 1.2.8
       proper-lockfile: 4.1.2
@@ -5033,7 +5045,7 @@ snapshots:
       '@typescript-eslint/types': 7.13.1
       '@typescript-eslint/typescript-estree': 7.13.1(typescript@5.4.5)
       '@typescript-eslint/visitor-keys': 7.13.1
-      debug: 4.3.5
+      debug: 4.3.7
       eslint: 9.5.0
     optionalDependencies:
       typescript: 5.4.5
@@ -5049,7 +5061,7 @@ snapshots:
     dependencies:
       '@typescript-eslint/typescript-estree': 7.13.1(typescript@5.4.5)
       '@typescript-eslint/utils': 7.13.1(eslint@9.5.0)(typescript@5.4.5)
-      debug: 4.3.5
+      debug: 4.3.7
       eslint: 9.5.0
       ts-api-utils: 1.3.0(typescript@5.4.5)
     optionalDependencies:
@@ -5063,7 +5075,7 @@ snapshots:
     dependencies:
       '@typescript-eslint/types': 7.13.1
       '@typescript-eslint/visitor-keys': 7.13.1
-      debug: 4.3.5
+      debug: 4.3.7
       globby: 11.1.0
       is-glob: 4.0.3
       minimatch: 9.0.4
@@ -5114,7 +5126,7 @@ snapshots:
 
   agent-base@6.0.2:
     dependencies:
-      debug: 4.3.5
+      debug: 4.3.7
     transitivePeerDependencies:
       - supports-color
 
@@ -5299,9 +5311,9 @@ snapshots:
 
   axe-core@4.7.0: {}
 
-  axios@1.7.2(debug@4.3.5):
+  axios@1.7.2(debug@4.3.7):
     dependencies:
-      follow-redirects: 1.15.6(debug@4.3.5)
+      follow-redirects: 1.15.6(debug@4.3.7)
       form-data: 4.0.0
       proxy-from-env: 1.1.0
     transitivePeerDependencies:
@@ -5680,6 +5692,10 @@ snapshots:
   debug@4.3.5:
     dependencies:
       ms: 2.1.2
+
+  debug@4.3.7:
+    dependencies:
+      ms: 2.1.3
 
   decamelize-keys@1.1.1:
     dependencies:
@@ -6092,7 +6108,7 @@ snapshots:
       ajv: 6.12.6
       chalk: 4.1.2
       cross-spawn: 7.0.3
-      debug: 4.3.5
+      debug: 4.3.7
       escape-string-regexp: 4.0.0
       eslint-scope: 8.0.1
       eslint-visitor-keys: 4.0.0
@@ -6335,9 +6351,9 @@ snapshots:
 
   flatted@3.3.1: {}
 
-  follow-redirects@1.15.6(debug@4.3.5):
+  follow-redirects@1.15.6(debug@4.3.7):
     optionalDependencies:
-      debug: 4.3.5
+      debug: 4.3.7
 
   for-each@0.3.3:
     dependencies:
@@ -6568,13 +6584,13 @@ snapshots:
       hardhat: 2.22.10(ts-node@10.9.2(@swc/core@1.6.1)(@swc/wasm@1.6.1)(@types/node@20.14.4)(typescript@5.4.5))(typescript@5.4.5)
       strip-ansi: 6.0.1
 
-  hardhat-gas-reporter@2.2.0(debug@4.3.5)(hardhat@2.22.10(ts-node@10.9.2(@swc/core@1.6.1)(@swc/wasm@1.6.1)(@types/node@20.14.4)(typescript@5.4.5))(typescript@5.4.5))(typescript@5.4.5):
+  hardhat-gas-reporter@2.2.0(debug@4.3.7)(hardhat@2.22.10(ts-node@10.9.2(@swc/core@1.6.1)(@swc/wasm@1.6.1)(@types/node@20.14.4)(typescript@5.4.5))(typescript@5.4.5))(typescript@5.4.5):
     dependencies:
       '@ethersproject/abi': 5.7.0
       '@ethersproject/bytes': 5.7.0
       '@ethersproject/units': 5.7.0
       '@solidity-parser/parser': 0.18.0
-      axios: 1.7.2(debug@4.3.5)
+      axios: 1.7.2(debug@4.3.7)
       brotli-wasm: 2.0.1
       chalk: 4.1.2
       cli-table3: 0.6.5
@@ -6612,7 +6628,7 @@ snapshots:
       chalk: 2.4.2
       chokidar: 3.6.0
       ci-info: 2.0.0
-      debug: 4.3.5
+      debug: 4.3.7
       enquirer: 2.4.1
       env-paths: 2.2.1
       ethereum-cryptography: 1.2.0
@@ -6631,7 +6647,7 @@ snapshots:
       raw-body: 2.5.2
       resolve: 1.17.0
       semver: 6.3.1
-      solc: 0.8.26(debug@4.3.5)
+      solc: 0.8.26(debug@4.3.7)
       source-map-support: 0.5.21
       stacktrace-parser: 0.1.10
       tsort: 0.0.1
@@ -6712,7 +6728,7 @@ snapshots:
   https-proxy-agent@5.0.1:
     dependencies:
       agent-base: 6.0.2
-      debug: 4.3.5
+      debug: 4.3.7
     transitivePeerDependencies:
       - supports-color
 
@@ -7736,11 +7752,11 @@ snapshots:
       wcwidth: 1.0.1
       yargs: 15.4.1
 
-  solc@0.8.26(debug@4.3.5):
+  solc@0.8.26(debug@4.3.7):
     dependencies:
       command-exists: 1.2.9
       commander: 8.3.0
-      follow-redirects: 1.15.6(debug@4.3.5)
+      follow-redirects: 1.15.6(debug@4.3.7)
       js-sha3: 0.8.0
       memorystream: 0.3.1
       semver: 5.7.2
@@ -8080,7 +8096,7 @@ snapshots:
   typechain@8.3.2(typescript@5.4.5):
     dependencies:
       '@types/prettier': 2.7.3
-      debug: 4.3.5
+      debug: 4.3.7
       fs-extra: 7.0.1
       glob: 7.1.7
       js-sha3: 0.8.0
