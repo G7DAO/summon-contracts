@@ -69,7 +69,7 @@ describe('MiddlewareStakerNativeTokenV1', function () {
 
         // Find the 'Staked' event
         // @ts-ignore
-        const event = events?.find((e) => e.name === 'Staked');
+        const event = events?.find((e) => e.name === 'StakedInMiddleware');
         return event?.args?.positionTokenID;
     }
 
@@ -128,7 +128,7 @@ describe('MiddlewareStakerNativeTokenV1', function () {
 
         // Find the 'Staked' event
         // @ts-ignore
-        const event = events?.find((e) => e.name === 'Staked');
+        const event = events?.find((e) => e.name === 'StakedInMiddleware');
         expect(event).to.not.be.undefined;
 
         const positionTokenID = event!.args.positionTokenID;
@@ -168,7 +168,7 @@ describe('MiddlewareStakerNativeTokenV1', function () {
             .filter((log) => log.address === middlewareStaker.target)
             .map((log) => middlewareStaker.interface.parseLog(log));
 
-        const event = events.find((e) => e.name === 'UnstakeInitiated');
+        const event = events.find((e) => e.name === 'UnstakeInitiatedInMiddleware');
         expect(event).to.not.be.undefined;
         expect(event!.args.user).to.equal(playerAddress);
         expect(event!.args.positionTokenID).to.equal(positionTokenID);
@@ -235,7 +235,7 @@ describe('MiddlewareStakerNativeTokenV1', function () {
             .filter((log) => log.address === middlewareStaker.target)
             .map((log) => middlewareStaker.interface.parseLog(log));
 
-        const event1 = events1?.find((e) => e?.name === 'Staked');
+        const event1 = events1?.find((e) => e?.name === 'StakedInMiddleware');
         expect(event1).to.not.be.undefined;
         const positionTokenID1 = event1!.args.positionTokenID;
 
@@ -247,7 +247,7 @@ describe('MiddlewareStakerNativeTokenV1', function () {
             .filter((log) => log.address === middlewareStaker.target)
             .map((log) => middlewareStaker.interface.parseLog(log));
 
-        const event2 = events2?.find((e) => e?.name === 'Staked');
+        const event2 = events2?.find((e) => e?.name === 'StakedInMiddleware');
         expect(event2).to.not.be.undefined;
         const positionTokenID2 = event2!.args.positionTokenID;
 
@@ -276,5 +276,75 @@ describe('MiddlewareStakerNativeTokenV1', function () {
 
         // Attempt to unstake before cooldown period (should fail due to cooldown)
         await expect(middlewareStaker.connect(stakerRole).unstake(positionTokenID1, playerAddress)).to.be.reverted;
+    });
+
+    it.skip('Should allow transferring positionTokenID if pool is transferable', async function () {
+        const NATIVE_TOKEN_TYPE = await mockStaker.NATIVE_TOKEN_TYPE();
+
+        // Create a transferable pool
+        await createPool(Number(NATIVE_TOKEN_TYPE), ZeroAddress, 0, true, 1, 1);
+
+        const poolID = 1;
+        const stakeAmount = ethers.parseEther('1.0');
+        const playerAddress = await user.getAddress();
+
+        // Stake into the transferable pool
+        const tx = await middlewareStaker
+            .connect(stakerRole)
+            .stakeNative(poolID, playerAddress, { value: stakeAmount });
+        const receipt = await tx.wait();
+
+        // Parse logs to get positionTokenID
+        const events = receipt?.logs
+            .filter((log) => log.address === middlewareStaker.target)
+            .map((log) => middlewareStaker.interface.parseLog(log));
+
+        const event = events?.find((e) => e?.name === 'StakedInMiddleware');
+        expect(event).to.not.be.undefined;
+        const positionTokenID = event!.args.positionTokenID;
+
+        const currentOwner = await mockStaker.ownerOf(positionTokenID);
+
+        expect(currentOwner).to.not.equal(middlewareStaker.target);
+
+        // Transfer the positionTokenID from playerAddress to otherUser
+        await mockStaker
+            .connect(stakerRole)
+            .transferFrom(await stakerRole.getAddress(), await otherUser.getAddress(), positionTokenID);
+
+        // Verify new owner
+        const newOwner = await mockStaker.ownerOf(positionTokenID);
+        expect(newOwner).to.equal(await otherUser.getAddress());
+    });
+
+    it.skip('Should prevent transferring positionTokenID if pool is not transferable', async function () {
+        const NATIVE_TOKEN_TYPE = await mockStaker.NATIVE_TOKEN_TYPE();
+
+        // Create a non-transferable pool
+        await createPool(Number(NATIVE_TOKEN_TYPE), ZeroAddress, 0, false, 0, 0);
+
+        const poolID = 0;
+        const stakeAmount = ethers.parseEther('1.0');
+        const playerAddress = await user.getAddress();
+
+        // Stake into the non-transferable pool
+        const tx = await middlewareStaker
+            .connect(stakerRole)
+            .stakeNative(poolID, playerAddress, { value: stakeAmount });
+        const receipt = await tx.wait();
+
+        // Parse logs to get positionTokenID
+        const events = receipt?.logs
+            .filter((log) => log.address === middlewareStaker.target)
+            .map((log) => middlewareStaker.interface.parseLog(log));
+
+        const event = events?.find((e) => e?.name === 'StakedInMiddleware');
+        expect(event).to.not.be.undefined;
+        const positionTokenID = event!.args.positionTokenID;
+
+        // Attempt to transfer the positionTokenID from playerAddress to otherUser
+        await expect(
+            mockStaker.connect(stakerRole).transferFrom(stakerRole, await otherUser.getAddress(), positionTokenID)
+        ).to.be.revertedWith('PositionNotTransferable');
     });
 });
