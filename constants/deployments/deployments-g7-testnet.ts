@@ -6,6 +6,7 @@ import {
     LevelsBoundArgs,
     LevelsBoundV1Args,
     MarketplaceArgs,
+    MiddlewareNativeTokenStakerArgs,
     OpenMintArgs,
 } from '@constants/constructor-args';
 import {
@@ -209,5 +210,18 @@ export const G7_TESTNET_CONTRACTS: DeploymentContract[] = [
         dependencies: [CONTRACT_NAME.DirectListingExtension, CONTRACT_UPGRADABLE_FILE_NAME.ERC1155RoyaltiesSoulbound],
         functionCalls: [],
         args: MarketplaceArgs.TESTNET,
+    },
+    {
+        contractFileName: CONTRACT_NAME.Staker,
+        type: CONTRACT_TYPE.Staker,
+        name: CONTRACT_UPGRADABLE_NAME.Staker,
+        chain,
+        networkType,
+        tenants: [TENANT.Game7],
+        verify: true,
+        upgradable: false,
+        dependencies: [],
+        functionCalls: [],
+        args: MiddlewareNativeTokenStakerArgs.TESTNET,
     },
 ];

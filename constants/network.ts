@@ -109,7 +109,7 @@ export enum NetworkExplorer {
     OPSepolia = 'https://sepolia-optimistic.etherscan.io',
     Base = 'https://basescan.org',
     BaseSepolia = 'https://base-sepolia.blockscout.com',
-    Game7Testnet = 'https://explorer-game7-testnet-0ilneybprf.t.conduit.xyz',
+    Game7Testnet = 'https://testnet.game7.io',
     Linea = 'https://api.lineascan.build',
     LineaSepolia = 'https://api.sepolia.lineascan.build',
 }
@@ -137,7 +137,7 @@ export const rpcUrls = {
     [ChainId.OPSepolia]: 'https://sepolia.optimism.io',
     [ChainId.Base]: 'https://mainnet.base.org',
     [ChainId.BaseSepolia]: 'https://sepolia.base.org',
-    [ChainId.Game7Testnet]: 'https://rpc-game7-testnet-0ilneybprf.t.conduit.xyz',
+    [ChainId.Game7Testnet]: 'https://testnet-rpc.game7.io',
     [ChainId.Linea]: 'https://rpc.linea.build',
     [ChainId.LineaSepolia]: 'https://rpc.sepolia.linea.build',
 };
