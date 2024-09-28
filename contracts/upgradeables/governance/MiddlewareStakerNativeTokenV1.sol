@@ -30,9 +30,9 @@ contract MiddlewareStakerNativeTokenV1 is Initializable, AccessControlUpgradeabl
     uint256 public totalStaked;
     uint256 public totalPositions;
 
-    event StakedInMiddleware(address indexed user, uint256 indexed poolID, uint256 amount, uint256 positionTokenID, address indexed staker);
-    event UnstakeInitiatedInMiddleware(address indexed user, uint256 indexed positionTokenID, address indexed staker);
-    event UnstakedInMiddleware(address indexed user, uint256 indexed positionTokenID, uint256 amount, address indexed staker);
+    event Staked(address indexed user, uint256 indexed poolID, uint256 amount, uint256 positionTokenID, address indexed staker);
+    event UnstakeInitiated(address indexed user, uint256 indexed positionTokenID, address indexed staker);
+    event Unstaked(address indexed user, uint256 indexed positionTokenID, uint256 amount, address indexed staker);
 
     error NotYourPosition(address caller);
     error TransferFailed();
@@ -98,7 +98,7 @@ contract MiddlewareStakerNativeTokenV1 is Initializable, AccessControlUpgradeabl
         totalStaked += msg.value;
         totalPositions++;
 
-        emit StakedInMiddleware(playerAddress, poolID, msg.value, positionTokenID, msg.sender);
+        emit Staked(playerAddress, poolID, msg.value, positionTokenID, msg.sender);
         return positionTokenID;
     }
 
@@ -109,7 +109,7 @@ contract MiddlewareStakerNativeTokenV1 is Initializable, AccessControlUpgradeabl
 
         stakerContract.initiateUnstake(positionTokenID);
 
-        emit UnstakeInitiatedInMiddleware(playerAddress, positionTokenID, msg.sender);
+        emit UnstakeInitiated(playerAddress, positionTokenID, msg.sender);
     }
 
     function unstake(uint256 positionTokenID, address playerAddress) external onlyRole(STAKER_ROLE) nonReentrant whenNotPaused {
@@ -127,7 +127,7 @@ contract MiddlewareStakerNativeTokenV1 is Initializable, AccessControlUpgradeabl
         totalStaked -= position.amount;
         totalPositions--;
 
-        emit UnstakedInMiddleware(playerAddress, positionTokenID, position.amount, msg.sender);
+        emit Unstaked(playerAddress, positionTokenID, position.amount, msg.sender);
     }
 
     function getUserPositions(address user) external view returns (uint256[] memory) {
