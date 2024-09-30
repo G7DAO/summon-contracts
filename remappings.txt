@@ -1,3 +1,4 @@
 @openzeppelin/contracts/=node_modules/@openzeppelin/contracts/
 @openzeppelin/contracts-upgradeable/=node_modules/@openzeppelin/contracts-upgradeable/
 @chainlink/contracts/=node_modules/@chainlink/contracts/
+@account-abstraction/contracts/=node_modules/@account-abstraction/contracts/
