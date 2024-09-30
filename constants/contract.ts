@@ -105,6 +105,7 @@ export enum CONTRACT_NAME {
     AchievoProxyMarketplace = 'AchievoProxyMarketplace',
     DirectListingsAddonExtension = 'DirectListingsAddonExtension',
     Staker = 'Staker',
+    MiddlewareStaker = 'MiddlewareStakerG7',
 }
 
 export enum CONTRACT_UPGRADABLE_NAME {
@@ -120,7 +121,7 @@ export enum CONTRACT_UPGRADABLE_NAME {
     ZkSpork = 'ZkSpork',
     SkillTree = 'SkillTreeUpgradable',
     Marketplace = 'Marketplace',
-    MiddlewareStaker = 'MiddlewareStakerV1',
+    MiddlewareStaker = 'MiddlewareStakerNativeTokenV1',
 }
 
 export enum CONTRACT_EXTENSION_NAME {

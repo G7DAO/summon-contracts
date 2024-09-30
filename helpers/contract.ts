@@ -9,6 +9,12 @@ axios.defaults.headers.post['Content-Type'] = 'application/json';
 
 export const submitContractDeploymentsToDB = async (deployments: Deployment[], tenant: TENANT) => {
     try {
+        deployments.forEach((deployment) => {
+            return {
+                ...deployment,
+                blockchainType: 'EVM',
+            };
+        });
         for (const deployment of deployments) {
             await axios.post('/v2/tenant-contracts', {
                 deployments: [deployment],
