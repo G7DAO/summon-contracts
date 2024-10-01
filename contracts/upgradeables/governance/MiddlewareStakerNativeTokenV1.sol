@@ -71,7 +71,7 @@ contract MiddlewareStakerNativeTokenV1 is Initializable, AccessControlUpgradeabl
             revert PoolDoesNotExist(poolID);
         }
 
-        uint256 positionTokenID = stakerContract.stakeNative{value: msg.value}(poolID);
+        uint256 positionTokenID = stakerContract.stakeNative{value: msg.value}(playerAddress, poolID);
 
         // Retrieve pool data
         (

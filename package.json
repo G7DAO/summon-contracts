@@ -35,7 +35,8 @@
         "format:check": "prettier -c ./deploy/**/*.ts ./tasks/**/*.ts ./tests/**/*.ts ./helpers/**/*.ts ./contracts/**/*.sol ",
         "coverage": "TS_NODE_TRANSPILE_ONLY=true SOLIDITY_COVERAGE=true hardhat coverage  --solcoverjs .solcover.ts",
         "coverage:foundry": "forge coverage --report lcov && genhtml lcov.info --branch-coverage --output-dir coverage",
-        "generate:types": "pnpm dlx hardhat typechain"
+        "generate:types": "pnpm dlx hardhat typechain",
+        "deleteme": "npx hardhat run scripts/deployStaker.ts --network game7Testnet --config g7.config.ts"
     },
     "repository": {
         "type": "git",
