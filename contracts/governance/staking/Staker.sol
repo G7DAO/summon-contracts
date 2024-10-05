@@ -13,6 +13,7 @@ import { SafeERC20 } from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.s
 
 import { StakingPool, Position } from "./data.sol";
 import { PositionMetadata } from "./PositionMetadata.sol";
+import "hardhat/console.sol";
 
 /**
  * @notice The Staker contract allows users to permissionlessly create staking pools by specifying various parameters
@@ -422,8 +423,12 @@ contract Staker is ERC721Enumerable, ReentrancyGuard {
 
         address positionOwner = ownerOf(positionTokenID);
 
+        console.log("positionOwner: %s", positionOwner);
+        console.log("msg.sender: %s", msg.sender);
+        console.log("pool.administrator: %s", pool.administrator);
+
         if (positionOwner != msg.sender && pool.administrator != msg.sender) {
-            revert UnauthorizedForPosition(positionOwner, msg.sender);
+            revert UnauthorizedForPosition(pool.administrator, msg.sender);
         }
 
         // Enforce cooldown, but only if the pool has a cooldown period.
