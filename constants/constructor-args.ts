@@ -427,6 +427,17 @@ export const MiddlewareNativeTokenStakerArgs = {
     },
 };
 
+export const ForwarderArgs = {
+    MAINNET: {
+        parentWallet: 'DEPLOYER_WALLET',
+        admin: 'DEPLOYER_WALLET',
+    },
+    TESTNET: {
+        parentWallet: 'DEPLOYER_WALLET',
+        admin: 'DEPLOYER_WALLET',
+    },
+};
+
 export const EnglishAuctionsExtensionArgs = {
     MAINNET: {
         // _nativeTokenWrapper: 'FILL_ME',
