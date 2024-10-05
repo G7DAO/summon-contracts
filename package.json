@@ -1,8 +1,8 @@
 {
     "name": "@summon/contracts",
-    "version": "0.25.0",
+    "version": "1.0.0",
     "private": true,
-    "description": "Smart contracts for achievo.xyz",
+    "description": "Smart contracts for summon.xyz",
     "scripts": {
         "localChain": "hardhat --config hardhat.config.ts node",
         "clean": "hardhat --config hardhat.config.ts clean",
