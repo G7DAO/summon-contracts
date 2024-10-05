@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.17;
+pragma solidity ^0.8.24;
 
 library Bytecode {
     error InvalidCodeAtRange(uint256 _size, uint256 _start, uint256 _end);

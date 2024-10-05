@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: UNLICENSED
 ///@notice This contract is for mock for ERC1155 token.
-pragma solidity ^0.8.17;
+pragma solidity ^0.8.24;
 
 // @author summon Team - https://summon.xyz
 // @contributors: [ @ogarciarevett, @vasinl124]
