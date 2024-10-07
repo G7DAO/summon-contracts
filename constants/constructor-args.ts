@@ -422,7 +422,18 @@ export const MiddlewareNativeTokenStakerArgs = {
         admin: 'DEPLOYER_WALLET',
     },
     TESTNET: {
-        stakerContract: '0xa6B0461b7E54Fa342Be6320D4938295A81f82Cd3',
+        stakerContract: '0xE7e669769Bb409b31540ff5dB6F15af3307928b1',
+        admin: 'DEPLOYER_WALLET',
+    },
+};
+
+export const ForwarderArgs = {
+    MAINNET: {
+        parentWallet: 'DEPLOYER_WALLET',
+        admin: 'DEPLOYER_WALLET',
+    },
+    TESTNET: {
+        parentWallet: 'DEPLOYER_WALLET',
         admin: 'DEPLOYER_WALLET',
     },
 };

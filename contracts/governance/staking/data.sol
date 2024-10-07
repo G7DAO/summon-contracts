@@ -1,5 +1,9 @@
 // SPDX-License-Identifier: UNLICENSED
-pragma solidity ^0.8.20;
+pragma solidity ^0.8.24;
+
+/*
+* @notice Built by the Game7 World Builder team: worldbuilder - at - game7.io
+*/
 
 /**
  * @notice StakingPool represents a staking position that users can adopt.
@@ -13,15 +17,15 @@ pragma solidity ^0.8.20;
  * the lockup period for positions staked under that pool, and the length of the cooldown period for
  * withdrawals for positions staked under that pool.
  */
-    struct StakingPool {
-        address administrator;
-        uint256 tokenType;
-        address tokenAddress;
-        uint256 tokenID;
-        bool transferable;
-        uint256 lockupSeconds;
-        uint256 cooldownSeconds;
-    }
+struct StakingPool {
+    address administrator;
+    uint256 tokenType;
+    address tokenAddress;
+    uint256 tokenID;
+    bool transferable;
+    uint256 lockupSeconds;
+    uint256 cooldownSeconds;
+}
 
 /**
  * @notice Position represents the parameters of a staking position:
@@ -33,9 +37,9 @@ pragma solidity ^0.8.20;
  * @notice The address of the depositor is the owner of the ERC721 token representing this deposit, and
  * is not stored within this struct.
  */
-    struct Position {
-        uint256 poolID;
-        uint256 amountOrTokenID;
-        uint256 stakeTimestamp;
-        uint256 unstakeInitiatedAt;
-    }
+struct Position {
+    uint256 poolID;
+    uint256 amountOrTokenID;
+    uint256 stakeTimestamp;
+    uint256 unstakeInitiatedAt;
+}

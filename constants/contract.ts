@@ -21,6 +21,7 @@ export enum CONTRACT_TYPE {
     EnglishAuctionsExtension = 'EnglishAuctionsExtension',
     OffersExtension = 'OffersExtension',
     DirectListingsAddonExtension = 'DirectListingsAddonExtension',
+    Forwarder = 'Forwarder',
 }
 
 export enum PROXY_CONTRACT_TYPE {
@@ -60,6 +61,7 @@ export enum CONTRACT_FILE_NAME {
     OffersExtension = 'OffersLogic',
     DirectListingsAddonExtension = 'DirectListingsAddon',
     Martins = 'Martins',
+    Forwarder = 'Forwarder',
 }
 
 export enum CONTRACT_UPGRADABLE_FILE_NAME {
@@ -106,6 +108,7 @@ export enum CONTRACT_NAME {
     DirectListingsAddonExtension = 'DirectListingsAddonExtension',
     Staker = 'Staker',
     MiddlewareStaker = 'MiddlewareStakerG7',
+    Forwarder = 'Forwarder',
 }
 
 export enum CONTRACT_UPGRADABLE_NAME {

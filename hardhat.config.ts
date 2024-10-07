@@ -25,11 +25,11 @@ if (!PRIVATE_KEY) {
 
 const config: HardhatUserConfig = {
     solidity: {
-        version: '0.8.20',
+        version: '0.8.24',
         settings: {
             optimizer: {
                 enabled: true,
-                runs: 1,
+                runs: 1000,
                 details: {
                     yul: true,
                 },
