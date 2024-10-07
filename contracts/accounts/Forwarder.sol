@@ -5,7 +5,7 @@ import { AccessControl } from "@openzeppelin/contracts/access/AccessControl.sol"
 import { ReentrancyGuard } from "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
 import { Pausable } from "@openzeppelin/contracts/utils/Pausable.sol";
 
-// @author summon Team - https://summon.xyz
+// @author Summon.xyz Team - https://summon.xyz
 // @contributors: [@ogarciarevett]
 //....................................................................................................................................................
 //....................&&&&&&..........................................................................................................................

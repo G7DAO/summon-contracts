@@ -5,7 +5,7 @@ pragma solidity ^0.8.24;
 
 //TODO: This contract is deprecated USE THE ERC1155SoulboundV1.sol
 
-// @author summon Team - https://summon.xyz
+// @author Summon.xyz Team - https://summon.xyz
 // @contributors: [ @ogarciarevett, @vasinl124]
 //....................................................................................................................................................
 //....................&&&&&&..........................................................................................................................

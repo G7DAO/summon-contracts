@@ -2,7 +2,7 @@
 // To check the terms and conditions look for the file with hash QmW1YKgTAZmm92WUcPS9XzMAYXtFVUvDCNGNfEFJQJ1hBv on any IPFS node
 pragma solidity ^0.8.24;
 
-// @author summon Team - https://summon.xyz
+// @author Summon.xyz Team - https://summon.xyz
 // @contributors: [ @ogarciarevett, @vasinl124]
 //....................................................................................................................................................
 //....................&&&&&&..........................................................................................................................

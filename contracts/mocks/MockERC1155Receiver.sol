@@ -4,7 +4,7 @@ pragma solidity ^0.8.24;
 import "@openzeppelin/contracts/token/ERC1155/IERC1155Receiver.sol";
 import "@openzeppelin/contracts/token/ERC1155/utils/ERC1155Holder.sol";
 
-// @author summon Team - https://summon.xyz
+// @author Summon.xyz Team - https://summon.xyz
 // @contributors: [ @ogarciarevett, @vasinl124]
 //....................................................................................................................................................
 //....................&&&&&&..........................................................................................................................
