@@ -9,7 +9,7 @@ import { Strings } from "@openzeppelin/contracts/utils/Strings.sol";
 import { ECDSA } from "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
 import { MessageHashUtils } from "@openzeppelin/contracts/utils/cryptography/MessageHashUtils.sol";
 import { IERC1155Errors } from "@openzeppelin/contracts/interfaces/draft-IERC6093.sol";
-import { LootDrop } from "../../contracts/soulbounds/LootDrop.sol";
+import {Rewards} from "../../contracts/soulbounds/Rewards.sol";
 import { AdminERC1155Soulbound } from "../../contracts/soulbounds/AdminERC1155Soulbound.sol";
 import { MockERC1155Receiver } from "../../contracts/mocks/MockERC1155Receiver.sol";
 import { MockERC20 } from "../../contracts/mocks/MockErc20.sol";
@@ -28,10 +28,10 @@ error TransferFailed();
 error MintPaused();
 error DupTokenId();
 
-contract LootDropBurnTest is StdCheats, Test {
+contract RewardsBurnTest is StdCheats, Test {
     using Strings for uint256;
 
-    LootDrop public lootDrop;
+    Rewards public rewards;
     AdminERC1155Soulbound public itemBound;
     MockERC1155Receiver public mockERC1155Receiver;
     MockERC20 public mockERC20;
@@ -120,8 +120,8 @@ contract LootDropBurnTest is StdCheats, Test {
         minterWallet = getWallet(minterLabel);
 
         itemBound = new AdminERC1155Soulbound(address(this));
-        lootDrop = new LootDrop(address(this));
-        lootDrop.initialize(address(this), address(this), address(this), address(itemBound));
+        rewards = new Rewards(address(this));
+        rewards.initialize(address(this), address(this), address(this), address(itemBound));
 
         itemBound.initialize(
             "Test1155",
@@ -129,13 +129,13 @@ contract LootDropBurnTest is StdCheats, Test {
             "MISSING_BASE_URL",
             "MISSING_CONTRACT_URL",
             address(this),
-            address(lootDrop)
+            address(rewards)
         );
         mockERC20 = new MockERC20("oUSDC", "oUSDC");
         mockERC721 = new MockERC721();
         mockERC1155 = new MockERC1155();
 
-        lootDrop.addWhitelistSigner(minterWallet.addr);
+        rewards.addWhitelistSigner(minterWallet.addr);
 
         mockERC1155Receiver = new MockERC1155Receiver();
 
@@ -181,31 +181,31 @@ contract LootDropBurnTest is StdCheats, Test {
         _itemIds1[1] = _tokenIds[1];
         _itemIds1[2] = _tokenIds[2];
 
-        encodedItems1 = encode(address(lootDrop), _itemIds1);
+        encodedItems1 = encode(address(rewards), _itemIds1);
 
         uint256[] memory _itemIds2 = new uint256[](3);
         _itemIds2[0] = _tokenIds[3];
         _itemIds2[1] = _tokenIds[4];
         _itemIds2[2] = _tokenIds[5];
 
-        encodedItems2 = encode(address(lootDrop), _itemIds2);
+        encodedItems2 = encode(address(rewards), _itemIds2);
 
         (nonce, signature) = generateSignature(playerWallet.addr, encodedItems1, minterLabel);
         (nonce2, signature2) = generateSignature(playerWallet2.addr, encodedItems2, minterLabel);
 
         mockERC20.mint(address(this), 20000000000000000000);
         for (uint256 i = 0; i < 10; i++) {
-            mockERC721.mint(address(lootDrop));
+            mockERC721.mint(address(rewards));
         }
-        mockERC1155.mint(address(lootDrop), 456, 10, "");
+        mockERC1155.mint(address(rewards), 456, 10, "");
 
-        mockERC20.approve(address(lootDrop), type(uint256).max);
-        lootDrop.createMultipleTokensAndDepositRewards(_tokens);
+        mockERC20.approve(address(rewards), type(uint256).max);
+        rewards.createMultipleTokensAndDepositRewards(_tokens);
     }
 
     function testBurnNotOwnerShouldFail() public {
         vm.prank(playerWallet.addr);
-        lootDrop.mint(encodedItems1, false, nonce, signature, false);
+        rewards.mint(encodedItems1, false, nonce, signature, false);
         assertEq(itemBound.balanceOf(playerWallet.addr, _tokenIds[0]), 1);
 
         vm.expectRevert(
@@ -221,7 +221,7 @@ contract LootDropBurnTest is StdCheats, Test {
 
     function testBurn() public {
         vm.prank(playerWallet.addr);
-        lootDrop.mint(encodedItems1, true, nonce, signature, false);
+        rewards.mint(encodedItems1, true, nonce, signature, false);
         assertEq(itemBound.balanceOf(playerWallet.addr, _tokenIds[0]), 1);
 
         vm.expectRevert(
@@ -237,7 +237,7 @@ contract LootDropBurnTest is StdCheats, Test {
         itemBound.burn(playerWallet.addr, _tokenIds[0], 1);
 
         vm.prank(playerWallet2.addr);
-        lootDrop.mint(encodedItems2, false, nonce2, signature2, false);
+        rewards.mint(encodedItems2, false, nonce2, signature2, false);
 
         vm.prank(playerWallet2.addr);
         itemBound.safeTransferFrom(playerWallet2.addr, playerWallet3.addr, _tokenIds[3], 1, "");
@@ -253,9 +253,9 @@ contract LootDropBurnTest is StdCheats, Test {
 
     function testBurnIfHoldBothNonSoulboundAndSouldbound() public {
         vm.prank(playerWallet.addr);
-        lootDrop.mint(encodedItems1, true, nonce, signature, false);
+        rewards.mint(encodedItems1, true, nonce, signature, false);
 
-        lootDrop.adminMint(playerWallet2.addr, encodedItems1, false, false);
+        rewards.adminMint(playerWallet2.addr, encodedItems1, false, false);
 
         vm.prank(playerWallet2.addr);
         itemBound.safeTransferFrom(playerWallet2.addr, playerWallet.addr, _tokenIds[0], 1, "");
@@ -284,7 +284,7 @@ contract LootDropBurnTest is StdCheats, Test {
         _amount1[2] = 1;
 
         vm.prank(playerWallet.addr);
-        lootDrop.mint(encodedItems1, false, nonce, signature, false);
+        rewards.mint(encodedItems1, false, nonce, signature, false);
         assertEq(itemBound.balanceOf(playerWallet.addr, _tokenIds[0]), 1);
 
         vm.expectRevert(
@@ -316,7 +316,7 @@ contract LootDropBurnTest is StdCheats, Test {
         _amount1[2] = 1;
 
         vm.prank(playerWallet.addr);
-        lootDrop.mint(encodedItems1, true, nonce, signature, false);
+        rewards.mint(encodedItems1, true, nonce, signature, false);
         assertEq(itemBound.balanceOf(playerWallet.addr, _tokenIds[0]), 1);
 
         vm.expectRevert(
@@ -332,7 +332,7 @@ contract LootDropBurnTest is StdCheats, Test {
         itemBound.burnBatch(playerWallet.addr, _itemIds1, _amount1);
 
         vm.prank(playerWallet2.addr);
-        lootDrop.mint(encodedItems2, false, nonce2, signature2, false);
+        rewards.mint(encodedItems2, false, nonce2, signature2, false);
 
         vm.prank(playerWallet2.addr);
         itemBound.safeTransferFrom(playerWallet2.addr, playerWallet3.addr, _tokenIds[3], 1, "");

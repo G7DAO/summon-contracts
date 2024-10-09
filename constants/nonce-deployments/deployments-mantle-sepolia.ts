@@ -1,4 +1,4 @@
-import { LootDropArgs, RewardTokenArgs, GameSummaryArgs } from '@constants/constructor-args';
+import { RewardsArgs, RewardTokenArgs, GameSummaryArgs } from '@constants/constructor-args';
 import { CONTRACT_FILE_NAME, CONTRACT_NAME, CONTRACT_TYPE } from '@constants/contract';
 import { TENANT } from '@constants/tenant';
 
@@ -10,9 +10,9 @@ const networkType = NETWORK_TYPE.TESTNET;
 
 export const MANTLE_SEPOLIA_CONTRACTS: DeploymentContract[] = [
     {
-        contractFileName: CONTRACT_FILE_NAME.LootDrop,
-        type: CONTRACT_TYPE.LootDrop,
-        name: CONTRACT_NAME.LootDrop,
+        contractFileName: CONTRACT_FILE_NAME.Rewards,
+        type: CONTRACT_TYPE.Rewards,
+        name: CONTRACT_NAME.Rewards,
         chain,
         networkType,
         tenants: [TENANT.Game7],
@@ -20,7 +20,7 @@ export const MANTLE_SEPOLIA_CONTRACTS: DeploymentContract[] = [
         upgradable: false,
         dependencies: [CONTRACT_NAME.RewardToken],
         functionCalls: [],
-        args: LootDropArgs.TESTNET,
+        args: RewardsArgs.TESTNET,
     },
     {
         contractFileName: CONTRACT_FILE_NAME.AdminERC1155Soulbound,
@@ -31,7 +31,7 @@ export const MANTLE_SEPOLIA_CONTRACTS: DeploymentContract[] = [
         tenants: [TENANT.Game7],
         verify: true,
         upgradable: false,
-        dependencies: [CONTRACT_NAME.LootDrop],
+        dependencies: [CONTRACT_NAME.Rewards],
         functionCalls: [],
         args: RewardTokenArgs.TESTNET,
     },
