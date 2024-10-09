@@ -55,7 +55,7 @@ error MintPaused();
 error ClaimRewardPaused();
 error DupTokenId();
 
-contract LootDrop is
+contract Rewards is
     ERCWhitelistSignature,
     AccessControl,
     Pausable,
