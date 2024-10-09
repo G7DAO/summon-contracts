@@ -25,7 +25,7 @@ library LibRewards {
     struct RewardTokenOld {
         uint256 tokenId;
         string tokenUri;
-        uint256 rewardAmount; // depending of the erc20 token decimal
+        uint256 rewardAmount;
         bool isEther;
     }
 
