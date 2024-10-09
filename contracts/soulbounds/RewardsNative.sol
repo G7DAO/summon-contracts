@@ -57,8 +57,6 @@ contract Rewards is
     bytes32 public constant MANAGER_ROLE = keccak256("MANAGER_ROLE");
     bytes32 public constant DEV_CONFIG_ROLE = keccak256("DEV_CONFIG_ROLE");
 
-    using Strings for uint256;
-
     AdminERC1155Soulbound private rewardTokenContract;
 
     uint256[] public itemIds;
