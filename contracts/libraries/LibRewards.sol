@@ -40,14 +40,3 @@ library LibRewards {
         uint256 maxSupply;
     }
 }
-
-library TestLibItems {
-    enum Tier {
-        NONE,
-        COMMON,
-        UNCOMMON,
-        RARE,
-        LEGENDARY,
-        MYTHICAL
-    }
-}
