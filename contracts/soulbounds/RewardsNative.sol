@@ -124,7 +124,7 @@ contract Rewards is
         return _decodeData(_data);
     }
 
-    function _decodeData(bytes calldata _data) private view returns (address, uint256, uint256[] memory) {
+    function _decodeData(bytes calldata _data) private pure returns (address, uint256, uint256[] memory) {
         (address contractAddress, uint256 chainId, uint256[] memory _itemIds) = abi.decode(
             _data,
             (address, uint256, uint256[])
@@ -171,10 +171,6 @@ contract Rewards is
         tokenExists[_token.tokenId] = true;
         itemIds.push(_token.tokenId);
         rewardTokenContract.addNewToken(_token.tokenId);
-
-        // Transfer rewards
-        address _from = _msgSender();
-        address _to = address(this);
 
         emit TokenAdded(_token.tokenId);
     }
@@ -230,7 +226,6 @@ contract Rewards is
         if (_to == address(0)) {
             revert AddressIsZero();
         }
-        address _from = address(this);
         _transferEther(payable(_to), _amounts[0]);
     }
 
@@ -281,7 +276,6 @@ contract Rewards is
 
         for (uint256 i = 0; i < rewards.length; i++) {
             LibRewards.Reward memory reward = rewards[i];
-            address _from = address(this);
             _transferEther(payable(_to), reward.rewardAmount);
         }
 
