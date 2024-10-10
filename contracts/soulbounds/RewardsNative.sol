@@ -28,7 +28,6 @@ import { ECDSA } from "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
 import { ReentrancyGuard } from "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
 import { Initializable } from "@openzeppelin/contracts/proxy/utils/Initializable.sol";
 
-import { AdminERC1155Soulbound } from "../soulbounds/AdminERC1155Soulbound.sol";
 import { ERCWhitelistSignature } from "../ercs/ERCWhitelistSignature.sol";
 import { LibRewards } from "../libraries/LibRewards.sol";
 
@@ -45,19 +44,10 @@ error MintPaused();
 error ClaimRewardPaused();
 error DupTokenId();
 
-contract Rewards is
-    ERCWhitelistSignature,
-    AccessControl,
-    Pausable,
-    ReentrancyGuard,
-    Initializable,
-    ERC1155Holder
-{
+contract Rewards is ERCWhitelistSignature, AccessControl, Pausable, ReentrancyGuard, Initializable, ERC1155Holder {
     bytes32 public constant MINTER_ROLE = keccak256("MINTER_ROLE");
     bytes32 public constant MANAGER_ROLE = keccak256("MANAGER_ROLE");
     bytes32 public constant DEV_CONFIG_ROLE = keccak256("DEV_CONFIG_ROLE");
-
-    AdminERC1155Soulbound private rewardTokenContract;
 
     uint256[] public itemIds;
     mapping(uint256 => bool) private tokenExists;
@@ -67,7 +57,6 @@ contract Rewards is
     mapping(uint256 => uint256) public currentRewardSupply; // rewardTokenId => currentRewardSupply
 
     event TokenAdded(uint256 indexed tokenId);
-    event Minted(address indexed to, uint256 indexed tokenId, uint256 amount, bool soulbound);
     event Claimed(address indexed to, uint256 indexed tokenId, uint256 amount);
 
     constructor(address devWallet) {
@@ -81,32 +70,17 @@ contract Rewards is
         address _devWallet,
         address _adminWallet,
         address _managerWallet,
-        address _minterWallet,
-        address _rewardTokenAddress
+        address _minterWallet
     ) external initializer onlyRole(DEFAULT_ADMIN_ROLE) {
-        if (
-            _devWallet == address(0) ||
-            _managerWallet == address(0) ||
-            _minterWallet == address(0) ||
-            _rewardTokenAddress == address(0)
-        ) {
+        if (_devWallet == address(0) || _managerWallet == address(0) || _minterWallet == address(0)) {
             revert AddressIsZero();
         }
 
-        rewardTokenContract = AdminERC1155Soulbound(_rewardTokenAddress);
         _grantRole(DEFAULT_ADMIN_ROLE, _adminWallet);
         _grantRole(DEV_CONFIG_ROLE, _devWallet);
         _grantRole(MANAGER_ROLE, _managerWallet);
         _grantRole(MINTER_ROLE, _minterWallet);
         _addWhitelistSigner(_devWallet);
-    }
-
-    function updateRewardTokenContract(address _rewardTokenAddress) external onlyRole(DEV_CONFIG_ROLE) {
-        if (_rewardTokenAddress == address(0)) {
-            revert AddressIsZero();
-        }
-
-        rewardTokenContract = AdminERC1155Soulbound(_rewardTokenAddress);
     }
 
     function isTokenExist(uint256 _tokenId) public view returns (bool) {
@@ -168,12 +142,13 @@ contract Rewards is
         tokenRewards[_token.tokenId] = _token;
         tokenExists[_token.tokenId] = true;
         itemIds.push(_token.tokenId);
-        rewardTokenContract.addNewToken(_token.tokenId);
 
         emit TokenAdded(_token.tokenId);
     }
 
-    function createTokenAndDepositRewards(LibRewards.RewardToken calldata _token) public payable onlyRole(MANAGER_ROLE) {
+    function createTokenAndDepositRewards(
+        LibRewards.RewardToken calldata _token
+    ) public payable onlyRole(MANAGER_ROLE) {
         uint256 _ethRequired = _calculateETHRequiredForToken(_token);
 
         if (msg.value < _ethRequired) {
@@ -217,10 +192,7 @@ contract Rewards is
      * @param _to The address to send the assets to.
      * @param _amounts The amounts to withdraw. (required for ETHER, ERC20, and ERC1155 tokens)
      */
-    function withdrawAssets(
-        address _to,
-        uint256[] calldata _amounts
-    ) external onlyRole(MANAGER_ROLE) {
+    function withdrawAssets(address _to, uint256[] calldata _amounts) external onlyRole(MANAGER_ROLE) {
         if (_to == address(0)) {
             revert AddressIsZero();
         }
@@ -257,14 +229,6 @@ contract Rewards is
             revert AddressIsZero();
         }
 
-        // check if the user has the reward token to redeem or not
-        if (rewardTokenContract.balanceOf(_to, _rewardTokenId) == 0) {
-            revert InsufficientBalance();
-        }
-
-        // then burn the reward token
-        rewardTokenContract.whitelistBurn(_to, _rewardTokenId, 1);
-
         _distributeReward(_to, _rewardTokenId);
     }
 
@@ -280,25 +244,13 @@ contract Rewards is
         emit Claimed(_to, _rewardTokenId, 1);
     }
 
-    function _mintAndClaimRewardTokenBatch(
-        address to,
-        uint256[] memory _tokenIds,
-        uint256 _amount,
-        bool soulbound,
-        bool isClaimReward
-    ) private {
+    function _mintAndClaimRewardTokenBatch(address to, uint256[] memory _tokenIds, uint256 _amount) private {
         for (uint256 i = 0; i < _tokenIds.length; i++) {
-            _mintAndClaimRewardToken(to, _tokenIds[i], _amount, soulbound, isClaimReward);
+            _mintAndClaimRewardToken(to, _tokenIds[i], _amount);
         }
     }
 
-    function _mintAndClaimRewardToken(
-        address to,
-        uint256 _tokenId,
-        uint256 _amount,
-        bool soulbound,
-        bool isClaimReward
-    ) private {
+    function _mintAndClaimRewardToken(address to, uint256 _tokenId, uint256 _amount) private {
         if (to == address(0)) {
             revert AddressIsZero();
         }
@@ -323,14 +275,8 @@ contract Rewards is
         }
 
         // claim the reward
-        if (isClaimReward) {
-            for (uint256 i = 0; i < _amount; i++) {
-                _distributeReward(to, _tokenId);
-            }
-        } else {
-            // mint reward token
-            rewardTokenContract.adminMintId(to, _tokenId, _amount, soulbound);
-            emit Minted(to, _tokenId, _amount, soulbound);
+        for (uint256 i = 0; i < _amount; i++) {
+            _distributeReward(to, _tokenId);
         }
     }
 
@@ -346,15 +292,7 @@ contract Rewards is
 
     function getTokenDetails(
         uint256 tokenId
-    )
-        public
-        view
-        returns (
-            string memory tokenUri,
-            uint256 maxSupply,
-            uint256[] memory rewardAmounts
-        )
-    {
+    ) public view returns (string memory tokenUri, uint256 maxSupply, uint256[] memory rewardAmounts) {
         tokenUri = tokenRewards[tokenId].tokenUri;
         maxSupply = tokenRewards[tokenId].maxSupply;
         LibRewards.Reward[] memory rewards = tokenRewards[tokenId].rewards;
@@ -368,46 +306,37 @@ contract Rewards is
 
     function mint(
         bytes calldata data,
-        bool isSoulbound,
         uint256 nonce,
-        bytes calldata signature,
-        bool isClaimReward
+        bytes calldata signature
     ) external nonReentrant signatureCheck(_msgSender(), nonce, data, signature) whenNotPaused {
         uint256[] memory _tokenIds = _verifyContractChainIdAndDecode(data);
-        _mintAndClaimRewardTokenBatch(_msgSender(), _tokenIds, 1, isSoulbound, isClaimReward);
+        _mintAndClaimRewardTokenBatch(_msgSender(), _tokenIds, 1);
     }
 
-    function adminMint(
-        address to,
-        bytes calldata data,
-        bool isSoulbound,
-        bool isClaimReward
-    ) external onlyRole(MINTER_ROLE) whenNotPaused {
+    function adminMint(address to, bytes calldata data) external onlyRole(MINTER_ROLE) whenNotPaused {
         uint256[] memory _tokenIds = _verifyContractChainIdAndDecode(data);
-        _mintAndClaimRewardTokenBatch(to, _tokenIds, 1, isSoulbound, isClaimReward);
+        _mintAndClaimRewardTokenBatch(to, _tokenIds, 1);
     }
 
     function adminMintById(
         address toAddress,
         uint256 _tokenId,
-        uint256 _amount,
-        bool isSoulbound
+        uint256 _amount
     ) public onlyRole(MINTER_ROLE) whenNotPaused {
-        _mintAndClaimRewardToken(toAddress, _tokenId, _amount, isSoulbound, false);
+        _mintAndClaimRewardToken(toAddress, _tokenId, _amount);
     }
 
     function adminBatchMintById(
         address[] calldata toAddresses,
         uint256 _tokenId,
-        uint256[] calldata _amounts,
-        bool isSoulbound
+        uint256[] calldata _amounts
     ) public onlyRole(MINTER_ROLE) whenNotPaused {
         if (toAddresses.length != _amounts.length) {
             revert InvalidLength();
         }
 
         for (uint256 i = 0; i < toAddresses.length; i++) {
-            _mintAndClaimRewardToken(toAddresses[i], _tokenId, _amounts[i], isSoulbound, false);
+            _mintAndClaimRewardToken(toAddresses[i], _tokenId, _amounts[i]);
         }
     }
 
