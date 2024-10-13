@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: UNLICENSED
+// SPDX-License-Identifier: MIT
 pragma solidity ^0.8.24;
 
 // @author Summon.xyz Team - https://summon.xyz
@@ -32,19 +32,6 @@ import { AdminERC1155Soulbound } from "../soulbounds/AdminERC1155Soulbound.sol";
 import { ERCWhitelistSignature } from "../ercs/ERCWhitelistSignature.sol";
 import { LibRewards } from "../libraries/LibRewards.sol";
 
-error AddressIsZero();
-error InvalidTokenId();
-error InvalidAmount();
-error ExceedMaxSupply();
-error InvalidLength();
-error TokenNotExist();
-error InvalidInput();
-error InsufficientBalance();
-error TransferFailed();
-error MintPaused();
-error ClaimRewardPaused();
-error DupTokenId();
-
 contract Rewards is
     ERCWhitelistSignature,
     AccessControl,
@@ -53,6 +40,9 @@ contract Rewards is
     Initializable,
     ERC1155Holder
 {
+    /*//////////////////////////////////////////////////////////////
+                               STATE-VARS
+    //////////////////////////////////////////////////////////////*/
     bytes32 public constant MINTER_ROLE = keccak256("MINTER_ROLE");
     bytes32 public constant MANAGER_ROLE = keccak256("MANAGER_ROLE");
     bytes32 public constant DEV_CONFIG_ROLE = keccak256("DEV_CONFIG_ROLE");
@@ -65,6 +55,26 @@ contract Rewards is
     mapping(uint256 => bool) public isTokenMintPaused; // tokenId => bool - default is false
     mapping(uint256 => bool) public isClaimRewardPaused; // tokenId => bool - default is false
     mapping(uint256 => uint256) public currentRewardSupply; // rewardTokenId => currentRewardSupply
+
+    /*//////////////////////////////////////////////////////////////
+                             ERRORS
+    //////////////////////////////////////////////////////////////*/
+    error AddressIsZero();
+    error InvalidTokenId();
+    error InvalidAmount();
+    error ExceedMaxSupply();
+    error InvalidLength();
+    error TokenNotExist();
+    error InvalidInput();
+    error InsufficientBalance();
+    error TransferFailed();
+    error MintPaused();
+    error ClaimRewardPaused();
+    error DupTokenId();
+
+    /*//////////////////////////////////////////////////////////////
+                                 EVENTS
+    //////////////////////////////////////////////////////////////*/
 
     event TokenAdded(uint256 indexed tokenId);
     event Minted(address indexed to, uint256 indexed tokenId, uint256 amount, bool soulbound);
@@ -101,6 +111,10 @@ contract Rewards is
         _addWhitelistSigner(_devWallet);
     }
 
+    /*//////////////////////////////////////////////////////////////
+                          EXTERNALS-FUNCTIONS
+    //////////////////////////////////////////////////////////////*/
+
     function updateRewardTokenContract(address _rewardTokenAddress) external onlyRole(DEV_CONFIG_ROLE) {
         if (_rewardTokenAddress == address(0)) {
             revert AddressIsZero();
@@ -109,7 +123,7 @@ contract Rewards is
         rewardTokenContract = AdminERC1155Soulbound(_rewardTokenAddress);
     }
 
-    function isTokenExist(uint256 _tokenId) public view returns (bool) {
+    function isTokenExist(uint256 _tokenId) external view returns (bool) {
         if (!tokenExists[_tokenId]) {
             return false;
         }
@@ -118,59 +132,8 @@ contract Rewards is
 
     function decodeData(
         bytes calldata _data
-    ) public view onlyRole(DEV_CONFIG_ROLE) returns (address, uint256, uint256[] memory) {
+    ) external view onlyRole(DEV_CONFIG_ROLE) returns (address, uint256, uint256[] memory) {
         return _decodeData(_data);
-    }
-
-    function _decodeData(bytes calldata _data) private pure returns (address, uint256, uint256[] memory) {
-        (address contractAddress, uint256 chainId, uint256[] memory _itemIds) = abi.decode(
-            _data,
-            (address, uint256, uint256[])
-        );
-        return (contractAddress, chainId, _itemIds);
-    }
-
-    function pause() external onlyRole(MANAGER_ROLE) {
-        _pause();
-    }
-
-    function unpause() external onlyRole(MANAGER_ROLE) {
-        _unpause();
-    }
-
-    function _validateTokenInputs(LibRewards.RewardToken calldata _token) private view {
-        if (_token.maxSupply == 0) {
-            revert InvalidAmount();
-        }
-
-        if (bytes(_token.tokenUri).length == 0 || _token.rewards.length == 0 || _token.tokenId == 0) {
-            revert InvalidInput();
-        }
-
-        if (isTokenExist(_token.tokenId)) {
-            revert DupTokenId();
-        }
-    }
-
-    function _calculateETHRequiredForToken(LibRewards.RewardToken calldata _token) private pure returns (uint256) {
-        uint256 totalETHRequired;
-        for (uint256 i = 0; i < _token.rewards.length; i++) {
-            LibRewards.Reward memory reward = _token.rewards[i];
-            totalETHRequired += reward.rewardAmount;
-        }
-        return totalETHRequired * _token.maxSupply;
-    }
-
-    function _createTokenAndDepositRewards(LibRewards.RewardToken calldata _token) private {
-        // have to approve all the assets first
-        // Validate token inputs
-        _validateTokenInputs(_token);
-        tokenRewards[_token.tokenId] = _token;
-        tokenExists[_token.tokenId] = true;
-        itemIds.push(_token.tokenId);
-        rewardTokenContract.addNewToken(_token.tokenId);
-
-        emit TokenAdded(_token.tokenId);
     }
 
     function createTokenAndDepositRewards(LibRewards.RewardToken calldata _token) public payable onlyRole(MANAGER_ROLE) {
@@ -215,16 +178,172 @@ contract Rewards is
     /**
      * @dev Allows the contract owner to withdraw all available assets from the contract.
      * @param _to The address to send the assets to.
-     * @param _amounts The amounts to withdraw. (required for ETHER, ERC20, and ERC1155 tokens)
+     * @param _amounts The amounts to withdraw.
      */
-    function withdrawAssets(
+    function withdrawAll(
         address _to,
-        uint256[] calldata _amounts
+        uint256 _amount
     ) external onlyRole(MANAGER_ROLE) {
         if (_to == address(0)) {
             revert AddressIsZero();
         }
-        _transferEther(payable(_to), _amounts[0]);
+        _transferEther(payable(_to), _amount);
+    }
+
+    function pause() external onlyRole(MANAGER_ROLE) {
+        _pause();
+    }
+
+    function unpause() external onlyRole(MANAGER_ROLE) {
+        _unpause();
+    }
+
+    function claimReward(uint256 _tokenId) external nonReentrant whenNotPaused {
+        _claimReward(_msgSender(), _tokenId);
+    }
+
+    function claimRewards(uint256[] calldata _tokenIds) external nonReentrant whenNotPaused {
+        for (uint256 i = 0; i < _tokenIds.length; i++) {
+            _claimReward(_msgSender(), _tokenIds[i]);
+        }
+    }
+
+    function getTokenDetails(
+        uint256 tokenId
+    )
+    public
+    view
+    returns (
+        string memory tokenUri,
+        uint256 maxSupply,
+        uint256[] memory rewardAmounts
+    )
+    {
+        tokenUri = tokenRewards[tokenId].tokenUri;
+        maxSupply = tokenRewards[tokenId].maxSupply;
+        LibRewards.Reward[] memory rewards = tokenRewards[tokenId].rewards;
+
+        rewardAmounts = new uint256[](rewards.length);
+
+        for (uint i = 0; i < rewards.length; i++) {
+            rewardAmounts[i] = rewards[i].rewardAmount;
+        }
+    }
+
+    function mint(
+        address to,
+        bytes calldata data,
+        bool isSoulbound,
+        bool isClaimReward
+    ) external onlyRole(MINTER_ROLE) whenNotPaused {
+        uint256[] memory _tokenIds = _verifyContractChainIdAndDecode(data);
+        _mintAccessRewardTokenBatch(to, _tokenIds, 1, isSoulbound, isClaimReward);
+    }
+
+    function mintById(
+        address toAddress,
+        uint256 _tokenId,
+        uint256 _amount,
+        bool isSoulbound
+    ) public onlyRole(MINTER_ROLE) whenNotPaused {
+        _mintRewardAccessToken(toAddress, _tokenId, _amount, isSoulbound, false);
+    }
+
+    function batchMintById(
+        address[] calldata toAddresses,
+        uint256 _tokenId,
+        uint256[] calldata _amounts,
+        bool isSoulbound
+    ) public onlyRole(MINTER_ROLE) whenNotPaused {
+        if (toAddresses.length != _amounts.length) {
+            revert InvalidLength();
+        }
+
+        for (uint256 i = 0; i < toAddresses.length; i++) {
+            _mintRewardAccessToken(toAddresses[i], _tokenId, _amounts[i], isSoulbound, false);
+        }
+    }
+
+    // Function to receive Ether. msg.data must be empty
+    receive() external payable {}
+
+    // Fallback function is called when msg.data is not empty
+    fallback() external payable {}
+
+    function supportsInterface(bytes4 interfaceId) public view override(AccessControl, ERC1155Holder) returns (bool) {
+        return super.supportsInterface(interfaceId);
+    }
+
+    function devVerifySignature(
+        address to,
+        uint256 nonce,
+        bytes calldata data,
+        bytes calldata signature
+    ) public onlyRole(DEV_CONFIG_ROLE) returns (bool) {
+        return _verifySignature(to, nonce, data, signature);
+    }
+
+    function addWhitelistSigner(address _signer) external onlyRole(DEV_CONFIG_ROLE) {
+        _addWhitelistSigner(_signer);
+    }
+
+    function removeWhitelistSigner(address signer) external onlyRole(DEV_CONFIG_ROLE) {
+        _removeWhitelistSigner(signer);
+    }
+
+    function getChainID() public view returns (uint256) {
+        uint256 id;
+        assembly {
+            id := chainid()
+        }
+        return id;
+    }
+
+    /*//////////////////////////////////////////////////////////////
+                           PRIVATE-FUNCTIONS
+    //////////////////////////////////////////////////////////////*/
+
+    function _decodeData(bytes calldata _data) private pure returns (address, uint256, uint256[] memory) {
+        (address contractAddress, uint256 chainId, uint256[] memory _itemIds) = abi.decode(
+            _data,
+            (address, uint256, uint256[])
+        );
+        return (contractAddress, chainId, _itemIds);
+    }
+
+    function _validateTokenInputs(LibRewards.RewardToken calldata _token) private view {
+        if (_token.maxSupply == 0) {
+            revert InvalidAmount();
+        }
+
+        if (bytes(_token.tokenUri).length == 0 || _token.rewards.length == 0 || _token.tokenId == 0) {
+            revert InvalidInput();
+        }
+
+        if (isTokenExist(_token.tokenId)) {
+            revert DupTokenId();
+        }
+    }
+
+    function _calculateETHRequiredForToken(LibRewards.RewardToken calldata _token) private pure returns (uint256) {
+        uint256 totalETHRequired;
+        for (uint256 i = 0; i < _token.rewards.length; i++) {
+            LibRewards.Reward memory reward = _token.rewards[i];
+            totalETHRequired += reward.rewardAmount;
+        }
+        return totalETHRequired * _token.maxSupply;
+    }
+
+    function _createTokenAndDepositRewards(LibRewards.RewardToken calldata _token) private {
+        // have to approve all the assets first
+        // Validate token inputs
+        _validateTokenInputs(_token);
+        tokenRewards[_token.tokenId] = _token;
+        tokenExists[_token.tokenId] = true;
+        itemIds.push(_token.tokenId);
+        rewardTokenContract.addNewToken(_token.tokenId);
+
+        emit TokenAdded(_token.tokenId);
     }
 
     function _transferEther(address payable _to, uint256 _amount) private {
@@ -235,16 +354,6 @@ contract Rewards is
         (bool success, ) = _to.call{ value: _amount }("");
         if (!success) {
             revert TransferFailed();
-        }
-    }
-
-    function claimReward(uint256 _tokenId) external nonReentrant whenNotPaused {
-        _claimReward(_msgSender(), _tokenId);
-    }
-
-    function claimRewards(uint256[] calldata _tokenIds) external nonReentrant whenNotPaused {
-        for (uint256 i = 0; i < _tokenIds.length; i++) {
-            _claimReward(_msgSender(), _tokenIds[i]);
         }
     }
 
@@ -280,7 +389,7 @@ contract Rewards is
         emit Claimed(_to, _rewardTokenId, 1);
     }
 
-    function _mintAndClaimRewardTokenBatch(
+    function _mintAccessRewardTokenBatch(
         address to,
         uint256[] memory _tokenIds,
         uint256 _amount,
@@ -288,16 +397,15 @@ contract Rewards is
         bool isClaimReward
     ) private {
         for (uint256 i = 0; i < _tokenIds.length; i++) {
-            _mintAndClaimRewardToken(to, _tokenIds[i], _amount, soulbound, isClaimReward);
+            _mintRewardAccessToken(to, _tokenIds[i], _amount, soulbound);
         }
     }
 
-    function _mintAndClaimRewardToken(
+    function _mintRewardAccessToken(
         address to,
         uint256 _tokenId,
         uint256 _amount,
-        bool soulbound,
-        bool isClaimReward
+        bool soulbound
     ) private {
         if (to == address(0)) {
             revert AddressIsZero();
@@ -322,16 +430,9 @@ contract Rewards is
             revert ExceedMaxSupply();
         }
 
-        // claim the reward
-        if (isClaimReward) {
-            for (uint256 i = 0; i < _amount; i++) {
-                _distributeReward(to, _tokenId);
-            }
-        } else {
-            // mint reward token
-            rewardTokenContract.adminMintId(to, _tokenId, _amount, soulbound);
-            emit Minted(to, _tokenId, _amount, soulbound);
-        }
+        // mint reward token
+        rewardTokenContract.adminMintId(to, _tokenId, _amount, soulbound);
+        emit Minted(to, _tokenId, _amount, soulbound);
     }
 
     function _verifyContractChainIdAndDecode(bytes calldata data) private view returns (uint256[] memory) {
@@ -342,107 +443,5 @@ contract Rewards is
             revert InvalidInput();
         }
         return tokenIds;
-    }
-
-    function getTokenDetails(
-        uint256 tokenId
-    )
-        public
-        view
-        returns (
-            string memory tokenUri,
-            uint256 maxSupply,
-            uint256[] memory rewardAmounts
-        )
-    {
-        tokenUri = tokenRewards[tokenId].tokenUri;
-        maxSupply = tokenRewards[tokenId].maxSupply;
-        LibRewards.Reward[] memory rewards = tokenRewards[tokenId].rewards;
-
-        rewardAmounts = new uint256[](rewards.length);
-
-        for (uint i = 0; i < rewards.length; i++) {
-            rewardAmounts[i] = rewards[i].rewardAmount;
-        }
-    }
-
-    function mint(
-        bytes calldata data,
-        bool isSoulbound,
-        uint256 nonce,
-        bytes calldata signature,
-        bool isClaimReward
-    ) external nonReentrant signatureCheck(_msgSender(), nonce, data, signature) whenNotPaused {
-        uint256[] memory _tokenIds = _verifyContractChainIdAndDecode(data);
-        _mintAndClaimRewardTokenBatch(_msgSender(), _tokenIds, 1, isSoulbound, isClaimReward);
-    }
-
-    function adminMint(
-        address to,
-        bytes calldata data,
-        bool isSoulbound,
-        bool isClaimReward
-    ) external onlyRole(MINTER_ROLE) whenNotPaused {
-        uint256[] memory _tokenIds = _verifyContractChainIdAndDecode(data);
-        _mintAndClaimRewardTokenBatch(to, _tokenIds, 1, isSoulbound, isClaimReward);
-    }
-
-    function adminMintById(
-        address toAddress,
-        uint256 _tokenId,
-        uint256 _amount,
-        bool isSoulbound
-    ) public onlyRole(MINTER_ROLE) whenNotPaused {
-        _mintAndClaimRewardToken(toAddress, _tokenId, _amount, isSoulbound, false);
-    }
-
-    function adminBatchMintById(
-        address[] calldata toAddresses,
-        uint256 _tokenId,
-        uint256[] calldata _amounts,
-        bool isSoulbound
-    ) public onlyRole(MINTER_ROLE) whenNotPaused {
-        if (toAddresses.length != _amounts.length) {
-            revert InvalidLength();
-        }
-
-        for (uint256 i = 0; i < toAddresses.length; i++) {
-            _mintAndClaimRewardToken(toAddresses[i], _tokenId, _amounts[i], isSoulbound, false);
-        }
-    }
-
-    function supportsInterface(bytes4 interfaceId) public view override(AccessControl, ERC1155Holder) returns (bool) {
-        return super.supportsInterface(interfaceId);
-    }
-
-    // Function to receive Ether. msg.data must be empty
-    receive() external payable {}
-
-    // Fallback function is called when msg.data is not empty
-    fallback() external payable {}
-
-    function devVerifySignature(
-        address to,
-        uint256 nonce,
-        bytes calldata data,
-        bytes calldata signature
-    ) public onlyRole(DEV_CONFIG_ROLE) returns (bool) {
-        return _verifySignature(to, nonce, data, signature);
-    }
-
-    function addWhitelistSigner(address _signer) external onlyRole(DEV_CONFIG_ROLE) {
-        _addWhitelistSigner(_signer);
-    }
-
-    function removeWhitelistSigner(address signer) external onlyRole(DEV_CONFIG_ROLE) {
-        _removeWhitelistSigner(signer);
-    }
-
-    function getChainID() public view returns (uint256) {
-        uint256 id;
-        assembly {
-            id := chainid()
-        }
-        return id;
     }
 }
