@@ -22,18 +22,33 @@ pragma solidity ^0.8.24;
 //....................................................................................................................................................
 
 import { ERC1155 } from "@openzeppelin/contracts/token/ERC1155/ERC1155.sol";
-import { ERC1155Burnable } from "@openzeppelin/contracts/token/ERC1155/extensions/ERC1155Burnable.sol";
-import { ReentrancyGuard } from "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
+import {
+    ERC1155Burnable
+} from "@openzeppelin/contracts/token/ERC1155/extensions/ERC1155Burnable.sol";
+import {
+    ReentrancyGuard
+} from "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
 
-import { Achievo1155Soulbound } from "../ercs/extensions/Achievo1155Soulbound.sol";
+import {
+    Summon1155Soulbound
+} from "../ercs/extensions/Summon1155Soulbound.sol";
 
-contract Mock1155Soulbound is ERC1155Burnable, Achievo1155Soulbound, ReentrancyGuard {
+contract Mock1155Soulbound is
+    ERC1155Burnable,
+    Summon1155Soulbound,
+    ReentrancyGuard
+{
     mapping(address => mapping(uint256 => bool)) private tokenIdProcessed;
 
     constructor() ERC1155("lol://lol/{id}") {}
 
     // optional soulbound minting
-    function mint(address to, uint256 id, uint256 amount, bool soulbound) public virtual nonReentrant {
+    function mint(
+        address to,
+        uint256 id,
+        uint256 amount,
+        bool soulbound
+    ) public virtual nonReentrant {
         if (soulbound) {
             _soulbound(to, id, amount);
         }
@@ -59,7 +74,12 @@ contract Mock1155Soulbound is ERC1155Burnable, Achievo1155Soulbound, ReentrancyG
         uint256 _id,
         uint256 _amount,
         bytes memory _data
-    ) public virtual override soulboundCheckAndSync(_from, _to, _id, _amount, balanceOf(_from, _id)) {
+    )
+        public
+        virtual
+        override
+        soulboundCheckAndSync(_from, _to, _id, _amount, balanceOf(_from, _id))
+    {
         super.safeTransferFrom(_from, _to, _id, _amount, _data);
     }
 
@@ -73,7 +93,13 @@ contract Mock1155Soulbound is ERC1155Burnable, Achievo1155Soulbound, ReentrancyG
         public
         virtual
         override
-        soulboundCheckAndSyncBatch(_from, _to, _ids, _amounts, balanceOfBatchOneAccount(_from, _ids))
+        soulboundCheckAndSyncBatch(
+            _from,
+            _to,
+            _ids,
+            _amounts,
+            balanceOfBatchOneAccount(_from, _ids)
+        )
     {
         for (uint256 i = 0; i < _ids.length; i++) {
             uint256 id = _ids[i];
@@ -111,7 +137,18 @@ contract Mock1155Soulbound is ERC1155Burnable, Achievo1155Soulbound, ReentrancyG
         address to,
         uint256 tokenId,
         uint256 amount
-    ) public virtual override soulboundCheckAndSync(to, address(0), tokenId, amount, balanceOf(to, tokenId)) {
+    )
+        public
+        virtual
+        override
+        soulboundCheckAndSync(
+            to,
+            address(0),
+            tokenId,
+            amount,
+            balanceOf(to, tokenId)
+        )
+    {
         ERC1155Burnable.burn(to, tokenId, amount);
     }
 
@@ -124,7 +161,13 @@ contract Mock1155Soulbound is ERC1155Burnable, Achievo1155Soulbound, ReentrancyG
         virtual
         override
         nonReentrant
-        soulboundCheckAndSyncBatch(to, address(0), tokenIds, amounts, balanceOfBatchOneAccount(to, tokenIds))
+        soulboundCheckAndSyncBatch(
+            to,
+            address(0),
+            tokenIds,
+            amounts,
+            balanceOfBatchOneAccount(to, tokenIds)
+        )
     {
         for (uint256 i = 0; i < tokenIds.length; i++) {
             uint256 id = tokenIds[i];
@@ -145,7 +188,9 @@ contract Mock1155Soulbound is ERC1155Burnable, Achievo1155Soulbound, ReentrancyG
         }
     }
 
-    function supportsInterface(bytes4 interfaceId) public view override(ERC1155) returns (bool) {
+    function supportsInterface(
+        bytes4 interfaceId
+    ) public view override(ERC1155) returns (bool) {
         return super.supportsInterface(interfaceId);
     }
 }

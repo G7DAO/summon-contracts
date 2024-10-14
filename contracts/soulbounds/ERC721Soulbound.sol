@@ -1,8 +1,6 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.24;
 
-
-
 // @author Summon.xyz Team - https://summon.xyz
 // @contributors: [ @ogarciarevett, @vasinl124]
 //....................................................................................................................................................
@@ -23,20 +21,28 @@ pragma solidity ^0.8.24;
 //....................................................................................................................................................
 
 import { ERC721 } from "@openzeppelin/contracts/token/ERC721/ERC721.sol";
-import { ERC721URIStorage } from "@openzeppelin/contracts/token/ERC721/extensions/ERC721URIStorage.sol";
-import { ERC721Enumerable } from "@openzeppelin/contracts/token/ERC721/extensions/ERC721Enumerable.sol";
+import {
+    ERC721URIStorage
+} from "@openzeppelin/contracts/token/ERC721/extensions/ERC721URIStorage.sol";
+import {
+    ERC721Enumerable
+} from "@openzeppelin/contracts/token/ERC721/extensions/ERC721Enumerable.sol";
 import { IERC721 } from "@openzeppelin/contracts/token/ERC721/IERC721.sol";
-import { AccessControl } from "@openzeppelin/contracts/access/AccessControl.sol";
+import {
+    AccessControl
+} from "@openzeppelin/contracts/access/AccessControl.sol";
 import { Pausable } from "@openzeppelin/contracts/utils/Pausable.sol";
-import { ReentrancyGuard } from "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
+import {
+    ReentrancyGuard
+} from "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
 import { ECDSA } from "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
-import { Achievo721Soulbound } from "../ercs/extensions/Achievo721Soulbound.sol";
+import { Summon721Soulbound } from "../ercs/extensions/Summon721Soulbound.sol";
 
 contract ERC721Soulbound is
     ERC721URIStorage,
     ERC721Enumerable,
     AccessControl,
-    Achievo721Soulbound,
+    Summon721Soulbound,
     Pausable,
     ReentrancyGuard
 {
@@ -76,11 +82,19 @@ contract ERC721Soulbound is
         address to,
         uint256 tokenId,
         address auth
-    ) internal override(ERC721, ERC721Enumerable) soulboundAddressCheck(_ownerOf(tokenId)) returns (address) {
+    )
+        internal
+        override(ERC721, ERC721Enumerable)
+        soulboundAddressCheck(_ownerOf(tokenId))
+        returns (address)
+    {
         return super._update(to, tokenId, auth);
     }
 
-    function _increaseBalance(address account, uint128 value) internal override(ERC721, ERC721Enumerable) {
+    function _increaseBalance(
+        address account,
+        uint128 value
+    ) internal override(ERC721, ERC721Enumerable) {
         super._increaseBalance(account, value);
     }
 
@@ -88,17 +102,26 @@ contract ERC721Soulbound is
         return baseTokenURI;
     }
 
-    function setBaseURI(string memory _baseTokenURI) public onlyRole(DEFAULT_ADMIN_ROLE) {
+    function setBaseURI(
+        string memory _baseTokenURI
+    ) public onlyRole(DEFAULT_ADMIN_ROLE) {
         baseTokenURI = _baseTokenURI;
     }
 
-    function tokenURI(uint256 tokenId) public view override(ERC721, ERC721URIStorage) returns (string memory) {
+    function tokenURI(
+        uint256 tokenId
+    ) public view override(ERC721, ERC721URIStorage) returns (string memory) {
         return super.tokenURI(tokenId);
     }
 
     function supportsInterface(
         bytes4 interfaceId
-    ) public view override(ERC721URIStorage, ERC721Enumerable, AccessControl) returns (bool) {
+    )
+        public
+        view
+        override(ERC721URIStorage, ERC721Enumerable, AccessControl)
+        returns (bool)
+    {
         return super.supportsInterface(interfaceId);
     }
 }

@@ -55,7 +55,7 @@ error MintPaused();
 error ClaimRewardPaused();
 error DupTokenId();
 
-contract LootDrop is
+contract Rewards is
     ERCWhitelistSignature,
     AccessControl,
     Pausable,
@@ -135,7 +135,7 @@ contract LootDrop is
         return _decodeData(_data);
     }
 
-    function _decodeData(bytes calldata _data) private view returns (address, uint256, uint256[] memory) {
+    function _decodeData(bytes calldata _data) private pure returns (address, uint256, uint256[] memory) {
         (address contractAddress, uint256 chainId, uint256[] memory _itemIds) = abi.decode(
             _data,
             (address, uint256, uint256[])

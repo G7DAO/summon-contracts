@@ -1,6 +1,7 @@
 import { expect } from 'chai';
 // @ts-ignore-next-line
 import { ethers } from 'hardhat';
+// @ts-ignore
 import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers';
 import { Mock1155Soulbound, Mock721Soulbound } from '../../typechain-types';
 
@@ -30,14 +31,16 @@ describe('MockSoulbound', function () {
         expect(await mockSoul721Bound.ownerOf(0)).to.be.eq(playerAccount.address);
         await expect(
             mockSoul721Bound.connect(playerAccount).transferFrom(playerAccount.address, minterAccount.address, 0)
-        ).to.be.revertedWith('Achievo721Soulbound: This token is soulbounded');
+        )
+            .to.be.revertedWithCustomError(mockSoul721Bound, 'TokenIsSoulbound')
+            .withArgs(0);
 
         const tx2 = await mockSoul721Bound.mint(minterAccount.address);
         await tx2.wait();
         expect(await mockSoul721Bound.ownerOf(1)).to.be.eq(minterAccount.address);
-        await expect(mockSoul721Bound.transferFrom(minterAccount.address, playerAccount.address, 1)).to.be.revertedWith(
-            'Achievo721Soulbound: This token is soulbounded'
-        );
+        await expect(mockSoul721Bound.transferFrom(minterAccount.address, playerAccount.address, 1))
+            .to.be.revertedWithCustomError(mockSoul721Bound, 'TokenIsSoulbound')
+            .withArgs(1);
     });
 
     it('_soulboundToken - ERC721 - must bound the token id properly - safeTransferFrom', async function () {
@@ -49,7 +52,9 @@ describe('MockSoulbound', function () {
             mockSoul721Bound
                 .connect(playerAccount)
                 ['safeTransferFrom(address,address,uint256)'](playerAccount.address, minterAccount.address, 0)
-        ).to.be.revertedWith('Achievo721Soulbound: This token is soulbounded');
+        )
+            .to.be.revertedWithCustomError(mockSoul721Bound, 'TokenIsSoulbound')
+            .withArgs(0);
     });
 
     it('_soulbound - ERC1155 - must bound the token id properly', async function () {
@@ -59,14 +64,12 @@ describe('MockSoulbound', function () {
             mockSoul1155Bound
                 .connect(playerAccount)
                 .safeTransferFrom(playerAccount.address, minterAccount.address, 1, 1, ethers.toUtf8Bytes(''))
-        ).to.be.revertedWith(
-            'Achievo1155Soulbound: The amount of soulbounded tokens is more than the amount of tokens to be transferred'
-        );
+        ).to.be.revertedWithCustomError(mockSoul1155Bound, 'SoulboundAmountError');
         await expect(
             mockSoul1155Bound
                 .connect(playerAccount)
                 .safeTransferFrom(playerAccount.address, minterAccount.address, 1, 0, ethers.toUtf8Bytes(''))
-        ).to.be.revertedWith("Achievo1155Soulbound: can't be zero amount");
+        ).to.be.revertedWithCustomError(mockSoul1155Bound, 'AmountGreaterThanZeroError');
         const tx2 = await mockSoul1155Bound.mint(playerAccount.address, 1, 5, false);
         await tx2.wait();
         const transferTrx = await mockSoul1155Bound
@@ -105,9 +108,7 @@ describe('MockSoulbound', function () {
                     [1, 2, 303],
                     ethers.toUtf8Bytes('')
                 )
-        ).to.be.revertedWith(
-            'Achievo1155Soulbound: The amount of soulbounded tokens is more than the amount of tokens to be transferred'
-        );
+        ).to.be.revertedWithCustomError(mockSoul1155Bound, 'SoulboundAmountError');
     });
 
     it('burn - ERC1155 - must burn/sync tokens correctly', async function () {
@@ -115,9 +116,9 @@ describe('MockSoulbound', function () {
         await tx.wait();
         expect(await mockSoul1155Bound.balanceOf(playerAccount.address, 1)).to.be.eq(5);
 
-        await expect(mockSoul1155Bound.connect(playerAccount).burn(playerAccount.address, 1, 1)).to.be.revertedWith(
-            'Achievo1155Soulbound: The amount of soulbounded tokens is more than the amount of tokens to be transferred'
-        );
+        await expect(
+            mockSoul1155Bound.connect(playerAccount).burn(playerAccount.address, 1, 1)
+        ).to.be.revertedWithCustomError(mockSoul1155Bound, 'SoulboundAmountError');
 
         const tx2 = await mockSoul1155Bound.mint(playerAccount.address, 1, 2, false);
         await tx2.wait();
@@ -126,13 +127,11 @@ describe('MockSoulbound', function () {
             mockSoul1155Bound
                 .connect(playerAccount)
                 .safeTransferFrom(playerAccount.address, minterAccount.address, 1, 4, ethers.toUtf8Bytes(''))
-        ).to.be.revertedWith(
-            'Achievo1155Soulbound: The amount of soulbounded tokens is more than the amount of tokens to be transferred'
-        );
+        ).to.be.revertedWithCustomError(mockSoul1155Bound, 'SoulboundAmountError');
 
-        await expect(mockSoul1155Bound.connect(playerAccount).burn(playerAccount.address, 1, 6)).to.be.revertedWith(
-            'Achievo1155Soulbound: The amount of soulbounded tokens is more than the amount of tokens to be transferred'
-        );
+        await expect(
+            mockSoul1155Bound.connect(playerAccount).burn(playerAccount.address, 1, 6)
+        ).to.be.revertedWithCustomError(mockSoul1155Bound, 'SoulboundAmountError');
 
         await mockSoul1155Bound.connect(playerAccount).burn(playerAccount.address, 1, 1);
         expect(await mockSoul1155Bound.balanceOf(playerAccount.address, 1)).to.be.eq(6);

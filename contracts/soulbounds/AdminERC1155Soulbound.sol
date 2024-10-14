@@ -1,8 +1,6 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.24;
 
-
-
 // @author Summon.xyz Team - https://summon.xyz
 // @contributors: [ @ogarciarevett, @vasinl124]
 //....................................................................................................................................................
@@ -23,15 +21,26 @@ pragma solidity ^0.8.24;
 //....................................................................................................................................................
 
 import { ERC1155 } from "@openzeppelin/contracts/token/ERC1155/ERC1155.sol";
-import { ERC1155Burnable } from "@openzeppelin/contracts/token/ERC1155/extensions/ERC1155Burnable.sol";
-import { ERC1155Supply } from "@openzeppelin/contracts/token/ERC1155/extensions/ERC1155Supply.sol";
-import { AccessControl } from "@openzeppelin/contracts/access/AccessControl.sol";
-import { Strings } from "@openzeppelin/contracts/utils/Strings.sol";
+import {
+    ERC1155Burnable
+} from "@openzeppelin/contracts/token/ERC1155/extensions/ERC1155Burnable.sol";
+import {
+    ERC1155Supply
+} from "@openzeppelin/contracts/token/ERC1155/extensions/ERC1155Supply.sol";
+import {
+    AccessControl
+} from "@openzeppelin/contracts/access/AccessControl.sol";
 import { ERC2981 } from "@openzeppelin/contracts/token/common/ERC2981.sol";
-import { ReentrancyGuard } from "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
-import { Initializable } from "@openzeppelin/contracts/proxy/utils/Initializable.sol";
+import {
+    ReentrancyGuard
+} from "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
+import {
+    Initializable
+} from "@openzeppelin/contracts/proxy/utils/Initializable.sol";
 
-import { Achievo1155Soulbound } from "../ercs/extensions/Achievo1155Soulbound.sol";
+import {
+    Summon1155Soulbound
+} from "../ercs/extensions/Summon1155Soulbound.sol";
 import { LibItems } from "../libraries/LibItems.sol";
 
 error AddressIsZero();
@@ -40,7 +49,7 @@ error NotOwnerOrApproved();
 contract AdminERC1155Soulbound is
     ERC1155Burnable,
     ERC1155Supply,
-    Achievo1155Soulbound,
+    Summon1155Soulbound,
     AccessControl,
     ERC2981,
     ReentrancyGuard,
@@ -57,15 +66,25 @@ contract AdminERC1155Soulbound is
     string public defaultTokenURI;
     string public contractURI;
 
-    using Strings for uint256;
-
     mapping(uint256 => bool) private tokenExists;
     uint256[] public itemIds;
 
     mapping(address => mapping(uint256 => bool)) private tokenIdProcessed;
 
-    event Minted(address indexed to, uint256[] tokenIds, uint256 amount, bool soulbound);
-    event MintedId(address indexed to, uint256 indexed tokenId, uint256 amount, bool soulbound);
+    event Minted(
+        address indexed to,
+        uint256[] tokenIds,
+        uint256 amount,
+        bool soulbound
+    );
+
+    event MintedId(
+        address indexed to,
+        uint256 indexed tokenId,
+        uint256 amount,
+        bool soulbound
+    );
+
     event TokenAdded(uint256 indexed tokenId);
 
     constructor(address devWallet) ERC1155("") {
@@ -81,19 +100,19 @@ contract AdminERC1155Soulbound is
         string memory _defaultTokenURI,
         string memory _contractURI,
         address devWallet,
-        address lootDropAddress
+        address minter
     ) external initializer onlyRole(DEFAULT_ADMIN_ROLE) {
-        if (devWallet == address(0) || lootDropAddress == address(0)) {
+        if (devWallet == address(0) || minter == address(0)) {
             revert AddressIsZero();
         }
 
         _grantRole(DEFAULT_ADMIN_ROLE, devWallet);
         _grantRole(MANAGER_ROLE, devWallet);
         _grantRole(DEV_CONFIG_ROLE, devWallet);
-        _grantRole(DEV_CONFIG_ROLE, lootDropAddress);
-        _grantRole(MINTER_ROLE, lootDropAddress);
+        _grantRole(DEV_CONFIG_ROLE, minter);
+        _grantRole(MINTER_ROLE, minter);
 
-        _updateWhitelistAddress(lootDropAddress, true);
+        _updateWhitelistAddress(minter, true);
 
         name = _name;
         symbol = _symbol;
@@ -103,9 +122,16 @@ contract AdminERC1155Soulbound is
 
     function getAllItemsAdmin(
         address _owner
-    ) public view onlyRole(MINTER_ROLE) returns (LibItems.TokenReturn[] memory) {
+    )
+        public
+        view
+        onlyRole(MINTER_ROLE)
+        returns (LibItems.TokenReturn[] memory)
+    {
         uint256 totalTokens = itemIds.length;
-        LibItems.TokenReturn[] memory tokenReturns = new LibItems.TokenReturn[](totalTokens);
+        LibItems.TokenReturn[] memory tokenReturns = new LibItems.TokenReturn[](
+            totalTokens
+        );
 
         uint index;
         for (uint i = 0; i < totalTokens; i++) {
@@ -122,7 +148,8 @@ contract AdminERC1155Soulbound is
         }
 
         // truncate the array
-        LibItems.TokenReturn[] memory returnsTruncated = new LibItems.TokenReturn[](index);
+        LibItems.TokenReturn[]
+            memory returnsTruncated = new LibItems.TokenReturn[](index);
         for (uint i = 0; i < index; i++) {
             returnsTruncated[i] = tokenReturns[i];
         }
@@ -143,7 +170,12 @@ contract AdminERC1155Soulbound is
         emit TokenAdded(_tokenId);
     }
 
-    function adminMintId(address to, uint256 id, uint256 amount, bool isSoulbound) public onlyRole(MINTER_ROLE) {
+    function adminMintId(
+        address to,
+        uint256 id,
+        uint256 amount,
+        bool isSoulbound
+    ) public onlyRole(MINTER_ROLE) {
         isTokenExist(id);
 
         if (isSoulbound) {
@@ -180,7 +212,12 @@ contract AdminERC1155Soulbound is
         uint256 _id,
         uint256 _amount,
         bytes memory _data
-    ) public virtual override soulboundCheckAndSync(_from, _to, _id, _amount, balanceOf(_from, _id)) {
+    )
+        public
+        virtual
+        override
+        soulboundCheckAndSync(_from, _to, _id, _amount, balanceOf(_from, _id))
+    {
         super.safeTransferFrom(_from, _to, _id, _amount, _data);
     }
 
@@ -194,7 +231,13 @@ contract AdminERC1155Soulbound is
         public
         virtual
         override
-        soulboundCheckAndSyncBatch(_from, _to, _ids, _amounts, balanceOfBatchOneAccount(_from, _ids))
+        soulboundCheckAndSyncBatch(
+            _from,
+            _to,
+            _ids,
+            _amounts,
+            balanceOfBatchOneAccount(_from, _ids)
+        )
     {
         for (uint256 i = 0; i < _ids.length; i++) {
             uint256 id = _ids[i];
@@ -232,7 +275,17 @@ contract AdminERC1155Soulbound is
         address to,
         uint256 tokenId,
         uint256 amount
-    ) public nonReentrant soulboundCheckAndSync(to, address(0), tokenId, amount, balanceOf(to, tokenId)) {
+    )
+        public
+        nonReentrant
+        soulboundCheckAndSync(
+            to,
+            address(0),
+            tokenId,
+            amount,
+            balanceOf(to, tokenId)
+        )
+    {
         if (!_getWhitelistAddress(_msgSender())) {
             revert();
         }
@@ -249,7 +302,13 @@ contract AdminERC1155Soulbound is
         virtual
         override
         nonReentrant
-        soulboundCheckAndSync(to, address(0), tokenId, amount, balanceOf(to, tokenId))
+        soulboundCheckAndSync(
+            to,
+            address(0),
+            tokenId,
+            amount,
+            balanceOf(to, tokenId)
+        )
     {
         ERC1155Burnable.burn(to, tokenId, amount);
     }
@@ -263,7 +322,13 @@ contract AdminERC1155Soulbound is
         virtual
         override
         nonReentrant
-        soulboundCheckAndSyncBatch(to, address(0), tokenIds, amounts, balanceOfBatchOneAccount(to, tokenIds))
+        soulboundCheckAndSyncBatch(
+            to,
+            address(0),
+            tokenIds,
+            amounts,
+            balanceOfBatchOneAccount(to, tokenIds)
+        )
     {
         for (uint256 i = 0; i < tokenIds.length; i++) {
             uint256 id = tokenIds[i];
@@ -295,15 +360,23 @@ contract AdminERC1155Soulbound is
         return defaultTokenURI;
     }
 
-    function updateDefaultTokenURI(string memory _defaultTokenURI) external onlyRole(DEV_CONFIG_ROLE) {
+    function updateDefaultTokenURI(
+        string memory _defaultTokenURI
+    ) external onlyRole(DEV_CONFIG_ROLE) {
         defaultTokenURI = _defaultTokenURI;
     }
 
-    function updateWhitelistAddress(address _address, bool _isWhitelisted) external onlyRole(DEV_CONFIG_ROLE) {
+    function updateWhitelistAddress(
+        address _address,
+        bool _isWhitelisted
+    ) external onlyRole(DEV_CONFIG_ROLE) {
         _updateWhitelistAddress(_address, _isWhitelisted);
     }
 
-    function setRoyaltyInfo(address receiver, uint96 feeBasisPoints) external onlyRole(MANAGER_ROLE) {
+    function setRoyaltyInfo(
+        address receiver,
+        uint96 feeBasisPoints
+    ) external onlyRole(MANAGER_ROLE) {
         _setDefaultRoyalty(receiver, feeBasisPoints);
     }
 
@@ -315,11 +388,15 @@ contract AdminERC1155Soulbound is
         _setTokenRoyalty(tokenId, receiver, uint96(feeBasisPoints));
     }
 
-    function resetTokenRoyalty(uint256 tokenId) external onlyRole(MANAGER_ROLE) {
+    function resetTokenRoyalty(
+        uint256 tokenId
+    ) external onlyRole(MANAGER_ROLE) {
         _resetTokenRoyalty(tokenId);
     }
 
-    function setContractURI(string memory _contractURI) public onlyRole(DEV_CONFIG_ROLE) {
+    function setContractURI(
+        string memory _contractURI
+    ) public onlyRole(DEV_CONFIG_ROLE) {
         contractURI = _contractURI;
         emit ContractURIChanged(_contractURI);
     }

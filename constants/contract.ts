@@ -13,7 +13,7 @@ export enum CONTRACT_TYPE {
     Whitelist = 'Whitelist',
     SkillTree = 'SkillTree',
     DETERMINISTIC_FACTORY_CONTRACT = 'DeterministicDeployFactory',
-    LootDrop = 'LootDrop',
+    Rewards = 'Rewards',
     HelloWorld = 'HelloWorld',
     RewardToken = 'RewardToken',
     DirectListingExtension = 'DirectListingExtension',
@@ -31,13 +31,13 @@ export enum PROXY_CONTRACT_TYPE {
 }
 
 export enum CONTRACT_PROXY_CONTRACT_NAME {
-    AchievoProxy = 'AchievoProxy',
+    SummonProxy = 'SummonProxy',
     Diamond = 'Diamond',
-    AchievoProxyMarketplace = 'AchievoProxyMarketplace',
+    SummonProxyMarketplace = 'SummonProxyMarketplace',
 }
 
 export enum CONTRACT_PROXY_FILE_NAME {
-    AchievoProxy = 'AchievoProxy',
+    SummonProxy = 'SummonProxy',
     Diamond = 'Diamond',
 }
 
@@ -51,7 +51,7 @@ export enum CONTRACT_FILE_NAME {
     Bridge = 'ERC20Bridge',
     Whitelist = 'Whitelist',
     DETERMINISTIC_FACTORY_CONTRACT = 'DeterministicDeployFactory',
-    LootDrop = 'LootDrop',
+    Rewards = 'Rewards',
     HelloWorld = 'HelloWorld',
     AdminERC1155Soulbound = 'AdminERC1155Soulbound',
     DirectListingsExtension = 'DirectListingsLogic',
@@ -96,7 +96,7 @@ export enum CONTRACT_NAME {
     BUIDL = 'BUIDL',
     SkillTree = 'SkillTree',
     DETERMINISTIC_FACTORY_CONTRACT = 'DeterministicDeployFactory',
-    LootDrop = 'LootDrop',
+    Rewards = 'Rewards',
     HelloWorld = 'HelloWorld',
     RewardToken = 'RewardToken',
     DirectListingExtension = 'DirectListingExtension',
@@ -104,7 +104,7 @@ export enum CONTRACT_NAME {
     Marketplace = 'Marketplace',
     EnglishAuctionsExtension = 'EnglishAuctionsExtension',
     OffersExtension = 'OffersExtension',
-    AchievoProxyMarketplace = 'AchievoProxyMarketplace',
+    SummonProxyMarketplace = 'SummonProxyMarketplace',
     DirectListingsAddonExtension = 'DirectListingsAddonExtension',
     Staker = 'Staker',
     MiddlewareStaker = 'MiddlewareStakerG7',

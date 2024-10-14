@@ -343,7 +343,7 @@ export const ERC20DecimalsAgs = {
     },
 };
 
-export const LootDropArgs = {
+export const RewardsArgs = {
     MAINNET: {
         _devWallet: '0x85f56764F58F595D08252b98942554bFB5Eea390',
     },
@@ -371,7 +371,7 @@ export const RewardTokenArgs = {
         _defaultTokenURI: 'FILL_ME',
         _contractURI: 'FILL_ME',
         _devWallet: 'DEPLOYER_WALLET',
-        _lootDropAddress: `CONTRACT_${CONTRACT_NAME.LootDrop}`,
+        _lootDropAddress: `CONTRACT_${CONTRACT_NAME.Rewards}`,
     },
     TESTNET: {
         _name: 'RainToken',
@@ -379,7 +379,7 @@ export const RewardTokenArgs = {
         _defaultTokenURI: 'FILL_ME',
         _contractURI: 'FILL_ME',
         _devWallet: 'DEPLOYER_WALLET',
-        _lootDropAddress: `CONTRACT_${CONTRACT_NAME.LootDrop}`,
+        _lootDropAddress: `CONTRACT_${CONTRACT_NAME.Rewards}`,
     },
 };
 

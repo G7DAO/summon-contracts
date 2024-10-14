@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: UNLICENSED
+// SPDX-License-Identifier: MIT
 pragma solidity ^0.8.24;
 
 // @author Summon.xyz Team - https://summon.xyz
@@ -20,31 +20,88 @@ pragma solidity ^0.8.24;
 //....................&&&&&&&.........................................................................................................................
 //....................................................................................................................................................
 
-import { ERC721 } from "@openzeppelin/contracts/token/ERC721/ERC721.sol";
-import { Summon721Soulbound } from "../ercs/extensions/Summon721Soulbound.sol";
+contract Summon721Soulbound {
+    mapping(uint256 => bool) internal _soulboundTokens; // low gas usage
+    mapping(address => bool) internal _soulboundAddresses; // mid gas usage
+    mapping(address => bool) internal whitelistAddresses;
 
-contract Mock721Soulbound is ERC721, Summon721Soulbound {
-    uint256 private _tokenIdCounter;
+    event SoulboundToken(uint256 indexed tokenId);
+    event SoulboundAddress(address indexed to);
 
-    constructor() ERC721("Mock721SoulboundToken", "M721SBT") {}
+    error TokenIsSoulbound(uint256 tokenId);
+    error AddressIsSoulbound(address addr);
+    error OperationDeniedSoulbound();
+    error BoundToZeroAddressNotAllowed();
 
-    function mint(address to) public {
-        uint256 tokenId = _tokenIdCounter++;
-        _safeMint(to, tokenId);
-        _soulboundToken(tokenId);
+    modifier soulboundTokenCheck(uint256 tokenId) {
+        if (_soulboundTokens[tokenId]) {
+            revert TokenIsSoulbound(tokenId);
+        }
+        _;
     }
 
-    function _update(
-        address to,
-        uint256 tokenId,
-        address auth
-    ) internal override(ERC721) soulboundTokenCheck(tokenId) returns (address) {
-        return super._update(to, tokenId, auth);
+    modifier soulboundAddressCheck(address from) {
+        if (_soulboundAddresses[from]) {
+            revert AddressIsSoulbound(from);
+        }
+        _;
     }
 
-    function supportsInterface(
-        bytes4 interfaceId
-    ) public view override(ERC721) returns (bool) {
-        return super.supportsInterface(interfaceId);
+    modifier revertOperation() {
+        revert OperationDeniedSoulbound();
+        _;
+    }
+
+    /**
+     * @dev Returns if a `tokenId` is soulbound
+     *
+     */
+    function isSoulboundToken(
+        uint256 tokenId
+    ) external view virtual returns (bool) {
+        return _soulboundTokens[tokenId];
+    }
+
+    /**
+     * @dev Returns if a `address` is soulbound
+     *
+     */
+    function isSoulboundAddress(address to) public view virtual returns (bool) {
+        return _soulboundAddresses[to];
+    }
+
+    function _updateWhitelistAddress(
+        address _address,
+        bool _isWhitelisted
+    ) internal {
+        whitelistAddresses[_address] = _isWhitelisted;
+    }
+
+    /**
+     * @dev Soulbound `tokenId` - ERC721 use cases
+     *
+     * Emits a {SoulboundToken} event.
+     *
+     */
+    function _soulboundToken(uint256 tokenId) internal virtual {
+        _soulboundTokens[tokenId] = true;
+        emit SoulboundToken(tokenId);
+    }
+
+    /**
+     * @dev Soulbound `address` to save that address  - Custom use cases
+     *
+     * Emits a {SoulboundAddress} event.
+     *
+     * Requirements:
+     *
+     * - `to` cannot be the zero address.
+     */
+    function _soulboundAddress(address to) internal virtual {
+        if (to == address(0)) {
+            revert BoundToZeroAddressNotAllowed();
+        }
+        _soulboundAddresses[to] = true;
+        emit SoulboundAddress(to);
     }
 }

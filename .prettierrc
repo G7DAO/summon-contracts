@@ -12,14 +12,13 @@
         {
             "files": "*.sol",
             "options": {
-                "compiler": "0.8.17",
-                "explicitTypes": "always",
-                "printWidth": 120,
+                "parser": "solidity-parse",
+                "compiler": "0.8.24",
+                "printWidth": 80,
                 "tabWidth": 4,
                 "useTabs": false,
                 "singleQuote": false,
                 "bracketSpacing": true,
-                "arrowParens": "always",
                 "semi": true
             }
         }
