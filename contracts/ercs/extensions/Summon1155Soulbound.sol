@@ -124,7 +124,7 @@ contract Summon1155Soulbound {
         uint256 amount,
         uint256 totalAmount
     ) private view {
-        if (amount < 0) {
+        if (amount == 0) {
             revert AmountGreaterThanZeroError();
         }
         // check if from or to whitelist addresses let it through

@@ -31,13 +31,13 @@ export enum PROXY_CONTRACT_TYPE {
 }
 
 export enum CONTRACT_PROXY_CONTRACT_NAME {
-    AchievoProxy = 'AchievoProxy',
+    SummonProxy = 'SummonProxy',
     Diamond = 'Diamond',
-    AchievoProxyMarketplace = 'AchievoProxyMarketplace',
+    SummonProxyMarketplace = 'SummonProxyMarketplace',
 }
 
 export enum CONTRACT_PROXY_FILE_NAME {
-    AchievoProxy = 'AchievoProxy',
+    SummonProxy = 'SummonProxy',
     Diamond = 'Diamond',
 }
 
@@ -104,7 +104,7 @@ export enum CONTRACT_NAME {
     Marketplace = 'Marketplace',
     EnglishAuctionsExtension = 'EnglishAuctionsExtension',
     OffersExtension = 'OffersExtension',
-    AchievoProxyMarketplace = 'AchievoProxyMarketplace',
+    SummonProxyMarketplace = 'SummonProxyMarketplace',
     DirectListingsAddonExtension = 'DirectListingsAddonExtension',
     Staker = 'Staker',
     MiddlewareStaker = 'MiddlewareStakerG7',

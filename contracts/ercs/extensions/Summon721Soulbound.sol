@@ -28,24 +28,27 @@ contract Summon721Soulbound {
     event SoulboundToken(uint256 indexed tokenId);
     event SoulboundAddress(address indexed to);
 
+    error TokenIsSoulbound(uint256 tokenId);
+    error AddressIsSoulbound(address addr);
+    error OperationDeniedSoulbound();
+    error BoundToZeroAddressNotAllowed();
+
     modifier soulboundTokenCheck(uint256 tokenId) {
-        require(
-            !_soulboundTokens[tokenId],
-            "Achievo721Soulbound: This token is soulbounded"
-        );
+        if (_soulboundTokens[tokenId]) {
+            revert TokenIsSoulbound(tokenId);
+        }
         _;
     }
 
     modifier soulboundAddressCheck(address from) {
-        require(
-            !_soulboundAddresses[from],
-            "Achievo721Soulbound: This address is soulbounded"
-        );
+        if (_soulboundAddresses[from]) {
+            revert AddressIsSoulbound(from);
+        }
         _;
     }
 
     modifier revertOperation() {
-        revert("Achievo721Soulbound: Operation denied, soulbounded");
+        revert OperationDeniedSoulbound();
         _;
     }
 
@@ -95,10 +98,9 @@ contract Summon721Soulbound {
      * - `to` cannot be the zero address.
      */
     function _soulboundAddress(address to) internal virtual {
-        require(
-            to != address(0),
-            "Achievo721Soulbound: Bound to the zero address not allowed"
-        );
+        if (to == address(0)) {
+            revert BoundToZeroAddressNotAllowed();
+        }
         _soulboundAddresses[to] = true;
         emit SoulboundAddress(to);
     }
