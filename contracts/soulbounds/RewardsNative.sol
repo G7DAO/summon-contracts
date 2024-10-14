@@ -123,7 +123,7 @@ contract Rewards is
         rewardTokenContract = AdminERC1155Soulbound(_rewardTokenAddress);
     }
 
-    function isTokenExist(uint256 _tokenId) external view returns (bool) {
+    function isTokenExist(uint256 _tokenId) public view returns (bool) {
         if (!tokenExists[_tokenId]) {
             return false;
         }
@@ -178,7 +178,7 @@ contract Rewards is
     /**
      * @dev Allows the contract owner to withdraw all available assets from the contract.
      * @param _to The address to send the assets to.
-     * @param _amounts The amounts to withdraw.
+     * @param _amount The amounts to withdraw.
      */
     function withdrawAll(
         address _to,
@@ -233,11 +233,10 @@ contract Rewards is
     function mint(
         address to,
         bytes calldata data,
-        bool isSoulbound,
-        bool isClaimReward
+        bool isSoulbound
     ) external onlyRole(MINTER_ROLE) whenNotPaused {
         uint256[] memory _tokenIds = _verifyContractChainIdAndDecode(data);
-        _mintAccessRewardTokenBatch(to, _tokenIds, 1, isSoulbound, isClaimReward);
+        _mintAccessRewardTokenBatch(to, _tokenIds, 1, isSoulbound);
     }
 
     function mintById(
@@ -246,7 +245,7 @@ contract Rewards is
         uint256 _amount,
         bool isSoulbound
     ) public onlyRole(MINTER_ROLE) whenNotPaused {
-        _mintRewardAccessToken(toAddress, _tokenId, _amount, isSoulbound, false);
+        _mintRewardAccessToken(toAddress, _tokenId, _amount, isSoulbound);
     }
 
     function batchMintById(
@@ -260,7 +259,7 @@ contract Rewards is
         }
 
         for (uint256 i = 0; i < toAddresses.length; i++) {
-            _mintRewardAccessToken(toAddresses[i], _tokenId, _amounts[i], isSoulbound, false);
+            _mintRewardAccessToken(toAddresses[i], _tokenId, _amounts[i], isSoulbound);
         }
     }
 
@@ -393,8 +392,7 @@ contract Rewards is
         address to,
         uint256[] memory _tokenIds,
         uint256 _amount,
-        bool soulbound,
-        bool isClaimReward
+        bool soulbound
     ) private {
         for (uint256 i = 0; i < _tokenIds.length; i++) {
             _mintRewardAccessToken(to, _tokenIds[i], _amount, soulbound);
