@@ -79,7 +79,6 @@ contract RewardsNative is
     /*//////////////////////////////////////////////////////////////
                                  EVENTS
     //////////////////////////////////////////////////////////////*/
-
     event TokenAdded(uint256 indexed tokenId);
     event Minted(
         address indexed to,
@@ -120,7 +119,6 @@ contract RewardsNative is
     /*//////////////////////////////////////////////////////////////
                           EXTERNALS-FUNCTIONS
     //////////////////////////////////////////////////////////////*/
-
     function updateRewardTokenContract(
         address _rewardTokenAddress
     ) external onlyRole(DEV_CONFIG_ROLE) {
@@ -335,7 +333,6 @@ contract RewardsNative is
     /*//////////////////////////////////////////////////////////////
                            PRIVATE-FUNCTIONS
     //////////////////////////////////////////////////////////////*/
-
     function _decodeData(
         bytes calldata _data
     ) private pure returns (address, uint256, uint256[] memory) {

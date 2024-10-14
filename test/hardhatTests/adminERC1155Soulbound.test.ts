@@ -2,7 +2,7 @@ const { expect } = require('chai');
 const { ethers } = require('hardhat');
 const { loadFixture } = require('@nomicfoundation/hardhat-network-helpers');
 
-describe.only('AdminERC1155Soulbound', function () {
+describe('AdminERC1155Soulbound', function () {
     async function deployFixtures() {
         const [devWallet, minterWallet, user1, user2] = await ethers.getSigners();
 
