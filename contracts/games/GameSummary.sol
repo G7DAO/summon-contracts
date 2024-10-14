@@ -21,16 +21,28 @@ pragma solidity ^0.8.24;
 //....................................................................................................................................................
 
 import { ERC1155 } from "@openzeppelin/contracts/token/ERC1155/ERC1155.sol";
-import { ERC1155Burnable } from "@openzeppelin/contracts/token/ERC1155/extensions/ERC1155Burnable.sol";
-import { ERC1155Supply } from "@openzeppelin/contracts/token/ERC1155/extensions/ERC1155Supply.sol";
-import { AccessControl } from "@openzeppelin/contracts/access/AccessControl.sol";
+import {
+    ERC1155Burnable
+} from "@openzeppelin/contracts/token/ERC1155/extensions/ERC1155Burnable.sol";
+import {
+    ERC1155Supply
+} from "@openzeppelin/contracts/token/ERC1155/extensions/ERC1155Supply.sol";
+import {
+    AccessControl
+} from "@openzeppelin/contracts/access/AccessControl.sol";
 import { Pausable } from "@openzeppelin/contracts/utils/Pausable.sol";
 import { Strings } from "@openzeppelin/contracts/utils/Strings.sol";
 import { ECDSA } from "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
-import { ReentrancyGuard } from "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
-import { Initializable } from "@openzeppelin/contracts/proxy/utils/Initializable.sol";
+import {
+    ReentrancyGuard
+} from "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
+import {
+    Initializable
+} from "@openzeppelin/contracts/proxy/utils/Initializable.sol";
 
-import { Achievo1155Soulbound } from "../ercs/extensions/Achievo1155Soulbound.sol";
+import {
+    Summon1155Soulbound
+} from "../ercs/extensions/Summon1155Soulbound.sol";
 import { ERCWhitelistSignature } from "../ercs/ERCWhitelistSignature.sol";
 import { LibGameSummary } from "../libraries/LibGameSummary.sol";
 
@@ -40,7 +52,7 @@ error InvalidInput();
 contract GameSummary is
     ERC1155Burnable,
     ERC1155Supply,
-    Achievo1155Soulbound,
+    Summon1155Soulbound,
     ERCWhitelistSignature,
     AccessControl,
     Pausable,
@@ -81,8 +93,18 @@ contract GameSummary is
 
     mapping(address => mapping(uint256 => bool)) private tokenIdProcessed;
 
-    event Minted(address indexed to, uint256[] tokenIds, uint256 amount, bool soulbound);
-    event MintedId(address indexed to, uint256 indexed tokenId, uint256 amount, bool soulbound);
+    event Minted(
+        address indexed to,
+        uint256[] tokenIds,
+        uint256 amount,
+        bool soulbound
+    );
+    event MintedId(
+        address indexed to,
+        uint256 indexed tokenId,
+        uint256 amount,
+        bool soulbound
+    );
     event TokenAdded(uint256 indexed tokenId);
 
     modifier maxPerMintCheck(uint256 amount) {
@@ -131,11 +153,16 @@ contract GameSummary is
         if (_isPaused) _pause();
     }
 
-    function getAllItems() public view returns (LibGameSummary.GameSummaryReturn[] memory) {
+    function getAllItems()
+        public
+        view
+        returns (LibGameSummary.GameSummaryReturn[] memory)
+    {
         uint256 totalTokens = itemIds.length;
-        LibGameSummary.GameSummaryReturn[] memory GameSummaryReturns = new LibGameSummary.GameSummaryReturn[](
-            totalTokens
-        );
+        LibGameSummary.GameSummaryReturn[]
+            memory GameSummaryReturns = new LibGameSummary.GameSummaryReturn[](
+                totalTokens
+            );
 
         uint index;
         for (uint i = 0; i < totalTokens; i++) {
@@ -143,21 +170,26 @@ contract GameSummary is
             uint256 amount = balanceOf(_msgSender(), tokenId);
 
             if (amount > 0) {
-                LibGameSummary.GameSummaryReturn memory GameSummaryReturn = LibGameSummary.GameSummaryReturn({
-                    tokenId: tokenId,
-                    tokenUri: uri(tokenId),
-                    storeId: storeIds[tokenId],
-                    playerId: playerIds[tokenId],
-                    gameId: gameIds[tokenId],
-                    amount: amount
-                });
+                LibGameSummary.GameSummaryReturn
+                    memory GameSummaryReturn = LibGameSummary
+                        .GameSummaryReturn({
+                            tokenId: tokenId,
+                            tokenUri: uri(tokenId),
+                            storeId: storeIds[tokenId],
+                            playerId: playerIds[tokenId],
+                            gameId: gameIds[tokenId],
+                            amount: amount
+                        });
                 GameSummaryReturns[index] = GameSummaryReturn;
                 index++;
             }
         }
 
         // truncate the array
-        LibGameSummary.GameSummaryReturn[] memory returnsTruncated = new LibGameSummary.GameSummaryReturn[](index);
+        LibGameSummary.GameSummaryReturn[]
+            memory returnsTruncated = new LibGameSummary.GameSummaryReturn[](
+                index
+            );
         for (uint i = 0; i < index; i++) {
             returnsTruncated[i] = GameSummaryReturns[i];
         }
@@ -167,31 +199,41 @@ contract GameSummary is
 
     function getAllItemsAdmin(
         address _owner
-    ) public view onlyRole(MINTER_ROLE) returns (LibGameSummary.GameSummaryReturn[] memory) {
+    )
+        public
+        view
+        onlyRole(MINTER_ROLE)
+        returns (LibGameSummary.GameSummaryReturn[] memory)
+    {
         uint256 totalTokens = itemIds.length;
-        LibGameSummary.GameSummaryReturn[] memory GameSummaryReturns = new LibGameSummary.GameSummaryReturn[](
-            totalTokens
-        );
+        LibGameSummary.GameSummaryReturn[]
+            memory GameSummaryReturns = new LibGameSummary.GameSummaryReturn[](
+                totalTokens
+            );
 
         uint index;
         for (uint i = 0; i < totalTokens; i++) {
             uint256 tokenId = itemIds[i];
             uint256 amount = balanceOf(_owner, tokenId);
 
-            LibGameSummary.GameSummaryReturn memory GameSummaryReturn = LibGameSummary.GameSummaryReturn({
-                tokenId: tokenId,
-                tokenUri: uri(tokenId),
-                storeId: storeIds[tokenId],
-                playerId: playerIds[tokenId],
-                gameId: gameIds[tokenId],
-                amount: amount
-            });
+            LibGameSummary.GameSummaryReturn
+                memory GameSummaryReturn = LibGameSummary.GameSummaryReturn({
+                    tokenId: tokenId,
+                    tokenUri: uri(tokenId),
+                    storeId: storeIds[tokenId],
+                    playerId: playerIds[tokenId],
+                    gameId: gameIds[tokenId],
+                    amount: amount
+                });
             GameSummaryReturns[index] = GameSummaryReturn;
             index++;
         }
 
         // truncate the array
-        LibGameSummary.GameSummaryReturn[] memory returnsTruncated = new LibGameSummary.GameSummaryReturn[](index);
+        LibGameSummary.GameSummaryReturn[]
+            memory returnsTruncated = new LibGameSummary.GameSummaryReturn[](
+                index
+            );
         for (uint i = 0; i < index; i++) {
             returnsTruncated[i] = GameSummaryReturns[i];
         }
@@ -208,7 +250,11 @@ contract GameSummary is
 
     function _verifyContractChainIdAndDecode(
         bytes calldata data
-    ) private view returns (uint256[] memory, uint256[] memory, uint256[] memory) {
+    )
+        private
+        view
+        returns (uint256[] memory, uint256[] memory, uint256[] memory)
+    {
         uint256 currentChainId = getChainID();
         (
             address contractAddress,
@@ -230,21 +276,40 @@ contract GameSummary is
         public
         view
         onlyRole(DEV_CONFIG_ROLE)
-        returns (address, uint256, uint256[] memory, uint256[] memory, uint256[] memory)
+        returns (
+            address,
+            uint256,
+            uint256[] memory,
+            uint256[] memory,
+            uint256[] memory
+        )
     {
         return _decodeData(_data);
     }
 
     function _decodeData(
         bytes calldata _data
-    ) private pure returns (address, uint256, uint256[] memory, uint256[] memory, uint256[] memory) {
+    )
+        private
+        pure
+        returns (
+            address,
+            uint256,
+            uint256[] memory,
+            uint256[] memory,
+            uint256[] memory
+        )
+    {
         (
             address contractAddress,
             uint256 chainId,
             uint256[] memory _storeIds,
             uint256[] memory _playerIds,
             uint256[] memory _gameIds
-        ) = abi.decode(_data, (address, uint256, uint256[], uint256[], uint256[]));
+        ) = abi.decode(
+                _data,
+                (address, uint256, uint256[], uint256[], uint256[])
+            );
         return (contractAddress, chainId, _storeIds, _playerIds, _gameIds);
     }
 
@@ -256,12 +321,20 @@ contract GameSummary is
         _unpause();
     }
 
-    function getTokenId(uint256 storeId, uint256 playerId, uint256 gameId) public pure returns (uint256) {
-        uint256 tokenId = uint256(keccak256(abi.encode(storeId, playerId, gameId)));
+    function getTokenId(
+        uint256 storeId,
+        uint256 playerId,
+        uint256 gameId
+    ) public pure returns (uint256) {
+        uint256 tokenId = uint256(
+            keccak256(abi.encode(storeId, playerId, gameId))
+        );
         return tokenId;
     }
 
-    function _addNewToken(LibGameSummary.GameSummaryCreate memory _token) internal {
+    function _addNewToken(
+        LibGameSummary.GameSummaryCreate memory _token
+    ) internal {
         tokenExists[_token.tokenId] = true;
 
         storeIds[_token.tokenId] = _token.storeId;
@@ -272,7 +345,10 @@ contract GameSummary is
         emit TokenAdded(_token.tokenId);
     }
 
-    function updateTokenMintPaused(uint256 _tokenId, bool _isTokenMintPaused) public onlyRole(MANAGER_ROLE) {
+    function updateTokenMintPaused(
+        uint256 _tokenId,
+        bool _isTokenMintPaused
+    ) public onlyRole(MANAGER_ROLE) {
         isTokenMintPaused[_tokenId] = _isTokenMintPaused;
     }
 
@@ -286,7 +362,14 @@ contract GameSummary is
     ) private {
         uint256[] memory _tokenIds = new uint256[](_storeIds.length);
         for (uint256 i = 0; i < _storeIds.length; i++) {
-            uint256 _id = _internalMint(to, _storeIds[i], _playerIds[i], _gameIds[i], amount, soulbound);
+            uint256 _id = _internalMint(
+                to,
+                _storeIds[i],
+                _playerIds[i],
+                _gameIds[i],
+                amount,
+                soulbound
+            );
             _tokenIds[i] = _id;
         }
         emit Minted(to, _tokenIds, amount, soulbound);
@@ -311,13 +394,14 @@ contract GameSummary is
         }
 
         if (!isTokenExist(_id)) {
-            LibGameSummary.GameSummaryCreate memory gameSummaryCreate = LibGameSummary.GameSummaryCreate({
-                tokenId: _id,
-                tokenUri: "",
-                storeId: _storeId,
-                playerId: _playerId,
-                gameId: _gameId
-            });
+            LibGameSummary.GameSummaryCreate
+                memory gameSummaryCreate = LibGameSummary.GameSummaryCreate({
+                    tokenId: _id,
+                    tokenUri: "",
+                    storeId: _storeId,
+                    playerId: _playerId,
+                    gameId: _gameId
+                });
             _addNewToken(gameSummaryCreate);
         }
 
@@ -335,16 +419,33 @@ contract GameSummary is
         bool soulbound,
         uint256 nonce,
         bytes calldata signature
-    ) external nonReentrant signatureCheck(_msgSender(), nonce, data, signature) maxPerMintCheck(amount) whenNotPaused {
+    )
+        external
+        nonReentrant
+        signatureCheck(_msgSender(), nonce, data, signature)
+        maxPerMintCheck(amount)
+        whenNotPaused
+    {
         (
             uint256[] memory _storeIds,
             uint256[] memory _playerIds,
             uint256[] memory _gameIds
         ) = _verifyContractChainIdAndDecode(data);
-        _mintBatch(_msgSender(), _storeIds, _playerIds, _gameIds, amount, soulbound);
+        _mintBatch(
+            _msgSender(),
+            _storeIds,
+            _playerIds,
+            _gameIds,
+            amount,
+            soulbound
+        );
     }
 
-    function adminMint(address to, bytes calldata data, bool soulbound) external onlyRole(MINTER_ROLE) whenNotPaused {
+    function adminMint(
+        address to,
+        bytes calldata data,
+        bool soulbound
+    ) external onlyRole(MINTER_ROLE) whenNotPaused {
         (
             uint256[] memory _storeIds,
             uint256[] memory _playerIds,
@@ -361,7 +462,14 @@ contract GameSummary is
         uint256 amount,
         bool soulbound
     ) external onlyRole(MINTER_ROLE) whenNotPaused {
-        uint256 _id = _internalMint(to, _storeId, _playerId, _gameId, amount, soulbound);
+        uint256 _id = _internalMint(
+            to,
+            _storeId,
+            _playerId,
+            _gameId,
+            amount,
+            soulbound
+        );
         emit MintedId(to, _id, amount, soulbound);
     }
 
@@ -380,7 +488,12 @@ contract GameSummary is
         uint256 _id,
         uint256 _amount,
         bytes memory _data
-    ) public virtual override soulboundCheckAndSync(_from, _to, _id, _amount, balanceOf(_from, _id)) {
+    )
+        public
+        virtual
+        override
+        soulboundCheckAndSync(_from, _to, _id, _amount, balanceOf(_from, _id))
+    {
         super.safeTransferFrom(_from, _to, _id, _amount, _data);
     }
 
@@ -394,7 +507,13 @@ contract GameSummary is
         public
         virtual
         override
-        soulboundCheckAndSyncBatch(_from, _to, _ids, _amounts, balanceOfBatchOneAccount(_from, _ids))
+        soulboundCheckAndSyncBatch(
+            _from,
+            _to,
+            _ids,
+            _amounts,
+            balanceOfBatchOneAccount(_from, _ids)
+        )
     {
         for (uint256 i = 0; i < _ids.length; i++) {
             uint256 id = _ids[i];
@@ -437,7 +556,13 @@ contract GameSummary is
         virtual
         override
         nonReentrant
-        soulboundCheckAndSync(to, address(0), tokenId, amount, balanceOf(to, tokenId))
+        soulboundCheckAndSync(
+            to,
+            address(0),
+            tokenId,
+            amount,
+            balanceOf(to, tokenId)
+        )
     {
         ERC1155Burnable.burn(to, tokenId, amount);
     }
@@ -451,7 +576,13 @@ contract GameSummary is
         virtual
         override
         nonReentrant
-        soulboundCheckAndSyncBatch(to, address(0), tokenIds, amounts, balanceOfBatchOneAccount(to, tokenIds))
+        soulboundCheckAndSyncBatch(
+            to,
+            address(0),
+            tokenIds,
+            amounts,
+            balanceOfBatchOneAccount(to, tokenIds)
+        )
     {
         for (uint256 i = 0; i < tokenIds.length; i++) {
             uint256 id = tokenIds[i];
@@ -472,7 +603,9 @@ contract GameSummary is
         }
     }
 
-    function supportsInterface(bytes4 interfaceId) public view override(ERC1155, AccessControl) returns (bool) {
+    function supportsInterface(
+        bytes4 interfaceId
+    ) public view override(ERC1155, AccessControl) returns (bool) {
         return super.supportsInterface(interfaceId);
     }
 
@@ -507,7 +640,9 @@ contract GameSummary is
         emit BaseURIChanged(baseURI);
     }
 
-    function setCompoundURIEnabled(bool _compoundURIEnabled) public onlyRole(DEV_CONFIG_ROLE) {
+    function setCompoundURIEnabled(
+        bool _compoundURIEnabled
+    ) public onlyRole(DEV_CONFIG_ROLE) {
         if (_compoundURIEnabled == compoundURIEnabled) {
             revert InvalidInput();
         }
@@ -516,17 +651,24 @@ contract GameSummary is
         emit CompoundURIEnabledChanged(_compoundURIEnabled);
     }
 
-    function setCompoundURI(string memory _compoundURI) public onlyRole(DEV_CONFIG_ROLE) {
+    function setCompoundURI(
+        string memory _compoundURI
+    ) public onlyRole(DEV_CONFIG_ROLE) {
         compoundURI = _compoundURI;
         emit CompoundURIChanged(_compoundURI);
     }
 
-    function setContractURI(string memory _contractURI) public onlyRole(DEV_CONFIG_ROLE) {
+    function setContractURI(
+        string memory _contractURI
+    ) public onlyRole(DEV_CONFIG_ROLE) {
         contractURI = _contractURI;
         emit ContractURIChanged(_contractURI);
     }
 
-    function updateWhitelistAddress(address _address, bool _isWhitelisted) external onlyRole(DEV_CONFIG_ROLE) {
+    function updateWhitelistAddress(
+        address _address,
+        bool _isWhitelisted
+    ) external onlyRole(DEV_CONFIG_ROLE) {
         _updateWhitelistAddress(_address, _isWhitelisted);
     }
 
@@ -539,11 +681,15 @@ contract GameSummary is
         return _verifySignature(to, nonce, data, signature);
     }
 
-    function addWhitelistSigner(address _signer) external onlyRole(DEV_CONFIG_ROLE) {
+    function addWhitelistSigner(
+        address _signer
+    ) external onlyRole(DEV_CONFIG_ROLE) {
         _addWhitelistSigner(_signer);
     }
 
-    function removeWhitelistSigner(address signer) external onlyRole(DEV_CONFIG_ROLE) {
+    function removeWhitelistSigner(
+        address signer
+    ) external onlyRole(DEV_CONFIG_ROLE) {
         _removeWhitelistSigner(signer);
     }
 

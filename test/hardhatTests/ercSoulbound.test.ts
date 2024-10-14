@@ -30,13 +30,13 @@ describe('MockSoulbound', function () {
         expect(await mockSoul721Bound.ownerOf(0)).to.be.eq(playerAccount.address);
         await expect(
             mockSoul721Bound.connect(playerAccount).transferFrom(playerAccount.address, minterAccount.address, 0)
-        ).to.be.revertedWith('Achievo721Soulbound: This token is soulbounded');
+        ).to.be.revertedWith('Summon721Soulbound.sol: This token is soulbounded');
 
         const tx2 = await mockSoul721Bound.mint(minterAccount.address);
         await tx2.wait();
         expect(await mockSoul721Bound.ownerOf(1)).to.be.eq(minterAccount.address);
         await expect(mockSoul721Bound.transferFrom(minterAccount.address, playerAccount.address, 1)).to.be.revertedWith(
-            'Achievo721Soulbound: This token is soulbounded'
+            'Summon721Soulbound.sol: This token is soulbounded'
         );
     });
 
@@ -49,7 +49,7 @@ describe('MockSoulbound', function () {
             mockSoul721Bound
                 .connect(playerAccount)
                 ['safeTransferFrom(address,address,uint256)'](playerAccount.address, minterAccount.address, 0)
-        ).to.be.revertedWith('Achievo721Soulbound: This token is soulbounded');
+        ).to.be.revertedWith('Summon721Soulbound.sol: This token is soulbounded');
     });
 
     it('_soulbound - ERC1155 - must bound the token id properly', async function () {

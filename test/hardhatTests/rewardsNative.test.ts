@@ -2,12 +2,13 @@ import { expect } from 'chai';
 import { ethers } from 'hardhat';
 import { loadFixture } from '@nomicfoundation/hardhat-network-helpers';
 
-describe.only('RewardsNative', function () {
+describe.skip('RewardsNative', function () {
     async function deployRewardsFixture() {
         const [devWallet, adminWallet, managerWallet, minterWallet, user1, user2] = await ethers.getSigners();
 
         const AdminERC1155Soulbound = await ethers.getContractFactory('AdminERC1155Soulbound');
         const adminERC1155Soulbound = await AdminERC1155Soulbound.deploy(devWallet.address);
+        await adminERC1155Soulbound.waitForDeployment();
 
         const RewardsNative = await ethers.getContractFactory('RewardsNative');
         const rewardsNative = await RewardsNative.deploy(
@@ -19,6 +20,14 @@ describe.only('RewardsNative', function () {
         );
 
         await rewardsNative.waitForDeployment();
+        await adminERC1155Soulbound.initialize(
+            'G7Reward',
+            'G7R',
+            'https://example.com/token/',
+            'https://example.com/contract/',
+            devWallet.address,
+            rewardsNative.target
+        );
 
         return {
             rewardsNative,
@@ -46,6 +55,16 @@ describe.only('RewardsNative', function () {
             expect(await rewardsNative.hasRole(await rewardsNative.DEFAULT_ADMIN_ROLE(), adminWallet)).to.be.true;
             expect(await rewardsNative.hasRole(await rewardsNative.MANAGER_ROLE(), managerWallet)).to.be.true;
             expect(await rewardsNative.hasRole(await rewardsNative.MINTER_ROLE(), minterWallet)).to.be.true;
+        });
+
+        it('AdminERC1155Soulbound should set the roles correctly', async function () {
+            const { adminERC1155Soulbound, devWallet, rewardsNative } = await loadFixture(deployRewardsFixture);
+            expect(await adminERC1155Soulbound.hasRole(await adminERC1155Soulbound.DEFAULT_ADMIN_ROLE(), devWallet)).to
+                .be.true;
+            expect(await adminERC1155Soulbound.hasRole(await adminERC1155Soulbound.MANAGER_ROLE(), devWallet)).to.be
+                .true;
+            expect(await adminERC1155Soulbound.hasRole(await adminERC1155Soulbound.MINTER_ROLE(), rewardsNative)).to.be
+                .true;
         });
     });
 

@@ -20,11 +20,7 @@ pragma solidity ^0.8.24;
 //....................&&&&&&&.........................................................................................................................
 //....................................................................................................................................................
 
-/*
- * Author: Achievo Team - (https://achievo.xyz/)
- */
-
-contract Achievo721Soulbound {
+contract Summon721Soulbound {
     mapping(uint256 => bool) internal _soulboundTokens; // low gas usage
     mapping(address => bool) internal _soulboundAddresses; // mid gas usage
     mapping(address => bool) internal whitelistAddresses;
@@ -33,12 +29,18 @@ contract Achievo721Soulbound {
     event SoulboundAddress(address indexed to);
 
     modifier soulboundTokenCheck(uint256 tokenId) {
-        require(!_soulboundTokens[tokenId], "Achievo721Soulbound: This token is soulbounded");
+        require(
+            !_soulboundTokens[tokenId],
+            "Achievo721Soulbound: This token is soulbounded"
+        );
         _;
     }
 
     modifier soulboundAddressCheck(address from) {
-        require(!_soulboundAddresses[from], "Achievo721Soulbound: This address is soulbounded");
+        require(
+            !_soulboundAddresses[from],
+            "Achievo721Soulbound: This address is soulbounded"
+        );
         _;
     }
 
@@ -51,7 +53,9 @@ contract Achievo721Soulbound {
      * @dev Returns if a `tokenId` is soulbound
      *
      */
-    function isSoulboundToken(uint256 tokenId) external view virtual returns (bool) {
+    function isSoulboundToken(
+        uint256 tokenId
+    ) external view virtual returns (bool) {
         return _soulboundTokens[tokenId];
     }
 
@@ -63,7 +67,10 @@ contract Achievo721Soulbound {
         return _soulboundAddresses[to];
     }
 
-    function _updateWhitelistAddress(address _address, bool _isWhitelisted) internal {
+    function _updateWhitelistAddress(
+        address _address,
+        bool _isWhitelisted
+    ) internal {
         whitelistAddresses[_address] = _isWhitelisted;
     }
 
@@ -88,7 +95,10 @@ contract Achievo721Soulbound {
      * - `to` cannot be the zero address.
      */
     function _soulboundAddress(address to) internal virtual {
-        require(to != address(0), "Achievo721Soulbound: Bound to the zero address not allowed");
+        require(
+            to != address(0),
+            "Achievo721Soulbound: Bound to the zero address not allowed"
+        );
         _soulboundAddresses[to] = true;
         emit SoulboundAddress(to);
     }
