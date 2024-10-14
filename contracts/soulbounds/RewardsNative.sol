@@ -20,24 +20,28 @@ pragma solidity ^0.8.24;
 //....................&&&&&&&.........................................................................................................................
 //....................................................................................................................................................
 
-import { AccessControl } from "@openzeppelin/contracts/access/AccessControl.sol";
-import { ERC1155Holder } from "@openzeppelin/contracts/token/ERC1155/utils/ERC1155Holder.sol";
+import {
+    AccessControl
+} from "@openzeppelin/contracts/access/AccessControl.sol";
+import {
+    ERC1155Holder
+} from "@openzeppelin/contracts/token/ERC1155/utils/ERC1155Holder.sol";
 import { Pausable } from "@openzeppelin/contracts/utils/Pausable.sol";
 import { Strings } from "@openzeppelin/contracts/utils/Strings.sol";
 import { ECDSA } from "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
-import { ReentrancyGuard } from "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
-import { Initializable } from "@openzeppelin/contracts/proxy/utils/Initializable.sol";
+import {
+    ReentrancyGuard
+} from "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
 
 import { AdminERC1155Soulbound } from "../soulbounds/AdminERC1155Soulbound.sol";
 import { ERCWhitelistSignature } from "../ercs/ERCWhitelistSignature.sol";
 import { LibRewards } from "../libraries/LibRewards.sol";
 
-contract Rewards is
+contract RewardsNative is
     ERCWhitelistSignature,
     AccessControl,
     Pausable,
     ReentrancyGuard,
-    Initializable,
     ERC1155Holder
 {
     /*//////////////////////////////////////////////////////////////
@@ -77,23 +81,25 @@ contract Rewards is
     //////////////////////////////////////////////////////////////*/
 
     event TokenAdded(uint256 indexed tokenId);
-    event Minted(address indexed to, uint256 indexed tokenId, uint256 amount, bool soulbound);
+    event Minted(
+        address indexed to,
+        uint256 indexed tokenId,
+        uint256 amount,
+        bool soulbound
+    );
     event Claimed(address indexed to, uint256 indexed tokenId, uint256 amount);
 
-    constructor(address devWallet) {
-        if (devWallet == address(0)) {
-            revert AddressIsZero();
-        }
-        _grantRole(DEFAULT_ADMIN_ROLE, devWallet);
-    }
-
-    function initialize(
+    constructor(
         address _devWallet,
         address _adminWallet,
         address _managerWallet,
         address _minterWallet,
         address _rewardTokenAddress
-    ) external initializer onlyRole(DEFAULT_ADMIN_ROLE) {
+    ) {
+        if (_devWallet == address(0)) {
+            revert AddressIsZero();
+        }
+
         if (
             _devWallet == address(0) ||
             _managerWallet == address(0) ||
@@ -104,8 +110,8 @@ contract Rewards is
         }
 
         rewardTokenContract = AdminERC1155Soulbound(_rewardTokenAddress);
-        _grantRole(DEFAULT_ADMIN_ROLE, _adminWallet);
         _grantRole(DEV_CONFIG_ROLE, _devWallet);
+        _grantRole(DEFAULT_ADMIN_ROLE, _adminWallet);
         _grantRole(MANAGER_ROLE, _managerWallet);
         _grantRole(MINTER_ROLE, _minterWallet);
         _addWhitelistSigner(_devWallet);
@@ -115,7 +121,9 @@ contract Rewards is
                           EXTERNALS-FUNCTIONS
     //////////////////////////////////////////////////////////////*/
 
-    function updateRewardTokenContract(address _rewardTokenAddress) external onlyRole(DEV_CONFIG_ROLE) {
+    function updateRewardTokenContract(
+        address _rewardTokenAddress
+    ) external onlyRole(DEV_CONFIG_ROLE) {
         if (_rewardTokenAddress == address(0)) {
             revert AddressIsZero();
         }
@@ -132,11 +140,18 @@ contract Rewards is
 
     function decodeData(
         bytes calldata _data
-    ) external view onlyRole(DEV_CONFIG_ROLE) returns (address, uint256, uint256[] memory) {
+    )
+        external
+        view
+        onlyRole(DEV_CONFIG_ROLE)
+        returns (address, uint256, uint256[] memory)
+    {
         return _decodeData(_data);
     }
 
-    function createTokenAndDepositRewards(LibRewards.RewardToken calldata _token) public payable onlyRole(MANAGER_ROLE) {
+    function createTokenAndDepositRewards(
+        LibRewards.RewardToken calldata _token
+    ) public payable onlyRole(DEV_CONFIG_ROLE) {
         uint256 _ethRequired = _calculateETHRequiredForToken(_token);
 
         if (msg.value < _ethRequired) {
@@ -148,7 +163,7 @@ contract Rewards is
 
     function createMultipleTokensAndDepositRewards(
         LibRewards.RewardToken[] calldata _tokens
-    ) external payable onlyRole(MANAGER_ROLE) {
+    ) external payable onlyRole(DEV_CONFIG_ROLE) {
         uint256 totalETHRequired;
 
         // Calculate the total ETH required for all tokens
@@ -167,11 +182,17 @@ contract Rewards is
         }
     }
 
-    function updateTokenMintPaused(uint256 _tokenId, bool _isTokenMintPaused) public onlyRole(MANAGER_ROLE) {
+    function updateTokenMintPaused(
+        uint256 _tokenId,
+        bool _isTokenMintPaused
+    ) public onlyRole(MANAGER_ROLE) {
         isTokenMintPaused[_tokenId] = _isTokenMintPaused;
     }
 
-    function updateClaimRewardPaused(uint256 _tokenId, bool _isClaimRewardPaused) public onlyRole(MANAGER_ROLE) {
+    function updateClaimRewardPaused(
+        uint256 _tokenId,
+        bool _isClaimRewardPaused
+    ) public onlyRole(MANAGER_ROLE) {
         isClaimRewardPaused[_tokenId] = _isClaimRewardPaused;
     }
 
@@ -202,7 +223,9 @@ contract Rewards is
         _claimReward(_msgSender(), _tokenId);
     }
 
-    function claimRewards(uint256[] calldata _tokenIds) external nonReentrant whenNotPaused {
+    function claimRewards(
+        uint256[] calldata _tokenIds
+    ) external nonReentrant whenNotPaused {
         for (uint256 i = 0; i < _tokenIds.length; i++) {
             _claimReward(_msgSender(), _tokenIds[i]);
         }
@@ -211,13 +234,13 @@ contract Rewards is
     function getTokenDetails(
         uint256 tokenId
     )
-    public
-    view
-    returns (
-        string memory tokenUri,
-        uint256 maxSupply,
-        uint256[] memory rewardAmounts
-    )
+        public
+        view
+        returns (
+            string memory tokenUri,
+            uint256 maxSupply,
+            uint256[] memory rewardAmounts
+        )
     {
         tokenUri = tokenRewards[tokenId].tokenUri;
         maxSupply = tokenRewards[tokenId].maxSupply;
@@ -259,7 +282,12 @@ contract Rewards is
         }
 
         for (uint256 i = 0; i < toAddresses.length; i++) {
-            _mintRewardAccessToken(toAddresses[i], _tokenId, _amounts[i], isSoulbound);
+            _mintRewardAccessToken(
+                toAddresses[i],
+                _tokenId,
+                _amounts[i],
+                isSoulbound
+            );
         }
     }
 
@@ -269,7 +297,9 @@ contract Rewards is
     // Fallback function is called when msg.data is not empty
     fallback() external payable {}
 
-    function supportsInterface(bytes4 interfaceId) public view override(AccessControl, ERC1155Holder) returns (bool) {
+    function supportsInterface(
+        bytes4 interfaceId
+    ) public view override(AccessControl, ERC1155Holder) returns (bool) {
         return super.supportsInterface(interfaceId);
     }
 
@@ -282,11 +312,15 @@ contract Rewards is
         return _verifySignature(to, nonce, data, signature);
     }
 
-    function addWhitelistSigner(address _signer) external onlyRole(DEV_CONFIG_ROLE) {
+    function addWhitelistSigner(
+        address _signer
+    ) external onlyRole(DEV_CONFIG_ROLE) {
         _addWhitelistSigner(_signer);
     }
 
-    function removeWhitelistSigner(address signer) external onlyRole(DEV_CONFIG_ROLE) {
+    function removeWhitelistSigner(
+        address signer
+    ) external onlyRole(DEV_CONFIG_ROLE) {
         _removeWhitelistSigner(signer);
     }
 
@@ -302,20 +336,29 @@ contract Rewards is
                            PRIVATE-FUNCTIONS
     //////////////////////////////////////////////////////////////*/
 
-    function _decodeData(bytes calldata _data) private pure returns (address, uint256, uint256[] memory) {
-        (address contractAddress, uint256 chainId, uint256[] memory _itemIds) = abi.decode(
-            _data,
-            (address, uint256, uint256[])
-        );
+    function _decodeData(
+        bytes calldata _data
+    ) private pure returns (address, uint256, uint256[] memory) {
+        (
+            address contractAddress,
+            uint256 chainId,
+            uint256[] memory _itemIds
+        ) = abi.decode(_data, (address, uint256, uint256[]));
         return (contractAddress, chainId, _itemIds);
     }
 
-    function _validateTokenInputs(LibRewards.RewardToken calldata _token) private view {
+    function _validateTokenInputs(
+        LibRewards.RewardToken calldata _token
+    ) private view {
         if (_token.maxSupply == 0) {
             revert InvalidAmount();
         }
 
-        if (bytes(_token.tokenUri).length == 0 || _token.rewards.length == 0 || _token.tokenId == 0) {
+        if (
+            bytes(_token.tokenUri).length == 0 ||
+            _token.rewards.length == 0 ||
+            _token.tokenId == 0
+        ) {
             revert InvalidInput();
         }
 
@@ -324,7 +367,9 @@ contract Rewards is
         }
     }
 
-    function _calculateETHRequiredForToken(LibRewards.RewardToken calldata _token) private pure returns (uint256) {
+    function _calculateETHRequiredForToken(
+        LibRewards.RewardToken calldata _token
+    ) private pure returns (uint256) {
         uint256 totalETHRequired;
         for (uint256 i = 0; i < _token.rewards.length; i++) {
             LibRewards.Reward memory reward = _token.rewards[i];
@@ -333,7 +378,9 @@ contract Rewards is
         return totalETHRequired * _token.maxSupply;
     }
 
-    function _createTokenAndDepositRewards(LibRewards.RewardToken calldata _token) private {
+    function _createTokenAndDepositRewards(
+        LibRewards.RewardToken calldata _token
+    ) private {
         // have to approve all the assets first
         // Validate token inputs
         _validateTokenInputs(_token);
@@ -377,7 +424,9 @@ contract Rewards is
     }
 
     function _distributeReward(address _to, uint256 _rewardTokenId) private {
-        LibRewards.RewardToken memory _rewardToken = tokenRewards[_rewardTokenId];
+        LibRewards.RewardToken memory _rewardToken = tokenRewards[
+            _rewardTokenId
+        ];
         LibRewards.Reward[] memory rewards = _rewardToken.rewards;
 
         for (uint256 i = 0; i < rewards.length; i++) {
@@ -433,9 +482,15 @@ contract Rewards is
         emit Minted(to, _tokenId, _amount, soulbound);
     }
 
-    function _verifyContractChainIdAndDecode(bytes calldata data) private view returns (uint256[] memory) {
+    function _verifyContractChainIdAndDecode(
+        bytes calldata data
+    ) private view returns (uint256[] memory) {
         uint256 currentChainId = getChainID();
-        (address contractAddress, uint256 chainId, uint256[] memory tokenIds) = _decodeData(data);
+        (
+            address contractAddress,
+            uint256 chainId,
+            uint256[] memory tokenIds
+        ) = _decodeData(data);
 
         if (chainId != currentChainId || contractAddress != address(this)) {
             revert InvalidInput();

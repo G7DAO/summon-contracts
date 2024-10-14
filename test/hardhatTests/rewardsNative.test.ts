@@ -2,31 +2,27 @@ import { expect } from 'chai';
 import { ethers } from 'hardhat';
 import { loadFixture } from '@nomicfoundation/hardhat-network-helpers';
 
-describe('RewardsNative', function () {
+describe.only('RewardsNative', function () {
     async function deployRewardsFixture() {
         const [devWallet, adminWallet, managerWallet, minterWallet, user1, user2] = await ethers.getSigners();
 
         const AdminERC1155Soulbound = await ethers.getContractFactory('AdminERC1155Soulbound');
         const adminERC1155Soulbound = await AdminERC1155Soulbound.deploy(devWallet.address);
 
-        const Rewards = await ethers.getContractFactory('Rewards');
-        const rewards = await Rewards.deploy(devWallet.address);
-
-        await rewards.initialize(
-            devWallet.address,
-            adminWallet.address,
-            managerWallet.address,
-            minterWallet.address,
-            adminERC1155Soulbound.address
+        const RewardsNative = await ethers.getContractFactory('RewardsNative');
+        const rewardsNative = await RewardsNative.deploy(
+            devWallet,
+            adminWallet,
+            managerWallet,
+            minterWallet,
+            adminERC1155Soulbound
         );
 
-        const MockERC20 = await ethers.getContractFactory('MockERC20');
-        const mockERC20 = await MockERC20.deploy('Mock Token', 'MTK');
+        await rewardsNative.waitForDeployment();
 
         return {
-            rewards,
+            rewardsNative,
             adminERC1155Soulbound,
-            mockERC20,
             devWallet,
             adminWallet,
             managerWallet,
@@ -38,24 +34,24 @@ describe('RewardsNative', function () {
 
     describe('Deployment', function () {
         it('Should deploy successfully', async function () {
-            const { rewards } = await loadFixture(deployRewardsFixture);
-            expect(await rewards.getAddress()).to.be.properAddress;
+            const { rewardsNative } = await loadFixture(deployRewardsFixture);
+            expect(await rewardsNative.getAddress()).to.be.properAddress;
         });
 
         it('Should set the correct roles', async function () {
-            const { rewards, devWallet, adminWallet, managerWallet, minterWallet } =
+            const { rewardsNative, devWallet, adminWallet, managerWallet, minterWallet } =
                 await loadFixture(deployRewardsFixture);
 
-            expect(await rewards.hasRole(await rewards.DEFAULT_ADMIN_ROLE(), devWallet.address)).to.be.true;
-            expect(await rewards.hasRole(await rewards.DEFAULT_ADMIN_ROLE(), adminWallet.address)).to.be.true;
-            expect(await rewards.hasRole(await rewards.MANAGER_ROLE(), managerWallet.address)).to.be.true;
-            expect(await rewards.hasRole(await rewards.MINTER_ROLE(), minterWallet.address)).to.be.true;
+            expect(await rewardsNative.hasRole(await rewardsNative.DEV_CONFIG_ROLE(), devWallet)).to.be.true;
+            expect(await rewardsNative.hasRole(await rewardsNative.DEFAULT_ADMIN_ROLE(), adminWallet)).to.be.true;
+            expect(await rewardsNative.hasRole(await rewardsNative.MANAGER_ROLE(), managerWallet)).to.be.true;
+            expect(await rewardsNative.hasRole(await rewardsNative.MINTER_ROLE(), minterWallet)).to.be.true;
         });
     });
 
     describe('Token Management', function () {
         it('Should add a new token', async function () {
-            const { rewards, managerWallet } = await loadFixture(deployRewardsFixture);
+            const { rewardsNative, devWallet } = await loadFixture(deployRewardsFixture);
             const rewardToken = {
                 tokenId: 1,
                 maxSupply: 100,
@@ -63,22 +59,22 @@ describe('RewardsNative', function () {
                 rewards: [{ rewardAmount: ethers.parseEther('0.1') }],
             };
 
-            await expect(
-                rewards
-                    .connect(managerWallet)
-                    .createTokenAndDepositRewards(rewardToken, { value: ethers.parseEther('10') })
-            )
-                .to.emit(rewards, 'TokenAdded')
-                .withArgs(1);
+            const rewardNativeWithDev = rewardsNative.connect(devWallet);
 
-            const tokenDetails = await rewards.getTokenDetails(1);
+            const tx = await rewardNativeWithDev.createTokenAndDepositRewards(rewardToken, {
+                value: ethers.parseEther('10'),
+            });
+
+            await expect(tx).to.emit(rewardNativeWithDev, 'TokenAdded').withArgs(1);
+
+            const tokenDetails = await rewardNativeWithDev.getTokenDetails(1);
             expect(tokenDetails.tokenUri).to.equal(rewardToken.tokenUri);
             expect(tokenDetails.maxSupply).to.equal(rewardToken.maxSupply);
             expect(tokenDetails.rewardAmounts[0]).to.equal(rewardToken.rewards[0].rewardAmount);
         });
 
         it('Should revert when adding a duplicate token', async function () {
-            const { rewards, managerWallet } = await loadFixture(deployRewardsFixture);
+            const { rewardsNative, devWallet } = await loadFixture(deployRewardsFixture);
             const rewardToken = {
                 tokenId: 1,
                 maxSupply: 100,
@@ -86,21 +82,21 @@ describe('RewardsNative', function () {
                 rewards: [{ rewardAmount: ethers.parseEther('0.1') }],
             };
 
-            await rewards
-                .connect(managerWallet)
+            await rewardsNative
+                .connect(devWallet)
                 .createTokenAndDepositRewards(rewardToken, { value: ethers.parseEther('10') });
 
             await expect(
-                rewards
-                    .connect(managerWallet)
+                rewardsNative
+                    .connect(devWallet)
                     .createTokenAndDepositRewards(rewardToken, { value: ethers.parseEther('10') })
-            ).to.be.revertedWithCustomError(rewards, 'DupTokenId');
+            ).to.be.revertedWithCustomError(rewardsNative, 'DupTokenId');
         });
     });
 
     describe('Minting', function () {
         it('Should mint a token', async function () {
-            const { rewards, managerWallet, minterWallet, user1 } = await loadFixture(deployRewardsFixture);
+            const { rewardsNative, managerWallet, minterWallet, user1 } = await loadFixture(deployRewardsFixture);
             const rewardToken = {
                 tokenId: 1,
                 maxSupply: 100,
@@ -108,22 +104,22 @@ describe('RewardsNative', function () {
                 rewards: [{ rewardAmount: ethers.parseEther('0.1') }],
             };
 
-            await rewards
+            await rewardsNative
                 .connect(managerWallet)
                 .createTokenAndDepositRewards(rewardToken, { value: ethers.parseEther('10') });
 
             const data = ethers.AbiCoder.defaultAbiCoder().encode(
                 ['address', 'uint256', 'uint256[]'],
-                [await rewards.getAddress(), await rewards.getChainID(), [1]]
+                [await rewardsNative.getAddress(), await rewardsNative.getChainID(), [1]]
             );
 
-            await expect(rewards.connect(minterWallet).adminMint(user1.address, data, true, false))
-                .to.emit(rewards, 'Minted')
+            await expect(rewardsNative.connect(minterWallet).mint(user1.address, data, true))
+                .to.emit(rewardsNative, 'Minted')
                 .withArgs(user1.address, 1, 1, true);
         });
 
         it('Should revert when minting exceeds max supply', async function () {
-            const { rewards, managerWallet, minterWallet, user1 } = await loadFixture(deployRewardsFixture);
+            const { rewardsNative, managerWallet, minterWallet, user1 } = await loadFixture(deployRewardsFixture);
             const rewardToken = {
                 tokenId: 1,
                 maxSupply: 1,
@@ -131,27 +127,26 @@ describe('RewardsNative', function () {
                 rewards: [{ rewardAmount: ethers.parseEther('0.1') }],
             };
 
-            await rewards
+            await rewardsNative
                 .connect(managerWallet)
                 .createTokenAndDepositRewards(rewardToken, { value: ethers.parseEther('0.1') });
 
             const data = ethers.AbiCoder.defaultAbiCoder().encode(
                 ['address', 'uint256', 'uint256[]'],
-                [await rewards.getAddress(), await rewards.getChainID(), [1]]
+                [await rewardsNative.getAddress(), await rewardsNative.getChainID(), [1]]
             );
 
-            await rewards.connect(minterWallet).adminMint(user1.address, data, true, false);
+            await rewardsNative.connect(minterWallet).mint(user1.address, data, true);
 
             await expect(
-                rewards.connect(minterWallet).adminMint(user1.address, data, true, false)
-            ).to.be.revertedWithCustomError(rewards, 'ExceedMaxSupply');
+                rewardsNative.connect(minterWallet).mint(user1.address, data, true)
+            ).to.be.revertedWithCustomError(rewardsNative, 'ExceedMaxSupply');
         });
     });
 
     describe('Claiming Rewards', function () {
         it('Should claim a reward', async function () {
-            const { rewards, adminERC1155Soulbound, managerWallet, minterWallet, user1 } =
-                await loadFixture(deployRewardsFixture);
+            const { rewardsNative, managerWallet, minterWallet, user1 } = await loadFixture(deployRewardsFixture);
             const rewardToken = {
                 tokenId: 1,
                 maxSupply: 100,
@@ -159,21 +154,21 @@ describe('RewardsNative', function () {
                 rewards: [{ rewardAmount: ethers.parseEther('0.1') }],
             };
 
-            await rewards
+            await rewardsNative
                 .connect(managerWallet)
                 .createTokenAndDepositRewards(rewardToken, { value: ethers.parseEther('10') });
 
             const data = ethers.AbiCoder.defaultAbiCoder().encode(
                 ['address', 'uint256', 'uint256[]'],
-                [await rewards.getAddress(), await rewards.getChainID(), [1]]
+                [await rewardsNative.getAddress(), await rewardsNative.getChainID(), [1]]
             );
 
-            await rewards.connect(minterWallet).adminMint(user1.address, data, true, false);
+            await rewardsNative.connect(minterWallet).mint(user1.address, data, false);
 
             const initialBalance = await ethers.provider.getBalance(user1.address);
 
-            await expect(rewards.connect(user1).claimReward(1))
-                .to.emit(rewards, 'Claimed')
+            await expect(rewardsNative.connect(user1).claimReward(1))
+                .to.emit(rewardsNative, 'Claimed')
                 .withArgs(user1.address, 1, 1);
 
             const finalBalance = await ethers.provider.getBalance(user1.address);
@@ -181,10 +176,10 @@ describe('RewardsNative', function () {
         });
 
         it('Should revert when claiming without holding the token', async function () {
-            const { rewards, user1 } = await loadFixture(deployRewardsFixture);
+            const { rewardsNative, user1 } = await loadFixture(deployRewardsFixture);
 
-            await expect(rewards.connect(user1).claimReward(1)).to.be.revertedWithCustomError(
-                rewards,
+            await expect(rewardsNative.connect(user1).claimReward(1)).to.be.revertedWithCustomError(
+                rewardsNative,
                 'InsufficientBalance'
             );
         });
@@ -192,27 +187,27 @@ describe('RewardsNative', function () {
 
     describe('Pausing', function () {
         it('Should pause and unpause the contract', async function () {
-            const { rewards, managerWallet } = await loadFixture(deployRewardsFixture);
+            const { rewardsNative, managerWallet } = await loadFixture(deployRewardsFixture);
 
-            await rewards.connect(managerWallet).pause();
-            expect(await rewards.paused()).to.be.true;
+            await rewardsNative.connect(managerWallet).pause();
+            expect(await rewardsNative.paused()).to.be.true;
 
-            await rewards.connect(managerWallet).unpause();
-            expect(await rewards.paused()).to.be.false;
+            await rewardsNative.connect(managerWallet).unpause();
+            expect(await rewardsNative.paused()).to.be.false;
         });
 
         it('Should revert operations when paused', async function () {
-            const { rewards, managerWallet, user1 } = await loadFixture(deployRewardsFixture);
+            const { rewardsNative, managerWallet, user1 } = await loadFixture(deployRewardsFixture);
 
-            await rewards.connect(managerWallet).pause();
+            await rewardsNative.connect(managerWallet).pause();
 
-            await expect(rewards.connect(user1).claimReward(1)).to.be.revertedWith('Pausable: paused');
+            await expect(rewardsNative.connect(user1).claimReward(1)).to.be.revertedWith('Pausable: paused');
         });
     });
 
     describe('Access Control', function () {
         it('Should allow only manager to create tokens', async function () {
-            const { rewards, user1 } = await loadFixture(deployRewardsFixture);
+            const { rewardsNative, user1 } = await loadFixture(deployRewardsFixture);
             const rewardToken = {
                 tokenId: 1,
                 maxSupply: 100,
@@ -221,24 +216,118 @@ describe('RewardsNative', function () {
             };
 
             await expect(
-                rewards.connect(user1).createTokenAndDepositRewards(rewardToken, { value: ethers.parseEther('10') })
+                rewardsNative
+                    .connect(user1)
+                    .createTokenAndDepositRewards(rewardToken, { value: ethers.parseEther('10') })
             ).to.be.revertedWith(
-                'AccessControl: account 0x70997970c51812dc3a010c7d01b50e0d17dc79c8 is missing role 0xaf290d8680820aad922855f39b306097b20e28774d6c1ad35a20325630c3a02c'
+                `AccessControl: account ${user1.address.toLowerCase()} is missing role ${await rewardsNative.MANAGER_ROLE()}`
             );
         });
 
-        it('Should allow only minter to admin mint', async function () {
-            const { rewards, user1 } = await loadFixture(deployRewardsFixture);
+        it('Should allow only minter to mint', async function () {
+            const { rewardsNative, user1 } = await loadFixture(deployRewardsFixture);
             const data = ethers.AbiCoder.defaultAbiCoder().encode(
                 ['address', 'uint256', 'uint256[]'],
-                [await rewards.getAddress(), await rewards.getChainID(), [1]]
+                [await rewardsNative.getAddress(), await rewardsNative.getChainID(), [1]]
             );
 
-            await expect(rewards.connect(user1).adminMint(user1.address, data, true, false)).to.be.revertedWith(
-                'AccessControl: account 0x70997970c51812dc3a010c7d01b50e0d17dc79c8 is missing role 0x9f2df0fed2c77648de5860a4cc508cd0818c85b8b8a1ab4ceeef8d981c8956a6'
+            await expect(rewardsNative.connect(user1).mint(user1.address, data, true)).to.be.revertedWith(
+                `AccessControl: account ${user1.address.toLowerCase()} is missing role ${await rewardsNative.MINTER_ROLE()}`
             );
         });
     });
 
-    // Add more test cases to cover all functions and scenarios
+    describe('Withdraw', function () {
+        it('Should allow manager to withdraw funds', async function () {
+            const { rewardsNative, managerWallet } = await loadFixture(deployRewardsFixture);
+
+            // Add funds to the contract
+            await managerWallet.sendTransaction({ to: rewardsNative.getAddress(), value: ethers.parseEther('1') });
+
+            const initialBalance = await ethers.provider.getBalance(managerWallet.address);
+            await rewardsNative.connect(managerWallet).withdrawAll(managerWallet.address, ethers.parseEther('1'));
+            const finalBalance = await ethers.provider.getBalance(managerWallet.address);
+
+            expect(finalBalance).to.be.gt(initialBalance);
+        });
+
+        it('Should revert when non-manager tries to withdraw', async function () {
+            const { rewardsNative, user1 } = await loadFixture(deployRewardsFixture);
+
+            await expect(
+                rewardsNative.connect(user1).withdrawAll(user1.address, ethers.parseEther('1'))
+            ).to.be.revertedWith(
+                `AccessControl: account ${user1.address.toLowerCase()} is missing role ${await rewardsNative.MANAGER_ROLE()}`
+            );
+        });
+    });
+
+    describe('Token Mint and Claim Pause', function () {
+        it('Should allow manager to pause token minting', async function () {
+            const { rewardsNative, managerWallet } = await loadFixture(deployRewardsFixture);
+
+            await rewardsNative.connect(managerWallet).updateTokenMintPaused(1, true);
+            expect(await rewardsNative.isTokenMintPaused(1)).to.be.true;
+        });
+
+        it('Should allow manager to pause claim rewards', async function () {
+            const { rewardsNative, managerWallet } = await loadFixture(deployRewardsFixture);
+
+            await rewardsNative.connect(managerWallet).updateClaimRewardPaused(1, true);
+            expect(await rewardsNative.isClaimRewardPaused(1)).to.be.true;
+        });
+
+        it('Should revert minting when token mint is paused', async function () {
+            const { rewardsNative, managerWallet, minterWallet, user1 } = await loadFixture(deployRewardsFixture);
+
+            const rewardToken = {
+                tokenId: 1,
+                maxSupply: 100,
+                tokenUri: 'https://example.com/token/1',
+                rewards: [{ rewardAmount: ethers.parseEther('0.1') }],
+            };
+
+            await rewardsNative
+                .connect(managerWallet)
+                .createTokenAndDepositRewards(rewardToken, { value: ethers.parseEther('10') });
+            await rewardsNative.connect(managerWallet).updateTokenMintPaused(1, true);
+
+            const data = ethers.AbiCoder.defaultAbiCoder().encode(
+                ['address', 'uint256', 'uint256[]'],
+                [await rewardsNative.getAddress(), await rewardsNative.getChainID(), [1]]
+            );
+
+            await expect(
+                rewardsNative.connect(minterWallet).mint(user1.address, data, true)
+            ).to.be.revertedWithCustomError(rewardsNative, 'MintPaused');
+        });
+
+        it('Should revert claiming when claim reward is paused', async function () {
+            const { rewardsNative, managerWallet, minterWallet, user1 } = await loadFixture(deployRewardsFixture);
+
+            const rewardToken = {
+                tokenId: 1,
+                maxSupply: 100,
+                tokenUri: 'https://example.com/token/1',
+                rewards: [{ rewardAmount: ethers.parseEther('0.1') }],
+            };
+
+            await rewardsNative
+                .connect(managerWallet)
+                .createTokenAndDepositRewards(rewardToken, { value: ethers.parseEther('10') });
+
+            const data = ethers.AbiCoder.defaultAbiCoder().encode(
+                ['address', 'uint256', 'uint256[]'],
+                [await rewardsNative.getAddress(), await rewardsNative.getChainID(), [1]]
+            );
+
+            await rewardsNative.connect(minterWallet).mint(user1.address, data, false);
+            await rewardsNative.connect(managerWallet).updateClaimRewardPaused(1, true);
+
+            await expect(rewardsNative.connect(user1).claimReward(1)).to.be.revertedWithCustomError(
+                rewardsNative,
+                'ClaimRewardPaused'
+            );
+        });
+    });
 });
