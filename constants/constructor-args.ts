@@ -20,33 +20,10 @@ export interface Soulbound1155Args {
     TESTNET: ConstructorArgs;
 }
 
-export const SoulboundBadgesArgs: Soulbound1155Args = {
-    MAINNET: {
-        name: 'SoulboundBadges',
-        symbol: 'SBB',
-        baseURI: 'https://achievo.mypinata.cloud/ipfs',
-        contractURI: 'https://achievo.mypinata.cloud/ipfs/QmSDbeNWVY2CGUuLHni689L5eSrSG3iZHyTRZJWXX7GpjS',
-        maxPerMint: 1,
-        isPaused: true,
-        devWallet: 'DEPLOYER_WALLET',
-        royalty: 250,
-    },
-    TESTNET: {
-        name: 'MyBadges',
-        symbol: 'MSB',
-        baseURI: 'https://achievo.mypinata.cloud/ipfs',
-        contractURI: 'https://achievo.mypinata.cloud/ipfs/QmSDbeNWVY2CGUuLHni689L5eSrSG3iZHyTRZJWXX7GpjS',
-        maxPerMint: 1,
-        isPaused: false,
-        devWallet: 'DEPLOYER_WALLET',
-        royalty: 250,
-    },
-};
-
 export const ItemBoundArgs: Soulbound1155Args = {
     MAINNET: {
-        name: 'Item',
-        symbol: 'ISB',
+        name: 'G7Items',
+        symbol: 'G7I',
         baseURI: 'https://summon.mypinata.cloud/ipfs',
         contractURI: 'https://summon.mypinata.cloud/ipfs/QmVrRk9RcwhWXXhxiFts6qUVjSr6mhqphr77vTxQCv7yKM',
         maxPerMint: 1,
@@ -54,7 +31,7 @@ export const ItemBoundArgs: Soulbound1155Args = {
         devWallet: 'DEPLOYER_WALLET',
     },
     TESTNET: {
-        name: 'MyItems',
+        name: 'G7Items',
         symbol: 'ISB',
         baseURI: 'https://achievo.mypinata.cloud/ipfs',
         contractURI: 'https://achievo.mypinata.cloud/ipfs/QmVrRk9RcwhWXXhxiFts6qUVjSr6mhqphr77vTxQCv7yKM',
@@ -64,50 +41,12 @@ export const ItemBoundArgs: Soulbound1155Args = {
     },
 };
 
-export const ItemBoundIronWorksArgs: Soulbound1155Args = {
-    MAINNET: {
-        name: 'IronWorksItems',
-        symbol: 'AItems',
-        baseURI: 'https://achievo.mypinata.cloud/ipfs',
-        contractURI: 'FILL_ME',
-        maxPerMint: 1,
-        isPaused: false,
-        devWallet: 'DEPLOYER_WALLET',
-    },
-    TESTNET: {
-        name: 'IronWorksItems',
-        symbol: 'IWItems',
-        baseURI: 'https://achievo.mypinata.cloud/ipfs',
-        contractURI: 'FILL_ME',
-        maxPerMint: 1,
-        isPaused: false,
-        devWallet: 'DEPLOYER_WALLET',
-    },
-};
-
-export const NFTGatingArgs = {
-    MAINNET: {
-        name: 'Achievo NFT Gating Admin Access',
-        symbol: 'AchievoAdmin',
-        baseURI: 'https://achievo.mypinata.cloud/ipfs/',
-        adminTokenURI: 'QmYXxrc4vQgfoRtUhdBCbSbxpeJJs2eEtcgiuXvzxdWfJD',
-        superAdminTokenURI: 'Qmay3Db9KFTwoQJ2nB6vTxuHfDX5CQgxmy97NKvcN45B6F',
-    },
-    TESTNET: {
-        name: 'Achievo NFT Gating Admin Access',
-        symbol: 'AchievoAdmin',
-        baseURI: 'https://achievo.mypinata.cloud/ipfs/',
-        adminTokenURI: 'QmYXxrc4vQgfoRtUhdBCbSbxpeJJs2eEtcgiuXvzxdWfJD',
-        superAdminTokenURI: 'Qmay3Db9KFTwoQJ2nB6vTxuHfDX5CQgxmy97NKvcN45B6F',
-    },
-};
-
 export const AvatarBoundArgs = {
     MAINNET: {
-        name: 'AvatarBound',
-        symbol: 'AVB',
+        name: 'Game7Avatar',
+        symbol: 'G7A',
         baseURI: '',
-        contractURI: 'https://achievo.mypinata.cloud/ipfs/QmSDbeNWVY2CGUuLHni689L5eSrSG3iZHyTRZJWXX7GpjS',
+        contractURI: 'https://summon.mypinata.cloud/ipfs/QmSDbeNWVY2CGUuLHni689L5eSrSG3iZHyTRZJWXX7GpjS',
         revealURI: 'Qmdk4zHamwCyqSzuWNNYypuz4FXAGdApbky7SHNsXYYQg7',
         compoundURI: 'https://web3.cdn.summon.xyz/v2/uri/avatar',
         devWallet: 'DEPLOYER_WALLET',
@@ -178,7 +117,7 @@ export const OpenMintArgs = {
     MAINNET: {
         name: 'OpenMint-TEST',
         symbol: 'OM_TEST',
-        baseTokenURI: 'https://achievo.mypinata.cloud/ipfs/',
+        baseTokenURI: 'https://summon.mypinata.cloud/ipfs/',
         unrevealedURI: 'Qmc7c9tNVaaAbTM5RMgdPY7MjPoLDFfPw8BAv3WuBUrebe',
     },
     TESTNET: {
@@ -270,8 +209,8 @@ export const BadgeBoundArgs: Soulbound1155Args = {
     MAINNET: {
         name: 'Item',
         symbol: 'ISB',
-        baseURI: 'https://achievo.mypinata.cloud/ipfs',
-        contractURI: 'https://achievo.mypinata.cloud/ipfs/QmSDbeNWVY2CGUuLHni689L5eSrSG3iZHyTRZJWXX7GpjS',
+        baseURI: 'https://summon.mypinata.cloud/ipfs',
+        contractURI: 'https://summon.mypinata.cloud/ipfs/QmSDbeNWVY2CGUuLHni689L5eSrSG3iZHyTRZJWXX7GpjS',
         maxPerMint: 1,
         isPaused: false,
         devWallet: 'DEPLOYER_WALLET',
@@ -291,8 +230,8 @@ export const SkillTreeArgs: Soulbound1155Args = {
     MAINNET: {
         name: 'SkillTree',
         symbol: 'STSB',
-        baseURI: 'https://achievo.mypinata.cloud/ipfs',
-        contractURI: 'https://achievo.mypinata.cloud/ipfs/QmSDbeNWVY2CGUuLHni689L5eSrSG3iZHyTRZJWXX7GpjS',
+        baseURI: 'https://summon.mypinata.cloud/ipfs',
+        contractURI: 'https://summon.mypinata.cloud/ipfs/QmSDbeNWVY2CGUuLHni689L5eSrSG3iZHyTRZJWXX7GpjS',
         maxPerMint: 1,
         isPaused: false,
         devWallet: 'DEPLOYER_WALLET',
