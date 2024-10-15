@@ -149,7 +149,7 @@ describe('ERC1155RoyaltiesSoulboundV2', function () {
             });
             await erc1155RoyaltiesSoulbound
                 .connect(devWallet)
-                .adminBatchMintByIds(user1.address, [1, 2], [1, 2], false);
+                .adminBatchMintByIds(user1.address, [1, 2], [1, 2], [false, false]);
             expect(await erc1155RoyaltiesSoulbound.balanceOf(user1.address, 1)).to.equal(1);
             expect(await erc1155RoyaltiesSoulbound.balanceOf(user1.address, 2)).to.equal(2);
         });
