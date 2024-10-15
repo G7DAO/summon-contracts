@@ -17,6 +17,11 @@ defaultConfig.networks = {
         accounts: [PRIVATE_KEY],
         chainId: ChainId.Game7Testnet,
     },
+    [NetworkName.Game7]: {
+        url: rpcUrls[ChainId.Game7],
+        accounts: [PRIVATE_KEY],
+        chainId: ChainId.Game7,
+    },
 };
 
 defaultConfig.etherscan = {

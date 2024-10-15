@@ -25,7 +25,7 @@
         "deploy:linea:mainnet": "pnpm compile && hardhat --config linea.config.ts deploy --network linea",
         "deploy:linea:sepolia": "pnpm compile && hardhat --config linea.config.ts deploy --network lineaSepolia",
         "deploy:g7:testnet": "pnpm compile && hardhat --config g7.config.ts deploy --network game7Testnet",
-        "deploy:g7:mainnet": "echo 'Mainnet not here yet'",
+        "deploy:g7:mainnet": "pnpm compile && hardhat --config g7.config.ts deploy --network game7",
         "test:foundry": "forge test -vvv",
         "test": "REPORT_GAS=true hardhat --config hardhat.config.ts test test/hardhatTests/*.ts --network hardhat",
         "test:ci": "hardhat --config hardhat.config.ts test test/hardhatTests/*.ts  --network hardhat",
