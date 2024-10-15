@@ -354,6 +354,10 @@ contract ERC1155RoyaltiesSoulbound is
         uint256[] memory amounts,
         bool soulbound
     ) external onlyRole(MINTER_ROLE) whenNotPaused {
+        if (tokenIds.length != amounts.length) {
+            revert("InvalidInput");
+        }
+
         for (uint256 i = 0; i < tokenIds.length; i++) {
             uint256 _id = tokenIds[i];
             uint256 _amount = amounts[i];
