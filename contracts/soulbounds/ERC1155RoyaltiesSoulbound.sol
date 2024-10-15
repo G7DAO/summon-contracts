@@ -348,6 +348,37 @@ contract ERC1155RoyaltiesSoulbound is
         emit MintedId(to, id, amount, soulbound);
     }
 
+    function adminBatchMintByIds(
+        address to,
+        uint256[] memory tokenIds,
+        uint256[] memory amounts,
+        bool[] memory soulbounds
+    ) external onlyRole(MINTER_ROLE) whenNotPaused {
+        if (tokenIds.length != amounts.length) {
+            revert("InvalidInput");
+        }
+
+        if (tokenIds.length != soulbounds.length) {
+            revert("InvalidInput");
+        }
+
+        for (uint256 i = 0; i < tokenIds.length; i++) {
+            uint256 _id = tokenIds[i];
+            uint256 _amount = amounts[i];
+            isTokenExist(_id);
+            if (isTokenMintPaused[_id]) {
+                revert("TokenMintPaused");
+            }
+
+            if (soulbounds[i]) {
+                _soulbound(to, _id, _amount);
+            }
+
+            _mint(to, _id, _amount, "");
+            emit MintedId(to, _id, _amount, soulbounds[i]);
+        }
+    }
+
     function _update(
         address from,
         address to,

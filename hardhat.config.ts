@@ -29,7 +29,7 @@ const config: HardhatUserConfig = {
         settings: {
             optimizer: {
                 enabled: true,
-                runs: 1000,
+                runs: 200, // need to reduce this so it can compile ERC1155RoyaltiesSoulbound contract :'(
                 details: {
                     yul: true,
                 },

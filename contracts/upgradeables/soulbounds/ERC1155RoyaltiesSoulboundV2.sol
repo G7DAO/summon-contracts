@@ -1,8 +1,6 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.24;
 
-
-
 //TODO: This contract is deprecated USE THE ERC1155SoulboundV1.sol
 
 // @author Summon.xyz Team - https://summon.xyz
@@ -24,22 +22,38 @@ pragma solidity ^0.8.24;
 //....................&&&&&&&.........................................................................................................................
 //....................................................................................................................................................
 
-import { Initializable } from "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
-import { ERC1155Upgradeable } from "@openzeppelin/contracts-upgradeable/token/ERC1155/ERC1155Upgradeable.sol";
+import {
+    Initializable
+} from "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
+import {
+    ERC1155Upgradeable
+} from "@openzeppelin/contracts-upgradeable/token/ERC1155/ERC1155Upgradeable.sol";
 import {
     ERC1155BurnableUpgradeable
 } from "@openzeppelin/contracts-upgradeable/token/ERC1155/extensions/ERC1155BurnableUpgradeable.sol";
 import {
     ERC1155SupplyUpgradeable
 } from "@openzeppelin/contracts-upgradeable/token/ERC1155/extensions/ERC1155SupplyUpgradeable.sol";
-import { AccessControlUpgradeable } from "@openzeppelin/contracts-upgradeable/access/AccessControlUpgradeable.sol";
-import { PausableUpgradeable } from "@openzeppelin/contracts-upgradeable/utils/PausableUpgradeable.sol";
+import {
+    AccessControlUpgradeable
+} from "@openzeppelin/contracts-upgradeable/access/AccessControlUpgradeable.sol";
+import {
+    PausableUpgradeable
+} from "@openzeppelin/contracts-upgradeable/utils/PausableUpgradeable.sol";
 import { Strings } from "@openzeppelin/contracts/utils/Strings.sol";
-import { ERC2981Upgradeable } from "@openzeppelin/contracts-upgradeable/token/common/ERC2981Upgradeable.sol";
-import { ReentrancyGuardUpgradeable } from "@openzeppelin/contracts-upgradeable/utils/ReentrancyGuardUpgradeable.sol";
+import {
+    ERC2981Upgradeable
+} from "@openzeppelin/contracts-upgradeable/token/common/ERC2981Upgradeable.sol";
+import {
+    ReentrancyGuardUpgradeable
+} from "@openzeppelin/contracts-upgradeable/utils/ReentrancyGuardUpgradeable.sol";
 
-import { Achievo1155SoulboundUpgradeable } from "../ercs/extensions/Achievo1155SoulboundUpgradeable.sol";
-import { ERCWhitelistSignatureUpgradeable } from "../ercs/ERCWhitelistSignatureUpgradeable.sol";
+import {
+    Achievo1155SoulboundUpgradeable
+} from "../ercs/extensions/Achievo1155SoulboundUpgradeable.sol";
+import {
+    ERCWhitelistSignatureUpgradeable
+} from "../ercs/ERCWhitelistSignatureUpgradeable.sol";
 import { LibItems } from "../../libraries/LibItems.sol";
 
 error InvalidSeed();
@@ -91,8 +105,18 @@ contract ERC1155RoyaltiesSoulboundV2 is
         _;
     }
 
-    event Minted(address indexed to, uint256[] tokenIds, uint256 amount, bool soulbound);
-    event MintedId(address indexed to, uint256 indexed tokenId, uint256 amount, bool soulbound);
+    event Minted(
+        address indexed to,
+        uint256[] tokenIds,
+        uint256 amount,
+        bool soulbound
+    );
+    event MintedId(
+        address indexed to,
+        uint256 indexed tokenId,
+        uint256 amount,
+        bool soulbound
+    );
     event TokenAdded(uint256 indexed tokenId);
 
     /// @custom:oz-upgrades-unsafe-allow constructor
@@ -134,13 +158,17 @@ contract ERC1155RoyaltiesSoulboundV2 is
         if (_isPaused) _pause();
     }
 
-    function getAllItems(address _owner) public view returns (LibItems.TokenReturn[] memory) {
+    function getAllItems(
+        address _owner
+    ) public view returns (LibItems.TokenReturn[] memory) {
         bool isAdmin = hasRole(MINTER_ROLE, _msgSender());
         if (!isAdmin && _owner != _msgSender()) {
             revert MissingRole();
         }
         uint256 totalTokens = itemIds.length;
-        LibItems.TokenReturn[] memory tokenReturns = new LibItems.TokenReturn[](totalTokens);
+        LibItems.TokenReturn[] memory tokenReturns = new LibItems.TokenReturn[](
+            totalTokens
+        );
 
         uint index;
         for (uint i = 0; i < totalTokens; i++) {
@@ -159,7 +187,8 @@ contract ERC1155RoyaltiesSoulboundV2 is
         }
 
         // truncate the array
-        LibItems.TokenReturn[] memory returnsTruncated = new LibItems.TokenReturn[](index);
+        LibItems.TokenReturn[]
+            memory returnsTruncated = new LibItems.TokenReturn[](index);
         for (uint i = 0; i < index; i++) {
             returnsTruncated[i] = tokenReturns[i];
         }
@@ -182,9 +211,15 @@ contract ERC1155RoyaltiesSoulboundV2 is
         return id;
     }
 
-    function _verifyContractChainIdAndDecode(bytes calldata data) private view returns (uint256[] memory) {
+    function _verifyContractChainIdAndDecode(
+        bytes calldata data
+    ) private view returns (uint256[] memory) {
         uint256 currentChainId = getChainID();
-        (address contractAddress, uint256 chainId, uint256[] memory tokenIds) = _decodeData(data);
+        (
+            address contractAddress,
+            uint256 chainId,
+            uint256[] memory tokenIds
+        ) = _decodeData(data);
 
         if (chainId != currentChainId || contractAddress != address(this)) {
             revert InvalidSeed();
@@ -194,15 +229,23 @@ contract ERC1155RoyaltiesSoulboundV2 is
 
     function decodeData(
         bytes calldata _data
-    ) public view onlyRole(DEV_CONFIG_ROLE) returns (address, uint256, uint256[] memory) {
+    )
+        public
+        view
+        onlyRole(DEV_CONFIG_ROLE)
+        returns (address, uint256, uint256[] memory)
+    {
         return _decodeData(_data);
     }
 
-    function _decodeData(bytes calldata _data) private view returns (address, uint256, uint256[] memory) {
-        (address contractAddress, uint256 chainId, uint256[] memory _itemIds) = abi.decode(
-            _data,
-            (address, uint256, uint256[])
-        );
+    function _decodeData(
+        bytes calldata _data
+    ) private view returns (address, uint256, uint256[] memory) {
+        (
+            address contractAddress,
+            uint256 chainId,
+            uint256[] memory _itemIds
+        ) = abi.decode(_data, (address, uint256, uint256[]));
         return (contractAddress, chainId, _itemIds);
     }
 
@@ -214,13 +257,19 @@ contract ERC1155RoyaltiesSoulboundV2 is
         _unpause();
     }
 
-    function addNewToken(LibItems.TokenCreate calldata _token) public onlyRole(DEV_CONFIG_ROLE) {
+    function addNewToken(
+        LibItems.TokenCreate calldata _token
+    ) public onlyRole(DEV_CONFIG_ROLE) {
         if (bytes(_token.tokenUri).length > 0) {
             tokenUris[_token.tokenId] = _token.tokenUri;
         }
 
         if (_token.receiver != address(0)) {
-            _setTokenRoyalty(_token.tokenId, _token.receiver, uint96(_token.feeBasisPoints));
+            _setTokenRoyalty(
+                _token.tokenId,
+                _token.receiver,
+                uint96(_token.feeBasisPoints)
+            );
         }
 
         tokenExists[_token.tokenId] = true;
@@ -229,13 +278,18 @@ contract ERC1155RoyaltiesSoulboundV2 is
         emit TokenAdded(_token.tokenId);
     }
 
-    function addNewTokens(LibItems.TokenCreate[] calldata _tokens) external onlyRole(DEV_CONFIG_ROLE) {
+    function addNewTokens(
+        LibItems.TokenCreate[] calldata _tokens
+    ) external onlyRole(DEV_CONFIG_ROLE) {
         for (uint256 i = 0; i < _tokens.length; i++) {
             addNewToken(_tokens[i]);
         }
     }
 
-    function updateTokenUri(uint256 _tokenId, string calldata _tokenUri) public onlyRole(DEV_CONFIG_ROLE) {
+    function updateTokenUri(
+        uint256 _tokenId,
+        string calldata _tokenUri
+    ) public onlyRole(DEV_CONFIG_ROLE) {
         tokenUris[_tokenId] = _tokenUri;
     }
 
@@ -251,11 +305,19 @@ contract ERC1155RoyaltiesSoulboundV2 is
         }
     }
 
-    function updateTokenMintPaused(uint256 _tokenId, bool _isTokenMintPaused) public onlyRole(MANAGER_ROLE) {
+    function updateTokenMintPaused(
+        uint256 _tokenId,
+        bool _isTokenMintPaused
+    ) public onlyRole(MANAGER_ROLE) {
         isTokenMintPaused[_tokenId] = _isTokenMintPaused;
     }
 
-    function _mintBatch(address to, uint256[] memory _tokenIds, uint256 amount, bool soulbound) private {
+    function _mintBatch(
+        address to,
+        uint256[] memory _tokenIds,
+        uint256 amount,
+        bool soulbound
+    ) private {
         for (uint256 i = 0; i < _tokenIds.length; i++) {
             uint256 _id = _tokenIds[i];
             isTokenExist(_id);
@@ -278,12 +340,22 @@ contract ERC1155RoyaltiesSoulboundV2 is
         bool soulbound,
         uint256 nonce,
         bytes calldata signature
-    ) external nonReentrant signatureCheck(_msgSender(), nonce, data, signature) maxPerMintCheck(amount) whenNotPaused {
+    )
+        external
+        nonReentrant
+        signatureCheck(_msgSender(), nonce, data, signature)
+        maxPerMintCheck(amount)
+        whenNotPaused
+    {
         uint256[] memory _tokenIds = _verifyContractChainIdAndDecode(data);
         _mintBatch(_msgSender(), _tokenIds, amount, soulbound);
     }
 
-    function adminMint(address to, bytes calldata data, bool soulbound) external onlyRole(MINTER_ROLE) whenNotPaused {
+    function adminMint(
+        address to,
+        bytes calldata data,
+        bool soulbound
+    ) external onlyRole(MINTER_ROLE) whenNotPaused {
         uint256[] memory _tokenIds = _verifyContractChainIdAndDecode(data);
         _mintBatch(to, _tokenIds, 1, soulbound);
     }
@@ -308,6 +380,29 @@ contract ERC1155RoyaltiesSoulboundV2 is
         emit MintedId(to, id, amount, soulbound);
     }
 
+    function adminBatchMintByIds(
+        address to,
+        uint256[] memory tokenIds,
+        uint256[] memory amounts,
+        bool soulbound
+    ) external onlyRole(MINTER_ROLE) whenNotPaused {
+        for (uint256 i = 0; i < tokenIds.length; i++) {
+            uint256 _id = tokenIds[i];
+            uint256 _amount = amounts[i];
+            isTokenExist(_id);
+            if (isTokenMintPaused[_id]) {
+                revert("TokenMintPaused");
+            }
+
+            if (soulbound) {
+                _soulbound(to, _id, _amount);
+            }
+
+            _mint(to, _id, _amount, "");
+            emit MintedId(to, _id, _amount, soulbound);
+        }
+    }
+
     function _update(
         address from,
         address to,
@@ -323,7 +418,12 @@ contract ERC1155RoyaltiesSoulboundV2 is
         uint256 _id,
         uint256 _amount,
         bytes memory _data
-    ) public virtual override soulboundCheckAndSync(_from, _to, _id, _amount, balanceOf(_from, _id)) {
+    )
+        public
+        virtual
+        override
+        soulboundCheckAndSync(_from, _to, _id, _amount, balanceOf(_from, _id))
+    {
         super.safeTransferFrom(_from, _to, _id, _amount, _data);
     }
 
@@ -337,7 +437,13 @@ contract ERC1155RoyaltiesSoulboundV2 is
         public
         virtual
         override
-        soulboundCheckAndSyncBatch(_from, _to, _ids, _amounts, balanceOfBatchOneAccount(_from, _ids))
+        soulboundCheckAndSyncBatch(
+            _from,
+            _to,
+            _ids,
+            _amounts,
+            balanceOfBatchOneAccount(_from, _ids)
+        )
     {
         for (uint256 i = 0; i < _ids.length; i++) {
             uint256 id = _ids[i];
@@ -380,7 +486,13 @@ contract ERC1155RoyaltiesSoulboundV2 is
         virtual
         override
         nonReentrant
-        soulboundCheckAndSync(to, address(0), tokenId, amount, balanceOf(to, tokenId))
+        soulboundCheckAndSync(
+            to,
+            address(0),
+            tokenId,
+            amount,
+            balanceOf(to, tokenId)
+        )
     {
         ERC1155BurnableUpgradeable.burn(to, tokenId, amount);
     }
@@ -394,7 +506,13 @@ contract ERC1155RoyaltiesSoulboundV2 is
         virtual
         override
         nonReentrant
-        soulboundCheckAndSyncBatch(to, address(0), tokenIds, amounts, balanceOfBatchOneAccount(to, tokenIds))
+        soulboundCheckAndSyncBatch(
+            to,
+            address(0),
+            tokenIds,
+            amounts,
+            balanceOfBatchOneAccount(to, tokenIds)
+        )
     {
         for (uint256 i = 0; i < tokenIds.length; i++) {
             uint256 id = tokenIds[i];
@@ -417,7 +535,16 @@ contract ERC1155RoyaltiesSoulboundV2 is
 
     function supportsInterface(
         bytes4 interfaceId
-    ) public view override(ERC1155Upgradeable, ERC2981Upgradeable, AccessControlUpgradeable) returns (bool) {
+    )
+        public
+        view
+        override(
+            ERC1155Upgradeable,
+            ERC2981Upgradeable,
+            AccessControlUpgradeable
+        )
+        returns (bool)
+    {
         return super.supportsInterface(interfaceId);
     }
 
@@ -430,27 +557,43 @@ contract ERC1155RoyaltiesSoulboundV2 is
         }
     }
 
-    function updateBaseUri(string memory _baseURI) external onlyRole(DEV_CONFIG_ROLE) {
+    function updateBaseUri(
+        string memory _baseURI
+    ) external onlyRole(DEV_CONFIG_ROLE) {
         baseURI = _baseURI;
     }
 
-    function setRoyaltyInfo(address receiver, uint96 feeBasisPoints) external onlyRole(MANAGER_ROLE) {
+    function setRoyaltyInfo(
+        address receiver,
+        uint96 feeBasisPoints
+    ) external onlyRole(MANAGER_ROLE) {
         _setDefaultRoyalty(receiver, feeBasisPoints);
     }
 
-    function setTokenRoyalty(uint256 tokenId, address receiver, uint96 feeBasisPoints) external onlyRole(MANAGER_ROLE) {
+    function setTokenRoyalty(
+        uint256 tokenId,
+        address receiver,
+        uint96 feeBasisPoints
+    ) external onlyRole(MANAGER_ROLE) {
         _setTokenRoyalty(tokenId, receiver, uint96(feeBasisPoints));
     }
 
-    function resetTokenRoyalty(uint256 tokenId) external onlyRole(MANAGER_ROLE) {
+    function resetTokenRoyalty(
+        uint256 tokenId
+    ) external onlyRole(MANAGER_ROLE) {
         _resetTokenRoyalty(tokenId);
     }
 
-    function updateWhitelistAddress(address _address, bool _isWhitelisted) external onlyRole(DEV_CONFIG_ROLE) {
+    function updateWhitelistAddress(
+        address _address,
+        bool _isWhitelisted
+    ) external onlyRole(DEV_CONFIG_ROLE) {
         _updateWhitelistAddress(_address, _isWhitelisted);
     }
 
-    function setContractURI(string memory _contractURI) public onlyRole(DEV_CONFIG_ROLE) {
+    function setContractURI(
+        string memory _contractURI
+    ) public onlyRole(DEV_CONFIG_ROLE) {
         contractURI = _contractURI;
         emit ContractURIChanged(_contractURI);
     }
@@ -464,11 +607,15 @@ contract ERC1155RoyaltiesSoulboundV2 is
         return _verifySignature(to, nonce, data, signature);
     }
 
-    function addWhitelistSigner(address _signer) external onlyRole(DEV_CONFIG_ROLE) {
+    function addWhitelistSigner(
+        address _signer
+    ) external onlyRole(DEV_CONFIG_ROLE) {
         _addWhitelistSigner(_signer);
     }
 
-    function removeWhitelistSigner(address signer) external onlyRole(DEV_CONFIG_ROLE) {
+    function removeWhitelistSigner(
+        address signer
+    ) external onlyRole(DEV_CONFIG_ROLE) {
         _removeWhitelistSigner(signer);
     }
 
