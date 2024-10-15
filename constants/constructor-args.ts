@@ -46,8 +46,8 @@ export const AvatarBoundArgs = {
         name: 'Game7Avatar',
         symbol: 'G7A',
         baseURI: '',
-        contractURI: 'https://summon.mypinata.cloud/ipfs/QmSDbeNWVY2CGUuLHni689L5eSrSG3iZHyTRZJWXX7GpjS',
-        revealURI: 'Qmdk4zHamwCyqSzuWNNYypuz4FXAGdApbky7SHNsXYYQg7',
+        contractURI: 'https://summon.mypinata.cloud/ipfs/QmTZ9GJ37iPZ61TeQaUpqTtY3Mg3yJAr3ZmfRepcqYPj4h',
+        revealURI: '',
         compoundURI: 'https://web3.cdn.summon.xyz/v2/uri/avatar',
         devWallet: 'DEPLOYER_WALLET',
         gatingNftAddress: '0xD07180c423F9B8CF84012aA28cC174F3c433EE29',
@@ -58,11 +58,11 @@ export const AvatarBoundArgs = {
         mintSpecialItemEnabled: true,
     },
     TESTNET: {
-        name: 'AvatarBound',
-        symbol: 'AVB',
+        name: 'TestnetAvatarBound',
+        symbol: 'TAVB',
         baseURI: '',
-        contractURI: 'https://achievo.mypinata.cloud/ipfs/QmSDbeNWVY2CGUuLHni689L5eSrSG3iZHyTRZJWXX7GpjS',
-        revealURI: 'QmZnvSyeKRQxWwcofVmq41BNCtHbBmomk8Ny8mtGRTjtzS',
+        contractURI: 'https://achievo.mypinata.cloud/ipfs/QmTZ9GJ37iPZ61TeQaUpqTtY3Mg3yJAr3ZmfRepcqYPj4h',
+        revealURI: '',
         compoundURI: 'https://web3-staging.cdn.summon.xyz/v2/uri/avatar',
         devWallet: 'DEPLOYER_WALLET',
         gatingNftAddress: '0x6E03Ea6c9aBBb78Dd761b9c71c06176c508488C3',
@@ -87,7 +87,7 @@ export const AvatarBoundV1Args = {
 
 export const LevelsBoundArgs = {
     MAINNET: {
-        name: 'LevelsBound',
+        name: 'Game7Level',
         symbol: 'LVL',
         developerAdmin: 'DEPLOYER_WALLET',
         mintRandomItemEnabled: true,
