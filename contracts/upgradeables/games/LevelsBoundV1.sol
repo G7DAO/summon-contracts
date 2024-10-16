@@ -1,8 +1,6 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.24;
 
-
-
 // @author Summon.xyz Team - https://summon.xyz
 // @contributors: [ @ogarciarevett, @vasinl124]
 //....................................................................................................................................................
@@ -22,13 +20,25 @@ pragma solidity ^0.8.24;
 //....................&&&&&&&.........................................................................................................................
 //....................................................................................................................................................
 
-import { Initializable } from "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
-import { ERC1155Upgradeable } from "@openzeppelin/contracts-upgradeable/token/ERC1155/ERC1155Upgradeable.sol";
-import { ReentrancyGuardUpgradeable } from "@openzeppelin/contracts-upgradeable/utils/ReentrancyGuardUpgradeable.sol";
-import { AccessControlUpgradeable } from "@openzeppelin/contracts-upgradeable/access/AccessControlUpgradeable.sol";
-import { ERCWhitelistSignatureUpgradeable } from "../ercs/ERCWhitelistSignatureUpgradeable.sol";
+import {
+    Initializable
+} from "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
+import {
+    ERC1155Upgradeable
+} from "@openzeppelin/contracts-upgradeable/token/ERC1155/ERC1155Upgradeable.sol";
+import {
+    ReentrancyGuardUpgradeable
+} from "@openzeppelin/contracts-upgradeable/utils/ReentrancyGuardUpgradeable.sol";
+import {
+    AccessControlUpgradeable
+} from "@openzeppelin/contracts-upgradeable/access/AccessControlUpgradeable.sol";
+import {
+    ERCWhitelistSignatureUpgradeable
+} from "../ercs/ERCWhitelistSignatureUpgradeable.sol";
 import { IItemBound } from "../../interfaces/IItemBound.sol";
-import { Achievo1155SoulboundUpgradeable } from "../ercs/extensions/Achievo1155SoulboundUpgradeable.sol";
+import {
+    Achievo1155SoulboundUpgradeable
+} from "../ercs/extensions/Achievo1155SoulboundUpgradeable.sol";
 
 contract LevelsBoundV1 is
     Initializable,
@@ -46,6 +56,12 @@ contract LevelsBoundV1 is
     string public symbol;
     address public itemsNFTAddress;
     bool public mintRandomItemEnabled;
+
+    error InvalidSignature();
+    error AddressAlreadySet();
+    error AccountAlreadyHasThatLevel();
+    error MintingRandomItemAlreadySet();
+    error InvalidSeed();
 
     event RandomItemMinted(address to, bytes data, address itemsNFTAddress);
     event MintRandomItemEnabledChanged(bool enabled, address admin);
@@ -79,7 +95,11 @@ contract LevelsBoundV1 is
         itemsNFTAddress = _itemsNFTAddress;
     }
 
-    function mintLevel(address account, uint256 level, bytes calldata data) private {
+    function mintLevel(
+        address account,
+        uint256 level,
+        bytes calldata data
+    ) private {
         _soulbound(account, level, 1);
         _mint(account, level, 1, "");
         currentPlayerLevel[account] = level;
@@ -94,8 +114,19 @@ contract LevelsBoundV1 is
         emit RandomItemMinted(to, data, itemsNFTAddress);
     }
 
-    function levelUp(uint256 nonce, bytes calldata data, bytes calldata signature) public {
-        require(_verifySignature(_msgSender(), nonce, data, signature), "Invalid signature");
+    function mintItems(address to, bytes memory data) private {
+        IItemBound(itemsNFTAddress).adminMint(to, data, false);
+        emit RandomItemMinted(to, data, itemsNFTAddress);
+    }
+
+    function levelUp(
+        uint256 nonce,
+        bytes calldata data,
+        bytes calldata signature
+    ) public {
+        if (!_verifySignature(_msgSender(), nonce, data, signature)) {
+            revert InvalidSignature();
+        }
         uint currentLevel = currentPlayerLevel[_msgSender()];
         uint nextLevel = currentLevel + 1;
 
@@ -107,13 +138,22 @@ contract LevelsBoundV1 is
         burnLevel(_msgSender(), currentLevel);
     }
 
-    function changeItemsNFTAddress(address _itemsNFTAddress) public onlyRole(DEV_CONFIG_ROLE) {
-        require(_itemsNFTAddress != itemsNFTAddress, "Address already set");
+    function changeItemsNFTAddress(
+        address _itemsNFTAddress
+    ) public onlyRole(DEV_CONFIG_ROLE) {
+        if (_itemsNFTAddress == itemsNFTAddress) {
+            revert AddressAlreadySet();
+        }
         itemsNFTAddress = _itemsNFTAddress;
     }
 
-    function adminReplaceLevel(address account, uint256 level) public onlyRole(MINTER_ROLE) {
-        require(currentPlayerLevel[account] != level, "Account already has a level");
+    function adminReplaceLevel(
+        address account,
+        uint256 level
+    ) public onlyRole(MINTER_ROLE) {
+        if (currentPlayerLevel[account] == level) {
+            revert AccountAlreadyHasThatLevel();
+        }
 
         // burn first the current level if exists
         if (currentPlayerLevel[account] != 0) {
@@ -125,7 +165,51 @@ contract LevelsBoundV1 is
         emit LevelUp(level, account);
     }
 
-    function adminBurnLevel(address account, uint256 levelTokenId) public onlyRole(DEV_CONFIG_ROLE) {
+    function adminReplaceLevelAndMintItems(
+        address account,
+        uint256 level,
+        bytes calldata data
+    ) public onlyRole(MINTER_ROLE) {
+        if (currentPlayerLevel[account] == level) {
+            revert AccountAlreadyHasThatLevel();
+        }
+
+        // burn first the current level if exists
+        if (currentPlayerLevel[account] != 0) {
+            burnLevel(account, currentPlayerLevel[account]);
+        }
+        _soulbound(account, level, 1);
+        _mint(account, level, 1, "");
+
+        uint256[] memory _itemIds = _verifyContractChainIdAndDecode(data);
+        uint256 currentChainId = getChainID();
+        bytes memory itemsSeed = abi.encode(
+            itemsNFTAddress,
+            currentChainId,
+            _itemIds
+        );
+        mintItems(account, itemsSeed);
+        currentPlayerLevel[account] = level;
+        emit LevelUp(level, account);
+    }
+
+    function _mintRandomItem(address to, uint256[] memory _itemIds) private {
+        // encode item ids data
+        uint256 currentChainId = getChainID();
+        bytes memory data = abi.encode(
+            itemsNFTAddress,
+            currentChainId,
+            _itemIds
+        );
+
+        IItemBound(itemsNFTAddress).adminMint(to, data, false);
+        emit RandomItemMinted(to, data, itemsNFTAddress);
+    }
+
+    function adminBurnLevel(
+        address account,
+        uint256 levelTokenId
+    ) public onlyRole(DEV_CONFIG_ROLE) {
         burnLevel(account, levelTokenId);
         currentPlayerLevel[account] = 0; // reset level to 0
         emit LevelBurned(levelTokenId, _msgSender());
@@ -135,14 +219,21 @@ contract LevelsBoundV1 is
         _burn(account, tokenId, 1);
     }
 
-    function adminMintLevel(address account, uint256 level) public onlyRole(MINTER_ROLE) {
-        require(currentPlayerLevel[account] != level, "Account already has a level");
+    function adminMintLevel(
+        address account,
+        uint256 level
+    ) public onlyRole(MINTER_ROLE) {
+        if (currentPlayerLevel[account] == level) {
+            revert AccountAlreadyHasThatLevel();
+        }
         currentPlayerLevel[account] = level;
         _mint(account, level, 1, "");
         emit LevelUp(level, account);
     }
 
-    function adminGetAccountLevel(address account) public view onlyRole(DEV_CONFIG_ROLE) returns (uint256) {
+    function adminGetAccountLevel(
+        address account
+    ) public view onlyRole(DEV_CONFIG_ROLE) returns (uint256) {
         return currentPlayerLevel[account];
     }
 
@@ -150,8 +241,12 @@ contract LevelsBoundV1 is
         return currentPlayerLevel[_msgSender()];
     }
 
-    function setMintRandomItemEnabled(bool _mintRandomItemEnabled) public onlyRole(DEV_CONFIG_ROLE) {
-        require(_mintRandomItemEnabled != mintRandomItemEnabled, "Minting random item already set");
+    function setMintRandomItemEnabled(
+        bool _mintRandomItemEnabled
+    ) public onlyRole(DEV_CONFIG_ROLE) {
+        if (_mintRandomItemEnabled == mintRandomItemEnabled) {
+            revert MintingRandomItemAlreadySet();
+        }
         mintRandomItemEnabled = _mintRandomItemEnabled;
         emit MintRandomItemEnabledChanged(_mintRandomItemEnabled, _msgSender());
     }
@@ -161,7 +256,10 @@ contract LevelsBoundV1 is
         _burn(msg.sender, tokenId, amount);
     }
 
-    function burnBatch(uint256[] memory tokenIds, uint256[] memory amounts) public nonReentrant {
+    function burnBatch(
+        uint256[] memory tokenIds,
+        uint256[] memory amounts
+    ) public nonReentrant {
         revert("You can't burn more of one of this token");
         _burnBatch(msg.sender, tokenIds, amounts);
     }
@@ -190,16 +288,66 @@ contract LevelsBoundV1 is
 
     function supportsInterface(
         bytes4 interfaceId
-    ) public view override(AccessControlUpgradeable, ERC1155Upgradeable) returns (bool) {
+    )
+        public
+        view
+        override(AccessControlUpgradeable, ERC1155Upgradeable)
+        returns (bool)
+    {
         return super.supportsInterface(interfaceId);
     }
 
-    function addWhitelistSigner(address _signer) external onlyRole(DEV_CONFIG_ROLE) {
+    function addWhitelistSigner(
+        address _signer
+    ) external onlyRole(DEV_CONFIG_ROLE) {
         _addWhitelistSigner(_signer);
     }
 
-    function removeWhitelistSigner(address signer) external onlyRole(DEV_CONFIG_ROLE) {
+    function removeWhitelistSigner(
+        address signer
+    ) external onlyRole(DEV_CONFIG_ROLE) {
         _removeWhitelistSigner(signer);
+    }
+
+    function getChainID() public view returns (uint256) {
+        uint256 id;
+        assembly {
+            id := chainid()
+        }
+        return id;
+    }
+
+    function _verifyContractChainIdAndDecode(
+        bytes calldata data
+    ) private view returns (uint256[] memory) {
+        uint256 currentChainId = getChainID();
+        (
+            address contractAddress,
+            uint256 chainId,
+            uint256[] memory tokenIds
+        ) = _decodeData(data);
+
+        if (chainId != currentChainId || contractAddress != address(this)) {
+            revert InvalidSeed();
+        }
+        return tokenIds;
+    }
+
+    function _decodeData(
+        bytes calldata _data
+    ) private view returns (address, uint256, uint256[] memory) {
+        (
+            address contractAddress,
+            uint256 chainId,
+            uint256[] memory _itemIds
+        ) = abi.decode(_data, (address, uint256, uint256[]));
+        return (contractAddress, chainId, _itemIds);
+    }
+
+    function verifyContractChainIdAndDecode(
+        bytes calldata data
+    ) public view onlyRole(DEV_CONFIG_ROLE) returns (uint256[] memory) {
+        return _verifyContractChainIdAndDecode(data);
     }
 
     // Reserved storage space to allow for layout changes in the future.
