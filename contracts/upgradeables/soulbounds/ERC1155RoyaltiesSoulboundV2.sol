@@ -384,8 +384,16 @@ contract ERC1155RoyaltiesSoulboundV2 is
         address to,
         uint256[] memory tokenIds,
         uint256[] memory amounts,
-        bool soulbound
+        bool[] memory soulbounds
     ) external onlyRole(MINTER_ROLE) whenNotPaused {
+        if (tokenIds.length != amounts.length) {
+            revert("InvalidInput");
+        }
+
+        if (tokenIds.length != soulbounds.length) {
+            revert("InvalidInput");
+        }
+
         for (uint256 i = 0; i < tokenIds.length; i++) {
             uint256 _id = tokenIds[i];
             uint256 _amount = amounts[i];
@@ -394,12 +402,12 @@ contract ERC1155RoyaltiesSoulboundV2 is
                 revert("TokenMintPaused");
             }
 
-            if (soulbound) {
+            if (soulbounds[i]) {
                 _soulbound(to, _id, _amount);
             }
 
             _mint(to, _id, _amount, "");
-            emit MintedId(to, _id, _amount, soulbound);
+            emit MintedId(to, _id, _amount, soulbounds[i]);
         }
     }
 
