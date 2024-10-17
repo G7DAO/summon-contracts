@@ -147,9 +147,24 @@ contract RewardsNative is
         return _decodeData(_data);
     }
 
-    function createTokenAndDepositRewards(
+    function _dangerous_createTokenAndDepositRewards(
         LibRewards.RewardToken calldata _token
     ) public payable onlyRole(DEV_CONFIG_ROLE) {
+        _createTokenAndDepositRewards(_token);
+    }
+
+    function createMultipleTokensAndDepositRewards(
+        LibRewards.RewardToken[] calldata _tokens
+    ) external payable onlyRole(DEV_CONFIG_ROLE) {
+        // Create tokens and deposit rewards
+        for (uint256 i = 0; i < _tokens.length; i++) {
+            _createTokenAndDepositRewards(_tokens[i]);
+        }
+    }
+
+    function createTokenAndDepositRewards(
+        LibRewards.RewardToken calldata _token
+    ) public payable onlyRole(MANAGER_ROLE) {
         uint256 _ethRequired = _calculateETHRequiredForToken(_token);
 
         if (msg.value < _ethRequired) {
@@ -161,7 +176,7 @@ contract RewardsNative is
 
     function createMultipleTokensAndDepositRewards(
         LibRewards.RewardToken[] calldata _tokens
-    ) external payable onlyRole(DEV_CONFIG_ROLE) {
+    ) external payable onlyRole(MANAGER_ROLE) {
         uint256 totalETHRequired;
 
         // Calculate the total ETH required for all tokens
