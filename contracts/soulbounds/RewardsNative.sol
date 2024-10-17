@@ -153,7 +153,7 @@ contract RewardsNative is
         _createTokenAndDepositRewards(_token);
     }
 
-    function createMultipleTokensAndDepositRewards(
+    function _dangerous_createMultipleTokensAndDepositRewards(
         LibRewards.RewardToken[] calldata _tokens
     ) external payable onlyRole(DEV_CONFIG_ROLE) {
         // Create tokens and deposit rewards
