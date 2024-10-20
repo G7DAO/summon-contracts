@@ -70,7 +70,7 @@ describe('RewardsNative', function () {
 
     describe('Token Management', function () {
         it('Should add a new token', async function () {
-            const { rewardsNative, devWallet } = await loadFixture(deployRewardsFixture);
+            const { rewardsNative, devWallet, managerWallet } = await loadFixture(deployRewardsFixture);
             const rewardToken = {
                 tokenId: 1,
                 maxSupply: 100,
@@ -79,8 +79,9 @@ describe('RewardsNative', function () {
             };
 
             const rewardNativeWithDev = rewardsNative.connect(devWallet);
+            const rewardNativeWithManager = rewardsNative.connect(managerWallet);
 
-            const tx = await rewardNativeWithDev.createTokenAndDepositRewards(rewardToken, {
+            const tx = await rewardNativeWithManager.createTokenAndDepositRewards(rewardToken, {
                 value: ethers.parseEther('10'),
             });
 
@@ -93,7 +94,7 @@ describe('RewardsNative', function () {
         });
 
         it('Should revert when adding a duplicate token', async function () {
-            const { rewardsNative, devWallet } = await loadFixture(deployRewardsFixture);
+            const { rewardsNative, devWallet, managerWallet } = await loadFixture(deployRewardsFixture);
             const rewardToken = {
                 tokenId: 1,
                 maxSupply: 100,
@@ -102,12 +103,12 @@ describe('RewardsNative', function () {
             };
 
             await rewardsNative
-                .connect(devWallet)
+                .connect(managerWallet)
                 .createTokenAndDepositRewards(rewardToken, { value: ethers.parseEther('10') });
 
             await expect(
                 rewardsNative
-                    .connect(devWallet)
+                    .connect(managerWallet)
                     .createTokenAndDepositRewards(rewardToken, { value: ethers.parseEther('10') })
             ).to.be.revertedWithCustomError(rewardsNative, 'DupTokenId');
         });
@@ -115,7 +116,8 @@ describe('RewardsNative', function () {
 
     describe('Minting', function () {
         it('Should mint a token', async function () {
-            const { rewardsNative, minterWallet, user1, devWallet } = await loadFixture(deployRewardsFixture);
+            const { rewardsNative, minterWallet, user1, devWallet, managerWallet } =
+                await loadFixture(deployRewardsFixture);
             const rewardToken = {
                 tokenId: 1,
                 maxSupply: 100,
@@ -125,8 +127,9 @@ describe('RewardsNative', function () {
 
             const rewardNativeWithDev = rewardsNative.connect(devWallet);
             const rewardNativeWithMinter = rewardsNative.connect(minterWallet);
+            const rewardNativeWithManager = rewardsNative.connect(managerWallet);
 
-            await rewardNativeWithDev.createTokenAndDepositRewards(rewardToken, { value: ethers.parseEther('10') });
+            await rewardNativeWithManager.createTokenAndDepositRewards(rewardToken, { value: ethers.parseEther('10') });
 
             const data = ethers.AbiCoder.defaultAbiCoder().encode(
                 ['address', 'uint256', 'uint256[]'],
@@ -139,7 +142,8 @@ describe('RewardsNative', function () {
         });
 
         it('Should revert when minting exceeds max supply', async function () {
-            const { rewardsNative, devWallet, minterWallet, user1 } = await loadFixture(deployRewardsFixture);
+            const { rewardsNative, devWallet, minterWallet, user1, managerWallet } =
+                await loadFixture(deployRewardsFixture);
             const rewardToken = {
                 tokenId: 1,
                 maxSupply: 1,
@@ -149,8 +153,11 @@ describe('RewardsNative', function () {
 
             const rewardNativeWithDev = rewardsNative.connect(devWallet);
             const rewardNativeWithMinter = rewardsNative.connect(minterWallet);
+            const rewardNativeWithManager = rewardsNative.connect(managerWallet);
 
-            await rewardNativeWithDev.createTokenAndDepositRewards(rewardToken, { value: ethers.parseEther('0.1') });
+            await rewardNativeWithManager.createTokenAndDepositRewards(rewardToken, {
+                value: ethers.parseEther('0.1'),
+            });
 
             const data = ethers.AbiCoder.defaultAbiCoder().encode(
                 ['address', 'uint256', 'uint256[]'],
@@ -182,8 +189,9 @@ describe('RewardsNative', function () {
             const rewardNativeWithDev = rewardsNative.connect(devWallet);
             const rewardNativeWithMinter = rewardsNative.connect(minterWallet);
             const rewardNativeWithUser1 = rewardsNative.connect(user1);
+            const rewardNativeWithManager = rewardsNative.connect(managerWallet);
 
-            await rewardNativeWithDev.createTokenAndDepositRewards(rewardToken, { value: rewardAmount });
+            await rewardNativeWithManager.createTokenAndDepositRewards(rewardToken, { value: rewardAmount });
 
             const data = ethers.AbiCoder.defaultAbiCoder().encode(
                 ['address', 'uint256', 'uint256[]'],
@@ -255,7 +263,7 @@ describe('RewardsNative', function () {
                     .createTokenAndDepositRewards(rewardToken, { value: ethers.parseEther('10') })
             )
                 .to.be.revertedWithCustomError(rewardsNative, 'AccessControlUnauthorizedAccount')
-                .withArgs(user1.address, await rewardsNative.DEV_CONFIG_ROLE());
+                .withArgs(user1.address, await rewardsNative.MANAGER_ROLE());
         });
 
         it('Should allow only minter to mint new tokens', async function () {
@@ -324,7 +332,7 @@ describe('RewardsNative', function () {
             const rewardNativeWithMinter = rewardsNative.connect(minterWallet);
             const rewardNativeWithManager = rewardsNative.connect(managerWallet);
 
-            await rewardNativeWithDev.createTokenAndDepositRewards(rewardToken, { value: ethers.parseEther('10') });
+            await rewardNativeWithManager.createTokenAndDepositRewards(rewardToken, { value: ethers.parseEther('10') });
             await rewardNativeWithManager.updateTokenMintPaused(rewardToken.tokenId, true);
 
             const data = ethers.AbiCoder.defaultAbiCoder().encode(
@@ -354,7 +362,7 @@ describe('RewardsNative', function () {
             const rewardNativeWithManager = rewardsNative.connect(managerWallet);
             const rewardNativeWithUser1 = rewardsNative.connect(user1);
 
-            await rewardNativeWithDev.createTokenAndDepositRewards(rewardToken, { value: ethers.parseEther('10') });
+            await rewardNativeWithManager.createTokenAndDepositRewards(rewardToken, { value: ethers.parseEther('10') });
 
             const data = ethers.AbiCoder.defaultAbiCoder().encode(
                 ['address', 'uint256', 'uint256[]'],
