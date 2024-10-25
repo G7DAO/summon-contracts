@@ -15,7 +15,7 @@ export enum CONTRACT_TYPE {
     DETERMINISTIC_FACTORY_CONTRACT = 'DeterministicDeployFactory',
     Rewards = 'Rewards',
     HelloWorld = 'HelloWorld',
-    RewardToken = 'RewardToken',
+    RewardAccessToken = 'RewardAccessToken',
     DirectListingExtension = 'DirectListingExtension',
     Marketplace = 'Marketplace',
     EnglishAuctionsExtension = 'EnglishAuctionsExtension',
@@ -53,7 +53,7 @@ export enum CONTRACT_FILE_NAME {
     DETERMINISTIC_FACTORY_CONTRACT = 'DeterministicDeployFactory',
     Rewards = 'Rewards',
     HelloWorld = 'HelloWorld',
-    AdminERC1155Soulbound = 'AdminERC1155Soulbound',
+    AccessToken = 'AccessToken',
     DirectListingsExtension = 'DirectListingsLogic',
     ERC20 = 'MockERC20',
     Marketplace = 'Marketplace',
@@ -62,6 +62,7 @@ export enum CONTRACT_FILE_NAME {
     DirectListingsAddonExtension = 'DirectListingsAddon',
     Martins = 'Martins',
     Forwarder = 'Forwarder',
+    RewardsNative = 'RewardsNative',
 }
 
 export enum CONTRACT_UPGRADABLE_FILE_NAME {
@@ -98,7 +99,8 @@ export enum CONTRACT_NAME {
     DETERMINISTIC_FACTORY_CONTRACT = 'DeterministicDeployFactory',
     Rewards = 'Rewards',
     HelloWorld = 'HelloWorld',
-    RewardToken = 'RewardToken',
+    RewardAccessToken = 'RewardAccessToken',
+    RewardAccessTokenG7 = 'RewardAccessTokenG7',
     DirectListingExtension = 'DirectListingExtension',
     MartinsToken = 'Martins',
     Marketplace = 'Marketplace',
@@ -109,6 +111,7 @@ export enum CONTRACT_NAME {
     Staker = 'Staker',
     MiddlewareStaker = 'MiddlewareStakerG7',
     Forwarder = 'Forwarder',
+    RewardsNativeG7 = 'RewardsNativeG7',
 }
 
 export enum CONTRACT_UPGRADABLE_NAME {

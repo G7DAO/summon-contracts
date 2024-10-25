@@ -1,5 +1,17 @@
-import { AvatarBoundV1Args, ItemBoundArgs, LevelsBoundV1Args } from '@constants/constructor-args';
-import { CONTRACT_TYPE, CONTRACT_UPGRADABLE_NAME, CONTRACT_UPGRADABLE_FILE_NAME } from '@constants/contract';
+import {
+    AccessTokenG7Args,
+    AvatarBoundV1Args,
+    ItemBoundArgs,
+    LevelsBoundV1Args,
+    RewardsNativeG7Args,
+} from '@constants/constructor-args';
+import {
+    CONTRACT_TYPE,
+    CONTRACT_UPGRADABLE_NAME,
+    CONTRACT_UPGRADABLE_FILE_NAME,
+    CONTRACT_FILE_NAME,
+    CONTRACT_NAME,
+} from '@constants/contract';
 import { TENANT } from '@constants/tenant';
 
 import { DeploymentContract } from '../../types/deployment-type';
@@ -69,5 +81,44 @@ export const G7_TESTNET_CONTRACTS: DeploymentContract[] = [
         upgradable: true,
         dependencies: [CONTRACT_UPGRADABLE_NAME.Items, CONTRACT_UPGRADABLE_NAME.Avatars],
         args: LevelsBoundV1Args.TESTNET,
+    },
+    {
+        contractFileName: CONTRACT_FILE_NAME.AccessToken,
+        type: CONTRACT_TYPE.RewardAccessToken,
+        name: CONTRACT_NAME.RewardAccessTokenG7,
+        chain,
+        networkType,
+        tenants: [TENANT.Game7],
+        verify: true,
+        upgradable: false,
+        dependencies: [],
+        functionCalls: [
+            {
+                contractName: CONTRACT_NAME.RewardAccessTokenG7,
+                functionName: 'initialize',
+                args: [
+                    'AccessToken',
+                    'AT',
+                    'NO_VALUE',
+                    'NO_VALUE',
+                    'DEPLOYER_WALLET',
+                    /* this should be the minterContract -> RewardsNativeG7 */ 'MINTER_ROLE',
+                ],
+            },
+        ],
+        args: AccessTokenG7Args.TESTNET,
+    },
+    {
+        contractFileName: CONTRACT_FILE_NAME.RewardsNative,
+        type: CONTRACT_TYPE.Rewards,
+        name: CONTRACT_NAME.RewardsNativeG7,
+        chain,
+        networkType,
+        tenants: [TENANT.Game7],
+        verify: true,
+        upgradable: false,
+        dependencies: [CONTRACT_NAME.RewardAccessTokenG7],
+        functionCalls: [],
+        args: RewardsNativeG7Args.TESTNET,
     },
 ];

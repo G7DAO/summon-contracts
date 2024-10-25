@@ -7,13 +7,21 @@ import "forge-std/console.sol";
 
 import { Strings } from "@openzeppelin/contracts/utils/Strings.sol";
 import { ECDSA } from "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
-import { MessageHashUtils } from "@openzeppelin/contracts/utils/cryptography/MessageHashUtils.sol";
-import { IAccessControl } from "@openzeppelin/contracts/access/IAccessControl.sol";
-import { ERC721Holder } from "@openzeppelin/contracts/token/ERC721/utils/ERC721Holder.sol";
+import {
+    MessageHashUtils
+} from "@openzeppelin/contracts/utils/cryptography/MessageHashUtils.sol";
+import {
+    IAccessControl
+} from "@openzeppelin/contracts/access/IAccessControl.sol";
+import {
+    ERC721Holder
+} from "@openzeppelin/contracts/token/ERC721/utils/ERC721Holder.sol";
 
-import {Rewards} from "../../contracts/soulbounds/Rewards.sol";
-import { AdminERC1155Soulbound } from "../../contracts/soulbounds/AdminERC1155Soulbound.sol";
-import { MockERC1155Receiver } from "../../contracts/mocks/MockERC1155Receiver.sol";
+import { Rewards } from "../../contracts/soulbounds/Rewards.sol";
+import { AccessToken } from "../../contracts/soulbounds/AccessToken.sol";
+import {
+    MockERC1155Receiver
+} from "../../contracts/mocks/MockERC1155Receiver.sol";
 import { MockERC20 } from "../../contracts/mocks/MockErc20.sol";
 import { MockERC721 } from "../../contracts/mocks/MockErc721.sol";
 import { MockERC1155 } from "../../contracts/mocks/MockErc1155.sol";
@@ -35,7 +43,7 @@ contract RewardsMintTest is StdCheats, Test, MockERC1155Receiver, ERC721Holder {
     using Strings for uint256;
 
     Rewards public rewards;
-    AdminERC1155Soulbound public itemBound;
+    AccessToken public itemBound;
     MockERC1155Receiver public mockERC1155Receiver;
     MockERC20 public mockERC20;
     MockERC721 public mockERC721;
@@ -83,7 +91,9 @@ contract RewardsMintTest is StdCheats, Test, MockERC1155Receiver, ERC721Holder {
     bytes32 public constant MINTER_ROLE = keccak256("MINTER_ROLE");
     bytes32 public constant DEV_CONFIG_ROLE = keccak256("DEV_CONFIG_ROLE");
 
-    function getWallet(string memory walletLabel) public returns (Wallet memory) {
+    function getWallet(
+        string memory walletLabel
+    ) public returns (Wallet memory) {
         (address addr, uint256 privateKey) = makeAddrAndKey(walletLabel);
         Wallet memory wallet = Wallet(addr, privateKey);
         return wallet;
@@ -96,26 +106,46 @@ contract RewardsMintTest is StdCheats, Test, MockERC1155Receiver, ERC721Holder {
     ) public returns (uint256, bytes memory) {
         Wallet memory signerWallet = getWallet(signerLabel);
 
-        uint256 _nonce = uint256(keccak256(abi.encodePacked(block.timestamp, block.prevrandao, signerWallet.addr))) %
-            50;
+        uint256 _nonce = uint256(
+            keccak256(
+                abi.encodePacked(
+                    block.timestamp,
+                    block.prevrandao,
+                    signerWallet.addr
+                )
+            )
+        ) % 50;
 
-        bytes32 message = keccak256(abi.encodePacked(wallet, encodedItems, _nonce));
+        bytes32 message = keccak256(
+            abi.encodePacked(wallet, encodedItems, _nonce)
+        );
         bytes32 hash = MessageHashUtils.toEthSignedMessageHash(message);
 
-        (uint8 v, bytes32 r, bytes32 s) = vm.sign(signerWallet.privateKey, hash);
+        (uint8 v, bytes32 r, bytes32 s) = vm.sign(
+            signerWallet.privateKey,
+            hash
+        );
         return (_nonce, abi.encodePacked(r, s, v));
     }
 
-    function concatenateStrings(string memory a, string memory b) internal pure returns (string memory) {
+    function concatenateStrings(
+        string memory a,
+        string memory b
+    ) internal pure returns (string memory) {
         return string(abi.encodePacked(a, b));
     }
 
     function generateRandomItemId() internal returns (uint256) {
-        _seed = uint256(keccak256(abi.encodePacked(blockhash(block.number - 1), _seed)));
+        _seed = uint256(
+            keccak256(abi.encodePacked(blockhash(block.number - 1), _seed))
+        );
         return _seed;
     }
 
-    function encode(address contractAddress, uint256[] memory itemIds) public view returns (bytes memory) {
+    function encode(
+        address contractAddress,
+        uint256[] memory itemIds
+    ) public view returns (bytes memory) {
         return (abi.encode(contractAddress, chainId, itemIds));
     }
 
@@ -127,7 +157,12 @@ contract RewardsMintTest is StdCheats, Test, MockERC1155Receiver, ERC721Holder {
 
         itemBound = new AdminERC1155Soulbound(address(this));
         rewards = new Rewards(address(this));
-        rewards.initialize(address(this), address(this), address(this), address(itemBound));
+        rewards.initialize(
+            address(this),
+            address(this),
+            address(this),
+            address(itemBound)
+        );
 
         itemBound.initialize(
             "Test1155",
@@ -173,7 +208,13 @@ contract RewardsMintTest is StdCheats, Test, MockERC1155Receiver, ERC721Holder {
 
             LibItems.RewardToken memory _token = LibItems.RewardToken({
                 tokenId: _tokenId,
-                tokenUri: string(abi.encodePacked("https://something.com", "/", _tokenId.toString())),
+                tokenUri: string(
+                    abi.encodePacked(
+                        "https://something.com",
+                        "/",
+                        _tokenId.toString()
+                    )
+                ),
                 rewards: _rewards,
                 maxSupply: 1
             });
@@ -196,8 +237,16 @@ contract RewardsMintTest is StdCheats, Test, MockERC1155Receiver, ERC721Holder {
 
         encodedItems2 = encode(address(rewards), _itemIds2);
 
-        (nonce, signature) = generateSignature(playerWallet.addr, encodedItems1, minterLabel);
-        (nonce2, signature2) = generateSignature(playerWallet2.addr, encodedItems2, minterLabel);
+        (nonce, signature) = generateSignature(
+            playerWallet.addr,
+            encodedItems1,
+            minterLabel
+        );
+        (nonce2, signature2) = generateSignature(
+            playerWallet2.addr,
+            encodedItems2,
+            minterLabel
+        );
 
         mockERC20.mint(address(this), 20000000000000000000);
         for (uint256 i = 0; i < 10; i++) {
@@ -219,17 +268,35 @@ contract RewardsMintTest is StdCheats, Test, MockERC1155Receiver, ERC721Holder {
             "Achievo1155Soulbound: The amount of soulbounded tokens is more than the amount of tokens to be transferred"
         );
         vm.prank(playerWallet.addr);
-        itemBound.safeTransferFrom(playerWallet.addr, minterWallet.addr, _tokenIds[0], 1, "");
+        itemBound.safeTransferFrom(
+            playerWallet.addr,
+            minterWallet.addr,
+            _tokenIds[0],
+            1,
+            ""
+        );
 
         vm.expectRevert("Achievo1155Soulbound: can't be zero amount");
         vm.prank(playerWallet.addr);
-        itemBound.safeTransferFrom(playerWallet.addr, minterWallet.addr, _tokenIds[0], 0, "");
+        itemBound.safeTransferFrom(
+            playerWallet.addr,
+            minterWallet.addr,
+            _tokenIds[0],
+            0,
+            ""
+        );
 
         vm.prank(playerWallet2.addr);
         rewards.mint(encodedItems2, false, nonce2, signature2, false);
 
         vm.prank(playerWallet2.addr);
-        itemBound.safeTransferFrom(playerWallet2.addr, minterWallet.addr, _tokenIds[3], 1, "");
+        itemBound.safeTransferFrom(
+            playerWallet2.addr,
+            minterWallet.addr,
+            _tokenIds[3],
+            1,
+            ""
+        );
 
         assertEq(itemBound.balanceOf(playerWallet.addr, _tokenIds[0]), 1);
         assertEq(itemBound.balanceOf(playerWallet2.addr, _tokenIds[3]), 0);
@@ -243,7 +310,11 @@ contract RewardsMintTest is StdCheats, Test, MockERC1155Receiver, ERC721Holder {
 
         bytes memory encodedItems3 = encode(address(rewards), _itemIds3);
 
-        (uint256 _nonce, bytes memory _signature) = generateSignature(playerWallet.addr, encodedItems3, minterLabel);
+        (uint256 _nonce, bytes memory _signature) = generateSignature(
+            playerWallet.addr,
+            encodedItems3,
+            minterLabel
+        );
 
         vm.expectRevert(TokenNotExist.selector);
         vm.prank(playerWallet.addr);
@@ -346,18 +417,31 @@ contract RewardsMintTest is StdCheats, Test, MockERC1155Receiver, ERC721Holder {
         uint256 _tokenId = 100; // totally random
         LibItems.RewardToken memory _token = LibItems.RewardToken({
             tokenId: _tokenId,
-            tokenUri: string(abi.encodePacked("https://something.com", "/", _tokenId.toString())),
+            tokenUri: string(
+                abi.encodePacked(
+                    "https://something.com",
+                    "/",
+                    _tokenId.toString()
+                )
+            ),
             rewards: _rewards,
             maxSupply: 2
         });
         _tokens[0] = _token;
 
-        rewards.createMultipleTokensAndDepositRewards{ value: 300000000000000000 }(_tokens);
+        rewards.createMultipleTokensAndDepositRewards{
+            value: 300000000000000000
+        }(_tokens);
 
         uint256[] memory itemIds = new uint256[](1);
         itemIds[0] = 100;
 
-        rewards.adminMint(playerWallet.addr, (encode(address(rewards), itemIds)), true, false);
+        rewards.adminMint(
+            playerWallet.addr,
+            (encode(address(rewards), itemIds)),
+            true,
+            false
+        );
 
         rewards.adminMintById(playerWallet.addr, _tokens[0].tokenId, 1, true);
         assertEq(itemBound.balanceOf(playerWallet.addr, _tokens[0].tokenId), 2);
@@ -385,26 +469,43 @@ contract RewardsMintTest is StdCheats, Test, MockERC1155Receiver, ERC721Holder {
 
         LibItems.RewardToken memory _token = LibItems.RewardToken({
             tokenId: _tokenId,
-            tokenUri: string(abi.encodePacked("https://something.com", "/", _tokenId.toString())),
+            tokenUri: string(
+                abi.encodePacked(
+                    "https://something.com",
+                    "/",
+                    _tokenId.toString()
+                )
+            ),
             rewards: _rewards,
             maxSupply: 15
         });
         _tokens[0] = _token;
 
-        rewards.createMultipleTokensAndDepositRewards{ value: 300000000000000000 }(_tokens);
+        rewards.createMultipleTokensAndDepositRewards{
+            value: 300000000000000000
+        }(_tokens);
 
         assertEq(mockERC20.balanceOf(address(rewards)), 4001500);
 
         uint256[] memory itemIds = new uint256[](1);
         itemIds[0] = _tokenId;
 
-        rewards.adminMint(playerWallet.addr, (encode(address(rewards), itemIds)), true, true);
+        rewards.adminMint(
+            playerWallet.addr,
+            (encode(address(rewards), itemIds)),
+            true,
+            true
+        );
 
         assertEq(mockERC20.balanceOf(playerWallet.addr), 100);
         assertEq(mockERC20.balanceOf(address(rewards)), 4001400);
 
         bytes memory encodedItems = encode(address(rewards), itemIds);
-        (uint256 _nonce, bytes memory _signature) = generateSignature(playerWallet2.addr, encodedItems, minterLabel);
+        (uint256 _nonce, bytes memory _signature) = generateSignature(
+            playerWallet2.addr,
+            encodedItems,
+            minterLabel
+        );
 
         vm.prank(playerWallet2.addr);
         rewards.mint(encodedItems, true, _nonce, _signature, true);
@@ -412,7 +513,11 @@ contract RewardsMintTest is StdCheats, Test, MockERC1155Receiver, ERC721Holder {
         assertEq(mockERC20.balanceOf(playerWallet2.addr), 100);
 
         skip(36000);
-        (uint256 _nonce2, bytes memory _signature2) = generateSignature(playerWallet2.addr, encodedItems, minterLabel);
+        (uint256 _nonce2, bytes memory _signature2) = generateSignature(
+            playerWallet2.addr,
+            encodedItems,
+            minterLabel
+        );
 
         vm.prank(playerWallet2.addr);
         rewards.mint(encodedItems, true, _nonce2, _signature2, true);

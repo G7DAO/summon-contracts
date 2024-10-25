@@ -285,12 +285,32 @@ export const ERC20DecimalsAgs = {
 export const RewardsArgs = {
     MAINNET: {
         _devWallet: '0x85f56764F58F595D08252b98942554bFB5Eea390',
+        _managerWallet: 'FAIL',
+        _minterWallet: 'FAIL',
+        _rewardTokenAddress: `CONTRACT_${CONTRACT_NAME.RewardAccessTokenG7}`,
     },
     TESTNET: {
         _devWallet: 'DEPLOYER_WALLET',
         _managerWallet: 'DEPLOYER_WALLET',
         _minterWallet: 'DEPLOYER_WALLET',
-        _rewardTokenAddress: `CONTRACT_${CONTRACT_NAME.RewardToken}`,
+        _rewardTokenAddress: `CONTRACT_${CONTRACT_NAME.RewardAccessToken}`,
+    },
+};
+
+export const RewardsNativeG7Args = {
+    MAINNET: {
+        _devWallet: '0x85f56764F58F595D08252b98942554bFB5Eea390',
+        _adminWallet: 'FAIL',
+        _managerWallet: 'FAIL',
+        _minterWallet: 'FAIL',
+        _rewardTokenAddress: `CONTRACT_${CONTRACT_NAME.RewardAccessTokenG7}`,
+    },
+    TESTNET: {
+        _devWallet: 'DEPLOYER_WALLET',
+        _adminWallet: 'DEPLOYER_WALLET',
+        _managerWallet: 'DEPLOYER_WALLET',
+        _minterWallet: 'DEPLOYER_WALLET',
+        _rewardTokenAddress: `CONTRACT_${CONTRACT_NAME.RewardAccessTokenG7}`,
     },
 };
 
@@ -305,20 +325,29 @@ export const HelloWorldArgs = {
 
 export const RewardTokenArgs = {
     MAINNET: {
-        _name: 'RewardToken',
-        _symbol: 'RT',
-        _defaultTokenURI: 'FILL_ME',
-        _contractURI: 'FILL_ME',
+        _name: 'AccessToken',
+        _symbol: 'AT',
+        _defaultTokenURI: 'NO_VALUE',
+        _contractURI: 'NO_VALUE',
         _devWallet: 'DEPLOYER_WALLET',
-        _lootDropAddress: `CONTRACT_${CONTRACT_NAME.Rewards}`,
+        _rewardAddress: `CONTRACT_${CONTRACT_NAME.Rewards}`,
     },
     TESTNET: {
-        _name: 'RainToken',
-        _symbol: 'RT',
-        _defaultTokenURI: 'FILL_ME',
-        _contractURI: 'FILL_ME',
+        _name: 'AccessToken',
+        _symbol: 'AT',
+        _defaultTokenURI: 'NO_VALUE',
+        _contractURI: 'NO_VALUE',
         _devWallet: 'DEPLOYER_WALLET',
-        _lootDropAddress: `CONTRACT_${CONTRACT_NAME.Rewards}`,
+        _rewardAddress: `CONTRACT_${CONTRACT_NAME.Rewards}`,
+    },
+};
+
+export const AccessTokenG7Args = {
+    MAINNET: {
+        _devWallet: 'DEPLOYER_WALLET',
+    },
+    TESTNET: {
+        _devWallet: 'DEPLOYER_WALLET',
     },
 };
 

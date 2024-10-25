@@ -5,7 +5,7 @@ import { ethers, upgrades } from 'hardhat';
 
 const PRIVATE_KEY = process.env.PRIVATE_KEY || '';
 
-const PROXY_ADDRESS = '0x76E45aBc1139C913b43DBB09e99d3650a06e7F22';
+const PROXY_ADDRESS = '0x84865664f4307160caB290a7606a26Ef94C1cad7';
 
 if (!PRIVATE_KEY) throw '⛔️ Private key not detected! Add it to the .env file!';
 
@@ -19,18 +19,18 @@ async function main() {
 
     log(`upgraded to =>  NewContract -> ${VERSION}`);
 
-    // await new Promise((resolve, reject) => {
-    //     exec(
-    //         `npx hardhat verify --network ${hre.network.name} ${PROXY_ADDRESS} --config g7.config.ts`,
-    //         (error, stdout, stderr) => {
-    //             if (error) {
-    //                 console.warn(error);
-    //                 reject(error);
-    //             }
-    //             resolve(stdout ? stdout : stderr);
-    //         }
-    //     );
-    // });
+    await new Promise((resolve, reject) => {
+        exec(
+            `npx hardhat verify --network ${hre.network.name} ${PROXY_ADDRESS} --config g7.config.ts`,
+            (error, stdout, stderr) => {
+                if (error) {
+                    console.warn(error);
+                    reject(error);
+                }
+                resolve(stdout ? stdout : stderr);
+            }
+        );
+    });
 }
 
 main().catch((error) => {

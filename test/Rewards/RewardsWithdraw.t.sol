@@ -7,12 +7,19 @@ import "forge-std/console.sol";
 
 import { Strings } from "@openzeppelin/contracts/utils/Strings.sol";
 import { ECDSA } from "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
-import { IAccessControl } from "@openzeppelin/contracts/access/IAccessControl.sol";
-import { IERC721Errors, IERC1155Errors } from "@openzeppelin/contracts/interfaces/draft-IERC6093.sol";
+import {
+    IAccessControl
+} from "@openzeppelin/contracts/access/IAccessControl.sol";
+import {
+    IERC721Errors,
+    IERC1155Errors
+} from "@openzeppelin/contracts/interfaces/draft-IERC6093.sol";
 
-import {Rewards} from "../../contracts/soulbounds/Rewards.sol";
-import { AdminERC1155Soulbound } from "../../contracts/soulbounds/AdminERC1155Soulbound.sol";
-import { MockERC1155Receiver } from "../../contracts/mocks/MockERC1155Receiver.sol";
+import { Rewards } from "../../contracts/soulbounds/Rewards.sol";
+import { AccessToken } from "../../contracts/soulbounds/AccessToken.sol";
+import {
+    MockERC1155Receiver
+} from "../../contracts/mocks/MockERC1155Receiver.sol";
 import { MockERC20 } from "../../contracts/mocks/MockErc20.sol";
 import { MockERC721 } from "../../contracts/mocks/MockErc721.sol";
 import { MockERC1155 } from "../../contracts/mocks/MockErc1155.sol";
@@ -35,7 +42,7 @@ contract RewardsWithdrawTest is StdCheats, Test {
     using Strings for uint256;
 
     Rewards public rewards;
-    AdminERC1155Soulbound public itemBound;
+    AccessToken public itemBound;
     MockERC1155Receiver public mockERC1155Receiver;
     MockERC20 public mockERC20;
     MockERC721 public mockERC721;
@@ -81,7 +88,9 @@ contract RewardsWithdrawTest is StdCheats, Test {
     bytes32 public constant DEV_CONFIG_ROLE = keccak256("DEV_CONFIG_ROLE");
     bytes32 public constant MANAGER_ROLE = keccak256("MANAGER_ROLE");
 
-    function getWallet(string memory walletLabel) public returns (Wallet memory) {
+    function getWallet(
+        string memory walletLabel
+    ) public returns (Wallet memory) {
         (address addr, uint256 privateKey) = makeAddrAndKey(walletLabel);
         Wallet memory wallet = Wallet(addr, privateKey);
         return wallet;
@@ -95,7 +104,12 @@ contract RewardsWithdrawTest is StdCheats, Test {
 
         itemBound = new AdminERC1155Soulbound(address(this));
         rewards = new Rewards(address(this));
-        rewards.initialize(address(this), address(this), address(this), address(itemBound));
+        rewards.initialize(
+            address(this),
+            address(this),
+            address(this),
+            address(itemBound)
+        );
 
         itemBound.initialize(
             "Test1155",
@@ -116,7 +130,9 @@ contract RewardsWithdrawTest is StdCheats, Test {
         erc721FakeRewardAddress = address(mockERC721);
         erc1155FakeRewardAddress = address(mockERC1155);
 
-        (bool success, ) = payable(address(rewards)).call{ value: 2000000000000000000 }("");
+        (bool success, ) = payable(address(rewards)).call{
+            value: 2000000000000000000
+        }("");
 
         mockERC20.mint(address(rewards), 20000000000000000000);
         for (uint256 i = 0; i < 10; i++) {
@@ -147,7 +163,13 @@ contract RewardsWithdrawTest is StdCheats, Test {
         );
 
         vm.prank(playerWallet.addr);
-        rewards.withdrawAssets(LibItems.RewardType.ETHER, address(0), address(0), _tokenIds1, _amount1);
+        rewards.withdrawAssets(
+            LibItems.RewardType.ETHER,
+            address(0),
+            address(0),
+            _tokenIds1,
+            _amount1
+        );
     }
 
     function testWithdrawAddressZeroShouldFail() public {
@@ -161,7 +183,13 @@ contract RewardsWithdrawTest is StdCheats, Test {
         _amount1[0] = 1000000000000000000;
 
         vm.expectRevert(AddressIsZero.selector);
-        rewards.withdrawAssets(LibItems.RewardType.ETHER, address(0), address(0), _tokenIds1, _amount1);
+        rewards.withdrawAssets(
+            LibItems.RewardType.ETHER,
+            address(0),
+            address(0),
+            _tokenIds1,
+            _amount1
+        );
     }
 
     // withdraw ETH - fail
@@ -176,7 +204,13 @@ contract RewardsWithdrawTest is StdCheats, Test {
         _amount1[0] = 2000000000000000001;
 
         vm.expectRevert(InsufficientBalance.selector);
-        rewards.withdrawAssets(LibItems.RewardType.ETHER, playerWallet2.addr, address(0), _tokenIds1, _amount1);
+        rewards.withdrawAssets(
+            LibItems.RewardType.ETHER,
+            playerWallet2.addr,
+            address(0),
+            _tokenIds1,
+            _amount1
+        );
 
         assertEq(address(rewards).balance, 2000000000000000000);
     }
@@ -192,7 +226,13 @@ contract RewardsWithdrawTest is StdCheats, Test {
         uint256[] memory _amount1 = new uint256[](1);
         _amount1[0] = 1000000000000000000;
 
-        rewards.withdrawAssets(LibItems.RewardType.ETHER, playerWallet2.addr, address(0), _tokenIds1, _amount1);
+        rewards.withdrawAssets(
+            LibItems.RewardType.ETHER,
+            playerWallet2.addr,
+            address(0),
+            _tokenIds1,
+            _amount1
+        );
 
         assertEq(address(rewards).balance, 1000000000000000000);
     }
@@ -254,7 +294,11 @@ contract RewardsWithdrawTest is StdCheats, Test {
         _amount1[0] = 0; // ignore amount
 
         vm.expectRevert(
-            abi.encodeWithSelector(IERC721Errors.ERC721InsufficientApproval.selector, address(rewards), 10)
+            abi.encodeWithSelector(
+                IERC721Errors.ERC721InsufficientApproval.selector,
+                address(rewards),
+                10
+            )
         );
 
         rewards.withdrawAssets(
@@ -267,7 +311,12 @@ contract RewardsWithdrawTest is StdCheats, Test {
     }
 
     function testWithdrawERC721InvalidTokenIdShouldFail() public {
-        vm.expectRevert(abi.encodeWithSelector(IERC721Errors.ERC721NonexistentToken.selector, 20));
+        vm.expectRevert(
+            abi.encodeWithSelector(
+                IERC721Errors.ERC721NonexistentToken.selector,
+                20
+            )
+        );
         mockERC721.ownerOf(20);
 
         uint256[] memory _tokenIds1 = new uint256[](1);
@@ -276,7 +325,12 @@ contract RewardsWithdrawTest is StdCheats, Test {
         uint256[] memory _amount1 = new uint256[](1);
         _amount1[0] = 0; // ignore amount
 
-        vm.expectRevert(abi.encodeWithSelector(IERC721Errors.ERC721NonexistentToken.selector, _tokenIds1[0]));
+        vm.expectRevert(
+            abi.encodeWithSelector(
+                IERC721Errors.ERC721NonexistentToken.selector,
+                _tokenIds1[0]
+            )
+        );
 
         rewards.withdrawAssets(
             LibItems.RewardType.ERC721,
@@ -327,14 +381,23 @@ contract RewardsWithdrawTest is StdCheats, Test {
         _amounts[1] = 11;
         _amounts[2] = 4;
 
-        uint256[] memory balances = mockERC1155.balanceOfBatch(_accounts, _tokenIds);
+        uint256[] memory balances = mockERC1155.balanceOfBatch(
+            _accounts,
+            _tokenIds
+        );
 
         for (uint256 i = 0; i < balances.length; i++) {
             assertEq(balances[i], 10);
         }
 
         vm.expectRevert(
-            abi.encodeWithSelector(IERC1155Errors.ERC1155InsufficientBalance.selector, address(rewards), 10, 11, 456)
+            abi.encodeWithSelector(
+                IERC1155Errors.ERC1155InsufficientBalance.selector,
+                address(rewards),
+                10,
+                11,
+                456
+            )
         );
 
         rewards.withdrawAssets(
@@ -345,7 +408,10 @@ contract RewardsWithdrawTest is StdCheats, Test {
             _amounts
         );
 
-        uint256[] memory balancesAfter = mockERC1155.balanceOfBatch(_accounts, _tokenIds);
+        uint256[] memory balancesAfter = mockERC1155.balanceOfBatch(
+            _accounts,
+            _tokenIds
+        );
 
         for (uint256 i = 0; i < balancesAfter.length; i++) {
             assertEq(balancesAfter[i], balances[i]);
@@ -363,14 +429,23 @@ contract RewardsWithdrawTest is StdCheats, Test {
         uint256[] memory _amounts = new uint256[](1);
         _amounts[0] = 2;
 
-        uint256[] memory balances = mockERC1155.balanceOfBatch(_accounts, _tokenIds);
+        uint256[] memory balances = mockERC1155.balanceOfBatch(
+            _accounts,
+            _tokenIds
+        );
 
         for (uint256 i = 0; i < balances.length; i++) {
             assertEq(balances[i], 0);
         }
 
         vm.expectRevert(
-            abi.encodeWithSelector(IERC1155Errors.ERC1155InsufficientBalance.selector, address(rewards), 0, 2, 888)
+            abi.encodeWithSelector(
+                IERC1155Errors.ERC1155InsufficientBalance.selector,
+                address(rewards),
+                0,
+                2,
+                888
+            )
         );
 
         rewards.withdrawAssets(
@@ -399,7 +474,10 @@ contract RewardsWithdrawTest is StdCheats, Test {
         _amounts[1] = 2;
         _amounts[2] = 3;
 
-        uint256[] memory balances = mockERC1155.balanceOfBatch(_accounts, _tokenIds);
+        uint256[] memory balances = mockERC1155.balanceOfBatch(
+            _accounts,
+            _tokenIds
+        );
 
         for (uint256 i = 0; i < balances.length; i++) {
             assertEq(balances[i], 10);
@@ -413,7 +491,10 @@ contract RewardsWithdrawTest is StdCheats, Test {
             _amounts
         );
 
-        uint256[] memory balancesAfter = mockERC1155.balanceOfBatch(_accounts, _tokenIds);
+        uint256[] memory balancesAfter = mockERC1155.balanceOfBatch(
+            _accounts,
+            _tokenIds
+        );
 
         for (uint256 i = 0; i < balancesAfter.length; i++) {
             assertEq(balancesAfter[i], 10 - _amounts[i]);
