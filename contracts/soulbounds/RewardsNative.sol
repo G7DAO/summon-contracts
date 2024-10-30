@@ -33,7 +33,7 @@ import {
     ReentrancyGuard
 } from "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
 
-import { AdminERC1155Soulbound } from "../soulbounds/AdminERC1155Soulbound.sol";
+import { AccessToken } from "../soulbounds/AccessToken.sol";
 import { ERCWhitelistSignature } from "../ercs/ERCWhitelistSignature.sol";
 import { LibRewards } from "../libraries/LibRewards.sol";
 
@@ -51,7 +51,7 @@ contract RewardsNative is
     bytes32 public constant MANAGER_ROLE = keccak256("MANAGER_ROLE");
     bytes32 public constant DEV_CONFIG_ROLE = keccak256("DEV_CONFIG_ROLE");
 
-    AdminERC1155Soulbound private rewardTokenContract;
+    AccessToken public rewardTokenContract;
 
     uint256[] public itemIds;
     mapping(uint256 => bool) private tokenExists;
@@ -108,7 +108,7 @@ contract RewardsNative is
             revert AddressIsZero();
         }
 
-        rewardTokenContract = AdminERC1155Soulbound(_rewardTokenAddress);
+        rewardTokenContract = AccessToken(_rewardTokenAddress);
         _grantRole(DEV_CONFIG_ROLE, _devWallet);
         _grantRole(DEFAULT_ADMIN_ROLE, _adminWallet);
         _grantRole(MANAGER_ROLE, _managerWallet);
@@ -126,7 +126,7 @@ contract RewardsNative is
             revert AddressIsZero();
         }
 
-        rewardTokenContract = AdminERC1155Soulbound(_rewardTokenAddress);
+        rewardTokenContract = AccessToken(_rewardTokenAddress);
     }
 
     function isTokenExist(uint256 _tokenId) public view returns (bool) {
@@ -149,16 +149,52 @@ contract RewardsNative is
 
     function _dangerous_createTokenAndDepositRewards(
         LibRewards.RewardToken calldata _token
-    ) public payable onlyRole(DEV_CONFIG_ROLE) {
+    ) public onlyRole(DEV_CONFIG_ROLE) {
         _createTokenAndDepositRewards(_token);
     }
 
     function _dangerous_createMultipleTokensAndDepositRewards(
         LibRewards.RewardToken[] calldata _tokens
-    ) external payable onlyRole(DEV_CONFIG_ROLE) {
+    ) external onlyRole(DEV_CONFIG_ROLE) {
         // Create tokens and deposit rewards
         for (uint256 i = 0; i < _tokens.length; i++) {
             _createTokenAndDepositRewards(_tokens[i]);
+        }
+    }
+
+    function createTokenAndMintRewards(
+        LibRewards.RewardToken calldata _token,
+        address _to,
+        uint256 _amount,
+        bool _isSoulbound
+    ) public onlyRole(MINTER_ROLE) {
+        _createTokenAndDepositRewards(_token);
+        _mintRewardAccessToken(_to, _token.tokenId, _amount, _isSoulbound);
+    }
+
+    function createMultipleTokensAndMintRewards(
+        LibRewards.RewardToken[] calldata _tokens,
+        address[] calldata users,
+        uint256[] calldata amounts,
+        bool[] calldata soulbounds
+    ) external onlyRole(MINTER_ROLE) {
+        if (
+            users.length != amounts.length ||
+            users.length != soulbounds.length ||
+            amounts.length != soulbounds.length ||
+            users.length != _tokens.length
+        ) {
+            revert InvalidLength();
+        }
+        // Create tokens and deposit rewards
+        for (uint256 i = 0; i < _tokens.length; i++) {
+            _createTokenAndDepositRewards(_tokens[i]);
+            _mintRewardAccessToken(
+                users[i],
+                _tokens[i].tokenId,
+                amounts[i],
+                soulbounds[i]
+            );
         }
     }
 

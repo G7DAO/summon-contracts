@@ -6,9 +6,9 @@ describe('RewardsNative', function () {
     async function deployRewardsFixture() {
         const [devWallet, adminWallet, managerWallet, minterWallet, user1, user2] = await ethers.getSigners();
 
-        const AdminERC1155Soulbound = await ethers.getContractFactory('AdminERC1155Soulbound');
-        const adminERC1155Soulbound = await AdminERC1155Soulbound.deploy(devWallet.address);
-        await adminERC1155Soulbound.waitForDeployment();
+        const AccessToken = await ethers.getContractFactory('AccessToken');
+        const accessToken = await AccessToken.deploy(devWallet.address);
+        await accessToken.waitForDeployment();
 
         const RewardsNative = await ethers.getContractFactory('RewardsNative');
         const rewardsNative = await RewardsNative.deploy(
@@ -16,11 +16,11 @@ describe('RewardsNative', function () {
             adminWallet,
             managerWallet,
             minterWallet,
-            adminERC1155Soulbound
+            accessToken
         );
 
         await rewardsNative.waitForDeployment();
-        await adminERC1155Soulbound.initialize(
+        await accessToken.initialize(
             'G7Reward',
             'G7R',
             'https://example.com/token/',
@@ -31,7 +31,7 @@ describe('RewardsNative', function () {
 
         return {
             rewardsNative,
-            adminERC1155Soulbound,
+            accessToken,
             devWallet,
             adminWallet,
             managerWallet,
@@ -58,13 +58,10 @@ describe('RewardsNative', function () {
         });
 
         it('AdminERC1155Soulbound should set the roles correctly', async function () {
-            const { adminERC1155Soulbound, devWallet, rewardsNative } = await loadFixture(deployRewardsFixture);
-            expect(await adminERC1155Soulbound.hasRole(await adminERC1155Soulbound.DEFAULT_ADMIN_ROLE(), devWallet)).to
-                .be.true;
-            expect(await adminERC1155Soulbound.hasRole(await adminERC1155Soulbound.MANAGER_ROLE(), devWallet)).to.be
-                .true;
-            expect(await adminERC1155Soulbound.hasRole(await adminERC1155Soulbound.MINTER_ROLE(), rewardsNative)).to.be
-                .true;
+            const { accessToken, devWallet, rewardsNative } = await loadFixture(deployRewardsFixture);
+            expect(await accessToken.hasRole(await accessToken.DEFAULT_ADMIN_ROLE(), devWallet)).to.be.true;
+            expect(await accessToken.hasRole(await accessToken.MANAGER_ROLE(), devWallet)).to.be.true;
+            expect(await accessToken.hasRole(await accessToken.MINTER_ROLE(), rewardsNative)).to.be.true;
         });
     });
 

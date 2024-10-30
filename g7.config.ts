@@ -8,7 +8,7 @@ if (!PRIVATE_KEY) {
     throw new Error('MantleConfig: The private key is required');
 }
 
-log(`Using Game7 L3 Testnet config`);
+log(`Using Game7 L3 config`);
 
 defaultConfig.networks = {
     ...defaultConfig.networks,
@@ -16,6 +16,11 @@ defaultConfig.networks = {
         url: rpcUrls[ChainId.Game7Testnet],
         accounts: [PRIVATE_KEY],
         chainId: ChainId.Game7Testnet,
+    },
+    [NetworkName.Game7]: {
+        url: rpcUrls[ChainId.Game7],
+        accounts: [PRIVATE_KEY],
+        chainId: ChainId.Game7,
     },
 };
 
@@ -30,7 +35,14 @@ defaultConfig.etherscan = {
                 browserURL: NetworkExplorer.Game7Testnet,
             },
         },
-        // TODO: Add mainnet later
+        {
+            network: NetworkName.Game7,
+            chainId: ChainId.Game7,
+            urls: {
+                apiURL: `${NetworkExplorer.Game7}/api`,
+                browserURL: NetworkExplorer.Game7,
+            },
+        },
     ],
 };
 

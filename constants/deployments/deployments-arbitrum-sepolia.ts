@@ -1,4 +1,4 @@
-import { BUIDLArgs, ERC20Args, ERC20DecimalsAgs, ItemBoundIronWorksArgs } from '@constants/constructor-args';
+import { ERC20DecimalsAgs } from '@constants/constructor-args';
 import {
     CONTRACT_NAME,
     CONTRACT_TYPE,
@@ -14,19 +14,6 @@ const chain = NetworkName.ArbitrumSepolia;
 const networkType = NETWORK_TYPE.TESTNET;
 
 export const ARBITRUM_SEPOLIA_CONTRACTS: DeploymentContract[] = [
-    {
-        contractFileName: CONTRACT_UPGRADABLE_FILE_NAME.ERC1155Soulbound,
-        type: CONTRACT_TYPE.Items,
-        name: CONTRACT_UPGRADABLE_NAME.Items,
-        chain,
-        networkType,
-        tenants: [TENANT.IronWorks],
-        verify: false,
-        upgradable: true,
-        dependencies: [],
-        functionCalls: [],
-        args: ItemBoundIronWorksArgs.TESTNET,
-    },
     {
         contractFileName: CONTRACT_UPGRADABLE_FILE_NAME.BurnableToken,
         type: CONTRACT_TYPE.ERC20,

@@ -46,7 +46,7 @@ import { LibItems } from "../libraries/LibItems.sol";
 error AddressIsZero();
 error NotOwnerOrApproved();
 
-contract AdminERC1155Soulbound is
+contract AccessToken is
     ERC1155Burnable,
     ERC1155Supply,
     Summon1155Soulbound,
@@ -100,19 +100,18 @@ contract AdminERC1155Soulbound is
         string memory _defaultTokenURI,
         string memory _contractURI,
         address devWallet,
-        address minter
+        address minterContract
     ) external initializer onlyRole(DEFAULT_ADMIN_ROLE) {
-        if (devWallet == address(0) || minter == address(0)) {
+        if (devWallet == address(0)) {
             revert AddressIsZero();
         }
 
         _grantRole(DEFAULT_ADMIN_ROLE, devWallet);
         _grantRole(MANAGER_ROLE, devWallet);
         _grantRole(DEV_CONFIG_ROLE, devWallet);
-        _grantRole(DEV_CONFIG_ROLE, minter);
-        _grantRole(MINTER_ROLE, minter);
-
-        _updateWhitelistAddress(minter, true);
+        _grantRole(MINTER_ROLE, minterContract);
+        _grantRole(DEV_CONFIG_ROLE, minterContract);
+        _updateWhitelistAddress(minterContract, true);
 
         name = _name;
         symbol = _symbol;

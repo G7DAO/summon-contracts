@@ -20,33 +20,10 @@ export interface Soulbound1155Args {
     TESTNET: ConstructorArgs;
 }
 
-export const SoulboundBadgesArgs: Soulbound1155Args = {
-    MAINNET: {
-        name: 'SoulboundBadges',
-        symbol: 'SBB',
-        baseURI: 'https://achievo.mypinata.cloud/ipfs',
-        contractURI: 'https://achievo.mypinata.cloud/ipfs/QmSDbeNWVY2CGUuLHni689L5eSrSG3iZHyTRZJWXX7GpjS',
-        maxPerMint: 1,
-        isPaused: true,
-        devWallet: 'DEPLOYER_WALLET',
-        royalty: 250,
-    },
-    TESTNET: {
-        name: 'MyBadges',
-        symbol: 'MSB',
-        baseURI: 'https://achievo.mypinata.cloud/ipfs',
-        contractURI: 'https://achievo.mypinata.cloud/ipfs/QmSDbeNWVY2CGUuLHni689L5eSrSG3iZHyTRZJWXX7GpjS',
-        maxPerMint: 1,
-        isPaused: false,
-        devWallet: 'DEPLOYER_WALLET',
-        royalty: 250,
-    },
-};
-
 export const ItemBoundArgs: Soulbound1155Args = {
     MAINNET: {
-        name: 'Item',
-        symbol: 'ISB',
+        name: 'G7Items',
+        symbol: 'G7I',
         baseURI: 'https://summon.mypinata.cloud/ipfs',
         contractURI: 'https://summon.mypinata.cloud/ipfs/QmVrRk9RcwhWXXhxiFts6qUVjSr6mhqphr77vTxQCv7yKM',
         maxPerMint: 1,
@@ -54,7 +31,7 @@ export const ItemBoundArgs: Soulbound1155Args = {
         devWallet: 'DEPLOYER_WALLET',
     },
     TESTNET: {
-        name: 'MyItems',
+        name: 'G7Items',
         symbol: 'ISB',
         baseURI: 'https://achievo.mypinata.cloud/ipfs',
         contractURI: 'https://achievo.mypinata.cloud/ipfs/QmVrRk9RcwhWXXhxiFts6qUVjSr6mhqphr77vTxQCv7yKM',
@@ -64,51 +41,13 @@ export const ItemBoundArgs: Soulbound1155Args = {
     },
 };
 
-export const ItemBoundIronWorksArgs: Soulbound1155Args = {
-    MAINNET: {
-        name: 'IronWorksItems',
-        symbol: 'AItems',
-        baseURI: 'https://achievo.mypinata.cloud/ipfs',
-        contractURI: 'FILL_ME',
-        maxPerMint: 1,
-        isPaused: false,
-        devWallet: 'DEPLOYER_WALLET',
-    },
-    TESTNET: {
-        name: 'IronWorksItems',
-        symbol: 'IWItems',
-        baseURI: 'https://achievo.mypinata.cloud/ipfs',
-        contractURI: 'FILL_ME',
-        maxPerMint: 1,
-        isPaused: false,
-        devWallet: 'DEPLOYER_WALLET',
-    },
-};
-
-export const NFTGatingArgs = {
-    MAINNET: {
-        name: 'Achievo NFT Gating Admin Access',
-        symbol: 'AchievoAdmin',
-        baseURI: 'https://achievo.mypinata.cloud/ipfs/',
-        adminTokenURI: 'QmYXxrc4vQgfoRtUhdBCbSbxpeJJs2eEtcgiuXvzxdWfJD',
-        superAdminTokenURI: 'Qmay3Db9KFTwoQJ2nB6vTxuHfDX5CQgxmy97NKvcN45B6F',
-    },
-    TESTNET: {
-        name: 'Achievo NFT Gating Admin Access',
-        symbol: 'AchievoAdmin',
-        baseURI: 'https://achievo.mypinata.cloud/ipfs/',
-        adminTokenURI: 'QmYXxrc4vQgfoRtUhdBCbSbxpeJJs2eEtcgiuXvzxdWfJD',
-        superAdminTokenURI: 'Qmay3Db9KFTwoQJ2nB6vTxuHfDX5CQgxmy97NKvcN45B6F',
-    },
-};
-
 export const AvatarBoundArgs = {
     MAINNET: {
-        name: 'AvatarBound',
-        symbol: 'AVB',
+        name: 'Game7Avatar',
+        symbol: 'G7A',
         baseURI: '',
-        contractURI: 'https://achievo.mypinata.cloud/ipfs/QmSDbeNWVY2CGUuLHni689L5eSrSG3iZHyTRZJWXX7GpjS',
-        revealURI: 'Qmdk4zHamwCyqSzuWNNYypuz4FXAGdApbky7SHNsXYYQg7',
+        contractURI: 'https://summon.mypinata.cloud/ipfs/QmTZ9GJ37iPZ61TeQaUpqTtY3Mg3yJAr3ZmfRepcqYPj4h',
+        revealURI: '',
         compoundURI: 'https://web3.cdn.summon.xyz/v2/uri/avatar',
         devWallet: 'DEPLOYER_WALLET',
         gatingNftAddress: '0xD07180c423F9B8CF84012aA28cC174F3c433EE29',
@@ -119,11 +58,11 @@ export const AvatarBoundArgs = {
         mintSpecialItemEnabled: true,
     },
     TESTNET: {
-        name: 'AvatarBound',
-        symbol: 'AVB',
+        name: 'TestnetAvatarBound',
+        symbol: 'TAVB',
         baseURI: '',
-        contractURI: 'https://achievo.mypinata.cloud/ipfs/QmSDbeNWVY2CGUuLHni689L5eSrSG3iZHyTRZJWXX7GpjS',
-        revealURI: 'QmZnvSyeKRQxWwcofVmq41BNCtHbBmomk8Ny8mtGRTjtzS',
+        contractURI: 'https://achievo.mypinata.cloud/ipfs/QmTZ9GJ37iPZ61TeQaUpqTtY3Mg3yJAr3ZmfRepcqYPj4h',
+        revealURI: '',
         compoundURI: 'https://web3-staging.cdn.summon.xyz/v2/uri/avatar',
         devWallet: 'DEPLOYER_WALLET',
         gatingNftAddress: '0x6E03Ea6c9aBBb78Dd761b9c71c06176c508488C3',
@@ -148,7 +87,7 @@ export const AvatarBoundV1Args = {
 
 export const LevelsBoundArgs = {
     MAINNET: {
-        name: 'LevelsBound',
+        name: 'Game7Level',
         symbol: 'LVL',
         developerAdmin: 'DEPLOYER_WALLET',
         mintRandomItemEnabled: true,
@@ -178,7 +117,7 @@ export const OpenMintArgs = {
     MAINNET: {
         name: 'OpenMint-TEST',
         symbol: 'OM_TEST',
-        baseTokenURI: 'https://achievo.mypinata.cloud/ipfs/',
+        baseTokenURI: 'https://summon.mypinata.cloud/ipfs/',
         unrevealedURI: 'Qmc7c9tNVaaAbTM5RMgdPY7MjPoLDFfPw8BAv3WuBUrebe',
     },
     TESTNET: {
@@ -270,8 +209,8 @@ export const BadgeBoundArgs: Soulbound1155Args = {
     MAINNET: {
         name: 'Item',
         symbol: 'ISB',
-        baseURI: 'https://achievo.mypinata.cloud/ipfs',
-        contractURI: 'https://achievo.mypinata.cloud/ipfs/QmSDbeNWVY2CGUuLHni689L5eSrSG3iZHyTRZJWXX7GpjS',
+        baseURI: 'https://summon.mypinata.cloud/ipfs',
+        contractURI: 'https://summon.mypinata.cloud/ipfs/QmSDbeNWVY2CGUuLHni689L5eSrSG3iZHyTRZJWXX7GpjS',
         maxPerMint: 1,
         isPaused: false,
         devWallet: 'DEPLOYER_WALLET',
@@ -291,8 +230,8 @@ export const SkillTreeArgs: Soulbound1155Args = {
     MAINNET: {
         name: 'SkillTree',
         symbol: 'STSB',
-        baseURI: 'https://achievo.mypinata.cloud/ipfs',
-        contractURI: 'https://achievo.mypinata.cloud/ipfs/QmSDbeNWVY2CGUuLHni689L5eSrSG3iZHyTRZJWXX7GpjS',
+        baseURI: 'https://summon.mypinata.cloud/ipfs',
+        contractURI: 'https://summon.mypinata.cloud/ipfs/QmSDbeNWVY2CGUuLHni689L5eSrSG3iZHyTRZJWXX7GpjS',
         maxPerMint: 1,
         isPaused: false,
         devWallet: 'DEPLOYER_WALLET',
@@ -346,12 +285,32 @@ export const ERC20DecimalsAgs = {
 export const RewardsArgs = {
     MAINNET: {
         _devWallet: '0x85f56764F58F595D08252b98942554bFB5Eea390',
+        _managerWallet: 'FAIL',
+        _minterWallet: 'FAIL',
+        _rewardTokenAddress: `CONTRACT_${CONTRACT_NAME.RewardAccessTokenG7}`,
     },
     TESTNET: {
         _devWallet: 'DEPLOYER_WALLET',
         _managerWallet: 'DEPLOYER_WALLET',
         _minterWallet: 'DEPLOYER_WALLET',
-        _rewardTokenAddress: `CONTRACT_${CONTRACT_NAME.RewardToken}`,
+        _rewardTokenAddress: `CONTRACT_${CONTRACT_NAME.RewardAccessToken}`,
+    },
+};
+
+export const RewardsNativeG7Args = {
+    MAINNET: {
+        _devWallet: '0x85f56764F58F595D08252b98942554bFB5Eea390',
+        _adminWallet: 'FAIL',
+        _managerWallet: 'FAIL',
+        _minterWallet: 'FAIL',
+        _rewardTokenAddress: `CONTRACT_${CONTRACT_NAME.RewardAccessTokenG7}`,
+    },
+    TESTNET: {
+        _devWallet: 'DEPLOYER_WALLET',
+        _adminWallet: 'DEPLOYER_WALLET',
+        _managerWallet: 'DEPLOYER_WALLET',
+        _minterWallet: 'DEPLOYER_WALLET',
+        _rewardTokenAddress: `CONTRACT_${CONTRACT_NAME.RewardAccessTokenG7}`,
     },
 };
 
@@ -366,20 +325,29 @@ export const HelloWorldArgs = {
 
 export const RewardTokenArgs = {
     MAINNET: {
-        _name: 'RewardToken',
-        _symbol: 'RT',
-        _defaultTokenURI: 'FILL_ME',
-        _contractURI: 'FILL_ME',
+        _name: 'AccessToken',
+        _symbol: 'AT',
+        _defaultTokenURI: 'NO_VALUE',
+        _contractURI: 'NO_VALUE',
         _devWallet: 'DEPLOYER_WALLET',
-        _lootDropAddress: `CONTRACT_${CONTRACT_NAME.Rewards}`,
+        _rewardAddress: `CONTRACT_${CONTRACT_NAME.Rewards}`,
     },
     TESTNET: {
-        _name: 'RainToken',
-        _symbol: 'RT',
-        _defaultTokenURI: 'FILL_ME',
-        _contractURI: 'FILL_ME',
+        _name: 'AccessToken',
+        _symbol: 'AT',
+        _defaultTokenURI: 'NO_VALUE',
+        _contractURI: 'NO_VALUE',
         _devWallet: 'DEPLOYER_WALLET',
-        _lootDropAddress: `CONTRACT_${CONTRACT_NAME.Rewards}`,
+        _rewardAddress: `CONTRACT_${CONTRACT_NAME.Rewards}`,
+    },
+};
+
+export const AccessTokenG7Args = {
+    MAINNET: {
+        _devWallet: 'DEPLOYER_WALLET',
+    },
+    TESTNET: {
+        _devWallet: 'DEPLOYER_WALLET',
     },
 };
 

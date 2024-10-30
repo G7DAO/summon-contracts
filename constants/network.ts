@@ -25,6 +25,7 @@ export enum ChainId {
     Base = 8453,
     BaseSepolia = 84532,
     Game7Testnet = 13746,
+    Game7 = 2187,
     Linea = 59144,
     LineaSepolia = 59141,
 }
@@ -46,6 +47,7 @@ export enum NetworkName {
     Base = 'base',
     BaseSepolia = 'baseSepolia',
     Game7Testnet = 'game7Testnet',
+    Game7 = 'game7',
     LineaSepolia = 'lineaSepolia',
     Linea = 'linea',
 }
@@ -68,6 +70,7 @@ export enum NetworkConfigFile {
     Base = 'base.config.ts',
     BaseSepolia = 'base.config.ts',
     Game7Testnet = 'g7.config.ts',
+    Game7 = 'g7.config.ts',
     Linea = 'linea.config.ts',
     LineaSepolia = 'linea.config.ts',
 }
@@ -89,6 +92,7 @@ export enum Currency {
     Base = 'ETH',
     BaseSepolia = 'ETH',
     Game7Testnet = 'TG7T',
+    Game7 = 'G7',
     Linea = 'ETH',
     LineaSepolia = 'ETH',
 }
@@ -110,6 +114,7 @@ export enum NetworkExplorer {
     Base = 'https://basescan.org',
     BaseSepolia = 'https://base-sepolia.blockscout.com',
     Game7Testnet = 'https://testnet.game7.io',
+    Game7 = 'https://mainnet.game7.io',
     Linea = 'https://api.lineascan.build',
     LineaSepolia = 'https://api.sepolia.lineascan.build',
 }
@@ -138,6 +143,7 @@ export const rpcUrls = {
     [ChainId.Base]: 'https://mainnet.base.org',
     [ChainId.BaseSepolia]: 'https://sepolia.base.org',
     [ChainId.Game7Testnet]: 'https://testnet-rpc.game7.io',
+    [ChainId.Game7]: 'https://mainnet-rpc.game7.io',
     [ChainId.Linea]: 'https://rpc.linea.build',
     [ChainId.LineaSepolia]: 'https://rpc.sepolia.linea.build',
 };

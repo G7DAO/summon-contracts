@@ -7,14 +7,26 @@ import "forge-std/console.sol";
 
 import { Strings } from "@openzeppelin/contracts/utils/Strings.sol";
 import { ECDSA } from "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
-import { MessageHashUtils } from "@openzeppelin/contracts/utils/cryptography/MessageHashUtils.sol";
-import { IAccessControl } from "@openzeppelin/contracts/access/IAccessControl.sol";
-import { IERC20Errors, IERC721Errors, IERC1155Errors } from "@openzeppelin/contracts/interfaces/draft-IERC6093.sol";
-import { ERC721Holder } from "@openzeppelin/contracts/token/ERC721/utils/ERC721Holder.sol";
+import {
+    MessageHashUtils
+} from "@openzeppelin/contracts/utils/cryptography/MessageHashUtils.sol";
+import {
+    IAccessControl
+} from "@openzeppelin/contracts/access/IAccessControl.sol";
+import {
+    IERC20Errors,
+    IERC721Errors,
+    IERC1155Errors
+} from "@openzeppelin/contracts/interfaces/draft-IERC6093.sol";
+import {
+    ERC721Holder
+} from "@openzeppelin/contracts/token/ERC721/utils/ERC721Holder.sol";
 
-import {Rewards} from "../../contracts/soulbounds/Rewards.sol";
-import { AdminERC1155Soulbound } from "../../contracts/soulbounds/AdminERC1155Soulbound.sol";
-import { MockERC1155Receiver } from "../../contracts/mocks/MockERC1155Receiver.sol";
+import { Rewards } from "../../contracts/soulbounds/Rewards.sol";
+import { AccessToken } from "../../contracts/soulbounds/AccessToken.sol";
+import {
+    MockERC1155Receiver
+} from "../../contracts/mocks/MockERC1155Receiver.sol";
 import { MockERC20 } from "../../contracts/mocks/MockErc20.sol";
 import { MockERC721 } from "../../contracts/mocks/MockErc721.sol";
 import { MockERC1155 } from "../../contracts/mocks/MockErc1155.sol";
@@ -33,11 +45,16 @@ error MintPaused();
 error ClaimRewardPaused();
 error DupTokenId();
 
-contract RewardsAddTokenTest is StdCheats, Test, MockERC1155Receiver, ERC721Holder {
+contract RewardsAddTokenTest is
+    StdCheats,
+    Test,
+    MockERC1155Receiver,
+    ERC721Holder
+{
     using Strings for uint256;
 
     Rewards public rewards;
-    AdminERC1155Soulbound public itemBound;
+    AccessToken public itemBound;
     MockERC1155Receiver public mockERC1155Receiver;
     MockERC20 public mockERC20;
     MockERC721 public mockERC721;
@@ -85,7 +102,9 @@ contract RewardsAddTokenTest is StdCheats, Test, MockERC1155Receiver, ERC721Hold
     bytes32 public constant MANAGER_ROLE = keccak256("MANAGER_ROLE");
     bytes32 public constant DEV_CONFIG_ROLE = keccak256("DEV_CONFIG_ROLE");
 
-    function getWallet(string memory walletLabel) public returns (Wallet memory) {
+    function getWallet(
+        string memory walletLabel
+    ) public returns (Wallet memory) {
         (address addr, uint256 privateKey) = makeAddrAndKey(walletLabel);
         Wallet memory wallet = Wallet(addr, privateKey);
         return wallet;
@@ -98,26 +117,46 @@ contract RewardsAddTokenTest is StdCheats, Test, MockERC1155Receiver, ERC721Hold
     ) public returns (uint256, bytes memory) {
         Wallet memory signerWallet = getWallet(signerLabel);
 
-        uint256 _nonce = uint256(keccak256(abi.encodePacked(block.timestamp, block.prevrandao, signerWallet.addr))) %
-            50;
+        uint256 _nonce = uint256(
+            keccak256(
+                abi.encodePacked(
+                    block.timestamp,
+                    block.prevrandao,
+                    signerWallet.addr
+                )
+            )
+        ) % 50;
 
-        bytes32 message = keccak256(abi.encodePacked(wallet, encodedItems, _nonce));
+        bytes32 message = keccak256(
+            abi.encodePacked(wallet, encodedItems, _nonce)
+        );
         bytes32 hash = MessageHashUtils.toEthSignedMessageHash(message);
 
-        (uint8 v, bytes32 r, bytes32 s) = vm.sign(signerWallet.privateKey, hash);
+        (uint8 v, bytes32 r, bytes32 s) = vm.sign(
+            signerWallet.privateKey,
+            hash
+        );
         return (_nonce, abi.encodePacked(r, s, v));
     }
 
-    function concatenateStrings(string memory a, string memory b) internal pure returns (string memory) {
+    function concatenateStrings(
+        string memory a,
+        string memory b
+    ) internal pure returns (string memory) {
         return string(abi.encodePacked(a, b));
     }
 
     function generateRandomItemId() internal returns (uint256) {
-        _seed = uint256(keccak256(abi.encodePacked(blockhash(block.number - 1), _seed)));
+        _seed = uint256(
+            keccak256(abi.encodePacked(blockhash(block.number - 1), _seed))
+        );
         return _seed;
     }
 
-    function encode(address contractAddress, uint256[] memory itemIds) public view returns (bytes memory) {
+    function encode(
+        address contractAddress,
+        uint256[] memory itemIds
+    ) public view returns (bytes memory) {
         return (abi.encode(contractAddress, chainId, itemIds));
     }
 
@@ -129,7 +168,12 @@ contract RewardsAddTokenTest is StdCheats, Test, MockERC1155Receiver, ERC721Hold
 
         itemBound = new AdminERC1155Soulbound(address(this));
         rewards = new Rewards(address(this));
-        rewards.initialize(address(this), address(this), address(this), address(itemBound));
+        rewards.initialize(
+            address(this),
+            address(this),
+            address(this),
+            address(itemBound)
+        );
 
         itemBound.initialize(
             "Test1155",
@@ -175,7 +219,13 @@ contract RewardsAddTokenTest is StdCheats, Test, MockERC1155Receiver, ERC721Hold
 
             LibItems.RewardToken memory _token = LibItems.RewardToken({
                 tokenId: _tokenId,
-                tokenUri: string(abi.encodePacked("https://something.com", "/", _tokenId.toString())),
+                tokenUri: string(
+                    abi.encodePacked(
+                        "https://something.com",
+                        "/",
+                        _tokenId.toString()
+                    )
+                ),
                 rewards: _rewards,
                 maxSupply: 1
             });
@@ -198,8 +248,16 @@ contract RewardsAddTokenTest is StdCheats, Test, MockERC1155Receiver, ERC721Hold
 
         encodedItems2 = encode(address(rewards), _itemIds2);
 
-        (nonce, signature) = generateSignature(playerWallet.addr, encodedItems1, minterLabel);
-        (nonce2, signature2) = generateSignature(playerWallet2.addr, encodedItems2, minterLabel);
+        (nonce, signature) = generateSignature(
+            playerWallet.addr,
+            encodedItems1,
+            minterLabel
+        );
+        (nonce2, signature2) = generateSignature(
+            playerWallet2.addr,
+            encodedItems2,
+            minterLabel
+        );
 
         mockERC20.mint(address(this), 20000000000000000000);
         for (uint256 i = 0; i < 10; i++) {
@@ -242,7 +300,13 @@ contract RewardsAddTokenTest is StdCheats, Test, MockERC1155Receiver, ERC721Hold
 
         LibItems.RewardToken memory _token = LibItems.RewardToken({
             tokenId: _tokenId,
-            tokenUri: string(abi.encodePacked("https://something.com", "/", _tokenId.toString())),
+            tokenUri: string(
+                abi.encodePacked(
+                    "https://something.com",
+                    "/",
+                    _tokenId.toString()
+                )
+            ),
             rewards: _rewards,
             maxSupply: 1
         });
@@ -312,14 +376,22 @@ contract RewardsAddTokenTest is StdCheats, Test, MockERC1155Receiver, ERC721Hold
             uint256 _tokenId = generateRandomItemId(); // totally random
             LibItems.RewardToken memory _token = LibItems.RewardToken({
                 tokenId: _tokenId,
-                tokenUri: string(abi.encodePacked("https://something.com", "/", _tokenId.toString())),
+                tokenUri: string(
+                    abi.encodePacked(
+                        "https://something.com",
+                        "/",
+                        _tokenId.toString()
+                    )
+                ),
                 rewards: _rewards,
                 maxSupply: 3
             });
             _tokens[i] = _token;
         }
 
-        rewards.createMultipleTokensAndDepositRewards{ value: 600000000000000000 }(_tokens);
+        rewards.createMultipleTokensAndDepositRewards{
+            value: 600000000000000000
+        }(_tokens);
 
         uint256 _tokenId = _tokens[0].tokenId;
         assertEq(rewards.isTokenExist(_tokenId), true);
@@ -334,13 +406,25 @@ contract RewardsAddTokenTest is StdCheats, Test, MockERC1155Receiver, ERC721Hold
             uint256[] memory rewardTokenId
         ) = rewards.getTokenDetails(_tokenId);
 
-        assertEq(tokenUri, string(abi.encodePacked("https://something.com", "/", _tokenId.toString())));
+        assertEq(
+            tokenUri,
+            string(
+                abi.encodePacked(
+                    "https://something.com",
+                    "/",
+                    _tokenId.toString()
+                )
+            )
+        );
         assertEq(maxSupply, 3);
 
         for (uint256 i = 0; i < rewardTypes.length; i++) {
             if (i == 0) {
                 // ETHER
-                assertEq(uint256(rewardTypes[i]), uint256(LibItems.RewardType.ETHER));
+                assertEq(
+                    uint256(rewardTypes[i]),
+                    uint256(LibItems.RewardType.ETHER)
+                );
                 assertEq(rewardAmounts[i], 100000000000000000);
                 assertEq(rewardTokenAddresses[i], address(0));
                 assertEq(rewardTokenId[i], 0);
@@ -349,7 +433,10 @@ contract RewardsAddTokenTest is StdCheats, Test, MockERC1155Receiver, ERC721Hold
 
             if (i == 1) {
                 // ERC20
-                assertEq(uint256(rewardTypes[i]), uint256(LibItems.RewardType.ERC20));
+                assertEq(
+                    uint256(rewardTypes[i]),
+                    uint256(LibItems.RewardType.ERC20)
+                );
                 assertEq(rewardAmounts[i], 2000);
                 assertEq(rewardTokenAddresses[i], erc20FakeRewardAddress);
                 assertEq(rewardTokenId[i], 0);
@@ -358,7 +445,10 @@ contract RewardsAddTokenTest is StdCheats, Test, MockERC1155Receiver, ERC721Hold
 
             if (i == 2) {
                 // ERC721
-                assertEq(uint256(rewardTypes[i]), uint256(LibItems.RewardType.ERC721));
+                assertEq(
+                    uint256(rewardTypes[i]),
+                    uint256(LibItems.RewardType.ERC721)
+                );
                 assertEq(rewardAmounts[i], 1);
                 assertEq(rewardTokenAddresses[i], erc721FakeRewardAddress);
                 assertEq(rewardTokenId[i], 0);
@@ -371,7 +461,10 @@ contract RewardsAddTokenTest is StdCheats, Test, MockERC1155Receiver, ERC721Hold
 
             if (i == 3) {
                 // ERC1155
-                assertEq(uint256(rewardTypes[i]), uint256(LibItems.RewardType.ERC1155));
+                assertEq(
+                    uint256(rewardTypes[i]),
+                    uint256(LibItems.RewardType.ERC1155)
+                );
                 assertEq(rewardAmounts[i], 2);
                 assertEq(rewardTokenAddresses[i], erc1155FakeRewardAddress);
                 assertEq(rewardTokenId[i], 456);
@@ -399,7 +492,13 @@ contract RewardsAddTokenTest is StdCheats, Test, MockERC1155Receiver, ERC721Hold
             uint256 _tokenId = generateRandomItemId(); // totally random
             LibItems.RewardToken memory _token = LibItems.RewardToken({
                 tokenId: _tokenId,
-                tokenUri: string(abi.encodePacked("https://something.com", "/", _tokenId.toString())),
+                tokenUri: string(
+                    abi.encodePacked(
+                        "https://something.com",
+                        "/",
+                        _tokenId.toString()
+                    )
+                ),
                 rewards: _rewards,
                 maxSupply: 1
             });
@@ -471,7 +570,13 @@ contract RewardsAddTokenTest is StdCheats, Test, MockERC1155Receiver, ERC721Hold
             uint256 _tokenId = generateRandomItemId(); // totally random
             LibItems.RewardToken memory _token = LibItems.RewardToken({
                 tokenId: _tokenId,
-                tokenUri: string(abi.encodePacked("https://something.com", "/", _tokenId.toString())),
+                tokenUri: string(
+                    abi.encodePacked(
+                        "https://something.com",
+                        "/",
+                        _tokenId.toString()
+                    )
+                ),
                 rewards: _rewards,
                 maxSupply: 1
             });
@@ -480,7 +585,9 @@ contract RewardsAddTokenTest is StdCheats, Test, MockERC1155Receiver, ERC721Hold
         }
 
         vm.expectRevert(InsufficientBalance.selector);
-        rewards.createMultipleTokensAndDepositRewards{ value: 299999999999999999 }(_tokens);
+        rewards.createMultipleTokensAndDepositRewards{
+            value: 299999999999999999
+        }(_tokens);
     }
     // should fail not enough ERC20
     function testAddNewTokensNotEnoughERC20ShouldFail() public {
@@ -534,7 +641,13 @@ contract RewardsAddTokenTest is StdCheats, Test, MockERC1155Receiver, ERC721Hold
             uint256 _tokenId = generateRandomItemId(); // totally random
             LibItems.RewardToken memory _token = LibItems.RewardToken({
                 tokenId: _tokenId,
-                tokenUri: string(abi.encodePacked("https://something.com", "/", _tokenId.toString())),
+                tokenUri: string(
+                    abi.encodePacked(
+                        "https://something.com",
+                        "/",
+                        _tokenId.toString()
+                    )
+                ),
                 rewards: _rewards,
                 maxSupply: 1
             });
@@ -550,7 +663,9 @@ contract RewardsAddTokenTest is StdCheats, Test, MockERC1155Receiver, ERC721Hold
             )
         );
 
-        rewards.createMultipleTokensAndDepositRewards{ value: 300000000000000000 }(_tokens);
+        rewards.createMultipleTokensAndDepositRewards{
+            value: 300000000000000000
+        }(_tokens);
         assertEq(mockERC20.balanceOf(address(rewards)), 4000000);
     }
     // should fail not enough ERC721
@@ -607,15 +722,28 @@ contract RewardsAddTokenTest is StdCheats, Test, MockERC1155Receiver, ERC721Hold
             uint256 _tokenId = generateRandomItemId(); // totally random
             LibItems.RewardToken memory _token = LibItems.RewardToken({
                 tokenId: _tokenId,
-                tokenUri: string(abi.encodePacked("https://something.com", "/", _tokenId.toString())),
+                tokenUri: string(
+                    abi.encodePacked(
+                        "https://something.com",
+                        "/",
+                        _tokenId.toString()
+                    )
+                ),
                 rewards: _rewards,
                 maxSupply: 3
             });
             _tokens[i] = _token;
         }
 
-        vm.expectRevert(abi.encodeWithSelector(IERC721Errors.ERC721NonexistentToken.selector, 10));
-        rewards.createMultipleTokensAndDepositRewards{ value: 300000000000000000 }(_tokens);
+        vm.expectRevert(
+            abi.encodeWithSelector(
+                IERC721Errors.ERC721NonexistentToken.selector,
+                10
+            )
+        );
+        rewards.createMultipleTokensAndDepositRewards{
+            value: 300000000000000000
+        }(_tokens);
     }
 
     // should fail not enough ERC1155
@@ -672,7 +800,13 @@ contract RewardsAddTokenTest is StdCheats, Test, MockERC1155Receiver, ERC721Hold
             uint256 _tokenId = generateRandomItemId(); // totally random
             LibItems.RewardToken memory _token = LibItems.RewardToken({
                 tokenId: _tokenId,
-                tokenUri: string(abi.encodePacked("https://something.com", "/", _tokenId.toString())),
+                tokenUri: string(
+                    abi.encodePacked(
+                        "https://something.com",
+                        "/",
+                        _tokenId.toString()
+                    )
+                ),
                 rewards: _rewards,
                 maxSupply: 3
             });
@@ -680,10 +814,18 @@ contract RewardsAddTokenTest is StdCheats, Test, MockERC1155Receiver, ERC721Hold
         }
 
         vm.expectRevert(
-            abi.encodeWithSelector(IERC1155Errors.ERC1155InsufficientBalance.selector, address(this), 12, 33, 456)
+            abi.encodeWithSelector(
+                IERC1155Errors.ERC1155InsufficientBalance.selector,
+                address(this),
+                12,
+                33,
+                456
+            )
         );
 
-        rewards.createMultipleTokensAndDepositRewards{ value: 300000000000000000 }(_tokens);
+        rewards.createMultipleTokensAndDepositRewards{
+            value: 300000000000000000
+        }(_tokens);
     }
 
     function testAddNtestAddNewTokensDontOwnedERC1155ShouldFail() public {
@@ -739,7 +881,13 @@ contract RewardsAddTokenTest is StdCheats, Test, MockERC1155Receiver, ERC721Hold
             uint256 _tokenId = generateRandomItemId(); // totally random
             LibItems.RewardToken memory _token = LibItems.RewardToken({
                 tokenId: _tokenId,
-                tokenUri: string(abi.encodePacked("https://something.com", "/", _tokenId.toString())),
+                tokenUri: string(
+                    abi.encodePacked(
+                        "https://something.com",
+                        "/",
+                        _tokenId.toString()
+                    )
+                ),
                 rewards: _rewards,
                 maxSupply: 3
             });
@@ -747,9 +895,17 @@ contract RewardsAddTokenTest is StdCheats, Test, MockERC1155Receiver, ERC721Hold
         }
 
         vm.expectRevert(
-            abi.encodeWithSelector(IERC1155Errors.ERC1155InsufficientBalance.selector, address(this), 0, 3, 555)
+            abi.encodeWithSelector(
+                IERC1155Errors.ERC1155InsufficientBalance.selector,
+                address(this),
+                0,
+                3,
+                555
+            )
         );
-        rewards.createMultipleTokensAndDepositRewards{ value: 300000000000000000 }(_tokens);
+        rewards.createMultipleTokensAndDepositRewards{
+            value: 300000000000000000
+        }(_tokens);
     }
 
     function testAddNewTokensShouldPass() public {
@@ -805,14 +961,22 @@ contract RewardsAddTokenTest is StdCheats, Test, MockERC1155Receiver, ERC721Hold
             uint256 _tokenId = generateRandomItemId(); // totally random
             LibItems.RewardToken memory _token = LibItems.RewardToken({
                 tokenId: _tokenId,
-                tokenUri: string(abi.encodePacked("https://something.com", "/", _tokenId.toString())),
+                tokenUri: string(
+                    abi.encodePacked(
+                        "https://something.com",
+                        "/",
+                        _tokenId.toString()
+                    )
+                ),
                 rewards: _rewards,
                 maxSupply: 3
             });
             _tokens[i] = _token;
         }
 
-        rewards.createMultipleTokensAndDepositRewards{ value: 300000000000000000 }(_tokens);
+        rewards.createMultipleTokensAndDepositRewards{
+            value: 300000000000000000
+        }(_tokens);
 
         assertEq(address(rewards).balance, 300000000000000000);
         assertEq(mockERC20.balanceOf(address(rewards)), 4006000);
@@ -878,14 +1042,22 @@ contract RewardsAddTokenTest is StdCheats, Test, MockERC1155Receiver, ERC721Hold
             uint256 _tokenId = generateRandomItemId(); // totally random
             LibItems.RewardToken memory _token = LibItems.RewardToken({
                 tokenId: _tokenId,
-                tokenUri: string(abi.encodePacked("https://something.com", "/", _tokenId.toString())),
+                tokenUri: string(
+                    abi.encodePacked(
+                        "https://something.com",
+                        "/",
+                        _tokenId.toString()
+                    )
+                ),
                 rewards: _rewards,
                 maxSupply: 3
             });
             _tokens[i] = _token;
         }
 
-        rewards.createMultipleTokensAndDepositRewards{ value: 600000000000000000 }(_tokens);
+        rewards.createMultipleTokensAndDepositRewards{
+            value: 600000000000000000
+        }(_tokens);
 
         assertEq(address(rewards).balance, 600000000000000000);
         assertEq(mockERC20.balanceOf(address(rewards)), 4012000);
