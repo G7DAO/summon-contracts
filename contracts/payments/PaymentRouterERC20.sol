@@ -110,8 +110,6 @@ contract PaymentRouterERC20 is AccessControl, ReentrancyGuard {
     error IncorrectPaymentAmount();
     /// @notice Error thrown when attempting to withdraw with no funds
     error NoFundsToWithdraw();
-    /// @notice Error thrown when attempting to set an empty URI
-    error EmptyUri();
     /// @notice Error thrown when token is not whitelisted
     error TokenNotWhitelisted();
     /// @notice Error thrown when token address is invalid
@@ -189,7 +187,6 @@ contract PaymentRouterERC20 is AccessControl, ReentrancyGuard {
         address token
     ) external onlyRole(DEV_CONFIG_ROLE) {
         if (price == 0) revert ZeroPrice();
-        if (bytes(uri).length == 0) revert EmptyUri();
         if (!whitelistedTokens[token]) revert TokenNotWhitelisted();
 
         paymentConfigs[id].paymentURI = uri;
@@ -208,7 +205,6 @@ contract PaymentRouterERC20 is AccessControl, ReentrancyGuard {
         uint256 id,
         string calldata newUri
     ) external onlyRole(DEV_CONFIG_ROLE) validId(id) {
-        if (bytes(newUri).length == 0) revert EmptyUri();
         paymentConfigs[id].paymentURI = newUri;
         emit UriUpdated(id, newUri);
     }

@@ -84,14 +84,6 @@ describe('PaymentRouterNative', function () {
                 paymentRouter.connect(deployer).setPaymentConfig(PAYMENT_ID, 0, PAYMENT_URI)
             ).to.be.revertedWithCustomError(paymentRouter, 'ZeroPrice');
         });
-
-        it('Should revert when setting empty URI', async function () {
-            const { paymentRouter, deployer } = await loadFixture(deployPaymentRouterFixture);
-
-            await expect(
-                paymentRouter.connect(deployer).setPaymentConfig(PAYMENT_ID, PAYMENT_AMOUNT, '')
-            ).to.be.revertedWithCustomError(paymentRouter, 'EmptyUri');
-        });
     });
 
     describe('URI Management', function () {

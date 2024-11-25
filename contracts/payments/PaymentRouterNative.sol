@@ -95,8 +95,6 @@ contract PaymentRouterNative is AccessControl, ReentrancyGuard {
     error NoFundsToWithdraw();
     /// @notice Error thrown when emergency withdrawal fails
     error EmergencyWithdrawalFailed();
-    /// @notice Error thrown when attempting to set an empty URI
-    error EmptyUri();
 
     /**
      * @notice Contract constructor
@@ -139,7 +137,6 @@ contract PaymentRouterNative is AccessControl, ReentrancyGuard {
         string calldata uri
     ) external onlyRole(DEV_CONFIG_ROLE) {
         if (price == 0) revert ZeroPrice();
-        if (bytes(uri).length == 0) revert EmptyUri();
 
         paymentConfigs[id].paymentURI = uri;
         paymentConfigs[id].price = price;
@@ -156,7 +153,6 @@ contract PaymentRouterNative is AccessControl, ReentrancyGuard {
         uint256 id,
         string calldata newUri
     ) external onlyRole(DEV_CONFIG_ROLE) validId(id) {
-        if (bytes(newUri).length == 0) revert EmptyUri();
         paymentConfigs[id].paymentURI = newUri;
         emit UriUpdated(id, newUri);
     }
