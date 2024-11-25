@@ -2,7 +2,7 @@ import { expect } from 'chai';
 import { ethers } from 'hardhat';
 import { loadFixture } from '@nomicfoundation/hardhat-network-helpers';
 
-describe.only('PaymentRouterNative', function () {
+describe('PaymentRouterNative', function () {
     const PAYMENT_ID = 1;
     const PAYMENT_AMOUNT = ethers.parseEther('0.1');
     const PAYMENT_URI = 'ipfs://QmTest123';
