@@ -1,9 +1,12 @@
 import { expect } from 'chai';
 import { ethers } from 'hardhat';
 import { loadFixture } from '@nomicfoundation/hardhat-network-helpers';
+import { generateRandomSeed } from '../../helpers/signature';
+import { PaymentRouterNative as PaymentRouterNativeType } from '../../typechain-types';
 
 describe('PaymentRouterNative', function () {
     const PAYMENT_ID = 1;
+    const BOX_ID = 1231231;
     const PAYMENT_AMOUNT = ethers.parseEther('0.1');
     const PAYMENT_URI = 'ipfs://QmTest123';
     const NEW_URI = 'ipfs://QmNewTest456';
@@ -20,9 +23,19 @@ describe('PaymentRouterNative', function () {
             adminWallet.address
         );
         await paymentRouter.waitForDeployment();
+        const chainId = (await ethers.provider.getNetwork()).chainId;
+
+        const { seed, signature, nonce } = await generateRandomSeed({
+            smartContractAddress: await paymentRouter.getAddress(),
+            chainId: chainId,
+            decode: true,
+            address: user1.address,
+            signer: deployer,
+            rawData: { type: 'uint256[]', data: [BOX_ID] },
+        });
 
         return {
-            paymentRouter,
+            paymentRouter: paymentRouter as PaymentRouterNativeType,
             deployer,
             devWallet,
             adminWallet,
@@ -30,6 +43,9 @@ describe('PaymentRouterNative', function () {
             multiSigWallet,
             user1,
             user2,
+            nonceUser1: nonce,
+            signatureUser1: signature,
+            seedUser1: seed,
         };
     }
 
@@ -111,15 +127,20 @@ describe('PaymentRouterNative', function () {
 
     describe('Payment Operations', function () {
         it('Should accept and forward payment correctly', async function () {
-            const { paymentRouter, deployer, multiSigWallet, user1 } = await loadFixture(deployPaymentRouterFixture);
+            const { paymentRouter, deployer, multiSigWallet, user1, signatureUser1, nonceUser1, seedUser1 } =
+                await loadFixture(deployPaymentRouterFixture);
 
             await paymentRouter.connect(deployer).setPaymentConfig(PAYMENT_ID, PAYMENT_AMOUNT, PAYMENT_URI);
 
             const initialBalance = await multiSigWallet.provider.getBalance(multiSigWallet.address);
 
-            await expect(paymentRouter.connect(user1).pay(PAYMENT_ID, { value: PAYMENT_AMOUNT }))
+            await expect(
+                paymentRouter
+                    .connect(user1)
+                    .pay(PAYMENT_ID, nonceUser1, seedUser1, signatureUser1, { value: PAYMENT_AMOUNT })
+            )
                 .to.emit(paymentRouter, 'PaymentReceived')
-                .withArgs(PAYMENT_ID, user1.address, PAYMENT_AMOUNT);
+                .withArgs(PAYMENT_ID, user1.address, PAYMENT_AMOUNT, [BOX_ID]);
 
             expect(await multiSigWallet.provider.getBalance(multiSigWallet.address)).to.equal(
                 initialBalance + PAYMENT_AMOUNT
@@ -127,23 +148,27 @@ describe('PaymentRouterNative', function () {
         });
 
         it('Should revert payment when paused', async function () {
-            const { paymentRouter, deployer, managerWallet, user1 } = await loadFixture(deployPaymentRouterFixture);
+            const { paymentRouter, deployer, managerWallet, user1, nonceUser1, seedUser1, signatureUser1 } =
+                await loadFixture(deployPaymentRouterFixture);
 
             await paymentRouter.connect(deployer).setPaymentConfig(PAYMENT_ID, PAYMENT_AMOUNT, PAYMENT_URI);
             await paymentRouter.connect(managerWallet).pauseId(PAYMENT_ID);
 
             await expect(
-                paymentRouter.connect(user1).pay(PAYMENT_ID, { value: PAYMENT_AMOUNT })
+                paymentRouter
+                    .connect(user1)
+                    .pay(PAYMENT_ID, nonceUser1, seedUser1, signatureUser1, { value: PAYMENT_AMOUNT })
             ).to.be.revertedWithCustomError(paymentRouter, 'PaymentIdPaused');
         });
 
         it('Should revert payment with incorrect amount', async function () {
-            const { paymentRouter, deployer, user1 } = await loadFixture(deployPaymentRouterFixture);
+            const { paymentRouter, deployer, user1, nonceUser1, seedUser1, signatureUser1 } =
+                await loadFixture(deployPaymentRouterFixture);
 
             await paymentRouter.connect(deployer).setPaymentConfig(PAYMENT_ID, PAYMENT_AMOUNT, PAYMENT_URI);
 
             await expect(
-                paymentRouter.connect(user1).pay(PAYMENT_ID, {
+                paymentRouter.connect(user1).pay(PAYMENT_ID, nonceUser1, seedUser1, signatureUser1, {
                     value: PAYMENT_AMOUNT + 1n,
                 })
             ).to.be.revertedWithCustomError(paymentRouter, 'IncorrectPaymentAmount');

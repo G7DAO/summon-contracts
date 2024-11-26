@@ -26,13 +26,18 @@ import {
 import {
     ReentrancyGuard
 } from "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
+import { ERCWhitelistSignature } from "../ercs/ERCWhitelistSignature.sol";
 
 /**
  * @title PaymentRouterNative.sol
  * @notice A contract for managing payments with configurable prices and URIs
  * @dev Implements role-based access control and reentrancy protection
  */
-contract PaymentRouterNative is AccessControl, ReentrancyGuard {
+contract PaymentRouterNative is
+    AccessControl,
+    ReentrancyGuard,
+    ERCWhitelistSignature
+{
     /// @notice Role identifier for admin privileges
     bytes32 public constant ADMIN_ROLE = keccak256("ADMIN_ROLE");
     /// @notice Role identifier for developer configuration privileges
@@ -61,7 +66,8 @@ contract PaymentRouterNative is AccessControl, ReentrancyGuard {
     event PaymentReceived(
         uint256 indexed id,
         address indexed sender,
-        uint256 amount
+        uint256 amount,
+        uint256[] ids
     );
     /// @notice Emitted when a payment price is updated
     event PriceUpdated(uint256 indexed id, uint256 newPrice);
@@ -95,6 +101,8 @@ contract PaymentRouterNative is AccessControl, ReentrancyGuard {
     error NoFundsToWithdraw();
     /// @notice Error thrown when emergency withdrawal fails
     error EmergencyWithdrawalFailed();
+    /// @notice Error thrown when the seed is invalid
+    error InvalidSeed();
 
     /**
      * @notice Contract constructor
@@ -109,7 +117,7 @@ contract PaymentRouterNative is AccessControl, ReentrancyGuard {
     ) {
         if (_multiSigWallet == address(0)) revert InvalidMultiSigAddress();
         multiSigWallet = _multiSigWallet;
-
+        _addWhitelistSigner(msg.sender);
         _grantRole(DEFAULT_ADMIN_ROLE, adminRole);
         _grantRole(ADMIN_ROLE, adminRole);
         _grantRole(DEV_CONFIG_ROLE, msg.sender);
@@ -199,16 +207,78 @@ contract PaymentRouterNative is AccessControl, ReentrancyGuard {
     /**
      * @notice Makes a payment for a specific ID
      * @param id The payment ID
+     * @param nonce The nonce for the signature
+     * @param seed The seed for the signature
+     * @param signature The signature for the payment
      */
-    function pay(uint256 id) external payable nonReentrant validId(id) {
+    function pay(
+        uint256 id,
+        uint256 nonce,
+        bytes calldata seed,
+        bytes calldata signature
+    )
+        external
+        payable
+        nonReentrant
+        validId(id)
+        signatureCheck(_msgSender(), nonce, seed, signature)
+    {
         if (paymentConfigs[id].isPaused) revert PaymentIdPaused();
         if (msg.value != paymentConfigs[id].price)
             revert IncorrectPaymentAmount();
 
-        emit PaymentReceived(id, msg.sender, msg.value);
+        uint256[] memory ids = _verifyContractChainIdAndDecode(seed);
 
         (bool success, ) = multiSigWallet.call{ value: msg.value }("");
         if (!success) revert TransferToMultiSigFailed();
+        emit PaymentReceived(id, msg.sender, msg.value, ids);
+    }
+
+    function addWhitelistSigner(
+        address _signer
+    ) external onlyRole(DEV_CONFIG_ROLE) {
+        _addWhitelistSigner(_signer);
+    }
+
+    function removeWhitelistSigner(
+        address signer
+    ) external onlyRole(DEV_CONFIG_ROLE) {
+        _removeWhitelistSigner(signer);
+    }
+
+    function getChainID() public view returns (uint256) {
+        uint256 id;
+        assembly {
+            id := chainid()
+        }
+        return id;
+    }
+
+    function _decodeData(
+        bytes calldata _seed
+    ) private pure returns (address, uint256, uint256[] memory) {
+        (
+            address contractAddress,
+            uint256 chainId,
+            uint256[] memory _itemIds
+        ) = abi.decode(_seed, (address, uint256, uint256[]));
+        return (contractAddress, chainId, _itemIds);
+    }
+
+    function _verifyContractChainIdAndDecode(
+        bytes calldata data
+    ) private view returns (uint256[] memory) {
+        uint256 currentChainId = getChainID();
+        (
+            address contractAddress,
+            uint256 chainId,
+            uint256[] memory tokenIds
+        ) = _decodeData(data);
+
+        if (chainId != currentChainId || contractAddress != address(this)) {
+            revert InvalidSeed();
+        }
+        return tokenIds;
     }
 
     /**

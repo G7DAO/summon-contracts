@@ -1,10 +1,12 @@
 import { expect } from 'chai';
 import hre, { ethers } from 'hardhat';
 import { loadFixture } from '@nomicfoundation/hardhat-network-helpers';
+import { generateRandomSeed } from '../../helpers/signature';
 
 describe('PaymentRouterERC20', function () {
     const PAYMENT_ID = 1;
     const PAYMENT_AMOUNT = ethers.parseEther('100'); // 100 tokens
+    const BOX_ID = 1231231;
     const PAYMENT_URI = 'ipfs://QmTest123';
     const NEW_URI = 'ipfs://QmNewTest456';
     const ZERO_ADDRESS = ethers.ZeroAddress;
@@ -29,6 +31,17 @@ describe('PaymentRouterERC20', function () {
         );
         await paymentRouter.waitForDeployment();
 
+        const chainId = (await ethers.provider.getNetwork()).chainId;
+
+        const { seed, signature, nonce } = await generateRandomSeed({
+            smartContractAddress: await paymentRouter.getAddress(),
+            chainId: chainId,
+            decode: true,
+            address: user1.address,
+            signer: deployer,
+            rawData: { type: 'uint256[]', data: [BOX_ID] },
+        });
+
         return {
             paymentRouter,
             mockToken,
@@ -39,6 +52,9 @@ describe('PaymentRouterERC20', function () {
             multiSigWallet,
             user1,
             user2,
+            nonceUser1: nonce,
+            signatureUser1: signature,
+            seedUser1: seed,
         };
     }
 
@@ -138,8 +154,17 @@ describe('PaymentRouterERC20', function () {
 
     describe('Payment Operations', function () {
         it('Should process payment correctly', async function () {
-            const { paymentRouter, mockToken, deployer, managerWallet, multiSigWallet, user1 } =
-                await loadFixture(deployPaymentRouterFixture);
+            const {
+                paymentRouter,
+                mockToken,
+                deployer,
+                managerWallet,
+                multiSigWallet,
+                user1,
+                nonceUser1,
+                seedUser1,
+                signatureUser1,
+            } = await loadFixture(deployPaymentRouterFixture);
 
             // Setup
             await paymentRouter.connect(managerWallet).whitelistToken(await mockToken.getAddress());
@@ -152,15 +177,15 @@ describe('PaymentRouterERC20', function () {
 
             const initialBalance = await mockToken.balanceOf(multiSigWallet.address);
 
-            await expect(paymentRouter.connect(user1).pay(PAYMENT_ID))
+            await expect(paymentRouter.connect(user1).pay(PAYMENT_ID, nonceUser1, seedUser1, signatureUser1))
                 .to.emit(paymentRouter, 'PaymentReceived')
-                .withArgs(PAYMENT_ID, user1.address, await mockToken.getAddress(), PAYMENT_AMOUNT);
+                .withArgs(PAYMENT_ID, user1.address, await mockToken.getAddress(), PAYMENT_AMOUNT, [BOX_ID]);
 
             expect(await mockToken.balanceOf(multiSigWallet.address)).to.equal(initialBalance + PAYMENT_AMOUNT);
         });
 
         it('Should revert payment when paused', async function () {
-            const { paymentRouter, mockToken, deployer, managerWallet, user1 } =
+            const { paymentRouter, mockToken, deployer, managerWallet, user1, nonceUser1, seedUser1, signatureUser1 } =
                 await loadFixture(deployPaymentRouterFixture);
 
             // Setup
@@ -170,10 +195,9 @@ describe('PaymentRouterERC20', function () {
                 .setPaymentConfig(PAYMENT_ID, PAYMENT_AMOUNT, PAYMENT_URI, await mockToken.getAddress());
             await paymentRouter.connect(managerWallet).pauseId(PAYMENT_ID);
 
-            await expect(paymentRouter.connect(user1).pay(PAYMENT_ID)).to.be.revertedWithCustomError(
-                paymentRouter,
-                'PaymentIdPaused'
-            );
+            await expect(
+                paymentRouter.connect(user1).pay(PAYMENT_ID, nonceUser1, seedUser1, signatureUser1)
+            ).to.be.revertedWithCustomError(paymentRouter, 'PaymentIdPaused');
         });
     });
 
