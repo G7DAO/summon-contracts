@@ -67,7 +67,7 @@ contract PaymentRouterNative is
         uint256 indexed id,
         address indexed sender,
         uint256 amount,
-        uint256[] ids
+        string[] ids
     );
     /// @notice Emitted when a payment price is updated
     event PriceUpdated(uint256 indexed id, uint256 newPrice);
@@ -227,7 +227,7 @@ contract PaymentRouterNative is
         if (msg.value != paymentConfigs[id].price)
             revert IncorrectPaymentAmount();
 
-        uint256[] memory ids = _verifyContractChainIdAndDecode(seed);
+        string[] memory ids = _verifyContractChainIdAndDecode(seed);
 
         (bool success, ) = multiSigWallet.call{ value: msg.value }("");
         if (!success) revert TransferToMultiSigFailed();
@@ -256,23 +256,23 @@ contract PaymentRouterNative is
 
     function _decodeData(
         bytes calldata _seed
-    ) private pure returns (address, uint256, uint256[] memory) {
+    ) private pure returns (address, uint256, string[] memory) {
         (
             address contractAddress,
             uint256 chainId,
-            uint256[] memory _itemIds
-        ) = abi.decode(_seed, (address, uint256, uint256[]));
+            string[] memory _itemIds
+        ) = abi.decode(_seed, (address, uint256, string[]));
         return (contractAddress, chainId, _itemIds);
     }
 
     function _verifyContractChainIdAndDecode(
         bytes calldata data
-    ) private view returns (uint256[] memory) {
+    ) private view returns (string[] memory) {
         uint256 currentChainId = getChainID();
         (
             address contractAddress,
             uint256 chainId,
-            uint256[] memory tokenIds
+            string[] memory tokenIds
         ) = _decodeData(data);
 
         if (chainId != currentChainId || contractAddress != address(this)) {
