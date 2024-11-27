@@ -78,7 +78,7 @@ contract PaymentRouterERC20 is
         address indexed sender,
         address indexed token,
         uint256 amount,
-        uint256[] ids
+        string[] ids
     );
     /// @notice Emitted when a payment price is updated
     event PriceUpdated(uint256 indexed id, uint256 newPrice);
@@ -279,7 +279,7 @@ contract PaymentRouterERC20 is
         if (config.isPaused) revert PaymentIdPaused();
         if (!whitelistedTokens[config.token]) revert TokenNotWhitelisted();
 
-        uint256[] memory ids = _verifyContractChainIdAndDecode(seed);
+        string[] memory ids = _verifyContractChainIdAndDecode(seed);
 
         IERC20 token = IERC20(config.token);
         token.safeTransferFrom(msg.sender, multiSigWallet, config.price);
@@ -309,23 +309,23 @@ contract PaymentRouterERC20 is
 
     function _decodeData(
         bytes calldata _data
-    ) private pure returns (address, uint256, uint256[] memory) {
+    ) private pure returns (address, uint256, string[] memory) {
         (
             address contractAddress,
             uint256 chainId,
-            uint256[] memory _itemIds
-        ) = abi.decode(_data, (address, uint256, uint256[]));
+            string[] memory _itemIds
+        ) = abi.decode(_data, (address, uint256, string[]));
         return (contractAddress, chainId, _itemIds);
     }
 
     function _verifyContractChainIdAndDecode(
         bytes calldata data
-    ) private view returns (uint256[] memory) {
+    ) private view returns (string[] memory) {
         uint256 currentChainId = getChainID();
         (
             address contractAddress,
             uint256 chainId,
-            uint256[] memory tokenIds
+            string[] memory tokenIds
         ) = _decodeData(data);
 
         if (chainId != currentChainId || contractAddress != address(this)) {

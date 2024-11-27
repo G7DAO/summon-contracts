@@ -6,7 +6,7 @@ import { generateRandomSeed } from '../../helpers/signature';
 describe('PaymentRouterERC20', function () {
     const PAYMENT_ID = 1;
     const PAYMENT_AMOUNT = ethers.parseEther('100'); // 100 tokens
-    const BOX_ID = 1231231;
+    const BOX_ID = '6737e2a71b4f47dc279ae62a';
     const PAYMENT_URI = 'ipfs://QmTest123';
     const NEW_URI = 'ipfs://QmNewTest456';
     const ZERO_ADDRESS = ethers.ZeroAddress;
@@ -39,7 +39,7 @@ describe('PaymentRouterERC20', function () {
             decode: true,
             address: user1.address,
             signer: deployer,
-            rawData: { type: 'uint256[]', data: [BOX_ID] },
+            rawData: { type: 'string[]', data: [BOX_ID] },
         });
 
         return {
