@@ -43,13 +43,19 @@ contract ERCWhitelistSignature {
     }
 
     function _addWhitelistSigner(address _signer) internal virtual {
-        require(_signer != address(0), "ERCWhitelistSignature: signer is the zero address");
+        require(
+            _signer != address(0),
+            "ERCWhitelistSignature: signer is the zero address"
+        );
         whitelistSigners[_signer] = true;
         emit WhitelistSignerAdded(_signer);
     }
 
     function _removeWhitelistSigner(address _signer) internal virtual {
-        require(_signer != address(0), "ERCWhitelistSignature: signer is the zero address");
+        require(
+            _signer != address(0),
+            "ERCWhitelistSignature: signer is the zero address"
+        );
         whitelistSigners[_signer] = false;
         emit WhitelistSignerRemoved(_signer);
     }
@@ -83,12 +89,16 @@ contract ERCWhitelistSignature {
         }
     }
 
-    function _decodeStringData(bytes calldata _data) internal virtual returns (string[] memory) {
+    function _decodeStringData(
+        bytes calldata _data
+    ) internal virtual returns (string[] memory) {
         string[] memory values = abi.decode(_data, (string[]));
         return values;
     }
 
-    function _decodeUintData(bytes calldata _data) internal virtual returns (uint256[] memory) {
+    function _decodeUintData(
+        bytes calldata _data
+    ) internal virtual returns (uint256[] memory) {
         uint256[] memory values = abi.decode(_data, (uint256[]));
         return values;
     }

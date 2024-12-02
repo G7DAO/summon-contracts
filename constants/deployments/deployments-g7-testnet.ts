@@ -3,6 +3,7 @@ import {
     AvatarBoundV1Args,
     ItemBoundArgs,
     LevelsBoundV1Args,
+    PaymentRouterNativeG7Args,
     RewardsNativeG7Args,
 } from '@constants/constructor-args';
 import {
@@ -120,5 +121,18 @@ export const G7_TESTNET_CONTRACTS: DeploymentContract[] = [
         dependencies: [CONTRACT_NAME.RewardAccessTokenG7],
         functionCalls: [],
         args: RewardsNativeG7Args.TESTNET,
+    },
+    {
+        contractFileName: CONTRACT_FILE_NAME.PaymentRouterNative,
+        type: CONTRACT_TYPE.PaymentRouter,
+        name: CONTRACT_NAME.PaymentRouterNativeG7,
+        chain,
+        networkType,
+        tenants: [TENANT.Game7],
+        verify: true,
+        upgradable: false,
+        dependencies: [],
+        functionCalls: [],
+        args: PaymentRouterNativeG7Args.TESTNET,
     },
 ];
