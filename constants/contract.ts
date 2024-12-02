@@ -14,6 +14,7 @@ export enum CONTRACT_TYPE {
     SkillTree = 'SkillTree',
     DETERMINISTIC_FACTORY_CONTRACT = 'DeterministicDeployFactory',
     Rewards = 'Rewards',
+    PaymentRouter = 'PaymentRouter',
     HelloWorld = 'HelloWorld',
     RewardAccessToken = 'RewardAccessToken',
     DirectListingExtension = 'DirectListingExtension',
@@ -63,6 +64,7 @@ export enum CONTRACT_FILE_NAME {
     Martins = 'Martins',
     Forwarder = 'Forwarder',
     RewardsNative = 'RewardsNative',
+    PaymentRouterNative = 'PaymentRouterNative',
 }
 
 export enum CONTRACT_UPGRADABLE_FILE_NAME {
@@ -112,6 +114,7 @@ export enum CONTRACT_NAME {
     MiddlewareStaker = 'MiddlewareStakerG7',
     Forwarder = 'Forwarder',
     RewardsNativeG7 = 'RewardsNativeG7',
+    PaymentRouterNativeG7 = 'PaymentRouterNativeG7',
 }
 
 export enum CONTRACT_UPGRADABLE_NAME {

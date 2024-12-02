@@ -314,6 +314,20 @@ export const RewardsNativeG7Args = {
     },
 };
 
+export const PaymentRouterNativeG7Args = {
+    // TODO: fill this args for mainnet
+    MAINNET: {
+        multisigWallet: null,
+        manager: null,
+        adminWallet: null,
+    },
+    TESTNET: {
+        multisigWallet: '0x34b9987B5fFa52c332cD4B28d767589228e1AC67',
+        manager: '0x4d790f180C71029F983c0A70901E3DcA1aAe12f5',
+        adminWallet: '0x4d790f180C71029F983c0A70901E3DcA1aAe12f5',
+    },
+};
+
 export const HelloWorldArgs = {
     MAINNET: {
         randomNumber: 12312,
