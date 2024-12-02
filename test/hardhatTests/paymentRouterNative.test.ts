@@ -6,7 +6,7 @@ import { PaymentRouterNative as PaymentRouterNativeType } from '../../typechain-
 
 describe('PaymentRouterNative', function () {
     const PAYMENT_ID = 1;
-    const BOX_ID = 1231231;
+    const BOX_ID = '6737e2a71b4f47dc279ae62a';
     const PAYMENT_AMOUNT = ethers.parseEther('0.1');
     const PAYMENT_URI = 'ipfs://QmTest123';
     const NEW_URI = 'ipfs://QmNewTest456';
@@ -31,7 +31,7 @@ describe('PaymentRouterNative', function () {
             decode: true,
             address: user1.address,
             signer: deployer,
-            rawData: { type: 'uint256[]', data: [BOX_ID] },
+            rawData: { type: 'string[]', data: [BOX_ID] },
         });
 
         return {
