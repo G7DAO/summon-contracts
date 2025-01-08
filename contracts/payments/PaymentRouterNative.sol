@@ -44,8 +44,21 @@ contract PaymentRouterNative is
     bytes32 public constant DEV_CONFIG_ROLE = keccak256("DEV_CONFIG_ROLE");
     /// @notice Role identifier for manager privileges
     bytes32 public constant MANAGER_ROLE = keccak256("MANAGER_ROLE");
-    /// @notice Address of the multisig wallet that receives payments
-    address public multiSigWallet;
+    
+    /**
+     * @notice Structure for fee recipient configuration
+     * @param active Whether this recipient is currently active
+     * @param percentage The percentage of payment they receive (in basis points)
+     */
+    struct FeeRecipient {
+        bool active;
+        uint256 percentage;
+    }
+
+    /// @notice Mapping of addresses to their fee configuration
+    mapping(address => FeeRecipient) public feeRecipients;
+    /// @notice Array to keep track of all fee recipient addresses
+    address[] public feeRecipientAddresses;
 
     /**
      * @notice Structure for payment configuration
@@ -75,18 +88,15 @@ contract PaymentRouterNative is
     event IdPaused(uint256 indexed id);
     /// @notice Emitted when a payment ID is unpaused
     event IdUnpaused(uint256 indexed id);
-    /// @notice Emitted when the multisig wallet address is updated
-    event MultiSigUpdated(
-        address indexed oldMultiSig,
-        address indexed newMultiSig
-    );
     /// @notice Emitted when stuck funds are withdrawn
     event EmergencyWithdrawal(address indexed to, uint256 amount);
     /// @notice Emitted when a payment URI is updated
     event UriUpdated(uint256 indexed id, string newUri);
+    /// @notice Emitted when a fee recipient is added or updated
+    event FeeRecipientUpdated(address indexed recipient, uint256 percentage);
+    /// @notice Emitted when a fee recipient is removed
+    event FeeRecipientRemoved(address indexed recipient);
 
-    /// @notice Error thrown when an invalid multisig address is provided
-    error InvalidMultiSigAddress();
     /// @notice Error thrown when an invalid payment ID is used
     error InvalidPaymentId();
     /// @notice Error thrown when attempting to set a zero price
@@ -95,32 +105,43 @@ contract PaymentRouterNative is
     error PaymentIdPaused();
     /// @notice Error thrown when payment amount doesn't match the price
     error IncorrectPaymentAmount();
-    /// @notice Error thrown when transfer to multisig fails
-    error TransferToMultiSigFailed();
-    /// @notice Error thrown when attempting to withdraw with no funds
-    error NoFundsToWithdraw();
     /// @notice Error thrown when emergency withdrawal fails
     error EmergencyWithdrawalFailed();
     /// @notice Error thrown when the seed is invalid
     error InvalidSeed();
+    /// @notice Error thrown when an invalid percentage is provided
+    error InvalidPercentage();
+    /// @notice Error thrown when total fee percentage exceeds 100%
+    error TotalPercentageExceedsLimit();
+    /// @notice Error thrown when fee recipient doesn't exist
+    error FeeRecipientDoesNotExist();
+    /// @notice Error thrown when an invalid recipient address is provided
+    error InvalidRecipientAddress();
+    /// @notice Error thrown when no active fee recipients exist
+    error NoActiveFeeRecipients();
+    /// @notice Error thrown when total fee percentage is not 100%
+    error TotalPercentageMustBe100();
+    /// @notice Error thrown when the address is zero
+    error ZeroAddress();
+    /// @notice Error thrown when transfer to the recipient fails
+    error TransferToFeeRecipientFailed();
+    /// @notice Error thrown when the admin try to withdraw funds that don't exist
+    error NoFundsToWithdraw();
 
     /**
      * @notice Contract constructor
-     * @param _multiSigWallet Address of the multisig wallet
      * @param managerRole Address to receive manager role
      * @param adminRole Address to receive admin role
      */
     constructor(
-        address _multiSigWallet,
         address managerRole,
         address adminRole
     ) {
-        if (_multiSigWallet == address(0)) revert InvalidMultiSigAddress();
-        multiSigWallet = _multiSigWallet;
+        if (managerRole == address(0) || adminRole == address(0)) revert ZeroAddress();
         _addWhitelistSigner(msg.sender);
         _grantRole(DEFAULT_ADMIN_ROLE, adminRole);
         _grantRole(ADMIN_ROLE, adminRole);
-        _grantRole(DEV_CONFIG_ROLE, msg.sender);
+        _grantRole(DEV_CONFIG_ROLE, msg.sender);    
         _grantRole(MANAGER_ROLE, managerRole);
     }
 
@@ -170,8 +191,7 @@ contract PaymentRouterNative is
      * @param id The payment ID
      * @return The payment URI
      */
-    function paymentURI(uint256 id) external view returns (string memory) {
-        if (paymentConfigs[id].price == 0) revert InvalidPaymentId();
+    function paymentURI(uint256 id) external validId(id) view returns (string memory) {
         return paymentConfigs[id].paymentURI;
     }
 
@@ -194,14 +214,146 @@ contract PaymentRouterNative is
     }
 
     /**
-     * @notice Updates the multisig wallet address
-     * @param newMultiSig The new multisig wallet address
+     * @notice Adds or updates a fee recipient
+     * @param recipient The address of the fee recipient
+     * @param percentage The percentage they should receive (in basis points)
      */
-    function updateMultiSig(address newMultiSig) external onlyRole(ADMIN_ROLE) {
-        if (newMultiSig == address(0)) revert InvalidMultiSigAddress();
-        address oldMultiSig = multiSigWallet;
-        multiSigWallet = newMultiSig;
-        emit MultiSigUpdated(oldMultiSig, newMultiSig);
+    function setFeeRecipient(
+        address recipient,
+        uint256 percentage
+    ) external onlyRole(MANAGER_ROLE) {
+        if (recipient == address(0)) revert InvalidRecipientAddress();
+        if (percentage > 10000) revert InvalidPercentage();
+        
+        uint256 totalPercentage = getTotalFeePercentage();
+        if (!feeRecipients[recipient].active) {
+            totalPercentage += percentage;
+        } else {
+            totalPercentage = totalPercentage - feeRecipients[recipient].percentage + percentage;
+        }
+
+        if (!feeRecipients[recipient].active) {
+            feeRecipientAddresses.push(recipient);
+        }
+        
+        feeRecipients[recipient] = FeeRecipient({
+            active: true,
+            percentage: percentage
+        });
+        
+        emit FeeRecipientUpdated(recipient, percentage);
+    }
+
+    /**
+     * @notice Removes a fee recipient
+     * @param recipient The address of the fee recipient to remove
+     */
+    function removeFeeRecipient(address recipient) external onlyRole(MANAGER_ROLE) {
+        if (!feeRecipients[recipient].active) revert FeeRecipientDoesNotExist();
+        
+        feeRecipients[recipient].active = false;
+        feeRecipients[recipient].percentage = 0;
+        
+        emit FeeRecipientRemoved(recipient);
+    }
+
+    /**
+     * @notice Gets all active fee recipients and their percentages
+     * @return recipients Array of recipient addresses
+     * @return percentages Array of corresponding percentages
+     */
+    function getFeeRecipients() external view returns (
+        address[] memory recipients,
+        uint256[] memory percentages
+    ) {
+        uint256 count = 0;
+        for (uint256 i = 0; i < feeRecipientAddresses.length; i++) {
+            if (feeRecipients[feeRecipientAddresses[i]].active) {
+                count++;
+            }
+        }
+
+        recipients = new address[](count);
+        percentages = new uint256[](count);
+        
+        uint256 j = 0;
+        for (uint256 i = 0; i < feeRecipientAddresses.length; i++) {
+            address recipient = feeRecipientAddresses[i];
+            if (feeRecipients[recipient].active) {
+                recipients[j] = recipient;
+                percentages[j] = feeRecipients[recipient].percentage;
+                j++;
+            }
+        }
+    }
+
+    /**
+     * @notice Gets the total percentage allocated to fee recipients
+     * @return total The total percentage allocated (in basis points)
+     */
+    function getTotalFeePercentage() public view returns (uint256 total) {
+        for (uint256 i = 0; i < feeRecipientAddresses.length; i++) {
+            if (feeRecipients[feeRecipientAddresses[i]].active) {
+                total += feeRecipients[feeRecipientAddresses[i]].percentage;
+            }
+        }
+        return total;
+    }
+
+    /**
+     * @notice Checks if an address is a fee recipient
+     * @param recipient The address to check
+     * @return bool Whether the address is an active fee recipient
+     */
+    function isFeeRecipient(address recipient) public view returns (bool) {
+        return feeRecipients[recipient].active;
+    }
+
+    /**
+     * @notice Gets a specific fee recipient's configuration
+     * @param recipient The address of the fee recipient
+     * @return active Whether the recipient is active
+     * @return percentage The recipient's percentage
+     */
+    function getFeeRecipient(address recipient) external view returns (
+        bool active,
+        uint256 percentage
+    ) {
+        FeeRecipient memory config = feeRecipients[recipient];
+        return (config.active, config.percentage);
+    }
+
+    /**
+     * @notice Batch updates fee recipients
+     * @param recipients Array of recipient addresses
+     * @param percentages Array of corresponding percentages
+     */
+    function batchSetFeeRecipients(
+        address[] calldata recipients,
+        uint256[] calldata percentages
+    ) external onlyRole(MANAGER_ROLE) {
+        if (recipients.length != percentages.length) revert InvalidPaymentId();
+        
+        uint256 totalPercentage;
+        for (uint256 i = 0; i < recipients.length; i++) {
+            if (recipients[i] == address(0)) revert InvalidRecipientAddress();
+            if (percentages[i] > 10000) revert InvalidPercentage();
+            totalPercentage += percentages[i];
+        }
+        if (totalPercentage > 10000) revert TotalPercentageExceedsLimit();
+
+        for (uint256 i = 0; i < recipients.length; i++) {
+            if (!feeRecipients[recipients[i]].active) {
+                feeRecipientAddresses.push(recipients[i]);
+            }
+            
+            feeRecipients[recipients[i]] = FeeRecipient({
+                active: true,
+                percentage: percentages[i]
+            });
+            
+            emit FeeRecipientUpdated(recipients[i], percentages[i]);
+        }
     }
 
     /**
@@ -224,13 +376,23 @@ contract PaymentRouterNative is
         signatureCheck(_msgSender(), nonce, seed, signature)
     {
         if (paymentConfigs[id].isPaused) revert PaymentIdPaused();
-        if (msg.value != paymentConfigs[id].price)
-            revert IncorrectPaymentAmount();
+        if (msg.value != paymentConfigs[id].price) revert IncorrectPaymentAmount();
+        if (getTotalFeePercentage() != 10000) revert TotalPercentageMustBe100();
 
         string[] memory ids = _verifyContractChainIdAndDecode(seed);
+        
+        // Distribute fees to recipients
+        for (uint256 i = 0; i < feeRecipientAddresses.length; i++) {
+            address recipient = feeRecipientAddresses[i];
+            if (feeRecipients[recipient].active) {
+                uint256 feeAmount = (msg.value * feeRecipients[recipient].percentage) / 10000;
+                if (feeAmount > 0) {
+                    (bool success, ) = recipient.call{ value: feeAmount }("");
+                    if (!success) revert TransferToFeeRecipientFailed();
+                }
+            }
+        }
 
-        (bool success, ) = multiSigWallet.call{ value: msg.value }("");
-        if (!success) revert TransferToMultiSigFailed();
         emit PaymentReceived(id, msg.sender, msg.value, ids);
     }
 
@@ -282,17 +444,17 @@ contract PaymentRouterNative is
     }
 
     /**
-     * @notice Withdraws any stuck funds to the multisig wallet
-     * @dev Only callable by admin role
-     */
+    * @notice Withdraws any stuck funds to the message sender
+    * @dev Only callable by admin role
+    */
     function withdrawStuckFunds() external onlyRole(ADMIN_ROLE) {
         uint256 balance = address(this).balance;
         if (balance == 0) revert NoFundsToWithdraw();
 
-        (bool success, ) = multiSigWallet.call{ value: balance }("");
+        (bool success, ) = msg.sender.call{ value: balance }("");
         if (!success) revert EmergencyWithdrawalFailed();
 
-        emit EmergencyWithdrawal(multiSigWallet, balance);
+        emit EmergencyWithdrawal(msg.sender, balance);
     }
 
     /**

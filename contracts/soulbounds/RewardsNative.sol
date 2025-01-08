@@ -27,18 +27,14 @@ import {
     ERC1155Holder
 } from "@openzeppelin/contracts/token/ERC1155/utils/ERC1155Holder.sol";
 import { Pausable } from "@openzeppelin/contracts/utils/Pausable.sol";
-import { Strings } from "@openzeppelin/contracts/utils/Strings.sol";
-import { ECDSA } from "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
 import {
     ReentrancyGuard
 } from "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
 
 import { AccessToken } from "../soulbounds/AccessToken.sol";
-import { ERCWhitelistSignature } from "../ercs/ERCWhitelistSignature.sol";
 import { LibRewards } from "../libraries/LibRewards.sol";
 
 contract RewardsNative is
-    ERCWhitelistSignature,
     AccessControl,
     Pausable,
     ReentrancyGuard,
@@ -95,10 +91,6 @@ contract RewardsNative is
         address _minterWallet,
         address _rewardTokenAddress
     ) {
-        if (_devWallet == address(0)) {
-            revert AddressIsZero();
-        }
-
         if (
             _devWallet == address(0) ||
             _managerWallet == address(0) ||
@@ -113,7 +105,6 @@ contract RewardsNative is
         _grantRole(DEFAULT_ADMIN_ROLE, _adminWallet);
         _grantRole(MANAGER_ROLE, _managerWallet);
         _grantRole(MINTER_ROLE, _minterWallet);
-        _addWhitelistSigner(_devWallet);
     }
 
     /*//////////////////////////////////////////////////////////////
@@ -149,7 +140,7 @@ contract RewardsNative is
 
     function _dangerous_createTokenAndDepositRewards(
         LibRewards.RewardToken calldata _token
-    ) public onlyRole(DEV_CONFIG_ROLE) {
+    ) external onlyRole(DEV_CONFIG_ROLE) {
         _createTokenAndDepositRewards(_token);
     }
 
@@ -297,7 +288,7 @@ contract RewardsNative is
 
         rewardAmounts = new uint256[](rewards.length);
 
-        for (uint i = 0; i < rewards.length; i++) {
+        for (uint256 i = 0; i < rewards.length; i++) {
             rewardAmounts[i] = rewards[i].rewardAmount;
         }
     }
@@ -350,27 +341,6 @@ contract RewardsNative is
         bytes4 interfaceId
     ) public view override(AccessControl, ERC1155Holder) returns (bool) {
         return super.supportsInterface(interfaceId);
-    }
-
-    function devVerifySignature(
-        address to,
-        uint256 nonce,
-        bytes calldata data,
-        bytes calldata signature
-    ) public onlyRole(DEV_CONFIG_ROLE) returns (bool) {
-        return _verifySignature(to, nonce, data, signature);
-    }
-
-    function addWhitelistSigner(
-        address _signer
-    ) external onlyRole(DEV_CONFIG_ROLE) {
-        _addWhitelistSigner(_signer);
-    }
-
-    function removeWhitelistSigner(
-        address signer
-    ) external onlyRole(DEV_CONFIG_ROLE) {
-        _removeWhitelistSigner(signer);
     }
 
     function getChainID() public view returns (uint256) {
