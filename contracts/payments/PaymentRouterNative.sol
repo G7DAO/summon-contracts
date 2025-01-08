@@ -45,6 +45,9 @@ contract PaymentRouterNative is
     /// @notice Role identifier for manager privileges
     bytes32 public constant MANAGER_ROLE = keccak256("MANAGER_ROLE");
     
+    /// @notice 100% in basis points (10000)
+    uint256 public constant HUNDRED_PERCENT = 10000;
+    
     /**
      * @notice Structure for fee recipient configuration
      * @param active Whether this recipient is currently active
@@ -223,7 +226,7 @@ contract PaymentRouterNative is
         uint256 percentage
     ) external onlyRole(MANAGER_ROLE) {
         if (recipient == address(0)) revert InvalidRecipientAddress();
-        if (percentage > 10000) revert InvalidPercentage();
+        if (percentage > HUNDRED_PERCENT) revert InvalidPercentage();
         
         uint256 totalPercentage = getTotalFeePercentage();
         if (!feeRecipients[recipient].active) {
@@ -337,10 +340,10 @@ contract PaymentRouterNative is
         uint256 totalPercentage;
         for (uint256 i = 0; i < recipients.length; i++) {
             if (recipients[i] == address(0)) revert InvalidRecipientAddress();
-            if (percentages[i] > 10000) revert InvalidPercentage();
+            if (percentages[i] > HUNDRED_PERCENT) revert InvalidPercentage();
             totalPercentage += percentages[i];
         }
-        if (totalPercentage > 10000) revert TotalPercentageExceedsLimit();
+        if (totalPercentage > HUNDRED_PERCENT) revert TotalPercentageExceedsLimit();
 
         for (uint256 i = 0; i < recipients.length; i++) {
             if (!feeRecipients[recipients[i]].active) {
@@ -377,7 +380,7 @@ contract PaymentRouterNative is
     {
         if (paymentConfigs[id].isPaused) revert PaymentIdPaused();
         if (msg.value != paymentConfigs[id].price) revert IncorrectPaymentAmount();
-        if (getTotalFeePercentage() != 10000) revert TotalPercentageMustBe100();
+        if (getTotalFeePercentage() != HUNDRED_PERCENT) revert TotalPercentageMustBe100();
 
         string[] memory ids = _verifyContractChainIdAndDecode(seed);
         
@@ -385,7 +388,7 @@ contract PaymentRouterNative is
         for (uint256 i = 0; i < feeRecipientAddresses.length; i++) {
             address recipient = feeRecipientAddresses[i];
             if (feeRecipients[recipient].active) {
-                uint256 feeAmount = (msg.value * feeRecipients[recipient].percentage) / 10000;
+                uint256 feeAmount = (msg.value * feeRecipients[recipient].percentage) / HUNDRED_PERCENT;
                 if (feeAmount > 0) {
                     (bool success, ) = recipient.call{ value: feeAmount }("");
                     if (!success) revert TransferToFeeRecipientFailed();
