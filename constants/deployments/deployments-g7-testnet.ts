@@ -23,6 +23,19 @@ const networkType = NETWORK_TYPE.TESTNET;
 
 export const G7_TESTNET_CONTRACTS: DeploymentContract[] = [
     {
+        contractFileName: CONTRACT_UPGRADABLE_FILE_NAME.ERC1155Soulbound,
+        type: CONTRACT_TYPE.Badges,
+        name: CONTRACT_UPGRADABLE_NAME.Badges,
+        chain,
+        networkType,
+        tenants: [TENANT.Game7],
+        verify: true,
+        upgradable: true,
+        dependencies: [],
+        functionCalls: [],
+        args: ItemBoundArgs.TESTNET,
+    },
+    {
         contractFileName: CONTRACT_UPGRADABLE_FILE_NAME.Avatars,
         type: CONTRACT_TYPE.Avatars,
         name: CONTRACT_UPGRADABLE_NAME.Avatars,
@@ -52,7 +65,7 @@ export const G7_TESTNET_CONTRACTS: DeploymentContract[] = [
         name: CONTRACT_UPGRADABLE_NAME.Items,
         chain,
         networkType,
-        tenants: [TENANT.IronWorks],
+        tenants: [TENANT.Game7],
         verify: true,
         upgradable: true,
         dependencies: [],

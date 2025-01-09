@@ -617,7 +617,7 @@ contract Rewards is
         rewardTokenIds = new uint256[][](rewards.length);
         rewardTokenId = new uint256[](rewards.length);
 
-        for (uint i = 0; i < rewards.length; i++) {
+        for (uint256 i = 0; i < rewards.length; i++) {
             rewardTypes[i] = rewards[i].rewardType;
             rewardAmounts[i] = rewards[i].rewardAmount;
             rewardTokenAddresses[i] = rewards[i].rewardTokenAddress;
