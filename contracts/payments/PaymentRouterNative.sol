@@ -339,39 +339,6 @@ contract PaymentRouterNative is
     }
 
     /**
-     * @notice Batch updates fee recipients
-     * @param recipients Array of recipient addresses
-     * @param percentages Array of corresponding percentages
-     */
-    function batchSetFeeRecipients(
-        address[] calldata recipients,
-        uint256[] calldata percentages
-    ) external onlyRole(MANAGER_ROLE) {
-        if (recipients.length != percentages.length) revert InvalidPaymentId();
-        
-        uint256 totalPercentage;
-        for (uint256 i = 0; i < recipients.length; i++) {
-            if (recipients[i] == address(0)) revert InvalidRecipientAddress();
-            if (percentages[i] > HUNDRED_PERCENT) revert InvalidPercentage();
-            totalPercentage += percentages[i];
-        }
-        if (totalPercentage > HUNDRED_PERCENT) revert TotalPercentageExceedsLimit();
-
-        for (uint256 i = 0; i < recipients.length; i++) {
-            if (!feeRecipients[recipients[i]].active) {
-                feeRecipientAddresses.push(recipients[i]);
-            }
-            
-            feeRecipients[recipients[i]] = FeeRecipient({
-                active: true,
-                percentage: percentages[i]
-            });
-            
-            emit FeeRecipientUpdated(recipients[i], percentages[i]);
-        }
-    }
-
-    /**
      * @notice Makes a payment for a specific ID
      * @param id The payment ID
      * @param nonce The nonce for the signature

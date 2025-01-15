@@ -27,9 +27,12 @@ describe('PaymentRouterNative', function () {
         const recipient1Fee = 3000;
 
         // Setup fee recipients
-        await paymentRouter.connect(managerWallet).batchSetFeeRecipients(
-            [multiSigWallet.address, recipient1.address],
-            [defaultMultisigFee, recipient1Fee] // 70% and 30%
+        await paymentRouter.connect(managerWallet).setFeeRecipient(
+            multiSigWallet.address, defaultMultisigFee
+        );
+
+        await paymentRouter.connect(managerWallet).setFeeRecipient(
+            recipient1.address, recipient1Fee
         );
 
         const chainId = (await ethers.provider.getNetwork()).chainId;
@@ -286,7 +289,7 @@ describe('PaymentRouterNative', function () {
         });
 
         it('Should remove fee recipient correctly', async function () {
-            const { paymentRouter, managerWallet, recipient1 } = await loadFixture(deployPaymentRouterFixture);
+            const { paymentRouter, managerWallet, multiSigWallet, recipient1 } = await loadFixture(deployPaymentRouterFixture);
             
             // First remove recipient1 (30%)
             await paymentRouter.connect(managerWallet).removeFeeRecipient(recipient1.address);
@@ -298,6 +301,13 @@ describe('PaymentRouterNative', function () {
             // Verify only multisig remains with 70%
             const totalPercentage = await paymentRouter.getTotalFeePercentage();
             expect(totalPercentage).to.equal(7000);
+
+            // Second remove multisig 70%
+            await paymentRouter.connect(managerWallet).removeFeeRecipient(multiSigWallet.address);
+            
+            // Verify total percentage is 0
+            const totalPercentageAfterRemoval = await paymentRouter.getTotalFeePercentage();
+            expect(totalPercentageAfterRemoval).to.equal(0);
         });
 
         it('Should get all active fee recipients correctly', async function () {
@@ -315,39 +325,6 @@ describe('PaymentRouterNative', function () {
             // Check recipient1 (30%)
             expect(recipients[1]).to.equal(recipient1.address);
             expect(percentages[1]).to.equal(3000);
-        });
-
-        it('Should batch set fee recipients correctly', async function () {
-            const { paymentRouter, managerWallet,  recipient1, multiSigWallet } = await loadFixture(deployPaymentRouterFixture);
-
-
-            // First remove recipient1 (30%)
-            await paymentRouter.connect(managerWallet).removeFeeRecipient(recipient1.address);
-
-            // Second remove multisig 70%
-            await paymentRouter.connect(managerWallet).removeFeeRecipient(multiSigWallet.address);
-            
-            const newRecipients = await Promise.all([
-                ethers.Wallet.createRandom(),
-                ethers.Wallet.createRandom(),
-                ethers.Wallet.createRandom()
-            ]);
-
-            await paymentRouter.connect(managerWallet).batchSetFeeRecipients(
-                newRecipients.map(r => r.address),
-                [4000, 3000, 3000] // 40%, 30%, 30%
-            );
-
-            // Verify total percentage
-            const totalPercentage = await paymentRouter.getTotalFeePercentage();
-            expect(totalPercentage).to.equal(10000);
-
-            // Verify individual recipients
-            for (let i = 0; i < newRecipients.length; i++) {
-                const [active, percentage] = await paymentRouter.getFeeRecipient(newRecipients[i].address);
-                expect(active).to.be.true;
-                expect(percentage).to.equal(i === 0 ? 4000 : 3000);
-            }
         });
 
         describe('Error cases', function () {
@@ -374,31 +351,6 @@ describe('PaymentRouterNative', function () {
                 await expect(
                     paymentRouter.connect(managerWallet).removeFeeRecipient(nonExistentRecipient.address)
                 ).to.be.revertedWithCustomError(paymentRouter, 'FeeRecipientDoesNotExist');
-            });
-
-            it('Should revert when batch setting with mismatched arrays', async function () {
-                const { paymentRouter, managerWallet } = await loadFixture(deployPaymentRouterFixture);
-                const recipients = [await ethers.Wallet.createRandom(), await ethers.Wallet.createRandom()];
-                const percentages = [5000];
-                
-                await expect(
-                    paymentRouter.connect(managerWallet).batchSetFeeRecipients(
-                        recipients.map(r => r.address),
-                        percentages
-                    )
-                ).to.be.revertedWithCustomError(paymentRouter, 'InvalidPaymentId');
-            });
-
-            it('Should revert when batch total exceeds 100%', async function () {
-                const { paymentRouter, managerWallet } = await loadFixture(deployPaymentRouterFixture);
-                const recipients = [await ethers.Wallet.createRandom(), await ethers.Wallet.createRandom()];
-                
-                await expect(
-                    paymentRouter.connect(managerWallet).batchSetFeeRecipients(
-                        recipients.map(r => r.address),
-                        [6000, 5000] // 110%
-                    )
-                ).to.be.revertedWithCustomError(paymentRouter, 'TotalPercentageExceedsLimit');
             });
         });
 
