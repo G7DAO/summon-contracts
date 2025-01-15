@@ -27,9 +27,12 @@ describe('PaymentRouterNative', function () {
         const recipient1Fee = 3000;
 
         // Setup fee recipients
-        await paymentRouter.connect(managerWallet).batchSetFeeRecipients(
-            [multiSigWallet.address, recipient1.address],
-            [defaultMultisigFee, recipient1Fee] // 70% and 30%
+        await paymentRouter.connect(managerWallet).setFeeRecipient(
+            multiSigWallet.address, defaultMultisigFee
+        );
+
+        await paymentRouter.connect(managerWallet).setFeeRecipient(
+            recipient1.address, recipient1Fee
         );
 
         const chainId = (await ethers.provider.getNetwork()).chainId;
@@ -244,7 +247,7 @@ describe('PaymentRouterNative', function () {
         });
 
         it('Should revert when non-manager tries to pause', async function () {
-            const { paymentRouter, deployer, user1 } = await loadFixture(deployPaymentRouterFixture);
+            const { paymentRouter, deployer, managerWallet, user1 } = await loadFixture(deployPaymentRouterFixture);
 
             await paymentRouter.connect(deployer).setPaymentConfig(PAYMENT_ID, PAYMENT_AMOUNT, PAYMENT_URI);
 
@@ -286,7 +289,7 @@ describe('PaymentRouterNative', function () {
         });
 
         it('Should remove fee recipient correctly', async function () {
-            const { paymentRouter, managerWallet, recipient1 } = await loadFixture(deployPaymentRouterFixture);
+            const { paymentRouter, managerWallet, multiSigWallet, recipient1 } = await loadFixture(deployPaymentRouterFixture);
             
             // First remove recipient1 (30%)
             await paymentRouter.connect(managerWallet).removeFeeRecipient(recipient1.address);
@@ -298,6 +301,13 @@ describe('PaymentRouterNative', function () {
             // Verify only multisig remains with 70%
             const totalPercentage = await paymentRouter.getTotalFeePercentage();
             expect(totalPercentage).to.equal(7000);
+
+            // Second remove multisig 70%
+            await paymentRouter.connect(managerWallet).removeFeeRecipient(multiSigWallet.address);
+            
+            // Verify total percentage is 0
+            const totalPercentageAfterRemoval = await paymentRouter.getTotalFeePercentage();
+            expect(totalPercentageAfterRemoval).to.equal(0);
         });
 
         it('Should get all active fee recipients correctly', async function () {
@@ -315,39 +325,6 @@ describe('PaymentRouterNative', function () {
             // Check recipient1 (30%)
             expect(recipients[1]).to.equal(recipient1.address);
             expect(percentages[1]).to.equal(3000);
-        });
-
-        it('Should batch set fee recipients correctly', async function () {
-            const { paymentRouter, managerWallet,  recipient1, multiSigWallet } = await loadFixture(deployPaymentRouterFixture);
-
-
-            // First remove recipient1 (30%)
-            await paymentRouter.connect(managerWallet).removeFeeRecipient(recipient1.address);
-
-            // Second remove multisig 70%
-            await paymentRouter.connect(managerWallet).removeFeeRecipient(multiSigWallet.address);
-            
-            const newRecipients = await Promise.all([
-                ethers.Wallet.createRandom(),
-                ethers.Wallet.createRandom(),
-                ethers.Wallet.createRandom()
-            ]);
-
-            await paymentRouter.connect(managerWallet).batchSetFeeRecipients(
-                newRecipients.map(r => r.address),
-                [4000, 3000, 3000] // 40%, 30%, 30%
-            );
-
-            // Verify total percentage
-            const totalPercentage = await paymentRouter.getTotalFeePercentage();
-            expect(totalPercentage).to.equal(10000);
-
-            // Verify individual recipients
-            for (let i = 0; i < newRecipients.length; i++) {
-                const [active, percentage] = await paymentRouter.getFeeRecipient(newRecipients[i].address);
-                expect(active).to.be.true;
-                expect(percentage).to.equal(i === 0 ? 4000 : 3000);
-            }
         });
 
         describe('Error cases', function () {
@@ -375,31 +352,122 @@ describe('PaymentRouterNative', function () {
                     paymentRouter.connect(managerWallet).removeFeeRecipient(nonExistentRecipient.address)
                 ).to.be.revertedWithCustomError(paymentRouter, 'FeeRecipientDoesNotExist');
             });
+        });
 
-            it('Should revert when batch setting with mismatched arrays', async function () {
-                const { paymentRouter, managerWallet } = await loadFixture(deployPaymentRouterFixture);
-                const recipients = [await ethers.Wallet.createRandom(), await ethers.Wallet.createRandom()];
-                const percentages = [5000];
-                
-                await expect(
-                    paymentRouter.connect(managerWallet).batchSetFeeRecipients(
-                        recipients.map(r => r.address),
-                        percentages
-                    )
-                ).to.be.revertedWithCustomError(paymentRouter, 'InvalidPaymentId');
-            });
+        it('Should remove fee recipient from array and prevent duplicates when re-adding', async function () {
+            const { paymentRouter, managerWallet, recipient1 } = await loadFixture(deployPaymentRouterFixture);
+            
+            // Get initial array length
+            const [initialRecipients] = await paymentRouter.getFeeRecipients();
+            const initialLength = initialRecipients.length;
+            
+            // Remove recipient1
+            await paymentRouter.connect(managerWallet).removeFeeRecipient(recipient1.address);
+            
+            // Verify array length decreased
+            const [afterRemovalRecipients] = await paymentRouter.getFeeRecipients();
+            expect(afterRemovalRecipients.length).to.equal(initialLength - 1);
+            expect(afterRemovalRecipients).to.not.include(recipient1.address);
+            
+            // Re-add the same recipient
+            await paymentRouter.connect(managerWallet).setFeeRecipient(recipient1.address, 3000);
+            
+            // Verify array length increased by 1 and recipient is present
+            const [finalRecipients] = await paymentRouter.getFeeRecipients();
+            expect(finalRecipients.length).to.equal(initialLength);
+            expect(finalRecipients).to.include(recipient1.address);
+            
+            // Verify only one instance exists
+            const recipientCount = finalRecipients.filter(r => r === recipient1.address).length;
+            expect(recipientCount).to.equal(1);
+        });
 
-            it('Should revert when batch total exceeds 100%', async function () {
-                const { paymentRouter, managerWallet } = await loadFixture(deployPaymentRouterFixture);
-                const recipients = [await ethers.Wallet.createRandom(), await ethers.Wallet.createRandom()];
-                
-                await expect(
-                    paymentRouter.connect(managerWallet).batchSetFeeRecipients(
-                        recipients.map(r => r.address),
-                        [6000, 5000] // 110%
-                    )
-                ).to.be.revertedWithCustomError(paymentRouter, 'TotalPercentageExceedsLimit');
+        it('Should handle multiple recipient removals and additions correctly', async function () {
+            const { paymentRouter, managerWallet, multiSigWallet, recipient1 } = await loadFixture(deployPaymentRouterFixture);
+            
+            // Remove both initial recipients
+            await paymentRouter.connect(managerWallet).removeFeeRecipient(recipient1.address);
+            await paymentRouter.connect(managerWallet).removeFeeRecipient(multiSigWallet.address);
+            
+            // Verify array is empty
+            const [emptyRecipients] = await paymentRouter.getFeeRecipients();
+            expect(emptyRecipients.length).to.equal(0);
+            
+            // Add three new recipients
+            const newRecipients = await Promise.all([
+                ethers.Wallet.createRandom(),
+                ethers.Wallet.createRandom(),
+                ethers.Wallet.createRandom()
+            ]);
+            
+            for (let i = 0; i < newRecipients.length; i++) {
+                await paymentRouter.connect(managerWallet).setFeeRecipient(
+                    newRecipients[i].address,
+                    3333 // ~33.33% each
+                );
+            }
+            
+            // Verify all new recipients are present
+            const [finalRecipients, finalPercentages] = await paymentRouter.getFeeRecipients();
+            expect(finalRecipients.length).to.equal(3);
+            
+            for (const recipient of newRecipients) {
+                expect(finalRecipients).to.include(recipient.address);
+            }
+            
+            // Remove middle recipient
+            await paymentRouter.connect(managerWallet).removeFeeRecipient(newRecipients[1].address);
+            
+            // Verify array is updated correctly
+            const [afterMiddleRemovalRecipients] = await paymentRouter.getFeeRecipients();
+            expect(afterMiddleRemovalRecipients.length).to.equal(2);
+            expect(afterMiddleRemovalRecipients).to.include(newRecipients[0].address);
+            expect(afterMiddleRemovalRecipients).to.include(newRecipients[2].address);
+            expect(afterMiddleRemovalRecipients).to.not.include(newRecipients[1].address);
+        });
+
+        it('Should prevent duplicate payments when adding same recipient multiple times', async function () {
+            const { paymentRouter, managerWallet, deployer, user1, recipient1 } = await loadFixture(deployPaymentRouterFixture);
+            
+            // Setup a payment configuration
+            const paymentAmount = ethers.parseEther('1.0');
+            await paymentRouter.connect(deployer).setPaymentConfig(PAYMENT_ID, paymentAmount, PAYMENT_URI);
+            
+            // Remove all existing recipients
+            const [initialRecipients] = await paymentRouter.getFeeRecipients();
+            for (const recipient of initialRecipients) {
+                await paymentRouter.connect(managerWallet).removeFeeRecipient(recipient);
+            }
+            
+            // Add recipient1 twice with 100% fee
+            await paymentRouter.connect(managerWallet).setFeeRecipient(recipient1.address, 10000); // First addition
+            await paymentRouter.connect(managerWallet).setFeeRecipient(recipient1.address, 10000); // Second addition
+            
+            // Verify recipient appears only once in the array
+            const [recipients] = await paymentRouter.getFeeRecipients();
+            const recipientCount = recipients.filter(r => r === recipient1.address).length;
+            expect(recipientCount).to.equal(1, 'Recipient address should appear exactly once in the array');
+            
+            // Get recipient's initial balance
+            const initialBalance = await ethers.provider.getBalance(recipient1.address);
+            
+            // Generate signature for payment
+            const chainId = (await ethers.provider.getNetwork()).chainId;
+            const { seed, signature, nonce } = await generateRandomSeed({
+                smartContractAddress: await paymentRouter.getAddress(),
+                chainId: chainId,
+                decode: true,
+                address: user1.address,
+                signer: deployer,
+                rawData: { type: 'string[]', data: [BOX_ID] },
             });
+            
+            // Make payment
+            await paymentRouter.connect(user1).pay(PAYMENT_ID, nonce, seed, signature, { value: paymentAmount });
+            
+            // Check recipient received exactly the payment amount once
+            const finalBalance = await ethers.provider.getBalance(recipient1.address);
+            expect(finalBalance - initialBalance).to.equal(paymentAmount, 'Recipient should receive payment exactly once');
         });
     });
 });
