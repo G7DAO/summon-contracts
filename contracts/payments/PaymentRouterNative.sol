@@ -254,8 +254,20 @@ contract PaymentRouterNative is
     function removeFeeRecipient(address recipient) external onlyRole(MANAGER_ROLE) {
         if (!feeRecipients[recipient].active) revert FeeRecipientDoesNotExist();
         
+        // Remove from mapping
         feeRecipients[recipient].active = false;
         feeRecipients[recipient].percentage = 0;
+        
+        // Remove from array by replacing with last element and popping
+        for (uint256 i = 0; i < feeRecipientAddresses.length; i++) {
+            if (feeRecipientAddresses[i] == recipient) {
+                if (i != feeRecipientAddresses.length - 1) {
+                    feeRecipientAddresses[i] = feeRecipientAddresses[feeRecipientAddresses.length - 1];
+                }
+                feeRecipientAddresses.pop();
+                break;
+            }
+        }
         
         emit FeeRecipientRemoved(recipient);
     }
