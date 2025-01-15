@@ -408,7 +408,7 @@ contract PaymentRouterNative is
             }
         }
 
-        emit PaymentReceived(id, msg.sender, msg.value, ids);
+        emit PaymentReceived(id, _msgSender(), msg.value, ids);
     }
 
     function addWhitelistSigner(
