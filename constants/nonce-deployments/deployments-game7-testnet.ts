@@ -47,5 +47,5 @@ export const GAME7_TESTNET_CONTRACTS: DeploymentContract[] = [
         dependencies: [],
         functionCalls: [],
         args: HelloWorldArgs.TESTNET,
-    },
+    }
 ];

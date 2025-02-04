@@ -5,6 +5,7 @@ import {
     LevelsBoundV1Args,
     PaymentRouterNativeG7Args,
     RewardsNativeG7Args,
+    CamelotDistributorArgs,
 } from '@constants/constructor-args';
 import {
     CONTRACT_TYPE,
@@ -147,5 +148,18 @@ export const G7_TESTNET_CONTRACTS: DeploymentContract[] = [
         dependencies: [],
         functionCalls: [],
         args: PaymentRouterNativeG7Args.TESTNET,
+    },
+    {
+        contractFileName: CONTRACT_FILE_NAME.Distributor,
+        type: CONTRACT_TYPE.Staker,
+        name: CONTRACT_NAME.CamelotDistributor,
+        chain,
+        networkType,
+        tenants: [TENANT.Game7],
+        verify: true,
+        upgradable: false,
+        dependencies: [],
+        functionCalls: [],
+        args: CamelotDistributorArgs.TESTNET,
     },
 ];

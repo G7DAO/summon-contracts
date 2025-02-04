@@ -52,10 +52,10 @@ export const AvatarBoundArgs = {
         devWallet: 'DEPLOYER_WALLET',
         gatingNftAddress: '0xD07180c423F9B8CF84012aA28cC174F3c433EE29',
         itemsNftAddress: `CONTRACT_${CONTRACT_NAME.Items}`,
-        mintNftGatingEnabled: true,
+        mintNftGatingEnabled: false,
         mintNFtWithoutGatingEnabled: true,
         mintRandomItemEnabled: true,
-        mintSpecialItemEnabled: true,
+        mintSpecialItemEnabled: false,
     },
     TESTNET: {
         name: 'TestnetAvatarBound',
@@ -300,9 +300,9 @@ export const RewardsArgs = {
 export const RewardsNativeG7Args = {
     MAINNET: {
         _devWallet: '0x85f56764F58F595D08252b98942554bFB5Eea390',
-        _adminWallet: 'FAIL',
-        _managerWallet: 'FAIL',
-        _minterWallet: 'FAIL',
+        _adminWallet: '0x85f56764F58F595D08252b98942554bFB5Eea390',
+        _managerWallet: '0x85f56764F58F595D08252b98942554bFB5Eea390',
+        _minterWallet: '0x85f56764F58F595D08252b98942554bFB5Eea390',
         _rewardTokenAddress: `CONTRACT_${CONTRACT_NAME.RewardAccessTokenG7}`,
     },
     TESTNET: {
@@ -317,12 +317,10 @@ export const RewardsNativeG7Args = {
 export const PaymentRouterNativeG7Args = {
     // TODO: fill this args for mainnet
     MAINNET: {
-        multisigWallet: null,
-        manager: null,
-        adminWallet: null,
+        manager: '0x85f56764F58F595D08252b98942554bFB5Eea390',
+        adminWallet: '0x85f56764F58F595D08252b98942554bFB5Eea390',
     },
     TESTNET: {
-        multisigWallet: '0x34b9987B5fFa52c332cD4B28d767589228e1AC67',
         manager: '0x4d790f180C71029F983c0A70901E3DcA1aAe12f5',
         adminWallet: '0x4d790f180C71029F983c0A70901E3DcA1aAe12f5',
     },
@@ -336,6 +334,19 @@ export const HelloWorldArgs = {
         randomNumber: 232323,
     },
 };
+
+export const CamelotDistributorArgs = {
+    MAINNET: {
+        owner: '0x4d790f180C71029F983c0A70901E3DcA1aAe12f5',
+        updater: '0x4d790f180C71029F983c0A70901E3DcA1aAe12f5',
+        wNative: '0x4d790f180C71029F983c0A70901E3DcA1aAe12f5',
+    },
+    TESTNET: {
+        owner: '0x4d790f180C71029F983c0A70901E3DcA1aAe12f5',
+        updater: '0x4d790f180C71029F983c0A70901E3DcA1aAe12f5',
+        wNative: '0x4d790f180C71029F983c0A70901E3DcA1aAe12f5',
+    }
+}
 
 export const RewardTokenArgs = {
     MAINNET: {
