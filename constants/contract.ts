@@ -65,6 +65,7 @@ export enum CONTRACT_FILE_NAME {
     Forwarder = 'Forwarder',
     RewardsNative = 'RewardsNative',
     PaymentRouterNative = 'PaymentRouterNative',
+    Distributor = 'Distributor'
 }
 
 export enum CONTRACT_UPGRADABLE_FILE_NAME {
@@ -115,6 +116,7 @@ export enum CONTRACT_NAME {
     Forwarder = 'Forwarder',
     RewardsNativeG7 = 'RewardsNativeG7',
     PaymentRouterNativeG7 = 'PaymentRouterNativeG7',
+    CamelotDistributor = 'CamelotDistributor'
 }
 
 export enum CONTRACT_UPGRADABLE_NAME {
