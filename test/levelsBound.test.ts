@@ -3,8 +3,8 @@ import { expect } from 'chai';
 import { ethers } from 'hardhat';
 import { Contract } from 'ethers';
 import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers';
-import { LevelsBound, ERC1155Soulbound } from '../../typechain-types';
-import { generateSignature } from '../../helpers/signature';
+import { LevelsBound, ERC1155Soulbound } from '../typechain-types';
+import { generateSignature } from '../helpers/signature';
 
 describe('LevelsBound', function () {
     let levelsBound: LevelsBound;

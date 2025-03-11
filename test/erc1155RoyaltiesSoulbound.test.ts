@@ -1,5 +1,5 @@
 import { ZeroAddress } from 'ethers';
-import { ERC1155RoyaltiesSoulboundV2 } from '../../typechain-types';
+import { ERC1155RoyaltiesSoulboundV2 } from '../typechain-types';
 
 const { expect } = require('chai');
 const { ethers, upgrades } = require('hardhat');

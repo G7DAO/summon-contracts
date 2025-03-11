@@ -3,6 +3,10 @@
     "version": "1.0.0",
     "private": true,
     "description": "Smart contracts for summon.xyz",
+    "packageManager": "pnpm@9.15.3",
+    "engines": {
+        "node": ">=22.14.0"
+    },
     "scripts": {
         "localChain": "hardhat --config hardhat.config.ts node",
         "clean": "hardhat --config hardhat.config.ts clean",
@@ -27,8 +31,8 @@
         "deploy:g7:testnet": "pnpm compile && hardhat --config g7.config.ts deploy --network game7Testnet",
         "deploy:g7:mainnet": "pnpm compile && hardhat --config g7.config.ts deploy --network game7",
         "test:foundry": "forge test -vvv",
-        "test": "REPORT_GAS=true hardhat --config hardhat.config.ts test test/hardhatTests/*.ts --network hardhat",
-        "test:ci": "hardhat --config hardhat.config.ts test test/hardhatTests/*.ts  --network hardhat",
+        "test": "REPORT_GAS=true hardhat --config hardhat.config.ts test test/*.ts --network hardhat",
+        "test:ci": "hardhat --config hardhat.config.ts test test/*.ts  --network hardhat",
         "lint": "eslint --config ./.eslintrc.js --ignore-path ./.eslintignore ./test/**/*.ts",
         "solhint": "solhint ./contracts/**/*.sol",
         "format": "prettier -w ./deploy/**/*.ts ./tasks/**/*.ts ./tests/**/*.ts ./helpers/**/*.ts contracts/**/*.sol ",
@@ -89,7 +93,6 @@
         "typescript": "^5.6.3"
     },
     "dependencies": {
-        "@account-abstraction/contracts": "^0.7.0",
         "@chainlink/contracts": "^1.2.0",
         "@nomicfoundation/hardhat-chai-matchers": "^2.0.8",
         "@nomicfoundation/hardhat-network-helpers": "^1.0.12",

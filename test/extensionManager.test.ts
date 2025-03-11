@@ -2,14 +2,21 @@ import hre from 'hardhat';
 import { expect } from 'chai';
 import { ethers } from 'hardhat';
 import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers';
-import { ExtensionManager, Marketplace, MockERC20, MockERC721, MockOffersLogicV2, OffersLogic } from '../../typechain-types';
+import {
+    ExtensionManager,
+    Marketplace,
+    MockERC20,
+    MockERC721,
+    MockOffersLogicV2,
+    OffersLogic,
+} from '../typechain-types';
 import { loadFixture, time } from '@nomicfoundation/hardhat-network-helpers';
 import { deployMarketplaceContracts } from './fixture/marketplaceContractsFixture';
-import { ExtensionAction } from '../../helpers/extensions';
-import { deployExtension, upgradeManagerExtensions } from '../../deploy/upgrade-proxy';
+import { ExtensionAction } from '../helpers/extensions';
+import { deployExtension, upgradeManagerExtensions } from '../deploy/upgrade-proxy';
 import { TENANT } from '@constants/tenant';
 import { CONTRACT_NAME } from '@constants/contract';
-import { CONTRACTS } from '../../constants/proxy-deployments';
+import { CONTRACTS } from '../constants/proxy-deployments';
 import { Offer, OfferParams, Status, TokenType } from './helpers/types';
 import { toWei } from './helpers/misc';
 import { ONE_DAY } from './helpers/constants';
@@ -57,33 +64,33 @@ describe('ExtensionManager', function () {
     });
 
     describe('Upgrades', function () {
-      let offer: Offer;
-      let offerParams: OfferParams;
-      beforeEach(async function () {
-          offerParams = {
-              assetContract: mockERC721Address,
-              tokenId: tokenId,
-              quantity,
-              currency: mockERC20Address,
-              totalPrice,
-              expirationTimestamp: blockTimestamp + ONE_DAY,
-          };
-          const offerId = await offersLogic.connect(buyer).makeOffer.staticCall(offerParams);
-          await offersLogic.connect(buyer).makeOffer(offerParams);
-          offer = {
-              offerId: offerId,
-              tokenId: offerParams.tokenId,
-              quantity: offerParams.quantity,
-              totalPrice: offerParams.totalPrice,
-              expirationTimestamp: offerParams.expirationTimestamp,
-              offeror: buyer.address,
-              assetContract: offerParams.assetContract,
-              currency: offerParams.currency,
-              tokenType: TokenType.ERC721,
-              status: Status.CREATED,
-          };
-      });
-      
+        let offer: Offer;
+        let offerParams: OfferParams;
+        beforeEach(async function () {
+            offerParams = {
+                assetContract: mockERC721Address,
+                tokenId: tokenId,
+                quantity,
+                currency: mockERC20Address,
+                totalPrice,
+                expirationTimestamp: blockTimestamp + ONE_DAY,
+            };
+            const offerId = await offersLogic.connect(buyer).makeOffer.staticCall(offerParams);
+            await offersLogic.connect(buyer).makeOffer(offerParams);
+            offer = {
+                offerId: offerId,
+                tokenId: offerParams.tokenId,
+                quantity: offerParams.quantity,
+                totalPrice: offerParams.totalPrice,
+                expirationTimestamp: offerParams.expirationTimestamp,
+                offeror: buyer.address,
+                assetContract: offerParams.assetContract,
+                currency: offerParams.currency,
+                tokenType: TokenType.ERC721,
+                status: Status.CREATED,
+            };
+        });
+
         it('Should be able to replace extension and not change storage', async function () {
             expect(await offersLogic.totalOffers()).to.be.equal(1);
             expect(await offersLogic.getOffer(offer.offerId)).to.be.deep.equal(Object.values(offer));

@@ -1,16 +1,10 @@
 import hre from 'hardhat';
 import { CONTRACTS } from '@constants/proxy-deployments';
-import { DeploymentExtensionContract, DeploymentProxyContract } from '../../../types/deployment-type';
+import { DeploymentExtensionContract, DeploymentProxyContract } from '../../types/deployment-type';
 import { Extension, ExtensionFunction } from '@helpers/extensions';
-import { deployOne, deployOneWithExtensions } from '../../../tasks';
+import { deployOne, deployOneWithExtensions } from '../../tasks';
 import { TENANT } from '@constants/tenant';
-import {
-    Marketplace,
-    MockERC1155,
-    MockERC20,
-    MockERC721,
-    MockRoyaltyEngineV1,
-} from '../../../typechain-types';
+import { Marketplace, MockERC1155, MockERC20, MockERC721, MockRoyaltyEngineV1 } from '../../typechain-types';
 import { DirectListingExtensionArgs, EnglishAuctionsExtensionArgs, MarketplaceArgs } from '@constants/constructor-args';
 import { CONTRACT_EXTENSION_NAME } from '@constants/contract';
 
@@ -49,7 +43,7 @@ export async function deployMarketplaceContracts(): Promise<
     );
 
     // switch to the proxy contract values
-    const proxyContract = {...contract}
+    const proxyContract = { ...contract };
     proxyContract.contractFileName = contract.proxyContractFileName;
     proxyContract.name = contract.proxyContractName;
     proxyContract.proxyContractArgs.implementation = deployedImplementation.contractAddress;

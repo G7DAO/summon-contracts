@@ -87,7 +87,7 @@ contract AccessToken is
 
     event TokenAdded(uint256 indexed tokenId);
 
-    constructor(address devWallet) ERC1155("") {
+    constructor(address devWallet) ERC1155("G7 Claim") {
         if (devWallet == address(0)) {
             revert AddressIsZero();
         }

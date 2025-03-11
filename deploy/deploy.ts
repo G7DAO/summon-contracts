@@ -67,7 +67,7 @@ export default async function (
 
     if (contract.verify) {
         log('Waiting for contract to be confirmed...');
-        if (hre.network.name === NetworkName.Game7Testnet) {
+        if (hre.network.name === NetworkName.Game7Testnet || hre.network.name === NetworkName.Game7) {
             await achievoContract.deploymentTransaction()?.wait(1);
         } else {
             await achievoContract.deploymentTransaction()?.wait(5);
