@@ -1,41 +1,53 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.24;
 
-
 import { StakingPool, Position } from "../governance/staking/data.sol";
 import { PositionMetadata } from "../governance/staking/PositionMetadata.sol";
 
 /*
-* @notice Built by the Game7 World Builder team: worldbuilder - at - game7.io
-*/
+ * @notice Built by the Game7 World Builder team: worldbuilder - at - game7.io
+ */
 interface IStaker {
-
     function positionMetadataAddress() external view returns (address);
 
     function TotalPools() external view returns (uint256);
 
     function TotalPositions() external view returns (uint256);
 
-    function CurrentAmountInPool(uint256 poolID) external view returns (uint256);
+    function CurrentAmountInPool(
+        uint256 poolID
+    ) external view returns (uint256);
 
-    function CurrentPositionsInPool(uint256 poolID) external view returns (uint256);
+    function CurrentPositionsInPool(
+        uint256 poolID
+    ) external view returns (uint256);
 
-    function Pools(uint256 poolID) external view returns (
-        address administrator,
-        uint256 tokenType,
-        address tokenAddress,
-        uint256 tokenID,
-        bool transferable,
-        uint256 lockupSeconds,
-        uint256 cooldownSeconds
-    );
+    function Pools(
+        uint256 poolID
+    )
+        external
+        view
+        returns (
+            address administrator,
+            uint256 tokenType,
+            address tokenAddress,
+            uint256 tokenID,
+            bool transferable,
+            uint256 lockupSeconds,
+            uint256 cooldownSeconds
+        );
 
-    function Positions(uint256 positionTokenID) external view returns (
-        uint256 poolID,
-        uint256 amountOrTokenID,
-        uint256 stakeTimestamp,
-        uint256 unstakeInitiatedAt
-    );
+    function Positions(
+        uint256 positionTokenID
+    )
+        external
+        view
+        returns (
+            uint256 poolID,
+            uint256 amountOrTokenID,
+            uint256 stakeTimestamp,
+            uint256 unstakeInitiatedAt
+        );
 
     event StakingPoolCreated(
         uint256 indexed poolID,
@@ -87,15 +99,33 @@ interface IStaker {
         uint256 cooldownSeconds
     ) external;
 
-    function transferPoolAdministration(uint256 poolID, address newAdministrator) external;
+    function transferPoolAdministration(
+        uint256 poolID,
+        address newAdministrator
+    ) external;
 
-    function stakeNative(address user, uint256 poolID) external payable returns (uint256 positionTokenID);
+    function stakeNative(
+        address user,
+        uint256 poolID
+    ) external payable returns (uint256 positionTokenID);
 
-    function stakeERC20(address user, uint256 poolID, uint256 amount) external returns (uint256 positionTokenID);
+    function stakeERC20(
+        address user,
+        uint256 poolID,
+        uint256 amount
+    ) external returns (uint256 positionTokenID);
 
-    function stakeERC721(address user, uint256 poolID, uint256 tokenID) external returns (uint256 positionTokenID);
+    function stakeERC721(
+        address user,
+        uint256 poolID,
+        uint256 tokenID
+    ) external returns (uint256 positionTokenID);
 
-    function stakeERC1155(address user, uint256 poolID, uint256 amount) external returns (uint256 positionTokenID);
+    function stakeERC1155(
+        address user,
+        uint256 poolID,
+        uint256 amount
+    ) external returns (uint256 positionTokenID);
 
     function initiateUnstake(uint256 positionTokenID) external;
 

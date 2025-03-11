@@ -8,7 +8,7 @@ import {
     MockRoyaltyEngineV1,
     OffersLogic,
     Permissions,
-} from '../../typechain-types';
+} from '../typechain-types';
 import { loadFixture, time } from '@nomicfoundation/hardhat-network-helpers';
 import { deployMarketplaceContracts } from './fixture/marketplaceContractsFixture';
 import { SignerWithAddress } from '@nomicfoundation/hardhat-ethers/signers';
@@ -48,9 +48,8 @@ describe('Marketplace: Offers', function () {
     beforeEach(async function () {
         [deployer, buyer, seller, royaltyRecipient] = await ethers.getSigners();
 
-        [marketplace, mockERC20, mockERC721, mockERC1155, mockRoyaltyEngineV1] = await loadFixture(
-            deployMarketplaceContracts
-        );
+        [marketplace, mockERC20, mockERC721, mockERC1155, mockRoyaltyEngineV1] =
+            await loadFixture(deployMarketplaceContracts);
 
         marketplaceAddress = await marketplace.getAddress();
         mockERC20Address = await mockERC20.getAddress();
