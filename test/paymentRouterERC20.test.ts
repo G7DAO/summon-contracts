@@ -1,7 +1,7 @@
 import { expect } from 'chai';
 import hre, { ethers } from 'hardhat';
 import { loadFixture } from '@nomicfoundation/hardhat-network-helpers';
-import { generateRandomSeed } from '../../helpers/signature';
+import { generateRandomSeed } from '../helpers/signature';
 
 describe('PaymentRouterERC20', function () {
     const PAYMENT_ID = 1;

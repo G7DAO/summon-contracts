@@ -1,12 +1,12 @@
 import { expect } from 'chai';
 import { ethers } from 'hardhat';
-import { DirectListingsLogic, Marketplace, MockERC1155, MockERC20 } from '../../typechain-types';
+import { DirectListingsLogic, Marketplace, MockERC1155, MockERC20 } from '../typechain-types';
 import { loadFixture, time } from '@nomicfoundation/hardhat-network-helpers';
 import { deployMarketplaceContracts } from './fixture/marketplaceContractsFixture';
 import { SignerWithAddress } from '@nomicfoundation/hardhat-ethers/signers';
 import { toWei } from './helpers/misc';
 import { Listing, ListingParameters, Status, TokenType } from './helpers/types';
-import { ONE_DAY, ONE_HOUR } from "./helpers/constants";
+import { ONE_DAY } from './helpers/constants';
 
 describe('Marketplace: Direct Listings', function () {
     let directListingsExtension: DirectListingsLogic;
@@ -59,10 +59,10 @@ describe('Marketplace: Direct Listings', function () {
                 };
                 const listingId = await directListingsExtension.connect(seller).createListing.staticCall(listingParams);
                 const tx = await directListingsExtension.connect(seller).createListing(listingParams);
-                const block = await tx.getBlock()
-                const startTime = block.timestamp
-                listingParams.endTimestamp = startTime + (listingParams.endTimestamp - listingParams.startTimestamp)
-                listingParams.startTimestamp = startTime
+                const block = await tx.getBlock();
+                const startTime = block.timestamp;
+                listingParams.endTimestamp = startTime + (listingParams.endTimestamp - listingParams.startTimestamp);
+                listingParams.startTimestamp = startTime;
 
                 await directListingsExtension
                     .connect(seller)
@@ -88,7 +88,7 @@ describe('Marketplace: Direct Listings', function () {
                 describe('getAllValidOffers', function () {
                     it('Should return all valid listings', async function () {
                         expect(await directListingsExtension.getAllValidListings(1, 1)).to.be.deep.equal([
-                            Object.values(listing)
+                            Object.values(listing),
                         ]);
                     });
                 });

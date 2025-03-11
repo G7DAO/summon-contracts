@@ -1,5 +1,20 @@
-import { AccessTokenG7Args, AvatarBoundV1Args, CamelotDistributorArgs, ItemBoundArgs, LevelsBoundV1Args, PaymentRouterNativeG7Args, RewardsNativeG7Args } from '@constants/constructor-args';
-import { CONTRACT_TYPE, CONTRACT_UPGRADABLE_NAME, CONTRACT_UPGRADABLE_FILE_NAME, CONTRACT_FILE_NAME, CONTRACT_NAME } from '@constants/contract';
+import {
+    AccessTokenG7Args,
+    AvatarBoundV1Args,
+    CamelotDistributorArgs,
+    ItemBoundArgs,
+    LevelsBoundV1Args,
+    PaymentRouterNativeG7Args,
+    RewardsNativeG7Args,
+    StakerArgs,
+} from '@constants/constructor-args';
+import {
+    CONTRACT_TYPE,
+    CONTRACT_UPGRADABLE_NAME,
+    CONTRACT_UPGRADABLE_FILE_NAME,
+    CONTRACT_FILE_NAME,
+    CONTRACT_NAME,
+} from '@constants/contract';
 import { TENANT } from '@constants/tenant';
 
 import { DeploymentContract } from '../../types/deployment-type';
@@ -112,8 +127,8 @@ export const G7_MAINNET_CONTRACTS: DeploymentContract[] = [
     },
     {
         contractFileName: CONTRACT_FILE_NAME.Distributor,
-        type: CONTRACT_TYPE.Staker,
-        name: CONTRACT_NAME.CamelotDistributor,
+        type: CONTRACT_TYPE.CamelotDistributor,
+        name: CONTRACT_NAME.Distributor,
         chain,
         networkType,
         tenants: [TENANT.Game7],
@@ -135,5 +150,31 @@ export const G7_MAINNET_CONTRACTS: DeploymentContract[] = [
         dependencies: [],
         functionCalls: [],
         args: ItemBoundArgs.MAINNET,
+    },
+    {
+        contractFileName: CONTRACT_FILE_NAME.PositionMetadata,
+        type: CONTRACT_TYPE.Metadata,
+        name: CONTRACT_NAME.PositionMetadata,
+        chain,
+        networkType,
+        tenants: [TENANT.Game7],
+        verify: true,
+        upgradable: false,
+        dependencies: [],
+        functionCalls: [],
+        args: {},
+    },
+    {
+        contractFileName: CONTRACT_FILE_NAME.Staker,
+        type: CONTRACT_TYPE.Staker,
+        name: CONTRACT_NAME.Staker,
+        chain,
+        networkType,
+        tenants: [TENANT.Game7],
+        verify: true,
+        upgradable: false,
+        dependencies: [CONTRACT_NAME.PositionMetadata],
+        functionCalls: [],
+        args: StakerArgs.MAINNET,
     },
 ];

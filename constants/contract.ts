@@ -23,6 +23,8 @@ export enum CONTRACT_TYPE {
     OffersExtension = 'OffersExtension',
     DirectListingsAddonExtension = 'DirectListingsAddonExtension',
     Forwarder = 'Forwarder',
+    Metadata = 'Metadata',
+    CamelotDistributor = 'CamelotDistributor',
 }
 
 export enum PROXY_CONTRACT_TYPE {
@@ -65,7 +67,9 @@ export enum CONTRACT_FILE_NAME {
     Forwarder = 'Forwarder',
     RewardsNative = 'RewardsNative',
     PaymentRouterNative = 'PaymentRouterNative',
-    Distributor = 'Distributor'
+    Distributor = 'Distributor',
+    Staker = 'Staker',
+    PositionMetadata = 'PositionMetadata',
 }
 
 export enum CONTRACT_UPGRADABLE_FILE_NAME {
@@ -116,7 +120,8 @@ export enum CONTRACT_NAME {
     Forwarder = 'Forwarder',
     RewardsNativeG7 = 'RewardsNativeG7',
     PaymentRouterNativeG7 = 'PaymentRouterNativeG7',
-    CamelotDistributor = 'CamelotDistributor'
+    Distributor = 'Distributor',
+    PositionMetadata = 'PositionMetadata',
 }
 
 export enum CONTRACT_UPGRADABLE_NAME {
@@ -132,7 +137,6 @@ export enum CONTRACT_UPGRADABLE_NAME {
     ZkSpork = 'ZkSpork',
     SkillTree = 'SkillTreeUpgradeable',
     Marketplace = 'Marketplace',
-    MiddlewareStaker = 'MiddlewareStakerNativeTokenV1',
 }
 
 export enum CONTRACT_EXTENSION_NAME {

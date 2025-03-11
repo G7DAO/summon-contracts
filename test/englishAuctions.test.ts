@@ -8,7 +8,7 @@ import {
     MockERC721,
     MockRoyaltyEngineV1,
     Permissions,
-} from '../../typechain-types';
+} from '../typechain-types';
 import { loadFixture, time } from '@nomicfoundation/hardhat-network-helpers';
 import { deployMarketplaceContracts } from './fixture/marketplaceContractsFixture';
 import { SignerWithAddress } from '@nomicfoundation/hardhat-ethers/signers';

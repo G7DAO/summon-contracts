@@ -345,8 +345,8 @@ export const CamelotDistributorArgs = {
         owner: '0x4d790f180C71029F983c0A70901E3DcA1aAe12f5',
         updater: '0x4d790f180C71029F983c0A70901E3DcA1aAe12f5',
         wNative: '0x4d790f180C71029F983c0A70901E3DcA1aAe12f5',
-    }
-}
+    },
+};
 
 export const RewardTokenArgs = {
     MAINNET: {
@@ -406,6 +406,15 @@ export const MarketplaceArgs = {
         extensions: [],
         royaltyEngineAddress: 'ZERO_ADDRESS',
         nativeTokenWrapper: G7_NATIVE_TESTNET_TOKEN,
+    },
+};
+
+export const StakerArgs = {
+    MAINNET: {
+        stakerContract: `CONTRACT_${CONTRACT_NAME.PositionMetadata}`,
+    },
+    TESTNET: {
+        stakerContract: `CONTRACT_${CONTRACT_NAME.PositionMetadata}`,
     },
 };
 

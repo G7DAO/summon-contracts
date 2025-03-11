@@ -52,7 +52,11 @@ interface IDistributor {
     /// @param to Address to send the tokens to
     /// @param token Address of the token to recover
     /// @param amount Amount of token to recover
-    event RecoveredERC20(address indexed to, address indexed token, uint256 amount);
+    event RecoveredERC20(
+        address indexed to,
+        address indexed token,
+        uint256 amount
+    );
 
     /// @dev Emitted when the merkle root is updated
     /// @param root The new root
@@ -89,15 +93,13 @@ interface IDistributor {
     /// @param pool Address of the pool that earned the rewards
     /// @param token Address of the token to be claimed
     /// @param amount Total cumulative amount of rewards earned
-    /// @param proof Merkle proof to verify user can claim rewards
     /// @param identifier Identifier of the incentives (ie: positionId, gamma pool address, etc)
     function harvest(
         address user,
         address pool,
         address token,
         uint256 amount,
-        bytes calldata identifier,
-        bytes32[] calldata proof
+        bytes calldata identifier
     ) external;
 
     /// @notice Claims multiple rewards accrued by the user as incentives
@@ -106,14 +108,12 @@ interface IDistributor {
     /// @param tokens List of addresses of tokens to be claimed
     /// @param amounts List of total cumulative amount of rewards earned
     /// @param identifiers List of identifiers of incentives earned
-    /// @param proofs List of Merkle proofs to verify user can claim rewards
     function multiHarvest(
         address user,
         address[] calldata pools,
         address[] calldata tokens,
         uint256[] calldata amounts,
-        bytes[] calldata identifiers,
-        bytes32[][] calldata proofs
+        bytes[] calldata identifiers
     ) external;
 
     /// @notice Updates the Merkle root
