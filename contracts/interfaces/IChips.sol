@@ -13,7 +13,20 @@ interface IChips {
         uint256[] memory amounts
     ) external;
 
+    function pause() external;
+
+    function unpause() external;
+
+    function adminDeposit(
+        address[] memory users,
+        uint256[] memory amounts
+    ) external;
+
+    function withdrawAllAdmin(address[] memory users) external;
+
     function balanceOf(address account) external view returns (uint256);
 
     function totalSupply() external view returns (uint256);
+
+    function decimals() external view returns (uint8);
 }
