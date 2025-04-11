@@ -22,6 +22,7 @@ import {
 import {
     ReentrancyGuardUpgradeable
 } from "@openzeppelin/contracts-upgradeable/utils/ReentrancyGuardUpgradeable.sol";
+import { UUPSUpgradeable } from "@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
 
 contract Chips is
     IChips,
@@ -29,7 +30,8 @@ contract Chips is
     AccessControlUpgradeable,
     PausableUpgradeable,
     ERC2981Upgradeable,
-    ReentrancyGuardUpgradeable
+    ReentrancyGuardUpgradeable,
+    UUPSUpgradeable
 {
     using SafeERC20 for IERC20;
 
@@ -48,10 +50,6 @@ contract Chips is
 
     mapping(address => uint256) public _balances;
     uint256 public _totalSupply;
-
-    constructor() {
-        _disableInitializers();
-    }
 
     function initialize(address _token, bool _isPaused) public initializer {
         __ReentrancyGuard_init();
@@ -159,5 +157,13 @@ contract Chips is
         return
             AccessControlUpgradeable.supportsInterface(interfaceId) ||
             ERC2981Upgradeable.supportsInterface(interfaceId);
+    }
+    
+    function _authorizeUpgrade(address newImplementation)
+        internal
+        override
+        onlyRole(DEFAULT_ADMIN_ROLE)
+    {
+
     }
 }

@@ -22,13 +22,15 @@ import {
 import {
     ReentrancyGuardUpgradeable
 } from "@openzeppelin/contracts-upgradeable/utils/ReentrancyGuardUpgradeable.sol";
+import { UUPSUpgradeable } from "@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
 
 contract Game is
     Initializable,
     AccessControlUpgradeable,
     PausableUpgradeable,
     ERC2981Upgradeable,
-    ReentrancyGuardUpgradeable
+    ReentrancyGuardUpgradeable,
+    UUPSUpgradeable
 {
     using SafeERC20 for IERC20;
 
@@ -42,10 +44,6 @@ contract Game is
 
     bytes32 public constant GAME_ROLE = keccak256("GAME_ROLE");
     bytes32 public constant ADMIN_ROLE = keccak256("ADMIN_ROLE");
-
-    constructor() {
-        _disableInitializers();
-    }
 
     function initialize(address _token, address _chips, address _treasury, uint256 _playCost, bool _isPaused) public initializer {
         __ReentrancyGuard_init();
@@ -80,7 +78,7 @@ contract Game is
 
         playBalance[_gameNumber][_player] += _numPlays;
     }
-
+        
     function payout(
         address[] calldata _players,
         uint256[] calldata _rawPrizeValues
@@ -89,26 +87,32 @@ contract Game is
             _players.length == _rawPrizeValues.length,
             "Game.payout: incongruent number of players and prizes"
         );
+        require(treasury != address(0), "Treasury address not set");
 
         uint256[] memory netPrizes = new uint256[](_players.length);
         uint256 totalRake = 0;
 
+        // Calculate net prizes and total rake
         for (uint256 i = 0; i < _players.length; i++) {
             uint256 rake = (_rawPrizeValues[i] * 10) / 100; // 10% rake
             uint256 prize = _rawPrizeValues[i] - rake;
 
-            totalRake += rake;
             netPrizes[i] = prize;
+            totalRake += rake;
         }
 
-        // Send the net prizes to players
+        // Distribute net prizes to players
         chips.distributeChips(_players, netPrizes);
 
-        // Send the rake to treasury
+        // Distribute total rake to treasury
         if (totalRake > 0) {
-            // Do we ever want to burn the rake?
-            require(treasury != address(0), "Treasury address not set");
-            token.transfer(treasury, totalRake);
+            address[] memory treasuryArray;
+            treasuryArray[0] = treasury;
+
+            uint256[] memory rakeArray;
+            rakeArray[0] = totalRake;
+
+            chips.distributeChips(treasuryArray, rakeArray);
         }
     }
 
@@ -131,5 +135,13 @@ contract Game is
         return
             AccessControlUpgradeable.supportsInterface(interfaceId) ||
             ERC2981Upgradeable.supportsInterface(interfaceId);
+    }
+
+    function _authorizeUpgrade(address newImplementation)
+        internal
+        override
+        onlyRole(DEFAULT_ADMIN_ROLE)
+    {
+
     }
 }
