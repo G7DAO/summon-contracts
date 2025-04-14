@@ -64,7 +64,7 @@ contract Game is
         uint256 buyinAmount = _numPlays * playCost;
         
         uint256 initialBalance = chips.balanceOf(_player);
-        require(initialBalance > buyinAmount, "Game.buyPlays: insufficient chip balance");
+        require(initialBalance >= buyinAmount, "Game.buyPlays: insufficient chip balance");
         
         chips.retrieveBuyIn(_player, buyinAmount);
         
