@@ -28,7 +28,6 @@ describe('HFG Game', function () {
         const game = await upgrades.deployProxy(
             Game,
             [
-            await token.getAddress(),
             await chips.getAddress(),
             deployer.address, // treasury
             ethers.parseUnits("1", 18), // play cost

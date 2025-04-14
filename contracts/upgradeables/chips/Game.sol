@@ -3,10 +3,6 @@ pragma solidity ^0.8.24;
 
 import { IChips } from "../../interfaces/IChips.sol";
 import {
-    SafeERC20,
-    IERC20
-} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
-import {
     AccessControlUpgradeable
 } from "@openzeppelin/contracts-upgradeable/access/AccessControlUpgradeable.sol";
 import {
@@ -32,9 +28,6 @@ contract Game is
     ReentrancyGuardUpgradeable,
     UUPSUpgradeable
 {
-    using SafeERC20 for IERC20;
-
-    IERC20 public token;
     IChips public chips;
     address public treasury;
     uint256 public playCost;
@@ -45,7 +38,10 @@ contract Game is
     bytes32 public constant GAME_ROLE = keccak256("GAME_ROLE");
     bytes32 public constant ADMIN_ROLE = keccak256("ADMIN_ROLE");
 
-    function initialize(address _token, address _chips, address _treasury, uint256 _playCost, bool _isPaused) public initializer {
+    event PlaysBought(address indexed player, uint256 indexed gameNumber, uint256 indexed numPlays);
+    event RakeCollected(uint256 indexed gameNuber, uint256 indexed rakeValue);
+
+    function initialize(address _chips, address _treasury, uint256 _playCost, bool _isPaused) public initializer {
         __ReentrancyGuard_init();
         __Pausable_init();
         __AccessControl_init();
@@ -54,7 +50,6 @@ contract Game is
         _setRoleAdmin(DEFAULT_ADMIN_ROLE, DEFAULT_ADMIN_ROLE);
         _setRoleAdmin(GAME_ROLE, DEFAULT_ADMIN_ROLE);
 
-        token = IERC20(_token);
         chips = IChips(_chips);
         treasury = _treasury;
         playCost = _playCost;
@@ -77,43 +72,56 @@ contract Game is
         require(initialBalance - buyinAmount == finalBalance, "Game.buyPlays: unable to confirm payment");
 
         playBalance[_gameNumber][_player] += _numPlays;
+        emit PlaysBought(_player, _gameNumber, _numPlays);
     }
         
     function payout(
+        uint256 _gameNumber,
         address[] calldata _players,
-        uint256[] calldata _rawPrizeValues
+        uint256[] calldata _prizeValues,
+        uint256 _rake
     ) external onlyRole(GAME_ROLE) whenNotPaused {
         require(
-            _players.length == _rawPrizeValues.length,
+            _players.length == _prizeValues.length,
             "Game.payout: incongruent number of players and prizes"
         );
         require(treasury != address(0), "Treasury address not set");
 
-        uint256[] memory netPrizes = new uint256[](_players.length);
-        uint256 totalRake = 0;
+        // Legacy: code to calculate rake onchain
+        // uint256[] memory netPrizes = new uint256[](_players.length);
+        // uint256 totalRake = 0;
 
-        // Calculate net prizes and total rake
-        for (uint256 i = 0; i < _players.length; i++) {
-            uint256 rake = (_rawPrizeValues[i] * 10) / 100; // 10% rake
-            uint256 prize = _rawPrizeValues[i] - rake;
+        // // Calculate net prizes and total rake
+        // for (uint256 i = 0; i < _players.length; i++) {
+        //     uint256 rake = (_rawPrizeValues[i] * 10) / 100; // 10% rake
+        //     uint256 prize = _rawPrizeValues[i] - rake;
 
-            netPrizes[i] = prize;
-            totalRake += rake;
-        }
+        //     netPrizes[i] = prize;
+        //     totalRake += rake;
+        // }
 
         // Distribute net prizes to players
-        chips.distributeChips(_players, netPrizes);
+        chips.distributeChips(_players, _prizeValues);
 
-        // Distribute total rake to treasury
-        if (totalRake > 0) {
-            address[] memory treasuryArray;
-            treasuryArray[0] = treasury;
+        // Distribute the rake
+        address[] memory treasuryArray;
+        treasuryArray[0] = treasury;
+        uint256[] memory rakeArray;
+        rakeArray[0] = _rake;
+        chips.distributeChips(treasuryArray, rakeArray);
+        emit RakeCollected(_gameNumber, _rake);
 
-            uint256[] memory rakeArray;
-            rakeArray[0] = totalRake;
+        // Legacy: code to distribution calculated rake
+        // // Distribute total rake to treasury
+        // if (totalRake > 0) {
+        //     address[] memory treasuryArray;
+        //     treasuryArray[0] = treasury;
 
-            chips.distributeChips(treasuryArray, rakeArray);
-        }
+        //     uint256[] memory rakeArray;
+        //     rakeArray[0] = totalRake;
+
+        //     chips.distributeChips(treasuryArray, rakeArray);
+        // }
     }
 
     function pause() external onlyRole(DEFAULT_ADMIN_ROLE) {
