@@ -242,5 +242,5 @@ contract Chips is
     }
 
     // Reserved storage space to allow for layout changes in the future.
-    uint256[37] private __gap;
+    uint256[42] private __gap;
 }
