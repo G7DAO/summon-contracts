@@ -47,7 +47,7 @@ describe('HFG Game', function () {
         );
 
         await game.connect(deployer).grantRole(
-            ethers.keccak256(ethers.toUtf8Bytes("GAME_ROLE")),
+            ethers.keccak256(ethers.toUtf8Bytes("GAME_SERVER_ROLE")),
             gameWallet
         );
 
@@ -69,10 +69,11 @@ describe('HFG Game', function () {
 
             const ADMIN_ROLE = await chips.DEFAULT_ADMIN_ROLE(); // or chips.ADMIN_ROLE() if that’s different
             const GAME_ROLE = await chips.GAME_ROLE();
+            const GAME_SERVER_ROLE = await game.GAME_SERVER_ROLE();
 
             expect(await chips.hasRole(ADMIN_ROLE, deployer.address)).to.be.true;
             expect(await chips.hasRole(GAME_ROLE, await game.getAddress())).to.be.true;
-            expect(await game.hasRole(GAME_ROLE, gameWallet)).to.be.true;
+            expect(await game.hasRole(GAME_SERVER_ROLE, gameWallet)).to.be.true;
         });
     });
 
@@ -89,7 +90,28 @@ describe('HFG Game', function () {
             ({ game, chips, token, deployer, user1, gameWallet, playCost } = await loadFixture(deployGameFixture));
         });
 
-        it('Should store play balnce and emit an event', async function () {
+        it('Should store play balance and game values and emit an event', async function () {
+            const gameNumber = 1n;
+            let numPlays = 5n;
+            const totalCost = numPlays * playCost;
+
+            await token.connect(user1).approve(await chips.getAddress(), totalCost);
+            await chips.connect(user1).deposit(totalCost);
+
+            expect(await chips.balanceOf(user1)).to.equal(totalCost);
+            expect(await game.playBalance(gameNumber, user1)).to.equal(0n);
+            expect(await game.totalGameValue(gameNumber)).to.equal(0n);
+            expect(await game.currentGameValue(gameNumber)).to.equal(0n);
+
+            // Try to buy more plays than user can afford
+            numPlays += 1n;
+            await expect(
+                game.connect(gameWallet).buyPlays(user1.address, gameNumber, numPlays)
+            ).to.be.revertedWithCustomError(game, "InsufficientChipBalance")
+            .withArgs(user1.address, numPlays * playCost);
+        });
+
+        it('Should revert if player does not have sufficient balance', async function () {
             const gameNumber = 1n;
             const numPlays = 5n;
             const totalCost = numPlays * playCost;
@@ -98,6 +120,9 @@ describe('HFG Game', function () {
             await chips.connect(user1).deposit(totalCost);
 
             expect(await chips.balanceOf(user1)).to.equal(totalCost);
+            expect(await game.playBalance(gameNumber, user1)).to.equal(0n);
+            expect(await game.totalGameValue(gameNumber)).to.equal(0n);
+            expect(await game.currentGameValue(gameNumber)).to.equal(0n);
 
             //await game.connect(gameWallet).buyPlays(user1, gameNumber, numPlays);
             await expect(
@@ -105,8 +130,92 @@ describe('HFG Game', function () {
             ).to.emit(game, "PlaysBought")
             .withArgs(user1.address, gameNumber, numPlays);
 
-            expect(await game.playBalance(gameNumber, user1)).to.equal(numPlays);
             expect(await chips.balanceOf(user1)).to.equal(0);
+            expect(await game.playBalance(gameNumber, user1)).to.equal(numPlays);
+            expect(await game.totalGameValue(gameNumber)).to.equal(totalCost);
+            expect(await game.currentGameValue(gameNumber)).to.equal(totalCost);
+        });
+    });
+
+    describe('Payout', function () {
+        let game;
+        let chips;
+        let token;
+        let deployer;
+        let user1;
+        let gameWallet;
+        let playCost;
+
+        beforeEach(async function () {
+            ({ game, chips, token, deployer, user1, gameWallet, playCost } = await loadFixture(deployGameFixture));
+        });
+
+        it('Should payout to users1 and emit an event', async function () {
+            const gameNumber = 1n;
+            const numPlays = 5n;
+            const totalCost = numPlays * playCost;
+            const rake = (totalCost * 10n)/100n;
+
+            await token.connect(user1).approve(await chips.getAddress(), totalCost);
+            await chips.connect(user1).deposit(totalCost);
+
+            expect(await chips.balanceOf(user1)).to.equal(totalCost);
+            expect(await game.playBalance(gameNumber, user1)).to.equal(0n);
+            expect(await game.totalGameValue(gameNumber)).to.equal(0n);
+            expect(await game.currentGameValue(gameNumber)).to.equal(0n);
+
+            //await game.connect(gameWallet).buyPlays(user1, gameNumber, numPlays);
+            await expect(
+                game.connect(gameWallet).buyPlays(user1, gameNumber, numPlays)
+            ).to.emit(game, "PlaysBought")
+            .withArgs(user1.address, gameNumber, numPlays);
+
+            expect(await chips.balanceOf(user1)).to.equal(0);
+            expect(await game.playBalance(gameNumber, user1)).to.equal(numPlays);
+            expect(await game.totalGameValue(gameNumber)).to.equal(totalCost);
+            expect(await game.currentGameValue(gameNumber)).to.equal(totalCost);
+
+            // await game.connect(gameWallet).payout(gameNumber, [user1], [totalCost], 0);
+            // await expect(
+                // game.connect(gameWallet).payout(gameNumber, [user1], [totalCost - rake], rake)
+            // ).to.emit(game, "PlaysBought")
+            // .withArgs(user1.address, gameNumber, numPlays);
+        });
+    });
+
+    describe('Play cost', function () {
+        let game;
+        let chips;
+        let token;
+        let deployer;
+        let user1;
+        let gameWallet;
+        let playCost;
+
+        beforeEach(async function () {
+            ({ game, chips, token, deployer, user1, gameWallet, playCost } = await loadFixture(deployGameFixture));
+        });
+
+        it('Should use default and allow admin to change', async function () {
+            const gameNumber = 3n;
+            expect(await game.getPlayCost(gameNumber)).to.equal(playCost);
+
+            const newPlayCost = 5000n;
+            await game.connect(deployer).setPlayCost(gameNumber, newPlayCost);
+
+            expect(await game.getPlayCost(gameNumber)).to.equal(newPlayCost);
+        });
+
+        it('Should not allow nonAdmin to change', async function () {
+            const gameNumber = 3n;
+            expect(await game.getPlayCost(gameNumber)).to.equal(playCost);
+
+            const newPlayCost = 5000n;
+            await expect(
+                game.connect(user1).setPlayCost(gameNumber, newPlayCost)
+            ).to.be.reverted;
+
+            expect(await game.getPlayCost(gameNumber)).to.equal(playCost);
         });
     });
 

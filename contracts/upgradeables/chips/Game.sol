@@ -30,29 +30,39 @@ contract Game is
 {
     IChips public chips;
     address public treasury;
-    uint256 public playCost;
+    uint256 public defaultPlayCost;
 
+    // Game ID -> play cost
+    mapping(uint256 => uint256) public playCost;
     // Game ID -> Player address -> play balance
     mapping(uint256 => mapping(address => uint256)) public playBalance;
+    // Game ID -> total game value
+    mapping(uint256 => uint256) public totalGameValue;
+    // Game ID -> current game value
+    mapping(uint256 => uint256) public currentGameValue;
 
-    bytes32 public constant GAME_ROLE = keccak256("GAME_ROLE");
+    bytes32 public constant GAME_SERVER_ROLE = keccak256("GAME_SERVER_ROLE");
     bytes32 public constant ADMIN_ROLE = keccak256("ADMIN_ROLE");
 
     event PlaysBought(address indexed player, uint256 indexed gameNumber, uint256 indexed numPlays);
     event RakeCollected(uint256 indexed gameNuber, uint256 indexed rakeValue);
+    event ValueDistributed(uint256 indexed gameNumber, uint256 indexed value);
 
-    function initialize(address _chips, address _treasury, uint256 _playCost, bool _isPaused) public initializer {
+    error InsufficientChipBalance(address player, uint256 balanceRequired);
+    error PlayCostCannotBeChanged(uint256 gameNumber, uint256 value);
+
+    function initialize(address _chips, address _treasury, uint256 _defaultPlayCost, bool _isPaused) public initializer {
         __ReentrancyGuard_init();
         __Pausable_init();
         __AccessControl_init();
 
         _grantRole(DEFAULT_ADMIN_ROLE, msg.sender);
         _setRoleAdmin(DEFAULT_ADMIN_ROLE, DEFAULT_ADMIN_ROLE);
-        _setRoleAdmin(GAME_ROLE, DEFAULT_ADMIN_ROLE);
+        _setRoleAdmin(GAME_SERVER_ROLE, DEFAULT_ADMIN_ROLE);
 
         chips = IChips(_chips);
         treasury = _treasury;
-        playCost = _playCost;
+        defaultPlayCost = _defaultPlayCost;
         if (_isPaused) _pause();
     }
 
@@ -60,16 +70,18 @@ contract Game is
         address _player,
         uint256 _gameNumber,
         uint256 _numPlays
-    ) external onlyRole(GAME_ROLE) whenNotPaused {
-        uint256 buyinAmount = _numPlays * playCost;
+    ) external onlyRole(GAME_SERVER_ROLE) whenNotPaused nonReentrant {
+        uint256 gamePlayCost = _getPlayCost(_gameNumber);
+        uint256 buyinAmount = _numPlays * gamePlayCost;
         
         uint256 initialBalance = chips.balanceOf(_player);
-        require(initialBalance >= buyinAmount, "Game.buyPlays: insufficient chip balance");
+        if (initialBalance < buyinAmount) {
+            revert InsufficientChipBalance(_player, buyinAmount);
+        }
         
         chips.retrieveBuyIn(_player, buyinAmount);
-        
-        uint256 finalBalance = chips.balanceOf(_player);
-        require(initialBalance - buyinAmount == finalBalance, "Game.buyPlays: unable to confirm payment");
+        totalGameValue[_gameNumber] += buyinAmount;
+        currentGameValue[_gameNumber] += buyinAmount;
 
         playBalance[_gameNumber][_player] += _numPlays;
         emit PlaysBought(_player, _gameNumber, _numPlays);
@@ -80,25 +92,12 @@ contract Game is
         address[] calldata _players,
         uint256[] calldata _prizeValues,
         uint256 _rake
-    ) external onlyRole(GAME_ROLE) whenNotPaused {
+    ) external onlyRole(GAME_SERVER_ROLE) whenNotPaused nonReentrant {
         require(
             _players.length == _prizeValues.length,
             "Game.payout: incongruent number of players and prizes"
         );
         require(treasury != address(0), "Treasury address not set");
-
-        // Legacy: code to calculate rake onchain
-        // uint256[] memory netPrizes = new uint256[](_players.length);
-        // uint256 totalRake = 0;
-
-        // // Calculate net prizes and total rake
-        // for (uint256 i = 0; i < _players.length; i++) {
-        //     uint256 rake = (_rawPrizeValues[i] * 10) / 100; // 10% rake
-        //     uint256 prize = _rawPrizeValues[i] - rake;
-
-        //     netPrizes[i] = prize;
-        //     totalRake += rake;
-        // }
 
         // Distribute net prizes to players
         chips.distributeChips(_players, _prizeValues);
@@ -111,17 +110,28 @@ contract Game is
         chips.distributeChips(treasuryArray, rakeArray);
         emit RakeCollected(_gameNumber, _rake);
 
-        // Legacy: code to distribution calculated rake
-        // // Distribute total rake to treasury
-        // if (totalRake > 0) {
-        //     address[] memory treasuryArray;
-        //     treasuryArray[0] = treasury;
+        // Calculate net value of prizes and rake
+        uint256 valueDistributed = _rake;
+        for (uint256 i = 0; i < _players.length; i++) {
+            valueDistributed += _prizeValues[i];
+        }
+        currentGameValue[_gameNumber] -= valueDistributed;
+        emit ValueDistributed(_gameNumber, valueDistributed);
+    }
 
-        //     uint256[] memory rakeArray;
-        //     rakeArray[0] = totalRake;
+    function _getPlayCost(uint256 _gameNumber) internal view returns(uint256) {
+        return (playCost[_gameNumber] > 0 ? playCost[_gameNumber] : defaultPlayCost);
+    }
 
-        //     chips.distributeChips(treasuryArray, rakeArray);
-        // }
+    function getPlayCost(uint256 _gameNumber) external view returns(uint256) {
+        return _getPlayCost(_gameNumber);
+    }
+
+    function setPlayCost(uint256 _gameNumber, uint256 _playCost) external onlyRole(DEFAULT_ADMIN_ROLE) {
+        if (totalGameValue[_gameNumber] > 0) {
+            revert PlayCostCannotBeChanged(_gameNumber, _playCost);
+        }
+        playCost[_gameNumber] = _playCost;
     }
 
     function pause() external onlyRole(DEFAULT_ADMIN_ROLE) {
