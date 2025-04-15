@@ -377,4 +377,18 @@ describe('Chips', function () {
         });
     });
 
+    describe('Upgrade Authorization', function () {
+        it('Should allow manager to upgrade contract', async function () {
+            const { chips, manager } = await loadFixture(deployFixtures);
+            const ChipsV2 = await ethers.getContractFactory('Chips', manager);
+            await upgrades.upgradeProxy(chips, ChipsV2);
+        });
+
+        it('Should revert if non-manager tries to upgrade', async function () {
+            const { chips, user1 } = await loadFixture(deployFixtures);
+            const ChipsV2 = await ethers.getContractFactory('Chips', user1);
+            await expect(upgrades.upgradeProxy(chips, ChipsV2))
+                .to.be.revertedWithCustomError(chips, 'AccessControlUnauthorizedAccount');
+        });
+    });
 }); 

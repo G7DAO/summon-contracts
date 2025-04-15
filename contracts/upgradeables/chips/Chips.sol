@@ -238,9 +238,7 @@ contract Chips is
     function _authorizeUpgrade(
         address newImplementation
     ) internal view override onlyRole(MANAGER_ROLE) {
-        if (!hasRole(MANAGER_ROLE, _msgSender())) {
-            revert();
-        }
+        // The onlyRole modifier already checks for the manager role
     }
 
     // Reserved storage space to allow for layout changes in the future.
