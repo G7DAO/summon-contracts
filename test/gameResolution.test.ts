@@ -232,13 +232,13 @@ describe('HFG Game', function () {
             ({ game, chips, token, deployer, user1, gameWallet, playCost } = await loadFixture(deployGameFixture));
         });
 
-        it("Should upgrade Game to GameV2", async function () {
+        it("Should upgrade Game to MockGameV2", async function () {
             const gameNumber = 5n;
             expect(await game.getPlayCost(gameNumber)).to.equal(playCost);
 
-            const GameV2 = await ethers.getContractFactory("GameV2");
+            const MockGameV2 = await ethers.getContractFactory("MockGameV2");
 
-            const upgraded = await upgrades.upgradeProxy(await game.getAddress(), GameV2);
+            const upgraded = await upgrades.upgradeProxy(await game.getAddress(), MockGameV2);
 
             // Verify existing state is intact (optional)
             expect(await upgraded.getPlayCost(gameNumber)).to.equal(playCost);
@@ -250,10 +250,10 @@ describe('HFG Game', function () {
         it("Should revert upgrade attempt from non-admin", async function () {
             const { game, user1 } = await loadFixture(deployGameFixture);
 
-            const GameV2 = await ethers.getContractFactory("GameV2", user1);
+            const MockGameV2 = await ethers.getContractFactory("MockGameV2", user1);
 
             await expect(
-                upgrades.upgradeProxy(await game.getAddress(), GameV2)
+                upgrades.upgradeProxy(await game.getAddress(), MockGameV2)
             ).to.be.revertedWithCustomError(game, "AccessControlUnauthorizedAccount")
             .withArgs(user1.address, ethers.ZeroHash); // 0x00... is DEFAULT_ADMIN_ROLE
         });
