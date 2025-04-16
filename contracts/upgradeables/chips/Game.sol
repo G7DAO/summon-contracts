@@ -24,7 +24,6 @@ contract Game is
     Initializable,
     AccessControlUpgradeable,
     PausableUpgradeable,
-    ERC2981Upgradeable,
     ReentrancyGuardUpgradeable,
     UUPSUpgradeable
 {
@@ -33,7 +32,7 @@ contract Game is
     uint256 public defaultPlayCost;
 
     // Game ID -> play cost
-    mapping(uint256 => uint256) public playCost;
+    mapping(uint256 => uint256) playCost;
     // Game ID -> Player address -> play balance
     mapping(uint256 => mapping(address => uint256)) public playBalance;
     // Game ID -> total game value
@@ -99,21 +98,26 @@ contract Game is
         );
         require(treasury != address(0), "Treasury address not set");
 
+        address[] memory receipients = new address[](_players.length + 1);
+        for (uint256 i = 0; i < _players.length; i++) {
+            receipients[i] = _players[i];
+        }
+        receipients[_players.length] = treasury; // add the new value at the end
+
+        uint256[] memory payoutValues = new uint256[](_prizeValues.length + 1);
+        for (uint256 i = 0; i < _prizeValues.length; i++) {
+            payoutValues[i] = _prizeValues[i];
+        }
+        payoutValues[_prizeValues.length] = _rake; // add the new value at the end
+
         // Distribute net prizes to players
         chips.distributeChips(_players, _prizeValues);
-
-        // Distribute the rake
-        address[] memory treasuryArray;
-        treasuryArray[0] = treasury;
-        uint256[] memory rakeArray;
-        rakeArray[0] = _rake;
-        chips.distributeChips(treasuryArray, rakeArray);
         emit RakeCollected(_gameNumber, _rake);
 
         // Calculate net value of prizes and rake
-        uint256 valueDistributed = _rake;
-        for (uint256 i = 0; i < _players.length; i++) {
-            valueDistributed += _prizeValues[i];
+        uint256 valueDistributed;
+        for (uint256 i = 0; i < payoutValues.length; i++) {
+            valueDistributed += payoutValues[i];
         }
         currentGameValue[_gameNumber] -= valueDistributed;
         emit ValueDistributed(_gameNumber, valueDistributed);
@@ -147,12 +151,11 @@ contract Game is
     )
         public
         view
-        override(AccessControlUpgradeable, ERC2981Upgradeable)
+        override(AccessControlUpgradeable)
         returns (bool)
     {
         return
-            AccessControlUpgradeable.supportsInterface(interfaceId) ||
-            ERC2981Upgradeable.supportsInterface(interfaceId);
+            AccessControlUpgradeable.supportsInterface(interfaceId);
     }
 
     function _authorizeUpgrade(address newImplementation)

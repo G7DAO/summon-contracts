@@ -87,7 +87,7 @@ contract Chips is
         address from,
         uint256 amount
     ) external onlyRole(GAME_ROLE) whenNotPaused {
-        _update(from, address(0), amount);
+        _update(from, msg.sender, amount);
     }
 
     function distributeChips(

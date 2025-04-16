@@ -175,7 +175,7 @@ describe('HFG Game', function () {
             expect(await game.totalGameValue(gameNumber)).to.equal(totalCost);
             expect(await game.currentGameValue(gameNumber)).to.equal(totalCost);
 
-            // await game.connect(gameWallet).payout(gameNumber, [user1], [totalCost], 0);
+            await game.connect(gameWallet).payout(gameNumber, [user1], [totalCost - rake], rake);
             // await expect(
                 // game.connect(gameWallet).payout(gameNumber, [user1], [totalCost - rake], rake)
             // ).to.emit(game, "PlaysBought")
@@ -218,5 +218,47 @@ describe('HFG Game', function () {
             expect(await game.getPlayCost(gameNumber)).to.equal(playCost);
         });
     });
+
+    describe('Upgrade', function () {
+        let game;
+        let chips;
+        let token;
+        let deployer;
+        let user1;
+        let gameWallet;
+        let playCost;
+
+        beforeEach(async function () {
+            ({ game, chips, token, deployer, user1, gameWallet, playCost } = await loadFixture(deployGameFixture));
+        });
+
+        it("Should upgrade Game to GameV2", async function () {
+            const gameNumber = 5n;
+            expect(await game.getPlayCost(gameNumber)).to.equal(playCost);
+
+            const GameV2 = await ethers.getContractFactory("GameV2");
+
+            const upgraded = await upgrades.upgradeProxy(await game.getAddress(), GameV2);
+
+            // Verify existing state is intact (optional)
+            expect(await upgraded.getPlayCost(gameNumber)).to.equal(playCost);
+
+            // Call new function
+            expect(await upgraded.upgradeTestFunction()).to.equal("Successful test!");
+        });
+        
+        it("Should revert upgrade attempt from non-admin", async function () {
+            const { game, user1 } = await loadFixture(deployGameFixture);
+
+            const GameV2 = await ethers.getContractFactory("GameV2", user1);
+
+            await expect(
+                upgrades.upgradeProxy(await game.getAddress(), GameV2)
+            ).to.be.revertedWithCustomError(game, "AccessControlUnauthorizedAccount")
+            .withArgs(user1.address, ethers.ZeroHash); // 0x00... is DEFAULT_ADMIN_ROLE
+        });
+
+    });
+
 
 });
