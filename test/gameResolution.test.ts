@@ -67,11 +67,11 @@ describe('HFG Game', function () {
         it('Should set the correct roles', async function () {
             const { game, chips, token, deployer, user1, gameWallet, playCost } = await loadFixture(deployGameFixture);
 
-            const ADMIN_ROLE = await chips.DEFAULT_ADMIN_ROLE(); // or chips.ADMIN_ROLE() if that’s different
+            const MANAGER_ROLE = await chips.MANAGER_ROLE();
             const GAME_ROLE = await chips.GAME_ROLE();
             const GAME_SERVER_ROLE = await game.GAME_SERVER_ROLE();
 
-            expect(await chips.hasRole(ADMIN_ROLE, deployer.address)).to.be.true;
+            expect(await chips.hasRole(MANAGER_ROLE, deployer.address)).to.be.true;
             expect(await chips.hasRole(GAME_ROLE, await game.getAddress())).to.be.true;
             expect(await game.hasRole(GAME_SERVER_ROLE, gameWallet)).to.be.true;
         });
@@ -246,7 +246,7 @@ describe('HFG Game', function () {
             // Call new function
             expect(await upgraded.upgradeTestFunction()).to.equal("Successful test!");
         });
-        
+
         it("Should revert upgrade attempt from non-admin", async function () {
             const { game, user1 } = await loadFixture(deployGameFixture);
 
