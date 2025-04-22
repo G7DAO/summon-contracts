@@ -42,7 +42,7 @@ contract Chips is
     event Withdraw(address indexed user, uint256 amount);
     event AdminDeposit(
         address indexed admin,
-        address[] indexed users,
+        address[] users,
         uint256[] amounts
     );
     event WithdrawAllAdmin(address indexed admin, address[] indexed users);
@@ -53,7 +53,7 @@ contract Chips is
     );
     event DistributeChips(
         address indexed game,
-        address[] indexed users,
+        address[] users,
         uint256[] amounts
     );
 
@@ -69,8 +69,8 @@ contract Chips is
     bytes32 public constant MANAGER_ROLE = keccak256("MANAGER_ROLE");
 
     IERC20 public token;
-    mapping(address => uint256) public _balances;
-    uint256 public _totalSupply;
+    mapping(address => uint256) _balances;
+    uint256 _totalSupply;
     uint8 private _decimals;
 
     // @dev Initializes the contract

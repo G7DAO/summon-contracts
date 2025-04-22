@@ -6,7 +6,7 @@ describe('HFG Game', function () {
     const ZERO_ADDRESS = ethers.ZeroAddress;
 
     async function deployGameFixture() {
-        const [deployer, gameWallet, user1] =
+        const [deployer, gameWallet, player1, player2, player3, treasury] =
             await ethers.getSigners();
 
         // Mock or actual token address
@@ -14,7 +14,9 @@ describe('HFG Game', function () {
         const token = await Token.deploy("TestToken", "TT");
         await token.waitForDeployment();
 
-        await token.mint(user1.address, 100000n);
+        await token.mint(player1.address, 100000n);
+        await token.mint(player2.address, 100000n);
+        await token.mint(player3.address, 100000n);
 
         // Deploy Chips
         const Chips = await ethers.getContractFactory("Chips");
@@ -33,7 +35,7 @@ describe('HFG Game', function () {
             Game,
             [
             await chips.getAddress(),
-            deployer.address, // treasury
+            treasury.address, // treasury
             playCost,
             false, // isPaused
             ],
@@ -55,7 +57,7 @@ describe('HFG Game', function () {
         console.log("Chips deployed to:", await chips.getAddress());
         console.log("Game deployed to:", await game.getAddress());
 
-        return { game: game, chips: chips, token: token, deployer: deployer, user1: user1, gameWallet: gameWallet, playCost: playCost };
+        return { game: game, chips: chips, token: token, deployer: deployer, players: [player1, player2, player3], treasury: treasury, gameWallet: gameWallet, playCost: playCost };
     }
 
     describe('Deployment', function () {
@@ -65,7 +67,7 @@ describe('HFG Game', function () {
         });
 
         it('Should set the correct roles', async function () {
-            const { game, chips, token, deployer, user1, gameWallet, playCost } = await loadFixture(deployGameFixture);
+            const { game, chips, token, deployer, players, treasury, gameWallet, playCost } = await loadFixture(deployGameFixture);
 
             const MANAGER_ROLE = await chips.MANAGER_ROLE();
             const GAME_ROLE = await chips.GAME_ROLE();
@@ -82,15 +84,18 @@ describe('HFG Game', function () {
         let chips;
         let token;
         let deployer;
-        let user1;
+        let players;
+        let treasury;
         let gameWallet;
         let playCost;
 
         beforeEach(async function () {
-            ({ game, chips, token, deployer, user1, gameWallet, playCost } = await loadFixture(deployGameFixture));
+            ({ game, chips, token, deployer, players, treasury, gameWallet, playCost } = await loadFixture(deployGameFixture));
         });
 
         it('Should store play balance and game values and emit an event', async function () {
+            const user1 = players[0];
+            
             const gameNumber = 1n;
             let numPlays = 5n;
             const totalCost = numPlays * playCost;
@@ -112,6 +117,8 @@ describe('HFG Game', function () {
         });
 
         it('Should revert if player does not have sufficient balance', async function () {
+            const user1 = players[0];
+            
             const gameNumber = 1n;
             const numPlays = 5n;
             const totalCost = numPlays * playCost;
@@ -142,15 +149,18 @@ describe('HFG Game', function () {
         let chips;
         let token;
         let deployer;
-        let user1;
+        let players;
+        let treasury;
         let gameWallet;
         let playCost;
 
         beforeEach(async function () {
-            ({ game, chips, token, deployer, user1, gameWallet, playCost } = await loadFixture(deployGameFixture));
+            ({ game, chips, token, deployer, players, treasury, gameWallet, playCost } = await loadFixture(deployGameFixture));
         });
 
-        it('Should payout to users1 and emit an event', async function () {
+        it('Should payout to users and emit an event', async function () {
+            const user1 = players[0];
+            
             const gameNumber = 1n;
             const numPlays = 5n;
             const totalCost = numPlays * playCost;
@@ -175,11 +185,64 @@ describe('HFG Game', function () {
             expect(await game.totalGameValue(gameNumber)).to.equal(totalCost);
             expect(await game.currentGameValue(gameNumber)).to.equal(totalCost);
 
-            await game.connect(gameWallet).payout(gameNumber, [user1], [totalCost - rake], rake);
-            // await expect(
-                // game.connect(gameWallet).payout(gameNumber, [user1], [totalCost - rake], rake)
-            // ).to.emit(game, "PlaysBought")
-            // .withArgs(user1.address, gameNumber, numPlays);
+            await expect(
+                game.connect(gameWallet).payout(gameNumber, [user1], [totalCost - rake], rake)
+            ).to.emit(game, "RakeCollected")
+            .withArgs(gameNumber, rake)
+            .and.to.emit(game, "ValueDistributed")
+            .withArgs(gameNumber, (totalCost - rake));
+
+
+            expect(await chips.balanceOf(user1.address)).to.equal(totalCost - rake);
+            expect(await chips.balanceOf(treasury.address)).to.equal(rake);
+        });
+
+        it('Should payout to multiple users', async function () {
+            const gameNumber = 1n;
+            const numPlays = 5n;
+            const totalCost = numPlays * playCost;
+            const rake = (totalCost * 3n * 10n)/100n;
+
+            for (let i = 0; i < players.length; i++) {
+                await token.connect(players[i]).approve(await chips.getAddress(), totalCost);
+                await chips.connect(players[i]).deposit(totalCost);
+
+                expect(await chips.balanceOf(players[i])).to.equal(totalCost);
+                expect(await game.playBalance(gameNumber, players[i])).to.equal(0n);
+            }
+
+            expect(await game.totalGameValue(gameNumber)).to.equal(0n);
+            expect(await game.currentGameValue(gameNumber)).to.equal(0n);
+
+            for (let i = 0; i < players.length; i++) {
+                await expect(
+                    game.connect(gameWallet).buyPlays(players[i], gameNumber, numPlays)
+                ).to.emit(game, "PlaysBought")
+                .withArgs(players[i].address, gameNumber, numPlays);
+
+                expect(await chips.balanceOf(players[i])).to.equal(0);
+                expect(await game.playBalance(gameNumber, players[i])).to.equal(numPlays);
+            }
+
+            expect(await game.totalGameValue(gameNumber)).to.equal(totalCost * 3n);
+            expect(await game.currentGameValue(gameNumber)).to.equal(totalCost * 3n);
+
+            const prizeValue = totalCost * 3n - rake;
+            const payouts = [prizeValue / 27n, prizeValue * 6n / 27n, prizeValue * 20n / 27n]; // Values spefic to prize pool because of integer division
+
+            await expect(
+                game.connect(gameWallet).payout(gameNumber, players, payouts, rake)
+            ).to.emit(game, "RakeCollected")
+            .withArgs(gameNumber, rake)
+            .and.to.emit(game, "ValueDistributed")
+            .withArgs(gameNumber, (totalCost * 3n - rake));
+
+
+            for (let i = 0; i < players.length; i++) {
+                expect(await chips.balanceOf(players[i].address)).to.equal(payouts[i]);
+                expect(await chips.balanceOf(treasury.address)).to.equal(rake);
+            }
+
         });
     });
 
@@ -188,12 +251,13 @@ describe('HFG Game', function () {
         let chips;
         let token;
         let deployer;
-        let user1;
+        let players;
+        let treasury;
         let gameWallet;
         let playCost;
 
         beforeEach(async function () {
-            ({ game, chips, token, deployer, user1, gameWallet, playCost } = await loadFixture(deployGameFixture));
+            ({ game, chips, token, deployer, players, treasury, gameWallet, playCost } = await loadFixture(deployGameFixture));
         });
 
         it('Should use default and allow admin to change', async function () {
@@ -212,7 +276,7 @@ describe('HFG Game', function () {
 
             const newPlayCost = 5000n;
             await expect(
-                game.connect(user1).setPlayCost(gameNumber, newPlayCost)
+                game.connect(players[0]).setPlayCost(gameNumber, newPlayCost)
             ).to.be.reverted;
 
             expect(await game.getPlayCost(gameNumber)).to.equal(playCost);
@@ -224,12 +288,13 @@ describe('HFG Game', function () {
         let chips;
         let token;
         let deployer;
-        let user1;
+        let players;
+        let treasury;
         let gameWallet;
         let playCost;
 
         beforeEach(async function () {
-            ({ game, chips, token, deployer, user1, gameWallet, playCost } = await loadFixture(deployGameFixture));
+            ({ game, chips, token, deployer, players, treasury, gameWallet, playCost } = await loadFixture(deployGameFixture));
         });
 
         it("Should upgrade Game to MockGameV2", async function () {
@@ -248,14 +313,14 @@ describe('HFG Game', function () {
         });
 
         it("Should revert upgrade attempt from non-admin", async function () {
-            const { game, user1 } = await loadFixture(deployGameFixture);
+            const { game, players } = await loadFixture(deployGameFixture);
 
-            const MockGameV2 = await ethers.getContractFactory("MockGameV2", user1);
+            const MockGameV2 = await ethers.getContractFactory("MockGameV2", players[0]);
 
             await expect(
                 upgrades.upgradeProxy(await game.getAddress(), MockGameV2)
             ).to.be.revertedWithCustomError(game, "AccessControlUnauthorizedAccount")
-            .withArgs(user1.address, ethers.ZeroHash); // 0x00... is DEFAULT_ADMIN_ROLE
+            .withArgs(players[0].address, ethers.ZeroHash); // 0x00... is DEFAULT_ADMIN_ROLE
         });
 
     });

@@ -108,17 +108,19 @@ contract Game is
         for (uint256 i = 0; i < _prizeValues.length; i++) {
             payoutValues[i] = _prizeValues[i];
         }
-        payoutValues[_prizeValues.length] = _rake; // add the new value at the end
 
-        // Distribute net prizes to players
-        chips.distributeChips(_players, _prizeValues);
-        emit RakeCollected(_gameNumber, _rake);
-
-        // Calculate net value of prizes and rake
+        // Calculate net value of prizes
         uint256 valueDistributed;
         for (uint256 i = 0; i < payoutValues.length; i++) {
             valueDistributed += payoutValues[i];
         }
+
+        payoutValues[_prizeValues.length] = _rake; // add the new value at the end
+
+        // Distribute net prizes to players
+        chips.distributeChips(receipients, payoutValues);
+        emit RakeCollected(_gameNumber, _rake);
+
         currentGameValue[_gameNumber] -= valueDistributed;
         emit ValueDistributed(_gameNumber, valueDistributed);
     }

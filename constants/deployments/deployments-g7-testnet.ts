@@ -7,6 +7,7 @@ import {
     RewardsNativeG7Args,
     CamelotDistributorArgs,
     StakerArgs,
+    ChipsArgs,
 } from '@constants/constructor-args';
 import {
     CONTRACT_TYPE,
@@ -188,5 +189,59 @@ export const G7_TESTNET_CONTRACTS: DeploymentContract[] = [
         dependencies: [CONTRACT_NAME.PositionMetadata],
         functionCalls: [],
         args: StakerArgs.TESTNET,
+    },
+    {
+        contractFileName: CONTRACT_UPGRADABLE_FILE_NAME.Chips,
+        type: CONTRACT_TYPE.Chips,
+        name: CONTRACT_NAME.Chips,
+        chain,
+        networkType,
+        tenants: [TENANT.Game7],
+        verify: true,
+        upgradable: true,
+        dependencies: [],
+        functionCalls: [
+            {
+                contractName: CONTRACT_NAME.Chips,
+                functionName: 'initialize',
+                args: [
+                    '0xD73EbC44643B594e44Ab46202590458c9606A709',
+                    false
+                ],
+            },
+        ],
+        args: [
+            '0xD73EbC44643B594e44Ab46202590458c9606A709',
+            false
+        ],
+    },
+    {
+        contractFileName: CONTRACT_UPGRADABLE_FILE_NAME.Game,
+        type: CONTRACT_TYPE.Game,
+        name: CONTRACT_NAME.Game,
+        chain,
+        networkType,
+        tenants: [TENANT.Game7],
+        verify: true,
+        upgradable: true,
+        dependencies: [],
+        functionCalls: [
+            {
+                contractName: CONTRACT_NAME.Game,
+                functionName: 'initialize',
+                args: [
+                    '0x85E89145ee5e873Bb050BfF2A39F84f58cD1974b',
+                    '0x9ed191DB1829371F116Deb9748c26B49467a592A',
+                    1000,
+                    false
+                ],
+            },
+        ],
+        args: [
+            '0x85E89145ee5e873Bb050BfF2A39F84f58cD1974b',
+            '0x9ed191DB1829371F116Deb9748c26B49467a592A',
+            1000,
+            false
+        ],
     },
 ];
