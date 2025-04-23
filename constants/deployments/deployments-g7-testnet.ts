@@ -206,13 +206,15 @@ export const G7_TESTNET_CONTRACTS: DeploymentContract[] = [
                 functionName: 'initialize',
                 args: [
                     '0xD73EbC44643B594e44Ab46202590458c9606A709',
-                    false
+                    false,
+                    '0x60b6f7B5F31331CD8c16b1328023ed088E82f85f'
                 ],
             },
         ],
         args: [
             '0xD73EbC44643B594e44Ab46202590458c9606A709',
-            false
+            false,
+            '0x60b6f7B5F31331CD8c16b1328023ed088E82f85f'
         ],
     },
     {
@@ -230,7 +232,7 @@ export const G7_TESTNET_CONTRACTS: DeploymentContract[] = [
                 contractName: CONTRACT_NAME.Game,
                 functionName: 'initialize',
                 args: [
-                    '0x85E89145ee5e873Bb050BfF2A39F84f58cD1974b',
+                    '0xA1B976b29d8dBB966B4F3b2B49b5c8Dff7671192',
                     '0x9ed191DB1829371F116Deb9748c26B49467a592A',
                     1000,
                     false
@@ -238,7 +240,7 @@ export const G7_TESTNET_CONTRACTS: DeploymentContract[] = [
             },
         ],
         args: [
-            '0x85E89145ee5e873Bb050BfF2A39F84f58cD1974b',
+            '0xA1B976b29d8dBB966B4F3b2B49b5c8Dff7671192',
             '0x9ed191DB1829371F116Deb9748c26B49467a592A',
             1000,
             false
