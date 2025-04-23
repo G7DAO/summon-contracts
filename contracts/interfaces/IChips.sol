@@ -2,9 +2,17 @@
 pragma solidity ^0.8.24;
 
 interface IChips {
-    function deposit(uint256 amount) external;
+    function deposit(
+        bytes calldata data,
+        uint256 nonce,
+        bytes calldata signature
+    ) external;
 
-    function withdraw(uint256 amount) external;
+    function withdraw(
+        bytes calldata data,
+        uint256 nonce,
+        bytes calldata signature
+    ) external;
 
     function retrieveBuyIn(address from, uint256 amount) external;
 
@@ -29,4 +37,6 @@ interface IChips {
     function totalSupply() external view returns (uint256);
 
     function decimals() external view returns (uint8);
+
+    function getExchangeRate() external view returns (uint256, uint256);
 }
