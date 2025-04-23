@@ -84,8 +84,8 @@ contract Chips is
     bytes32 public constant READABLE_ROLE = keccak256("READABLE_ROLE");
 
     IERC20 public token;
-    mapping(address => uint256) private _balances;
-    uint256 private _totalSupply;
+    mapping(address => uint256) _balances;
+    uint256 _totalSupply;
     uint8 private _decimals;
 
     uint256 numeratorExchangeRate;

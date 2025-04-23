@@ -367,6 +367,13 @@ export const RewardTokenArgs = {
     },
 };
 
+export const ChipsArgs = {
+    TESTNET: {
+        _token: '0xD73EbC44643B594e44Ab46202590458c9606A709',
+        _isPaused: true
+    },   
+}
+
 export const AccessTokenG7Args = {
     MAINNET: {
         _devWallet: 'DEPLOYER_WALLET',

@@ -25,6 +25,8 @@ export enum CONTRACT_TYPE {
     Forwarder = 'Forwarder',
     Metadata = 'Metadata',
     CamelotDistributor = 'CamelotDistributor',
+    Chips = 'Chips',
+    Game = 'Game'
 }
 
 export enum PROXY_CONTRACT_TYPE {
@@ -82,6 +84,8 @@ export enum CONTRACT_UPGRADABLE_FILE_NAME {
     Bridge = 'ERC20BridgeV1',
     BurnableToken = 'BurnableTokenV1',
     Marketplace = 'Marketplace',
+    Chips = 'Chips',
+    Game = 'Game'
 }
 
 export enum CONTRACT_UPGRADABLE_FILE_NAME_V2 {
@@ -122,6 +126,8 @@ export enum CONTRACT_NAME {
     PaymentRouterNativeG7 = 'PaymentRouterNativeG7',
     Distributor = 'Distributor',
     PositionMetadata = 'PositionMetadata',
+    Chips = 'Chips',
+    Game = 'Game'
 }
 
 export enum CONTRACT_UPGRADABLE_NAME {
