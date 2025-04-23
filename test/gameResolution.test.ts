@@ -22,7 +22,7 @@ describe('HFG Game', function () {
         const Chips = await ethers.getContractFactory("Chips");
         const chips = await upgrades.deployProxy(
             Chips,
-            [await token.getAddress(), false],
+            [await token.getAddress(), false, deployer.address],
             { initializer: "initialize", kind: "uups" }
         );
         await chips.waitForDeployment();
@@ -60,9 +60,29 @@ describe('HFG Game', function () {
         return { game: game, chips: chips, token: token, deployer: deployer, players: [player1, player2, player3], treasury: treasury, gameWallet: gameWallet, playCost: playCost };
     }
 
+    async function depositChips(chips, token, deployer, wallet, amount) {
+        const chainId = (await ethers.provider.getNetwork()).chainId;
+        const contractAddress = await chips.getAddress();
+
+        const data = ethers.AbiCoder.defaultAbiCoder().encode(
+            ['address', 'uint256', 'uint256'],
+            [contractAddress, chainId, amount]
+        );
+        const nonce = 1;
+        const message = ethers.solidityPacked(
+            ['address', 'bytes', 'uint256'],
+            [wallet.address, data, nonce]
+        );
+        const messageHash = ethers.keccak256(message);
+        const signature = await deployer.signMessage(ethers.getBytes(messageHash));
+
+        await token.connect(wallet).approve(await chips.getAddress(), amount);
+        await chips.connect(wallet).deposit(data, nonce, signature);
+    }
+
     describe('Deployment', function () {
         it('Should deploy successfully', async function () {
-            const { game} = await loadFixture(deployGameFixture);
+            const { game, chips, token, deployer, players, treasury, gameWallet, playCost } = await loadFixture(deployGameFixture);
             expect(await game.getAddress()).to.be.properAddress;
         });
 
@@ -101,9 +121,9 @@ describe('HFG Game', function () {
             const totalCost = numPlays * playCost;
 
             await token.connect(user1).approve(await chips.getAddress(), totalCost);
-            await chips.connect(user1).deposit(totalCost);
+            await depositChips(chips, token, deployer, user1, totalCost);
 
-            expect(await chips.balanceOf(user1)).to.equal(totalCost);
+            expect(await chips.connect(deployer).balanceOf(user1.address)).to.equal(totalCost);
             expect(await game.playBalance(gameNumber, user1)).to.equal(0n);
             expect(await game.totalGameValue(gameNumber)).to.equal(0n);
             expect(await game.currentGameValue(gameNumber)).to.equal(0n);
@@ -124,14 +144,13 @@ describe('HFG Game', function () {
             const totalCost = numPlays * playCost;
 
             await token.connect(user1).approve(await chips.getAddress(), totalCost);
-            await chips.connect(user1).deposit(totalCost);
+            await depositChips(chips, token, deployer, user1, totalCost);
 
             expect(await chips.balanceOf(user1)).to.equal(totalCost);
             expect(await game.playBalance(gameNumber, user1)).to.equal(0n);
             expect(await game.totalGameValue(gameNumber)).to.equal(0n);
             expect(await game.currentGameValue(gameNumber)).to.equal(0n);
 
-            //await game.connect(gameWallet).buyPlays(user1, gameNumber, numPlays);
             await expect(
                 game.connect(gameWallet).buyPlays(user1, gameNumber, numPlays)
             ).to.emit(game, "PlaysBought")
@@ -167,14 +186,13 @@ describe('HFG Game', function () {
             const rake = (totalCost * 10n)/100n;
 
             await token.connect(user1).approve(await chips.getAddress(), totalCost);
-            await chips.connect(user1).deposit(totalCost);
+            await depositChips(chips, token, deployer, user1, totalCost);
 
             expect(await chips.balanceOf(user1)).to.equal(totalCost);
             expect(await game.playBalance(gameNumber, user1)).to.equal(0n);
             expect(await game.totalGameValue(gameNumber)).to.equal(0n);
             expect(await game.currentGameValue(gameNumber)).to.equal(0n);
 
-            //await game.connect(gameWallet).buyPlays(user1, gameNumber, numPlays);
             await expect(
                 game.connect(gameWallet).buyPlays(user1, gameNumber, numPlays)
             ).to.emit(game, "PlaysBought")
@@ -205,7 +223,8 @@ describe('HFG Game', function () {
 
             for (let i = 0; i < players.length; i++) {
                 await token.connect(players[i]).approve(await chips.getAddress(), totalCost);
-                await chips.connect(players[i]).deposit(totalCost);
+                //await chips.connect(players[i]).deposit(totalCost);
+                await depositChips(chips, token, deployer, players[i], totalCost);
 
                 expect(await chips.balanceOf(players[i])).to.equal(totalCost);
                 expect(await game.playBalance(gameNumber, players[i])).to.equal(0n);

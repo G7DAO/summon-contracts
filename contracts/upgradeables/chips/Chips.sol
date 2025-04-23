@@ -27,10 +27,15 @@ import {
     UUPSUpgradeable
 } from "@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
 
+import {
+    ERCWhitelistSignatureUpgradeable
+} from "../ercs/ERCWhitelistSignatureUpgradeable.sol";
+
 contract Chips is
     IChips,
     Initializable,
     AccessControlUpgradeable,
+    ERCWhitelistSignatureUpgradeable,
     PausableUpgradeable,
     ReentrancyGuardUpgradeable,
     UUPSUpgradeable
@@ -45,7 +50,7 @@ contract Chips is
         address[] users,
         uint256[] amounts
     );
-    event WithdrawAllAdmin(address indexed admin, address[] indexed users);
+    event WithdrawAllAdmin(address indexed admin, address[] users);
     event RetrieveBuyIn(
         address indexed game,
         address indexed user,
@@ -56,6 +61,11 @@ contract Chips is
         address[] users,
         uint256[] amounts
     );
+    event ExchangeRateSet(
+        address indexed admin,
+        uint256 numerator,
+        uint256 denominator
+    );
 
     error ChipInsufficientBalance(
         address from,
@@ -63,49 +73,124 @@ contract Chips is
         uint256 value
     );
 
+    error AddressIsZero();
+    error NotAuthorized(address account);
+
     error ArrayLengthMismatch();
+    error InvalidSeed();
 
     bytes32 public constant GAME_ROLE = keccak256("GAME_ROLE");
     bytes32 public constant MANAGER_ROLE = keccak256("MANAGER_ROLE");
+    bytes32 public constant READABLE_ROLE = keccak256("READABLE_ROLE");
 
     IERC20 public token;
     mapping(address => uint256) _balances;
     uint256 _totalSupply;
     uint8 private _decimals;
 
+    uint256 numeratorExchangeRate;
+    uint256 denominatorExchangeRate;
+
+    // @dev Sets the exchange rate
+    // @param _numerator The numerator of the exchange rate
+    // @param _denominator The denominator of the exchange rate
+    function setExchangeRate(
+        uint256 _numerator,
+        uint256 _denominator
+    ) external onlyRole(MANAGER_ROLE) {
+        numeratorExchangeRate = _numerator;
+        denominatorExchangeRate = _denominator;
+        emit ExchangeRateSet(_msgSender(), _numerator, _denominator);
+    }
+
+    // @dev Returns the exchange rate
+    function getExchangeRate()
+        external
+        view
+        onlyRole(READABLE_ROLE)
+        returns (uint256, uint256)
+    {
+        return (numeratorExchangeRate, denominatorExchangeRate);
+    }
+
     // @dev Initializes the contract
     // @param _token The address of the token to use for the chips
     // @param _isPaused Whether the contract is paused
-    function initialize(address _token, bool _isPaused) public initializer {
+    function initialize(
+        address _token,
+        bool _isPaused,
+        address _devWallet
+    ) public initializer {
         __ReentrancyGuard_init();
         __Pausable_init();
         __AccessControl_init();
         __UUPSUpgradeable_init();
+        __ERCWhitelistSignatureUpgradeable_init();
 
-        _grantRole(MANAGER_ROLE, msg.sender);
+        if (_devWallet == address(0)) {
+            revert AddressIsZero();
+        }
+
+        _grantRole(MANAGER_ROLE, _devWallet);
         _setRoleAdmin(MANAGER_ROLE, MANAGER_ROLE);
         _setRoleAdmin(GAME_ROLE, MANAGER_ROLE);
+        _setRoleAdmin(READABLE_ROLE, MANAGER_ROLE);
 
+        _addWhitelistSigner(_devWallet);
         token = IERC20(_token);
         _decimals = IERC20Metadata(_token).decimals();
+
+        // @dev Default exchange rate is 1:1
+        numeratorExchangeRate = 1;
+        denominatorExchangeRate = 1;
+
+        emit ExchangeRateSet(
+            _devWallet,
+            numeratorExchangeRate,
+            denominatorExchangeRate
+        );
 
         if (_isPaused) _pause();
     }
 
     // @dev Deposits the chips to the user
     // @param amount The amount of chips to deposit
-    function deposit(uint256 amount) external whenNotPaused nonReentrant {
+    function deposit(
+        bytes calldata data,
+        uint256 nonce,
+        bytes calldata signature
+    )
+        external
+        whenNotPaused
+        signatureCheck(_msgSender(), nonce, data, signature)
+        nonReentrant
+    {
+        uint256 amount = _verifyContractChainIdAndDecode(data);
         token.safeTransferFrom(msg.sender, address(this), amount);
-        _update(address(0), msg.sender, amount);
-        emit Deposit(msg.sender, amount);
+        uint256 amountInChips = (amount * numeratorExchangeRate) /
+            denominatorExchangeRate;
+        _update(address(0), msg.sender, amountInChips);
+        emit Deposit(msg.sender, amountInChips);
     }
 
     // @dev Withdraws the chips from the user
-    // @param amount The amount of chips to withdraw
-    function withdraw(uint256 amount) external whenNotPaused nonReentrant {
-        _update(msg.sender, address(0), amount);
-        token.safeTransfer(msg.sender, amount);
-        emit Withdraw(msg.sender, amount);
+    // @param amountInChips The amount of chips to withdraw
+    function withdraw(
+        bytes calldata data,
+        uint256 nonce,
+        bytes calldata signature
+    )
+        external
+        whenNotPaused
+        signatureCheck(_msgSender(), nonce, data, signature)
+        nonReentrant
+    {
+        uint256 amountInChips = _verifyContractChainIdAndDecode(data);
+        _update(msg.sender, address(0), amountInChips);
+        uint256 amountInTokens = (amountInChips * denominatorExchangeRate) /
+            numeratorExchangeRate;
+        token.safeTransfer(msg.sender, amountInTokens);
+        emit Withdraw(msg.sender, amountInTokens);
     }
 
     // @dev Deposits the chips to the user
@@ -121,7 +206,9 @@ contract Chips is
         }
         for (uint256 i = 0; i < users.length; i++) {
             token.safeTransferFrom(admin, address(this), amounts[i]);
-            _update(address(0), users[i], amounts[i]);
+            uint256 amountInChips = (amounts[i] * numeratorExchangeRate) /
+                denominatorExchangeRate;
+            _update(address(0), users[i], amountInChips);
         }
         emit AdminDeposit(admin, users, amounts);
     }
@@ -133,8 +220,10 @@ contract Chips is
     ) external onlyRole(MANAGER_ROLE) whenPaused nonReentrant {
         for (uint256 i = 0; i < users.length; i++) {
             uint256 balance = _balances[users[i]];
+            uint256 amountInTokens = (balance * denominatorExchangeRate) /
+                numeratorExchangeRate;
             _update(users[i], address(0), balance);
-            token.safeTransfer(users[i], balance);
+            token.safeTransfer(users[i], amountInTokens);
         }
         emit WithdrawAllAdmin(_msgSender(), users);
     }
@@ -180,7 +269,16 @@ contract Chips is
     // @dev Returns the balance of the user
     // @param account The address of the user to get the balance of
     function balanceOf(address account) external view returns (uint256) {
-        return _balances[account];
+        if (
+            hasRole(GAME_ROLE, _msgSender()) ||
+            hasRole(MANAGER_ROLE, _msgSender()) ||
+            hasRole(READABLE_ROLE, _msgSender()) ||
+            _msgSender() == account
+        ) {
+            return _balances[account];
+        } else {
+            revert NotAuthorized(_msgSender());
+        }
     }
 
     // @dev Returns the total supply of the chips
@@ -241,6 +339,46 @@ contract Chips is
         // The onlyRole modifier already checks for the manager role
     }
 
+    function getChainID() public view returns (uint256) {
+        uint256 id;
+        assembly {
+            id := chainid()
+        }
+        return id;
+    }
+
+    function _verifyContractChainIdAndDecode(
+        bytes calldata data
+    ) private view returns (uint256) {
+        uint256 currentChainId = getChainID();
+        (
+            address contractAddress,
+            uint256 chainId,
+            uint256 amount
+        ) = _decodeData(data);
+
+        if (chainId != currentChainId || contractAddress != address(this)) {
+            revert InvalidSeed();
+        }
+        return amount;
+    }
+
+    function decodeData(
+        bytes calldata _data
+    ) public view onlyRole(MANAGER_ROLE) returns (address, uint256, uint256) {
+        return _decodeData(_data);
+    }
+
+    function _decodeData(
+        bytes calldata _data
+    ) private pure returns (address, uint256, uint256) {
+        (address contractAddress, uint256 chainId, uint256 amount) = abi.decode(
+            _data,
+            (address, uint256, uint256)
+        );
+        return (contractAddress, chainId, amount);
+    }
+
     // Reserved storage space to allow for layout changes in the future.
-    uint256[42] private __gap;
+    uint256[50] private __gap;
 }
