@@ -32,7 +32,7 @@ contract Game is
     uint256 public defaultPlayCost;
 
     // Game ID -> play cost
-    mapping(uint256 => uint256) playCost;
+    mapping(uint256 => uint256) public playCost;
     // Game ID -> Player address -> play balance
     mapping(uint256 => mapping(address => uint256)) public playBalance;
     // Game ID -> total game value
@@ -49,6 +49,8 @@ contract Game is
 
     error InsufficientChipBalance(address player, uint256 balanceRequired);
     error PlayCostCannotBeChanged(uint256 gameNumber, uint256 value);
+    error IncongruentArrayValues(uint256 gameNumber, uint256 playerLength, uint256 prizeLength);
+    error TreasuryAddressNotSet();
 
     function initialize(address _chips, address _treasury, uint256 _defaultPlayCost, bool _isPaused) public initializer {
         __ReentrancyGuard_init();
@@ -92,11 +94,12 @@ contract Game is
         uint256[] calldata _prizeValues,
         uint256 _rake
     ) external onlyRole(GAME_SERVER_ROLE) whenNotPaused nonReentrant {
-        require(
-            _players.length == _prizeValues.length,
-            "Game.payout: incongruent number of players and prizes"
-        );
-        require(treasury != address(0), "Treasury address not set");
+        if (_players.length != _prizeValues.length) {
+            revert IncongruentArrayValues(_gameNumber, _players.length, _prizeValues.length);
+        }
+        if (treasury == address(0)) {
+            revert TreasuryAddressNotSet();
+        }
 
         address[] memory receipients = new address[](_players.length + 1);
         for (uint256 i = 0; i < _players.length; i++) {
