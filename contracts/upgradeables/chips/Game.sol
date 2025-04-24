@@ -41,7 +41,7 @@ contract Game is
     mapping(uint256 => uint256) public currentGameValue;
 
     bytes32 public constant GAME_SERVER_ROLE = keccak256("GAME_SERVER_ROLE");
-    bytes32 public constant ADMIN_ROLE = keccak256("ADMIN_ROLE");
+    bytes32 public constant MANAGER_ROLE = keccak256("MANAGER_ROLE");
 
     event PlaysBought(address indexed player, uint256 indexed gameNumber, uint256 indexed numPlays);
     event RakeCollected(uint256 indexed gameNuber, uint256 indexed rakeValue);
@@ -60,6 +60,10 @@ contract Game is
         _grantRole(DEFAULT_ADMIN_ROLE, msg.sender);
         _setRoleAdmin(DEFAULT_ADMIN_ROLE, DEFAULT_ADMIN_ROLE);
         _setRoleAdmin(GAME_SERVER_ROLE, DEFAULT_ADMIN_ROLE);
+
+        _grantRole(MANAGER_ROLE, msg.sender);
+        _setRoleAdmin(MANAGER_ROLE, MANAGER_ROLE);
+        _setRoleAdmin(GAME_SERVER_ROLE, MANAGER_ROLE);
 
         chips = IChips(_chips);
         treasury = _treasury;
@@ -136,7 +140,7 @@ contract Game is
         return _getPlayCost(_gameNumber);
     }
 
-    function setPlayCost(uint256 _gameNumber, uint256 _playCost) external onlyRole(DEFAULT_ADMIN_ROLE) {
+    function setPlayCost(uint256 _gameNumber, uint256 _playCost) external onlyRole(MANAGER_ROLE) {
         if (totalGameValue[_gameNumber] > 0) {
             revert PlayCostCannotBeChanged(_gameNumber, _playCost);
         }

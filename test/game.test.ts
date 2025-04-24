@@ -95,6 +95,7 @@ describe('HFG Game', function () {
 
             expect(await chips.hasRole(MANAGER_ROLE, deployer.address)).to.be.true;
             expect(await chips.hasRole(GAME_ROLE, await game.getAddress())).to.be.true;
+            expect(await game.hasRole(MANAGER_ROLE, deployer.address)).to.be.true;
             expect(await game.hasRole(GAME_SERVER_ROLE, gameWallet)).to.be.true;
         });
     });
