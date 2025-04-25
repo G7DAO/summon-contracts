@@ -40,6 +40,7 @@ contract Game is
     // Game ID -> current game value
     mapping(uint256 => uint256) public currentGameValue;
 
+    bytes32 public constant DEV_CONFIG_ROLE = keccak256("DEV_CONFIG_ROLE");
     bytes32 public constant GAME_SERVER_ROLE = keccak256("GAME_SERVER_ROLE");
     bytes32 public constant MANAGER_ROLE = keccak256("MANAGER_ROLE");
 
@@ -52,17 +53,18 @@ contract Game is
     error IncongruentArrayValues(uint256 gameNumber, uint256 playerLength, uint256 prizeLength);
     error TreasuryAddressNotSet();
 
-    function initialize(address _chips, address _treasury, uint256 _defaultPlayCost, bool _isPaused) public initializer {
+    function initialize(address _chips, address _treasury, uint256 _defaultPlayCost, bool _isPaused, address _devWallet) public initializer {
         __ReentrancyGuard_init();
         __Pausable_init();
         __AccessControl_init();
+        __UUPSUpgradeable_init();
 
-        _grantRole(DEFAULT_ADMIN_ROLE, msg.sender);
-        _setRoleAdmin(DEFAULT_ADMIN_ROLE, DEFAULT_ADMIN_ROLE);
-        _setRoleAdmin(GAME_SERVER_ROLE, DEFAULT_ADMIN_ROLE);
+        _grantRole(DEFAULT_ADMIN_ROLE, _devWallet);
+        _grantRole(DEV_CONFIG_ROLE, _devWallet);
 
-        _grantRole(MANAGER_ROLE, msg.sender);
-        _setRoleAdmin(MANAGER_ROLE, MANAGER_ROLE);
+        _grantRole(MANAGER_ROLE, _devWallet);
+        _setRoleAdmin(MANAGER_ROLE, DEV_CONFIG_ROLE);
+
         _setRoleAdmin(GAME_SERVER_ROLE, MANAGER_ROLE);
 
         chips = IChips(_chips);
@@ -149,11 +151,11 @@ contract Game is
         playCost[_gameNumber] = _playCost;
     }
 
-    function pause() external onlyRole(DEFAULT_ADMIN_ROLE) {
+    function pause() external onlyRole(MANAGER_ROLE) {
         _pause();
     }
 
-    function unpause() external onlyRole(DEFAULT_ADMIN_ROLE) {
+    function unpause() external onlyRole(MANAGER_ROLE) {
         _unpause();
     }
 
@@ -172,7 +174,7 @@ contract Game is
     function _authorizeUpgrade(address newImplementation)
         internal
         override
-        onlyRole(DEFAULT_ADMIN_ROLE)
+        onlyRole(DEV_CONFIG_ROLE)
     {
 
     }

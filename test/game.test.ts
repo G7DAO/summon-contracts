@@ -38,6 +38,7 @@ describe('HFG Game', function () {
             treasury.address, // treasury
             playCost,
             false, // isPaused
+            deployer.address
             ],
             { initializer: "initialize", kind: "uups" }
         );
@@ -339,12 +340,13 @@ describe('HFG Game', function () {
         it("Should revert upgrade attempt from non-admin", async function () {
             const { game, players } = await loadFixture(deployGameFixture);
 
+            const DEV_CONFIG_ROLE = game.DEV_CONFIG_ROLE();
             const MockGameV2 = await ethers.getContractFactory("MockGameV2", players[0]);
 
             await expect(
                 upgrades.upgradeProxy(await game.getAddress(), MockGameV2)
             ).to.be.revertedWithCustomError(game, "AccessControlUnauthorizedAccount")
-            .withArgs(players[0].address, ethers.ZeroHash); // 0x00... is DEFAULT_ADMIN_ROLE
+            .withArgs(players[0].address, DEV_CONFIG_ROLE);
         });
 
     });

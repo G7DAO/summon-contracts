@@ -384,7 +384,8 @@ export const GameArgs = {
         _chips: TESTNET_CHIPS_CONTRACT,
         _treasury: TESTNET_TREASURY_WALLET,
         _defaultPlayCost: 1000,
-        _isPaused: true
+        _isPaused: true,
+        _devWallet: TESTNET_DEV_WALLET
     },   
 }
 

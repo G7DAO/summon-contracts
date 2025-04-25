@@ -18,7 +18,6 @@ import {
 import {
     PausableUpgradeable
 } from "@openzeppelin/contracts-upgradeable/utils/PausableUpgradeable.sol";
-import { Strings } from "@openzeppelin/contracts/utils/Strings.sol";
 
 import {
     ReentrancyGuardUpgradeable
@@ -76,9 +75,11 @@ contract Chips is
     error AddressIsZero();
     error NotAuthorized(address account);
 
+    error ExchangeRateDenonimatorCannotBeZero();
     error ArrayLengthMismatch();
     error InvalidSeed();
 
+    bytes32 public constant DEV_CONFIG_ROLE = keccak256("DEV_CONFIG_ROLE");
     bytes32 public constant GAME_ROLE = keccak256("GAME_ROLE");
     bytes32 public constant MANAGER_ROLE = keccak256("MANAGER_ROLE");
     bytes32 public constant READABLE_ROLE = keccak256("READABLE_ROLE");
@@ -88,8 +89,8 @@ contract Chips is
     uint256 _totalSupply;
     uint8 private _decimals;
 
-    uint256 public numeratorExchangeRate;
-    uint256 public denominatorExchangeRate;
+    uint256 numeratorExchangeRate;
+    uint256 denominatorExchangeRate;
 
     // @dev Sets the exchange rate
     // @param _numerator The numerator of the exchange rate
@@ -98,6 +99,9 @@ contract Chips is
         uint256 _numerator,
         uint256 _denominator
     ) external onlyRole(MANAGER_ROLE) {
+        if (denominatorExchangeRate == 0) {
+            revert ExchangeRateDenonimatorCannotBeZero();
+        }
         numeratorExchangeRate = _numerator;
         denominatorExchangeRate = _denominator;
         emit ExchangeRateSet(_msgSender(), _numerator, _denominator);
@@ -131,8 +135,10 @@ contract Chips is
             revert AddressIsZero();
         }
 
+        _grantRole(DEFAULT_ADMIN_ROLE, _devWallet);
+        _grantRole(DEV_CONFIG_ROLE, _devWallet);
         _grantRole(MANAGER_ROLE, _devWallet);
-        _setRoleAdmin(MANAGER_ROLE, MANAGER_ROLE);
+        _setRoleAdmin(MANAGER_ROLE, DEV_CONFIG_ROLE);
         _setRoleAdmin(GAME_ROLE, MANAGER_ROLE);
         _setRoleAdmin(READABLE_ROLE, MANAGER_ROLE);
 
@@ -335,7 +341,7 @@ contract Chips is
 
     function _authorizeUpgrade(
         address newImplementation
-    ) internal view override onlyRole(MANAGER_ROLE) {
+    ) internal view override onlyRole(DEV_CONFIG_ROLE) {
         // The onlyRole modifier already checks for the manager role
     }
 
@@ -365,7 +371,7 @@ contract Chips is
 
     function decodeData(
         bytes calldata _data
-    ) public view onlyRole(MANAGER_ROLE) returns (address, uint256, uint256) {
+    ) public view onlyRole(DEV_CONFIG_ROLE) returns (address, uint256, uint256) {
         return _decodeData(_data);
     }
 

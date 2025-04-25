@@ -236,7 +236,8 @@ export const G7_TESTNET_CONTRACTS: DeploymentContract[] = [
                     GameArgs.TESTNET._chips,
                     GameArgs.TESTNET._treasury,
                     GameArgs.TESTNET._defaultPlayCost,
-                    GameArgs.TESTNET._isPaused
+                    GameArgs.TESTNET._isPaused,
+                    GameArgs.TESTNET._devWallet
                 ],
             },
         ],
@@ -244,7 +245,8 @@ export const G7_TESTNET_CONTRACTS: DeploymentContract[] = [
             GameArgs.TESTNET._chips,
             GameArgs.TESTNET._treasury,
             GameArgs.TESTNET._defaultPlayCost,
-            GameArgs.TESTNET._isPaused
+            GameArgs.TESTNET._isPaused,
+            GameArgs.TESTNET._devWallet
         ],
     },
 ];
