@@ -157,7 +157,7 @@ describe('HFG Game', function () {
             ).to.emit(game, "PlaysBought")
             .withArgs(user1.address, gameNumber, numPlays);
 
-            expect(await chips.balanceOf(user1)).to.equal(0);
+            expect(await chips.balanceOf(user1)).to.equal(0n);
             expect(await game.playBalance(gameNumber, user1)).to.equal(numPlays);
             expect(await game.totalGameValue(gameNumber)).to.equal(totalCost);
             expect(await game.currentGameValue(gameNumber)).to.equal(totalCost);
@@ -199,7 +199,7 @@ describe('HFG Game', function () {
             ).to.emit(game, "PlaysBought")
             .withArgs(user1.address, gameNumber, numPlays);
 
-            expect(await chips.balanceOf(user1)).to.equal(0);
+            expect(await chips.balanceOf(user1)).to.equal(0n);
             expect(await game.playBalance(gameNumber, user1)).to.equal(numPlays);
             expect(await game.totalGameValue(gameNumber)).to.equal(totalCost);
             expect(await game.currentGameValue(gameNumber)).to.equal(totalCost);
@@ -214,6 +214,8 @@ describe('HFG Game', function () {
 
             expect(await chips.balanceOf(user1.address)).to.equal(totalCost - rake);
             expect(await chips.balanceOf(treasury.address)).to.equal(rake);
+            expect(await game.totalGameValue(gameNumber)).to.equal(totalCost);
+            expect(await game.currentGameValue(gameNumber)).to.equal(0n);
         });
 
         it('Should payout to multiple users', async function () {
@@ -240,7 +242,7 @@ describe('HFG Game', function () {
                 ).to.emit(game, "PlaysBought")
                 .withArgs(players[i].address, gameNumber, numPlays);
 
-                expect(await chips.balanceOf(players[i])).to.equal(0);
+                expect(await chips.balanceOf(players[i])).to.equal(0n);
                 expect(await game.playBalance(gameNumber, players[i])).to.equal(numPlays);
             }
 
@@ -262,6 +264,8 @@ describe('HFG Game', function () {
                 expect(await chips.balanceOf(players[i].address)).to.equal(payouts[i]);
                 expect(await chips.balanceOf(treasury.address)).to.equal(rake);
             }
+            expect(await game.totalGameValue(gameNumber)).to.equal(totalCost * 3n);
+            expect(await game.currentGameValue(gameNumber)).to.equal(0n);
 
         });
     });
@@ -345,5 +349,29 @@ describe('HFG Game', function () {
 
     });
 
+    describe('Game.rake accounting bug – currentGameValue retains rake', function () {
+        it('Leaves `currentGameValue` equal to rake after payout', async function () {
+            const { game, chips, token, deployer, gameWallet, players, playCost } = await loadFixture(deployGameFixture);
 
+            const gameNumber = 1n;
+            const numPlays = 5n;
+            const totalCost = playCost * numPlays;
+            const rake = totalCost / 10n; // 10% rake
+
+            // user deposits chips
+            await depositChips(chips, token, deployer, players[0], totalCost);
+
+            // user buys plays (chips transferred to game)
+            await game.connect(gameWallet).buyPlays(players[0].address, gameNumber, numPlays);
+
+            // payout – prizes exclude rake
+            await game.connect(gameWallet).payout(gameNumber, [players[0].address], [totalCost - rake], rake);
+            
+            // BUG: currentGameValue should be zero but still equals rake
+            // expect(await game.currentGameValue(gameNumber)).to.equal(rake);
+
+            // After fix: currentGameValue should be zero
+            expect(await game.currentGameValue(gameNumber)).to.equal(0n);
+        });
+    });
 });

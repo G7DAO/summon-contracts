@@ -126,6 +126,8 @@ contract Game is
 
         // Distribute net prizes to players
         chips.distributeChips(receipients, payoutValues);
+        
+        currentGameValue[_gameNumber] -= _rake;
         emit RakeCollected(_gameNumber, _rake);
 
         currentGameValue[_gameNumber] -= valueDistributed;
