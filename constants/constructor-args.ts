@@ -3,6 +3,10 @@ import { ChainId } from './network';
 
 const MAR20_G7_TESTNET = '0xd7CD332586D29bD7b9CBdB1ed38BD080C7BFeBC9';
 const G7_NATIVE_TESTNET_TOKEN = '0x10adBf84548F923577Be12146eAc104C899D1E75';
+const TESTNET_UDCE_TOKEN = '0xD73EbC44643B594e44Ab46202590458c9606A709';
+const TESTNET_DEV_WALLET = '0x60b6f7B5F31331CD8c16b1328023ed088E82f85f';
+const TESTNET_CHIPS_CONTRACT = '0x0F89967027be0F5F3fEb623a1EeB2bc90eD9f939';
+const TESTNET_TREASURY_WALLET = '0x9ed191DB1829371F116Deb9748c26B49467a592A';
 
 export interface ConstructorArgs {
     name: string;
@@ -369,16 +373,16 @@ export const RewardTokenArgs = {
 
 export const ChipsArgs = {
     TESTNET: {
-        _token: '0xD73EbC44643B594e44Ab46202590458c9606A709',
+        _token: TESTNET_UDCE_TOKEN,
         _isPaused: true,
-        _devWallet: '0x60b6f7B5F31331CD8c16b1328023ed088E82f85f'
+        _devWallet: TESTNET_DEV_WALLET
     },   
 }
 
 export const GameArgs = {
     TESTNET: {
-        _chips: '0x0F89967027be0F5F3fEb623a1EeB2bc90eD9f939',
-        _treasury: '0x9ed191DB1829371F116Deb9748c26B49467a592A',
+        _chips: TESTNET_CHIPS_CONTRACT,
+        _treasury: TESTNET_TREASURY_WALLET,
         _defaultPlayCost: 1000,
         _isPaused: true
     },   
