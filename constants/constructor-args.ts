@@ -370,6 +370,16 @@ export const RewardTokenArgs = {
 export const ChipsArgs = {
     TESTNET: {
         _token: '0xD73EbC44643B594e44Ab46202590458c9606A709',
+        _isPaused: true,
+        _devWallet: '0x60b6f7B5F31331CD8c16b1328023ed088E82f85f'
+    },   
+}
+
+export const GameArgs = {
+    TESTNET: {
+        _chips: '0x0F89967027be0F5F3fEb623a1EeB2bc90eD9f939',
+        _treasury: '0x9ed191DB1829371F116Deb9748c26B49467a592A',
+        _defaultPlayCost: 1000,
         _isPaused: true
     },   
 }

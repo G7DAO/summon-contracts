@@ -8,6 +8,7 @@ import {
     CamelotDistributorArgs,
     StakerArgs,
     ChipsArgs,
+    GameArgs,
 } from '@constants/constructor-args';
 import {
     CONTRACT_TYPE,
@@ -205,16 +206,16 @@ export const G7_TESTNET_CONTRACTS: DeploymentContract[] = [
                 contractName: CONTRACT_NAME.Chips,
                 functionName: 'initialize',
                 args: [
-                    '0xD73EbC44643B594e44Ab46202590458c9606A709',
-                    false,
-                    '0x60b6f7B5F31331CD8c16b1328023ed088E82f85f'
+                    ChipsArgs.TESTNET._token,
+                    ChipsArgs.TESTNET._isPaused,
+                    ChipsArgs.TESTNET._devWallet
                 ],
             },
         ],
         args: [
-            '0xD73EbC44643B594e44Ab46202590458c9606A709',
-            false,
-            '0x60b6f7B5F31331CD8c16b1328023ed088E82f85f'
+            ChipsArgs.TESTNET._token,
+            ChipsArgs.TESTNET._isPaused,
+            ChipsArgs.TESTNET._devWallet
         ],
     },
     {
@@ -232,18 +233,18 @@ export const G7_TESTNET_CONTRACTS: DeploymentContract[] = [
                 contractName: CONTRACT_NAME.Game,
                 functionName: 'initialize',
                 args: [
-                    '0xA1B976b29d8dBB966B4F3b2B49b5c8Dff7671192',
-                    '0x9ed191DB1829371F116Deb9748c26B49467a592A',
-                    1000,
-                    false
+                    GameArgs.TESTNET._chips,
+                    GameArgs.TESTNET._treasury,
+                    GameArgs.TESTNET._defaultPlayCost,
+                    GameArgs.TESTNET._isPaused
                 ],
             },
         ],
         args: [
-            '0xA1B976b29d8dBB966B4F3b2B49b5c8Dff7671192',
-            '0x9ed191DB1829371F116Deb9748c26B49467a592A',
-            1000,
-            false
+            GameArgs.TESTNET._chips,
+            GameArgs.TESTNET._treasury,
+            GameArgs.TESTNET._defaultPlayCost,
+            GameArgs.TESTNET._isPaused
         ],
     },
 ];
