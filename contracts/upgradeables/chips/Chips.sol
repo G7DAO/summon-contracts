@@ -88,8 +88,8 @@ contract Chips is
     uint256 _totalSupply;
     uint8 private _decimals;
 
-    uint256 numeratorExchangeRate;
-    uint256 denominatorExchangeRate;
+    uint256 public numeratorExchangeRate;
+    uint256 public denominatorExchangeRate;
 
     // @dev Sets the exchange rate
     // @param _numerator The numerator of the exchange rate
