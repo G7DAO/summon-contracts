@@ -18,7 +18,9 @@ import {
 import {
     ReentrancyGuardUpgradeable
 } from "@openzeppelin/contracts-upgradeable/utils/ReentrancyGuardUpgradeable.sol";
-import { UUPSUpgradeable } from "@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
+import {
+    UUPSUpgradeable
+} from "@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
 
 contract Game is
     Initializable,
@@ -30,6 +32,8 @@ contract Game is
     IChips public chips;
     address public treasury;
     uint256 public defaultPlayCost;
+
+    uint256 public totalChipsInPlay;
 
     // Game ID -> play cost
     mapping(uint256 => uint256) public playCost;
@@ -43,16 +47,33 @@ contract Game is
     bytes32 public constant GAME_SERVER_ROLE = keccak256("GAME_SERVER_ROLE");
     bytes32 public constant MANAGER_ROLE = keccak256("MANAGER_ROLE");
 
-    event PlaysBought(address indexed player, uint256 indexed gameNumber, uint256 indexed numPlays);
+    event PlaysBought(
+        address indexed player,
+        uint256 indexed gameNumber,
+        uint256 indexed numPlays
+    );
     event RakeCollected(uint256 indexed gameNuber, uint256 indexed rakeValue);
     event ValueDistributed(uint256 indexed gameNumber, uint256 indexed value);
 
     error InsufficientChipBalance(address player, uint256 balanceRequired);
     error PlayCostCannotBeChanged(uint256 gameNumber, uint256 value);
-    error IncongruentArrayValues(uint256 gameNumber, uint256 playerLength, uint256 prizeLength);
+    error IncongruentArrayValues(
+        uint256 gameNumber,
+        uint256 playerLength,
+        uint256 prizeLength
+    );
     error TreasuryAddressNotSet();
+    error TotalChipsInPlayExceeded(
+        uint256 totalChipsInPlay,
+        uint256 totalSupply
+    );
 
-    function initialize(address _chips, address _treasury, uint256 _defaultPlayCost, bool _isPaused) public initializer {
+    function initialize(
+        address _chips,
+        address _treasury,
+        uint256 _defaultPlayCost,
+        bool _isPaused
+    ) public initializer {
         __ReentrancyGuard_init();
         __Pausable_init();
         __AccessControl_init();
@@ -78,20 +99,26 @@ contract Game is
     ) external onlyRole(GAME_SERVER_ROLE) whenNotPaused nonReentrant {
         uint256 gamePlayCost = _getPlayCost(_gameNumber);
         uint256 buyinAmount = _numPlays * gamePlayCost;
-        
+
         uint256 initialBalance = chips.balanceOf(_player);
         if (initialBalance < buyinAmount) {
             revert InsufficientChipBalance(_player, buyinAmount);
         }
-        
+
         chips.retrieveBuyIn(_player, buyinAmount);
         totalGameValue[_gameNumber] += buyinAmount;
         currentGameValue[_gameNumber] += buyinAmount;
-
+        totalChipsInPlay += buyinAmount;
+        if (totalChipsInPlay > chips.balanceOf(address(this))) {
+            revert TotalChipsInPlayExceeded(
+                totalChipsInPlay,
+                chips.balanceOf(address(this))
+            );
+        }
         playBalance[_gameNumber][_player] += _numPlays;
         emit PlaysBought(_player, _gameNumber, _numPlays);
     }
-        
+
     function payout(
         uint256 _gameNumber,
         address[] calldata _players,
@@ -99,7 +126,11 @@ contract Game is
         uint256 _rake
     ) external onlyRole(GAME_SERVER_ROLE) whenNotPaused nonReentrant {
         if (_players.length != _prizeValues.length) {
-            revert IncongruentArrayValues(_gameNumber, _players.length, _prizeValues.length);
+            revert IncongruentArrayValues(
+                _gameNumber,
+                _players.length,
+                _prizeValues.length
+            );
         }
         if (treasury == address(0)) {
             revert TreasuryAddressNotSet();
@@ -126,23 +157,31 @@ contract Game is
 
         // Distribute net prizes to players
         chips.distributeChips(receipients, payoutValues);
-        
+
         currentGameValue[_gameNumber] -= _rake;
+        totalChipsInPlay -= _rake;
+
         emit RakeCollected(_gameNumber, _rake);
 
         currentGameValue[_gameNumber] -= valueDistributed;
+        totalChipsInPlay -= valueDistributed;
         emit ValueDistributed(_gameNumber, valueDistributed);
     }
 
-    function _getPlayCost(uint256 _gameNumber) internal view returns(uint256) {
-        return (playCost[_gameNumber] > 0 ? playCost[_gameNumber] : defaultPlayCost);
+    function _getPlayCost(uint256 _gameNumber) internal view returns (uint256) {
+        return (
+            playCost[_gameNumber] > 0 ? playCost[_gameNumber] : defaultPlayCost
+        );
     }
 
-    function getPlayCost(uint256 _gameNumber) external view returns(uint256) {
+    function getPlayCost(uint256 _gameNumber) external view returns (uint256) {
         return _getPlayCost(_gameNumber);
     }
 
-    function setPlayCost(uint256 _gameNumber, uint256 _playCost) external onlyRole(MANAGER_ROLE) {
+    function setPlayCost(
+        uint256 _gameNumber,
+        uint256 _playCost
+    ) external onlyRole(MANAGER_ROLE) {
         if (totalGameValue[_gameNumber] > 0) {
             revert PlayCostCannotBeChanged(_gameNumber, _playCost);
         }
@@ -159,23 +198,13 @@ contract Game is
 
     function supportsInterface(
         bytes4 interfaceId
-    )
-        public
-        view
-        override(AccessControlUpgradeable)
-        returns (bool)
-    {
-        return
-            AccessControlUpgradeable.supportsInterface(interfaceId);
+    ) public view override(AccessControlUpgradeable) returns (bool) {
+        return AccessControlUpgradeable.supportsInterface(interfaceId);
     }
 
-    function _authorizeUpgrade(address newImplementation)
-        internal
-        override
-        onlyRole(DEFAULT_ADMIN_ROLE)
-    {
-
-    }
+    function _authorizeUpgrade(
+        address newImplementation
+    ) internal override onlyRole(DEFAULT_ADMIN_ROLE) {}
 
     // Reserved storage space to allow for layout changes in the future.
     uint256[50] private __gap;
