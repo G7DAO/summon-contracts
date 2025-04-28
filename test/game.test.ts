@@ -34,11 +34,11 @@ describe('HFG Game', function () {
         const game = await upgrades.deployProxy(
             Game,
             [
-            await chips.getAddress(),
-            treasury.address, // treasury
-            playCost,
-            false, // isPaused
-            deployer.address
+                await chips.getAddress(),
+                treasury.address, // treasury
+                playCost,
+                false, // isPaused
+                deployer.address
             ],
             { initializer: "initialize", kind: "uups" }
         );
@@ -66,8 +66,8 @@ describe('HFG Game', function () {
         const contractAddress = await chips.getAddress();
 
         const data = ethers.AbiCoder.defaultAbiCoder().encode(
-            ['address', 'uint256', 'uint256'],
-            [contractAddress, chainId, amount]
+            ['address', 'uint256', 'uint256', 'uint256', 'bool'],
+            [contractAddress, chainId, amount, Math.floor(Date.now() / 1000) + 3600, false]
         );
         const nonce = 1;
         const message = ethers.solidityPacked(
@@ -117,7 +117,7 @@ describe('HFG Game', function () {
 
         it('Should store play balance and game values and emit an event', async function () {
             const user1 = players[0];
-            
+
             const gameNumber = 1n;
             let numPlays = 5n;
             const totalCost = numPlays * playCost;
@@ -135,12 +135,12 @@ describe('HFG Game', function () {
             await expect(
                 game.connect(gameWallet).buyPlays(user1.address, gameNumber, numPlays)
             ).to.be.revertedWithCustomError(game, "InsufficientChipBalance")
-            .withArgs(user1.address, numPlays * playCost);
+                .withArgs(user1.address, numPlays * playCost);
         });
 
         it('Should revert if player does not have sufficient balance', async function () {
             const user1 = players[0];
-            
+
             const gameNumber = 1n;
             const numPlays = 5n;
             const totalCost = numPlays * playCost;
@@ -156,7 +156,7 @@ describe('HFG Game', function () {
             await expect(
                 game.connect(gameWallet).buyPlays(user1, gameNumber, numPlays)
             ).to.emit(game, "PlaysBought")
-            .withArgs(user1.address, gameNumber, numPlays);
+                .withArgs(user1.address, gameNumber, numPlays);
 
             expect(await chips.balanceOf(user1)).to.equal(0n);
             expect(await game.playBalance(gameNumber, user1)).to.equal(numPlays);
@@ -181,11 +181,11 @@ describe('HFG Game', function () {
 
         it('Should payout to users and emit an event', async function () {
             const user1 = players[0];
-            
+
             const gameNumber = 1n;
             const numPlays = 5n;
             const totalCost = numPlays * playCost;
-            const rake = (totalCost * 10n)/100n;
+            const rake = (totalCost * 10n) / 100n;
 
             await token.connect(user1).approve(await chips.getAddress(), totalCost);
             await depositChips(chips, token, deployer, user1, totalCost);
@@ -198,7 +198,7 @@ describe('HFG Game', function () {
             await expect(
                 game.connect(gameWallet).buyPlays(user1, gameNumber, numPlays)
             ).to.emit(game, "PlaysBought")
-            .withArgs(user1.address, gameNumber, numPlays);
+                .withArgs(user1.address, gameNumber, numPlays);
 
             expect(await chips.balanceOf(user1)).to.equal(0n);
             expect(await game.playBalance(gameNumber, user1)).to.equal(numPlays);
@@ -208,9 +208,9 @@ describe('HFG Game', function () {
             await expect(
                 game.connect(gameWallet).payout(gameNumber, [user1], [totalCost - rake], rake)
             ).to.emit(game, "RakeCollected")
-            .withArgs(gameNumber, rake)
-            .and.to.emit(game, "ValueDistributed")
-            .withArgs(gameNumber, (totalCost - rake));
+                .withArgs(gameNumber, rake)
+                .and.to.emit(game, "ValueDistributed")
+                .withArgs(gameNumber, (totalCost - rake));
 
 
             expect(await chips.balanceOf(user1.address)).to.equal(totalCost - rake);
@@ -223,7 +223,7 @@ describe('HFG Game', function () {
             const gameNumber = 1n;
             const numPlays = 5n;
             const totalCost = numPlays * playCost;
-            const rake = (totalCost * 3n * 10n)/100n;
+            const rake = (totalCost * 3n * 10n) / 100n;
 
             for (let i = 0; i < players.length; i++) {
                 await token.connect(players[i]).approve(await chips.getAddress(), totalCost);
@@ -241,7 +241,7 @@ describe('HFG Game', function () {
                 await expect(
                     game.connect(gameWallet).buyPlays(players[i], gameNumber, numPlays)
                 ).to.emit(game, "PlaysBought")
-                .withArgs(players[i].address, gameNumber, numPlays);
+                    .withArgs(players[i].address, gameNumber, numPlays);
 
                 expect(await chips.balanceOf(players[i])).to.equal(0n);
                 expect(await game.playBalance(gameNumber, players[i])).to.equal(numPlays);
@@ -256,9 +256,9 @@ describe('HFG Game', function () {
             await expect(
                 game.connect(gameWallet).payout(gameNumber, players, payouts, rake)
             ).to.emit(game, "RakeCollected")
-            .withArgs(gameNumber, rake)
-            .and.to.emit(game, "ValueDistributed")
-            .withArgs(gameNumber, (totalCost * 3n - rake));
+                .withArgs(gameNumber, rake)
+                .and.to.emit(game, "ValueDistributed")
+                .withArgs(gameNumber, (totalCost * 3n - rake));
 
 
             for (let i = 0; i < players.length; i++) {
@@ -346,7 +346,7 @@ describe('HFG Game', function () {
             await expect(
                 upgrades.upgradeProxy(await game.getAddress(), MockGameV2)
             ).to.be.revertedWithCustomError(game, "AccessControlUnauthorizedAccount")
-            .withArgs(players[0].address, DEV_CONFIG_ROLE);
+                .withArgs(players[0].address, DEV_CONFIG_ROLE);
         });
 
     });
@@ -368,7 +368,7 @@ describe('HFG Game', function () {
 
             // payout – prizes exclude rake
             await game.connect(gameWallet).payout(gameNumber, [players[0].address], [totalCost - rake], rake);
-            
+
             // BUG: currentGameValue should be zero but still equals rake
             // expect(await game.currentGameValue(gameNumber)).to.equal(rake);
 

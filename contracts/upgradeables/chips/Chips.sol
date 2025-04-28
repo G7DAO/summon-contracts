@@ -78,6 +78,8 @@ contract Chips is
     error ExchangeRateCannotBeZero();
     error ArrayLengthMismatch();
     error InvalidSeed();
+    error InvalidTimestamp();
+    error WrongFunction();
 
     bytes32 public constant DEV_CONFIG_ROLE = keccak256("DEV_CONFIG_ROLE");
     bytes32 public constant GAME_ROLE = keccak256("GAME_ROLE");
@@ -99,10 +101,7 @@ contract Chips is
         uint256 _numerator,
         uint256 _denominator
     ) external onlyRole(MANAGER_ROLE) {
-        if (_numerator == 0) {
-            revert ExchangeRateCannotBeZero();
-        }
-        if (_denominator == 0) {
+        if (_numerator == 0 || _denominator == 0) {
             revert ExchangeRateCannotBeZero();
         }
         numeratorExchangeRate = _numerator;
@@ -123,6 +122,7 @@ contract Chips is
     // @dev Initializes the contract
     // @param _token The address of the token to use for the chips
     // @param _isPaused Whether the contract is paused
+    // @param _devWallet The address of the developer wallet
     function initialize(
         address _token,
         bool _isPaused,
@@ -163,7 +163,9 @@ contract Chips is
     }
 
     // @dev Deposits the chips to the user
-    // @param amount The amount of chips to deposit
+    // @param data The data to deposit
+    // @param nonce The nonce of the deposit
+    // @param signature The signature of the deposit
     function deposit(
         bytes calldata data,
         uint256 nonce,
@@ -174,7 +176,12 @@ contract Chips is
         signatureCheck(_msgSender(), nonce, data, signature)
         nonReentrant
     {
-        uint256 amount = _verifyContractChainIdAndDecode(data);
+        (uint256 amount, bool isWithdraw) = _verifyContractChainIdAndDecode(
+            data
+        );
+        if (isWithdraw) {
+            revert WrongFunction();
+        }
         token.safeTransferFrom(msg.sender, address(this), amount);
         uint256 amountInChips = _parseCurrencyToChips(amount);
         _update(address(0), msg.sender, amountInChips);
@@ -182,7 +189,9 @@ contract Chips is
     }
 
     // @dev Withdraws the chips from the user
-    // @param amountInChips The amount of chips to withdraw
+    // @param data The data to withdraw
+    // @param nonce The nonce of the withdraw
+    // @param signature The signature of the withdraw
     function withdraw(
         bytes calldata data,
         uint256 nonce,
@@ -193,11 +202,18 @@ contract Chips is
         signatureCheck(_msgSender(), nonce, data, signature)
         nonReentrant
     {
-        uint256 amountInChips = _verifyContractChainIdAndDecode(data);
-        _update(msg.sender, address(0), amountInChips);
-        uint256 amountInTokens = _parseChipsToCurrency(amountInChips);
-        token.safeTransfer(msg.sender, amountInTokens);
-        emit Withdraw(msg.sender, amountInTokens);
+        (
+            uint256 amountInChips,
+            bool isWithdraw
+        ) = _verifyContractChainIdAndDecode(data);
+        if (isWithdraw) {
+            _update(msg.sender, address(0), amountInChips);
+            uint256 amountInTokens = _parseChipsToCurrency(amountInChips);
+            token.safeTransfer(msg.sender, amountInTokens);
+            emit Withdraw(msg.sender, amountInTokens);
+        } else {
+            revert WrongFunction();
+        }
     }
 
     // @dev Deposits the chips to the user
@@ -273,11 +289,20 @@ contract Chips is
         _unpause();
     }
 
-    function _parseCurrencyToChips(uint256 currencyBalance) internal view returns (uint256) {
-        return (currencyBalance * numeratorExchangeRate) / denominatorExchangeRate;
+    // @dev Parses the currency to chips
+    // @param currencyBalance The balance of the currency
+    function _parseCurrencyToChips(
+        uint256 currencyBalance
+    ) internal view returns (uint256) {
+        return
+            (currencyBalance * numeratorExchangeRate) / denominatorExchangeRate;
     }
 
-    function _parseChipsToCurrency(uint256 chipsBalance) internal view returns (uint256) {
+    // @dev Parses the chips to currency
+    // @param chipsBalance The balance of the chips
+    function _parseChipsToCurrency(
+        uint256 chipsBalance
+    ) internal view returns (uint256) {
         return (chipsBalance * denominatorExchangeRate) / numeratorExchangeRate;
     }
 
@@ -348,12 +373,15 @@ contract Chips is
         return AccessControlUpgradeable.supportsInterface(interfaceId);
     }
 
+    // @dev Authorizes the upgrade
+    // @param newImplementation The address of the new implementation
     function _authorizeUpgrade(
         address newImplementation
     ) internal view override onlyRole(DEV_CONFIG_ROLE) {
         // The onlyRole modifier already checks for the manager role
     }
 
+    // @dev Returns the chain id
     function getChainID() public view returns (uint256) {
         uint256 id;
         assembly {
@@ -362,36 +390,53 @@ contract Chips is
         return id;
     }
 
+    // @dev Verifies the contract chain id and decodes the data
+    // @param data The data to verify
     function _verifyContractChainIdAndDecode(
         bytes calldata data
-    ) private view returns (uint256) {
+    ) private view returns (uint256, bool) {
         uint256 currentChainId = getChainID();
         (
             address contractAddress,
             uint256 chainId,
-            uint256 amount
+            uint256 amount,
+            uint256 timestamp,
+            bool isWithdraw
         ) = _decodeData(data);
 
         if (chainId != currentChainId || contractAddress != address(this)) {
             revert InvalidSeed();
         }
-        return amount;
+        if (timestamp < block.timestamp) {
+            revert InvalidTimestamp();
+        }
+        return (amount, isWithdraw);
     }
 
+    // @dev Decodes the data
+    // @param _data The data to decode
     function decodeData(
         bytes calldata _data
-    ) public view onlyRole(DEV_CONFIG_ROLE) returns (address, uint256, uint256) {
+    )
+        public
+        view
+        onlyRole(DEV_CONFIG_ROLE)
+        returns (address, uint256, uint256, uint256, bool)
+    {
         return _decodeData(_data);
     }
 
     function _decodeData(
         bytes calldata _data
-    ) private pure returns (address, uint256, uint256) {
-        (address contractAddress, uint256 chainId, uint256 amount) = abi.decode(
-            _data,
-            (address, uint256, uint256)
-        );
-        return (contractAddress, chainId, amount);
+    ) private pure returns (address, uint256, uint256, uint256, bool) {
+        (
+            address contractAddress,
+            uint256 chainId,
+            uint256 amount,
+            uint256 timestamp,
+            bool isWithdraw
+        ) = abi.decode(_data, (address, uint256, uint256, uint256, bool));
+        return (contractAddress, chainId, amount, timestamp, isWithdraw);
     }
 
     // Reserved storage space to allow for layout changes in the future.
