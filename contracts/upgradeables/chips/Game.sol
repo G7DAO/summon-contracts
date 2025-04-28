@@ -19,10 +19,14 @@ import {
     ReentrancyGuardUpgradeable
 } from "@openzeppelin/contracts-upgradeable/utils/ReentrancyGuardUpgradeable.sol";
 import { UUPSUpgradeable } from "@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
+import {
+    ERCWhitelistSignatureUpgradeable
+} from "../ercs/ERCWhitelistSignatureUpgradeable.sol";
 
 contract Game is
     Initializable,
     AccessControlUpgradeable,
+    ERCWhitelistSignatureUpgradeable,
     PausableUpgradeable,
     ReentrancyGuardUpgradeable,
     UUPSUpgradeable
