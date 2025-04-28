@@ -122,6 +122,7 @@ contract Chips is
     // @dev Initializes the contract
     // @param _token The address of the token to use for the chips
     // @param _isPaused Whether the contract is paused
+    // @param _devWallet The address of the developer wallet
     function initialize(
         address _token,
         bool _isPaused,
@@ -162,7 +163,9 @@ contract Chips is
     }
 
     // @dev Deposits the chips to the user
-    // @param amount The amount of chips to deposit
+    // @param data The data to deposit
+    // @param nonce The nonce of the deposit
+    // @param signature The signature of the deposit
     function deposit(
         bytes calldata data,
         uint256 nonce,
@@ -186,7 +189,9 @@ contract Chips is
     }
 
     // @dev Withdraws the chips from the user
-    // @param amountInChips The amount of chips to withdraw
+    // @param data The data to withdraw
+    // @param nonce The nonce of the withdraw
+    // @param signature The signature of the withdraw
     function withdraw(
         bytes calldata data,
         uint256 nonce,
@@ -284,6 +289,8 @@ contract Chips is
         _unpause();
     }
 
+    // @dev Parses the currency to chips
+    // @param currencyBalance The balance of the currency
     function _parseCurrencyToChips(
         uint256 currencyBalance
     ) internal view returns (uint256) {
@@ -291,6 +298,8 @@ contract Chips is
             (currencyBalance * numeratorExchangeRate) / denominatorExchangeRate;
     }
 
+    // @dev Parses the chips to currency
+    // @param chipsBalance The balance of the chips
     function _parseChipsToCurrency(
         uint256 chipsBalance
     ) internal view returns (uint256) {
@@ -364,12 +373,15 @@ contract Chips is
         return AccessControlUpgradeable.supportsInterface(interfaceId);
     }
 
+    // @dev Authorizes the upgrade
+    // @param newImplementation The address of the new implementation
     function _authorizeUpgrade(
         address newImplementation
     ) internal view override onlyRole(DEV_CONFIG_ROLE) {
         // The onlyRole modifier already checks for the manager role
     }
 
+    // @dev Returns the chain id
     function getChainID() public view returns (uint256) {
         uint256 id;
         assembly {
@@ -378,6 +390,8 @@ contract Chips is
         return id;
     }
 
+    // @dev Verifies the contract chain id and decodes the data
+    // @param data The data to verify
     function _verifyContractChainIdAndDecode(
         bytes calldata data
     ) private view returns (uint256, bool) {
@@ -399,6 +413,8 @@ contract Chips is
         return (amount, isWithdraw);
     }
 
+    // @dev Decodes the data
+    // @param _data The data to decode
     function decodeData(
         bytes calldata _data
     )
