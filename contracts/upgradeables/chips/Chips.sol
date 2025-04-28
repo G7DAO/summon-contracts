@@ -75,7 +75,7 @@ contract Chips is
     error AddressIsZero();
     error NotAuthorized(address account);
 
-    error ExchangeRateDenonimatorCannotBeZero();
+    error ExchangeRateCannotBeZero();
     error ArrayLengthMismatch();
     error InvalidSeed();
 
@@ -99,8 +99,11 @@ contract Chips is
         uint256 _numerator,
         uint256 _denominator
     ) external onlyRole(MANAGER_ROLE) {
+        if (numeratorExchangeRate == 0) {
+            revert ExchangeRateCannotBeZero();
+        }
         if (denominatorExchangeRate == 0) {
-            revert ExchangeRateDenonimatorCannotBeZero();
+            revert ExchangeRateCannotBeZero();
         }
         numeratorExchangeRate = _numerator;
         denominatorExchangeRate = _denominator;
