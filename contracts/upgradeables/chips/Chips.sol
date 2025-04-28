@@ -99,10 +99,10 @@ contract Chips is
         uint256 _numerator,
         uint256 _denominator
     ) external onlyRole(MANAGER_ROLE) {
-        if (numeratorExchangeRate == 0) {
+        if (_numerator == 0) {
             revert ExchangeRateCannotBeZero();
         }
-        if (denominatorExchangeRate == 0) {
+        if (_denominator == 0) {
             revert ExchangeRateCannotBeZero();
         }
         numeratorExchangeRate = _numerator;
