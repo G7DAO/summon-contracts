@@ -78,6 +78,8 @@ contract Chips is
     error ExchangeRateCannotBeZero();
     error ArrayLengthMismatch();
     error InvalidSeed();
+    error InvalidTimestamp();
+    error WrongFunction();
 
     bytes32 public constant DEV_CONFIG_ROLE = keccak256("DEV_CONFIG_ROLE");
     bytes32 public constant GAME_ROLE = keccak256("GAME_ROLE");
@@ -99,10 +101,7 @@ contract Chips is
         uint256 _numerator,
         uint256 _denominator
     ) external onlyRole(MANAGER_ROLE) {
-        if (_numerator == 0) {
-            revert ExchangeRateCannotBeZero();
-        }
-        if (_denominator == 0) {
+        if (_numerator == 0 || _denominator == 0) {
             revert ExchangeRateCannotBeZero();
         }
         numeratorExchangeRate = _numerator;
@@ -174,7 +173,12 @@ contract Chips is
         signatureCheck(_msgSender(), nonce, data, signature)
         nonReentrant
     {
-        uint256 amount = _verifyContractChainIdAndDecode(data);
+        (uint256 amount, bool isWithdraw) = _verifyContractChainIdAndDecode(
+            data
+        );
+        if (isWithdraw) {
+            revert WrongFunction();
+        }
         token.safeTransferFrom(msg.sender, address(this), amount);
         uint256 amountInChips = _parseCurrencyToChips(amount);
         _update(address(0), msg.sender, amountInChips);
@@ -193,11 +197,18 @@ contract Chips is
         signatureCheck(_msgSender(), nonce, data, signature)
         nonReentrant
     {
-        uint256 amountInChips = _verifyContractChainIdAndDecode(data);
-        _update(msg.sender, address(0), amountInChips);
-        uint256 amountInTokens = _parseChipsToCurrency(amountInChips);
-        token.safeTransfer(msg.sender, amountInTokens);
-        emit Withdraw(msg.sender, amountInTokens);
+        (
+            uint256 amountInChips,
+            bool isWithdraw
+        ) = _verifyContractChainIdAndDecode(data);
+        if (isWithdraw) {
+            _update(msg.sender, address(0), amountInChips);
+            uint256 amountInTokens = _parseChipsToCurrency(amountInChips);
+            token.safeTransfer(msg.sender, amountInTokens);
+            emit Withdraw(msg.sender, amountInTokens);
+        } else {
+            revert WrongFunction();
+        }
     }
 
     // @dev Deposits the chips to the user
@@ -369,18 +380,23 @@ contract Chips is
 
     function _verifyContractChainIdAndDecode(
         bytes calldata data
-    ) private view returns (uint256) {
+    ) private view returns (uint256, bool) {
         uint256 currentChainId = getChainID();
         (
             address contractAddress,
             uint256 chainId,
-            uint256 amount
+            uint256 amount,
+            uint256 timestamp,
+            bool isWithdraw
         ) = _decodeData(data);
 
         if (chainId != currentChainId || contractAddress != address(this)) {
             revert InvalidSeed();
         }
-        return amount;
+        if (timestamp < block.timestamp) {
+            revert InvalidTimestamp();
+        }
+        return (amount, isWithdraw);
     }
 
     function decodeData(
@@ -389,19 +405,22 @@ contract Chips is
         public
         view
         onlyRole(DEV_CONFIG_ROLE)
-        returns (address, uint256, uint256)
+        returns (address, uint256, uint256, uint256, bool)
     {
         return _decodeData(_data);
     }
 
     function _decodeData(
         bytes calldata _data
-    ) private pure returns (address, uint256, uint256) {
-        (address contractAddress, uint256 chainId, uint256 amount) = abi.decode(
-            _data,
-            (address, uint256, uint256)
-        );
-        return (contractAddress, chainId, amount);
+    ) private pure returns (address, uint256, uint256, uint256, bool) {
+        (
+            address contractAddress,
+            uint256 chainId,
+            uint256 amount,
+            uint256 timestamp,
+            bool isWithdraw
+        ) = abi.decode(_data, (address, uint256, uint256, uint256, bool));
+        return (contractAddress, chainId, amount, timestamp, isWithdraw);
     }
 
     // Reserved storage space to allow for layout changes in the future.

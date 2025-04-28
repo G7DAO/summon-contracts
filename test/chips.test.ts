@@ -92,8 +92,8 @@ describe('Chips', function () {
             const contractAddress = await chips.getAddress();
 
             const data = ethers.AbiCoder.defaultAbiCoder().encode(
-                ['address', 'uint256', 'uint256'],
-                [contractAddress, chainId, amount]
+                ['address', 'uint256', 'uint256', 'uint256', 'bool'],
+                [contractAddress, chainId, amount, Math.floor(Date.now() / 1000) + 3600, false] // Add 1 hour to current timestamp
             );
             const nonce = 1;
             const message = ethers.solidityPacked(
@@ -117,8 +117,8 @@ describe('Chips', function () {
 
             // First deposit
             const depositData = ethers.AbiCoder.defaultAbiCoder().encode(
-                ['address', 'uint256', 'uint256'],
-                [contractAddress, chainId, amount]
+                ['address', 'uint256', 'uint256', 'uint256', 'bool'],
+                [contractAddress, chainId, amount, Math.floor(Date.now() / 1000) + 3600, false] // Add 1 hour to current timestamp
             );
             const depositNonce = 1;
             const depositMessage = ethers.solidityPacked(
@@ -133,8 +133,8 @@ describe('Chips', function () {
 
             // Then withdraw
             const withdrawData = ethers.AbiCoder.defaultAbiCoder().encode(
-                ['address', 'uint256', 'uint256'],
-                [contractAddress, chainId, amount]
+                ['address', 'uint256', 'uint256', 'uint256', 'bool'],
+                [contractAddress, chainId, amount, Math.floor(Date.now() / 1000) + 3600, true] // Add 1 hour to current timestamp
             );
             const withdrawNonce = 2;
             const withdrawMessage = ethers.solidityPacked(
@@ -189,8 +189,8 @@ describe('Chips', function () {
             const contractAddress = await chips.getAddress();
 
             const data = ethers.AbiCoder.defaultAbiCoder().encode(
-                ['address', 'uint256', 'uint256'],
-                [contractAddress, chainId, amount]
+                ['address', 'uint256', 'uint256', 'uint256', 'bool'],
+                [contractAddress, chainId, amount, Math.floor(Date.now() / 1000) + 3600, false] // Add 1 hour to current timestamp
             );
             const nonce = 1;
             const message = ethers.solidityPacked(
@@ -215,8 +215,8 @@ describe('Chips', function () {
 
             // First deposit
             const depositData = ethers.AbiCoder.defaultAbiCoder().encode(
-                ['address', 'uint256', 'uint256'],
-                [contractAddress, chainId, amount]
+                ['address', 'uint256', 'uint256', 'uint256', 'bool'],
+                [contractAddress, chainId, amount, Math.floor(Date.now() / 1000) + 3600, false] // Add 1 hour to current timestamp
             );
             const depositNonce = 1;
             const depositMessage = ethers.solidityPacked(
@@ -231,8 +231,8 @@ describe('Chips', function () {
 
             // Then withdraw
             const withdrawData = ethers.AbiCoder.defaultAbiCoder().encode(
-                ['address', 'uint256', 'uint256'],
-                [contractAddress, chainId, amount]
+                ['address', 'uint256', 'uint256', 'uint256', 'bool'],
+                [contractAddress, chainId, amount, Math.floor(Date.now() / 1000) + 3600, true] // Add 1 hour to current timestamp
             );
             const withdrawNonce = 2;
             const withdrawMessage = ethers.solidityPacked(
@@ -255,8 +255,8 @@ describe('Chips', function () {
             const contractAddress = await chips.getAddress();
 
             const data = ethers.AbiCoder.defaultAbiCoder().encode(
-                ['address', 'uint256', 'uint256'],
-                [contractAddress, chainId, amount]
+                ['address', 'uint256', 'uint256', 'uint256', 'bool'],
+                [contractAddress, chainId, amount, Math.floor(Date.now() / 1000) + 3600, true] // Add 1 hour to current timestamp
             );
             const nonce = 1;
             const message = ethers.solidityPacked(
@@ -277,8 +277,8 @@ describe('Chips', function () {
             const contractAddress = await chips.getAddress();
 
             const data = ethers.AbiCoder.defaultAbiCoder().encode(
-                ['address', 'uint256', 'uint256'],
-                [contractAddress, chainId, amount]
+                ['address', 'uint256', 'uint256', 'uint256', 'bool'],
+                [contractAddress, chainId, amount, Math.floor(Date.now() / 1000) + 3600, false] // Add 1 hour to current timestamp
             );
             const nonce = 1;
             const message = ethers.solidityPacked(
@@ -300,8 +300,8 @@ describe('Chips', function () {
             const contractAddress = await chips.getAddress();
 
             const data = ethers.AbiCoder.defaultAbiCoder().encode(
-                ['address', 'uint256', 'uint256'],
-                [contractAddress, wrongChainId, amount]
+                ['address', 'uint256', 'uint256', 'uint256', 'bool'],
+                [contractAddress, wrongChainId, amount, Math.floor(Date.now() / 1000) + 3600, false] // Add 1 hour to current timestamp
             );
             const nonce = 1;
             const message = ethers.solidityPacked(
@@ -382,8 +382,8 @@ describe('Chips', function () {
 
             // First deposit
             const data = ethers.AbiCoder.defaultAbiCoder().encode(
-                ['address', 'uint256', 'uint256'],
-                [contractAddress, chainId, amount]
+                ['address', 'uint256', 'uint256', 'uint256', 'bool'],
+                [contractAddress, chainId, amount, Math.floor(Date.now() / 1000) + 3600, false] // Add 1 hour to current timestamp
             );
             const nonce = 1;
             const message = ethers.solidityPacked(
@@ -410,8 +410,8 @@ describe('Chips', function () {
 
             // First deposit to game
             const data = ethers.AbiCoder.defaultAbiCoder().encode(
-                ['address', 'uint256', 'uint256'],
-                [contractAddress, chainId, amount * 2n]
+                ['address', 'uint256', 'uint256', 'uint256', 'bool'],
+                [contractAddress, chainId, amount * 2n, Math.floor(Date.now() / 1000) + 3600, false] // Add 1 hour to current timestamp
             );
             const nonce = 1;
             const message = ethers.solidityPacked(
@@ -456,8 +456,8 @@ describe('Chips', function () {
 
             // First deposit to game
             const data = ethers.AbiCoder.defaultAbiCoder().encode(
-                ['address', 'uint256', 'uint256'],
-                [contractAddress, chainId, amount]
+                ['address', 'uint256', 'uint256', 'uint256', 'bool'],
+                [contractAddress, chainId, amount, Math.floor(Date.now() / 1000) + 3600, false] // Add 1 hour to current timestamp
             );
             const nonce = 1;
             const message = ethers.solidityPacked(
@@ -509,8 +509,8 @@ describe('Chips', function () {
             const contractAddress = await chips.getAddress();
 
             const data = ethers.AbiCoder.defaultAbiCoder().encode(
-                ['address', 'uint256', 'uint256'],
-                [contractAddress, chainId, amount]
+                ['address', 'uint256', 'uint256', 'uint256', 'bool'],
+                [contractAddress, chainId, amount, Math.floor(Date.now() / 1000) + 3600, false] // Add 1 hour to current timestamp
             );
             const nonce = 1;
             const message = ethers.solidityPacked(
@@ -551,8 +551,8 @@ describe('Chips', function () {
             const contractAddress = await chips.getAddress();
 
             const data = ethers.AbiCoder.defaultAbiCoder().encode(
-                ['address', 'uint256', 'uint256'],
-                [contractAddress, chainId, amount]
+                ['address', 'uint256', 'uint256', 'uint256', 'bool'],
+                [contractAddress, chainId, amount, Math.floor(Date.now() / 1000) + 3600, false] // Add 1 hour to current timestamp
             );
             const nonce = 1;
             const message = ethers.solidityPacked(
@@ -580,8 +580,8 @@ describe('Chips', function () {
             const contractAddress = await chips.getAddress();
 
             const data = ethers.AbiCoder.defaultAbiCoder().encode(
-                ['address', 'uint256', 'uint256'],
-                [contractAddress, chainId, amount]
+                ['address', 'uint256', 'uint256', 'uint256', 'bool'],
+                [contractAddress, chainId, amount, Math.floor(Date.now() / 1000) + 3600, true] // Add 1 hour to current timestamp
             );
             const nonce = 1;
             const message = ethers.solidityPacked(
@@ -630,8 +630,8 @@ describe('Chips', function () {
             const contractAddress = await chips.getAddress();
 
             const data = ethers.AbiCoder.defaultAbiCoder().encode(
-                ['address', 'uint256', 'uint256'],
-                [contractAddress, chainId, amount]
+                ['address', 'uint256', 'uint256', 'uint256', 'bool'],
+                [contractAddress, chainId, amount, Math.floor(Date.now() / 1000) + 3600, false] // Add 1 hour to current timestamp
             );
             const nonce = 1;
             const message = ethers.solidityPacked(
@@ -657,8 +657,8 @@ describe('Chips', function () {
 
             // First deposit
             const data = ethers.AbiCoder.defaultAbiCoder().encode(
-                ['address', 'uint256', 'uint256'],
-                [contractAddress, chainId, amount]
+                ['address', 'uint256', 'uint256', 'uint256', 'bool'],
+                [contractAddress, chainId, amount, Math.floor(Date.now() / 1000) + 3600, false] // Add 1 hour to current timestamp
             );
             const nonce = 1;
             const message = ethers.solidityPacked(
@@ -686,8 +686,8 @@ describe('Chips', function () {
 
             // First deposit to game
             const data = ethers.AbiCoder.defaultAbiCoder().encode(
-                ['address', 'uint256', 'uint256'],
-                [contractAddress, chainId, amount * 2n]
+                ['address', 'uint256', 'uint256', 'uint256', 'bool'],
+                [contractAddress, chainId, amount * 2n, Math.floor(Date.now() / 1000) + 3600, false] // Add 1 hour to current timestamp
             );
             const nonce = 1;
             const message = ethers.solidityPacked(
@@ -795,8 +795,8 @@ describe('Chips', function () {
             const contractAddress = await chips.getAddress();
 
             const data = ethers.AbiCoder.defaultAbiCoder().encode(
-                ['address', 'uint256', 'uint256'],
-                [contractAddress, chainId, amount]
+                ['address', 'uint256', 'uint256', 'uint256', 'bool'],
+                [contractAddress, chainId, amount, Math.floor(Date.now() / 1000) + 3600, false] // Add 1 hour to current timestamp
             );
             const nonce = 1;
             const message = ethers.solidityPacked(
@@ -825,8 +825,8 @@ describe('Chips', function () {
 
             // First deposit
             const depositData = ethers.AbiCoder.defaultAbiCoder().encode(
-                ['address', 'uint256', 'uint256'],
-                [contractAddress, chainId, amount]
+                ['address', 'uint256', 'uint256', 'uint256', 'bool'],
+                [contractAddress, chainId, amount, Math.floor(Date.now() / 1000) + 3600, false] // Add 1 hour to current timestamp
             );
             const depositNonce = 1;
             const depositMessage = ethers.solidityPacked(
@@ -842,8 +842,8 @@ describe('Chips', function () {
             // Then withdraw
             const withdrawAmount = await chips.balanceOf(user1.address);
             const withdrawData = ethers.AbiCoder.defaultAbiCoder().encode(
-                ['address', 'uint256', 'uint256'],
-                [contractAddress, chainId, withdrawAmount]
+                ['address', 'uint256', 'uint256', 'uint256', 'bool'],
+                [contractAddress, chainId, withdrawAmount, Math.floor(Date.now() / 1000) + 3600, true] // Add 1 hour to current timestamp
             );
             const withdrawNonce = 2;
             const withdrawMessage = ethers.solidityPacked(
@@ -914,8 +914,8 @@ describe('Chips', function () {
             const contractAddress = await chips.getAddress();
 
             const data = ethers.AbiCoder.defaultAbiCoder().encode(
-                ['address', 'uint256', 'uint256'],
-                [contractAddress, chainId, amount]
+                ['address', 'uint256', 'uint256', 'uint256', 'bool'],
+                [contractAddress, chainId, amount, Math.floor(Date.now() / 1000) + 3600, false] // Add 1 hour to current timestamp
             );
             const nonce = 1;
             const message = ethers.solidityPacked(
@@ -942,8 +942,8 @@ describe('Chips', function () {
             const contractAddress = await chips.getAddress();
 
             const data = ethers.AbiCoder.defaultAbiCoder().encode(
-                ['address', 'uint256', 'uint256'],
-                [contractAddress, chainId, amount]
+                ['address', 'uint256', 'uint256', 'uint256', 'bool'],
+                [contractAddress, chainId, amount, Math.floor(Date.now() / 1000) + 3600, false] // Add 1 hour to current timestamp
             );
             const nonce = 1;
             const message = ethers.solidityPacked(
@@ -971,8 +971,8 @@ describe('Chips', function () {
 
             // Deposit
             const depositData = ethers.AbiCoder.defaultAbiCoder().encode(
-                ['address', 'uint256', 'uint256'],
-                [contractAddress, chainId, amount]
+                ['address', 'uint256', 'uint256', 'uint256', 'bool'],
+                [contractAddress, chainId, amount, Math.floor(Date.now() / 1000) + 3600, false] // Add 1 hour to current timestamp
             );
             const depositNonce = 1;
             const depositMessage = ethers.solidityPacked(
@@ -993,8 +993,8 @@ describe('Chips', function () {
             // At 2:1 rate, 100 chips = 50 tokens
             const withdrawAmount = await chips.balanceOf(user1.address);
             const withdrawData = ethers.AbiCoder.defaultAbiCoder().encode(
-                ['address', 'uint256', 'uint256'],
-                [contractAddress, chainId, withdrawAmount]
+                ['address', 'uint256', 'uint256', 'uint256', 'bool'],
+                [contractAddress, chainId, withdrawAmount, Math.floor(Date.now() / 1000) + 3600, true] // Add 1 hour to current timestamp
             );
             const withdrawNonce = 2;
             const withdrawMessage = ethers.solidityPacked(
@@ -1080,8 +1080,8 @@ describe('Chips', function () {
             const contractAddress = await chips.getAddress();
 
             const data = ethers.AbiCoder.defaultAbiCoder().encode(
-                ['address', 'uint256', 'uint256'],
-                [contractAddress, chainId, amount]
+                ['address', 'uint256', 'uint256', 'uint256', 'bool'],
+                [contractAddress, chainId, amount, Math.floor(Date.now() / 1000) + 3600, false] // Add 1 hour to current timestamp
             );
             const nonce = 1;
             const message = ethers.solidityPacked(
@@ -1105,8 +1105,8 @@ describe('Chips', function () {
             const contractAddress = await chips.getAddress();
 
             const data = ethers.AbiCoder.defaultAbiCoder().encode(
-                ['address', 'uint256', 'uint256'],
-                [contractAddress, wrongChainId, amount]
+                ['address', 'uint256', 'uint256', 'uint256', 'bool'],
+                [contractAddress, wrongChainId, amount, Math.floor(Date.now() / 1000) + 3600, false] // Add 1 hour to current timestamp
             );
             const nonce = 1;
             const message = ethers.solidityPacked(
@@ -1128,8 +1128,8 @@ describe('Chips', function () {
             const wrongContractAddress = ethers.ZeroAddress;
 
             const data = ethers.AbiCoder.defaultAbiCoder().encode(
-                ['address', 'uint256', 'uint256'],
-                [wrongContractAddress, chainId, amount]
+                ['address', 'uint256', 'uint256', 'uint256', 'bool'],
+                [wrongContractAddress, chainId, amount, Math.floor(Date.now() / 1000) + 3600, false] // Add 1 hour to current timestamp
             );
             const nonce = 1;
             const message = ethers.solidityPacked(
@@ -1142,6 +1142,92 @@ describe('Chips', function () {
             await mockToken.connect(user1).approve(await chips.getAddress(), amount);
             await expect(chips.connect(user1).deposit(data, nonce, signature))
                 .to.be.revertedWithCustomError(chips, 'InvalidSeed');
+        });
+
+        it('Should revert on expired signature', async () => {
+            const { chips, user1, manager } = await loadFixture(deployFixtures);
+            const amount = 100n;
+            const contractAddress = await chips.getAddress();
+            const chainId = (await ethers.provider.getNetwork()).chainId;
+            const timestamp = Math.floor(Date.now() / 1000) - 3600; // 1 hour in the past
+            const data = ethers.AbiCoder.defaultAbiCoder().encode(
+                ['address', 'uint256', 'uint256', 'uint256', 'bool'],
+                [contractAddress, chainId, amount, timestamp, false]
+            );
+            const nonce = 1;
+            const message = ethers.solidityPacked(
+                ['address', 'bytes', 'uint256'],
+                [user1.address, data, nonce]
+            );
+            const messageHash = ethers.keccak256(message);
+            const signature = await manager.signMessage(ethers.getBytes(messageHash));
+            await expect(chips.connect(user1).deposit(data, nonce, signature))
+                .to.be.revertedWithCustomError(chips, 'InvalidTimestamp');
+        });
+
+        it('Should prevent replay attacks', async () => {
+            const { chips, mockToken, user1, manager } = await loadFixture(deployFixtures);
+            const amount = 100n;
+            const contractAddress = await chips.getAddress();
+            const chainId = (await ethers.provider.getNetwork()).chainId;
+            const timestamp = Math.floor(Date.now() / 1000) + 3600; // 1 hour in the future
+            const data = ethers.AbiCoder.defaultAbiCoder().encode(
+                ['address', 'uint256', 'uint256', 'uint256', 'bool'],
+                [contractAddress, chainId, amount, timestamp, false]
+            );
+            const nonce = 1;
+            const message = ethers.solidityPacked(
+                ['address', 'bytes', 'uint256'],
+                [user1.address, data, nonce]
+            );
+            const messageHash = ethers.keccak256(message);
+            const signature = await manager.signMessage(ethers.getBytes(messageHash));
+            await mockToken.connect(user1).approve(await chips.getAddress(), amount);
+            await chips.connect(user1).deposit(data, nonce, signature);
+            await expect(chips.connect(user1).deposit(data, nonce, signature))
+                .to.be.revertedWith('AlreadyUsedSignature');
+        });
+
+        it('Should revert when using withdraw data for deposit', async () => {
+            const { chips, user1, manager } = await loadFixture(deployFixtures);
+            const amount = 100n;
+            const contractAddress = await chips.getAddress();
+            const chainId = (await ethers.provider.getNetwork()).chainId;
+            const timestamp = Math.floor(Date.now() / 1000) + 3600;
+            const data = ethers.AbiCoder.defaultAbiCoder().encode(
+                ['address', 'uint256', 'uint256', 'uint256', 'bool'],
+                [contractAddress, chainId, amount, timestamp, true]
+            );
+            const nonce = 1;
+            const message = ethers.solidityPacked(
+                ['address', 'bytes', 'uint256'],
+                [user1.address, data, nonce]
+            );
+            const messageHash = ethers.keccak256(message);
+            const signature = await manager.signMessage(ethers.getBytes(messageHash));
+            await expect(chips.connect(user1).deposit(data, nonce, signature))
+                .to.be.revertedWithCustomError(chips, 'WrongFunction');
+        });
+
+        it('Should revert when using deposit data for withdraw', async () => {
+            const { chips, user1, manager } = await loadFixture(deployFixtures);
+            const amount = 100n;
+            const contractAddress = await chips.getAddress();
+            const chainId = (await ethers.provider.getNetwork()).chainId;
+            const timestamp = Math.floor(Date.now() / 1000) + 3600;
+            const data = ethers.AbiCoder.defaultAbiCoder().encode(
+                ['address', 'uint256', 'uint256', 'uint256', 'bool'],
+                [contractAddress, chainId, amount, timestamp, false]
+            );
+            const nonce = 1;
+            const message = ethers.solidityPacked(
+                ['address', 'bytes', 'uint256'],
+                [user1.address, data, nonce]
+            );
+            const messageHash = ethers.keccak256(message);
+            const signature = await manager.signMessage(ethers.getBytes(messageHash));
+            await expect(chips.connect(user1).withdraw(data, nonce, signature))
+                .to.be.revertedWithCustomError(chips, 'WrongFunction');
         });
     });
 
@@ -1157,8 +1243,8 @@ describe('Chips', function () {
             const contractAddress = await chips.getAddress();
 
             const data = ethers.AbiCoder.defaultAbiCoder().encode(
-                ['address', 'uint256', 'uint256'],
-                [contractAddress, chainId, amount]
+                ['address', 'uint256', 'uint256', 'uint256', 'bool'],
+                [contractAddress, chainId, amount, Math.floor(Date.now() / 1000) + 3600, false] // Add 1 hour to current timestamp
             );
             const nonce = 1;
             const message = ethers.solidityPacked(
@@ -1185,8 +1271,8 @@ describe('Chips', function () {
             const contractAddress = await chips.getAddress();
 
             const data = ethers.AbiCoder.defaultAbiCoder().encode(
-                ['address', 'uint256', 'uint256'],
-                [contractAddress, chainId, amount]
+                ['address', 'uint256', 'uint256', 'uint256', 'bool'],
+                [contractAddress, chainId, amount, Math.floor(Date.now() / 1000) + 3600, false] // Add 1 hour to current timestamp
             );
             const nonce = 1;
             const message = ethers.solidityPacked(
@@ -1230,8 +1316,8 @@ describe('Chips', function () {
             const contractAddress = await chips.getAddress();
 
             const data = ethers.AbiCoder.defaultAbiCoder().encode(
-                ['address', 'uint256', 'uint256'],
-                [contractAddress, chainId, amount]
+                ['address', 'uint256', 'uint256', 'uint256', 'bool'],
+                [contractAddress, chainId, amount, Math.floor(Date.now() / 1000) + 3600, false] // Add 1 hour to current timestamp
             );
             const nonce = 1;
             const message = ethers.solidityPacked(
