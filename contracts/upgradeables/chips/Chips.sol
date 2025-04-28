@@ -275,7 +275,7 @@ contract Chips is
     }
 
     function _parseChipsToCurrency(uint256 chipsBalance) internal view returns (uint256) {
-        return (chipsBalance * denominatorExchangeRate) / denominatorExchangeRate;
+        return (chipsBalance * denominatorExchangeRate) / numeratorExchangeRate;
     }
 
     // @dev Returns the balance of the user
