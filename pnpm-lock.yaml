@@ -20,12 +20,6 @@ importers:
       '@openzeppelin/contracts':
         specifier: ^5.0.2
         version: 5.0.2
-      '@openzeppelin/contracts-upgradeable':
-        specifier: ^5.0.2
-        version: 5.0.2(@openzeppelin/contracts@5.0.2)
-      '@openzeppelin/hardhat-upgrades':
-        specifier: 3.1.1
-        version: 3.1.1(@nomicfoundation/hardhat-ethers@3.0.8(ethers@6.13.4)(hardhat@2.22.13(ts-node@10.9.2(@swc/core@1.7.35)(@swc/wasm@1.7.35)(@types/node@20.16.11)(typescript@5.6.3))(typescript@5.6.3)))(@nomicfoundation/hardhat-verify@2.0.11(hardhat@2.22.13(ts-node@10.9.2(@swc/core@1.7.35)(@swc/wasm@1.7.35)(@types/node@20.16.11)(typescript@5.6.3))(typescript@5.6.3)))(ethers@6.13.4)(hardhat@2.22.13(ts-node@10.9.2(@swc/core@1.7.35)(@swc/wasm@1.7.35)(@types/node@20.16.11)(typescript@5.6.3))(typescript@5.6.3))
       '@pythnetwork/pyth-sdk-solidity':
         specifier: ^3.1.0
         version: 3.1.0
@@ -54,6 +48,12 @@ importers:
       '@nomicfoundation/hardhat-verify':
         specifier: ^2.0.11
         version: 2.0.11(hardhat@2.22.13(ts-node@10.9.2(@swc/core@1.7.35)(@swc/wasm@1.7.35)(@types/node@20.16.11)(typescript@5.6.3))(typescript@5.6.3))
+      '@openzeppelin/contracts-upgradeable':
+        specifier: ^5.0.2
+        version: 5.0.2(@openzeppelin/contracts@5.0.2)
+      '@openzeppelin/hardhat-upgrades':
+        specifier: 3.1.1
+        version: 3.1.1(@nomicfoundation/hardhat-ethers@3.0.8(ethers@6.13.4)(hardhat@2.22.13(ts-node@10.9.2(@swc/core@1.7.35)(@swc/wasm@1.7.35)(@types/node@20.16.11)(typescript@5.6.3))(typescript@5.6.3)))(@nomicfoundation/hardhat-verify@2.0.11(hardhat@2.22.13(ts-node@10.9.2(@swc/core@1.7.35)(@swc/wasm@1.7.35)(@types/node@20.16.11)(typescript@5.6.3))(typescript@5.6.3)))(ethers@6.13.4)(hardhat@2.22.13(ts-node@10.9.2(@swc/core@1.7.35)(@swc/wasm@1.7.35)(@types/node@20.16.11)(typescript@5.6.3))(typescript@5.6.3))
       '@swc/core':
         specifier: ^1.7.35
         version: 1.7.35
