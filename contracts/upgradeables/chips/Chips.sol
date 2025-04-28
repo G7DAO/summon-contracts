@@ -18,7 +18,6 @@ import {
 import {
     PausableUpgradeable
 } from "@openzeppelin/contracts-upgradeable/utils/PausableUpgradeable.sol";
-import { Strings } from "@openzeppelin/contracts/utils/Strings.sol";
 
 import {
     ReentrancyGuardUpgradeable
@@ -76,9 +75,11 @@ contract Chips is
     error AddressIsZero();
     error NotAuthorized(address account);
 
+    error ExchangeRateCannotBeZero();
     error ArrayLengthMismatch();
     error InvalidSeed();
 
+    bytes32 public constant DEV_CONFIG_ROLE = keccak256("DEV_CONFIG_ROLE");
     bytes32 public constant GAME_ROLE = keccak256("GAME_ROLE");
     bytes32 public constant MANAGER_ROLE = keccak256("MANAGER_ROLE");
     bytes32 public constant READABLE_ROLE = keccak256("READABLE_ROLE");
@@ -88,8 +89,8 @@ contract Chips is
     uint256 _totalSupply;
     uint8 private _decimals;
 
-    uint256 public numeratorExchangeRate;
-    uint256 public denominatorExchangeRate;
+    uint256 numeratorExchangeRate;
+    uint256 denominatorExchangeRate;
 
     // @dev Sets the exchange rate
     // @param _numerator The numerator of the exchange rate
@@ -98,6 +99,12 @@ contract Chips is
         uint256 _numerator,
         uint256 _denominator
     ) external onlyRole(MANAGER_ROLE) {
+        if (_numerator == 0) {
+            revert ExchangeRateCannotBeZero();
+        }
+        if (_denominator == 0) {
+            revert ExchangeRateCannotBeZero();
+        }
         numeratorExchangeRate = _numerator;
         denominatorExchangeRate = _denominator;
         emit ExchangeRateSet(_msgSender(), _numerator, _denominator);
@@ -131,8 +138,10 @@ contract Chips is
             revert AddressIsZero();
         }
 
+        _grantRole(DEFAULT_ADMIN_ROLE, _devWallet);
+        _grantRole(DEV_CONFIG_ROLE, _devWallet);
         _grantRole(MANAGER_ROLE, _devWallet);
-        _setRoleAdmin(MANAGER_ROLE, MANAGER_ROLE);
+        _setRoleAdmin(MANAGER_ROLE, DEV_CONFIG_ROLE);
         _setRoleAdmin(GAME_ROLE, MANAGER_ROLE);
         _setRoleAdmin(READABLE_ROLE, MANAGER_ROLE);
 
@@ -167,8 +176,7 @@ contract Chips is
     {
         uint256 amount = _verifyContractChainIdAndDecode(data);
         token.safeTransferFrom(msg.sender, address(this), amount);
-        uint256 amountInChips = (amount * numeratorExchangeRate) /
-            denominatorExchangeRate;
+        uint256 amountInChips = _parseCurrencyToChips(amount);
         _update(address(0), msg.sender, amountInChips);
         emit Deposit(msg.sender, amountInChips);
     }
@@ -187,8 +195,7 @@ contract Chips is
     {
         uint256 amountInChips = _verifyContractChainIdAndDecode(data);
         _update(msg.sender, address(0), amountInChips);
-        uint256 amountInTokens = (amountInChips * denominatorExchangeRate) /
-            numeratorExchangeRate;
+        uint256 amountInTokens = _parseChipsToCurrency(amountInChips);
         token.safeTransfer(msg.sender, amountInTokens);
         emit Withdraw(msg.sender, amountInTokens);
     }
@@ -206,8 +213,7 @@ contract Chips is
         }
         for (uint256 i = 0; i < users.length; i++) {
             token.safeTransferFrom(admin, address(this), amounts[i]);
-            uint256 amountInChips = (amounts[i] * numeratorExchangeRate) /
-                denominatorExchangeRate;
+            uint256 amountInChips = _parseCurrencyToChips(amounts[i]);
             _update(address(0), users[i], amountInChips);
         }
         emit AdminDeposit(admin, users, amounts);
@@ -220,10 +226,11 @@ contract Chips is
     ) external onlyRole(MANAGER_ROLE) whenPaused nonReentrant {
         for (uint256 i = 0; i < users.length; i++) {
             uint256 balance = _balances[users[i]];
-            uint256 amountInTokens = (balance * denominatorExchangeRate) /
-                numeratorExchangeRate;
-            _update(users[i], address(0), balance);
-            token.safeTransfer(users[i], amountInTokens);
+            if (balance > 0) {
+                uint256 amountInTokens = _parseChipsToCurrency(balance);
+                _update(users[i], address(0), balance);
+                token.safeTransfer(users[i], amountInTokens);
+            }
         }
         emit WithdrawAllAdmin(_msgSender(), users);
     }
@@ -264,6 +271,19 @@ contract Chips is
     // @dev Unpauses the contract
     function unpause() external onlyRole(MANAGER_ROLE) {
         _unpause();
+    }
+
+    function _parseCurrencyToChips(
+        uint256 currencyBalance
+    ) internal view returns (uint256) {
+        return
+            (currencyBalance * numeratorExchangeRate) / denominatorExchangeRate;
+    }
+
+    function _parseChipsToCurrency(
+        uint256 chipsBalance
+    ) internal view returns (uint256) {
+        return (chipsBalance * denominatorExchangeRate) / numeratorExchangeRate;
     }
 
     // @dev Returns the balance of the user
@@ -335,7 +355,7 @@ contract Chips is
 
     function _authorizeUpgrade(
         address newImplementation
-    ) internal view override onlyRole(MANAGER_ROLE) {
+    ) internal view override onlyRole(DEV_CONFIG_ROLE) {
         // The onlyRole modifier already checks for the manager role
     }
 
@@ -365,7 +385,12 @@ contract Chips is
 
     function decodeData(
         bytes calldata _data
-    ) public view onlyRole(MANAGER_ROLE) returns (address, uint256, uint256) {
+    )
+        public
+        view
+        onlyRole(DEV_CONFIG_ROLE)
+        returns (address, uint256, uint256)
+    {
         return _decodeData(_data);
     }
 
