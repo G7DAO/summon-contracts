@@ -1,57 +1,85 @@
-import { expect } from 'chai';
-import { ethers } from 'hardhat';
+import { SignerWithAddress } from '@nomicfoundation/hardhat-ethers/signers';
 import { loadFixture } from '@nomicfoundation/hardhat-network-helpers';
-import { upgrades } from 'hardhat';
+import { expect } from 'chai';
+import { ethers, upgrades } from 'hardhat';
+import { Chips, MockERC20 } from 'typechain-types';
 
 describe('Chips', function () {
     async function deployFixtures() {
-        const [manager, game, user1, user2] = await ethers.getSigners();
+        const [manager, user1, user2, treasury, gameServer] = await ethers.getSigners();
 
         // Deploy mock token for testing
         const MockToken = await ethers.getContractFactory('MockERC20');
         const mockToken = await MockToken.deploy('Mock Token', 'MTK');
         await mockToken.waitForDeployment();
 
+        const defaultPlayCost = 1000n;
+
         // Deploy Chips implementation
-        const Chips = await ethers.getContractFactory('Chips');
+        const ChipsFactory = await ethers.getContractFactory('Chips');
 
         // Deploy as UUPS proxy with all required initialization parameters
-        const chips = await upgrades.deployProxy(Chips, [
-            await mockToken.getAddress(), // _token
-            false,                        // _isPaused
-            manager.address               // _devWallet
-        ], {
-            initializer: 'initialize',
-            kind: 'uups'
-        });
-        await chips.waitForDeployment();
+        const chipsContract = await upgrades.deployProxy(
+            ChipsFactory,
+            [
+                await mockToken.getAddress(), // _token
+                false, // _isPaused
+                manager.address, // _devWallet
+                treasury.address, // _treasury
+                defaultPlayCost, // _defaultPlayCost
+            ],
+            {
+                initializer: 'initialize',
+                kind: 'uups',
+            }
+        );
+        await chipsContract.waitForDeployment();
+        const chips = await ethers.getContractAt('Chips', await chipsContract.getAddress());
 
         // Verify initial role setup
         expect(await chips.hasRole(await chips.DEV_CONFIG_ROLE(), manager.address)).to.be.true;
         expect(await chips.hasRole(await chips.MANAGER_ROLE(), manager.address)).to.be.true;
         expect(await chips.hasRole(await chips.DEFAULT_ADMIN_ROLE(), manager.address)).to.be.true;
 
-
         // Grant game role
-        await chips.connect(manager).grantRole(await chips.GAME_ROLE(), game.address);
-        expect(await chips.hasRole(await chips.GAME_ROLE(), game.address)).to.be.true;
         await chips.connect(manager).grantRole(await chips.READABLE_ROLE(), manager.address);
         expect(await chips.hasRole(await chips.READABLE_ROLE(), manager.address)).to.be.true;
+        await chips.connect(manager).grantRole(await chips.GAME_SERVER_ROLE(), gameServer.address);
+        expect(await chips.hasRole(await chips.GAME_SERVER_ROLE(), gameServer.address)).to.be.true;
 
         // Mint some tokens to users for testing
         await mockToken.mint(user1.address, ethers.parseEther('1000'));
         await mockToken.mint(user2.address, ethers.parseEther('1000'));
         await mockToken.mint(manager.address, ethers.parseEther('1000'));
-        await mockToken.mint(game.address, ethers.parseEther('1000'));
+        await mockToken.mint(gameServer.address, ethers.parseEther('1000'));
 
         return {
             chips,
             mockToken,
             manager,
-            game,
             user1,
             user2,
+            treasury,
+            defaultPlayCost,
+            gameServer,
         };
+    }
+
+    async function depositChips(chips: Chips, token: MockERC20, deployer: SignerWithAddress, wallet: SignerWithAddress, amount: bigint) {
+        const chainId = (await ethers.provider.getNetwork()).chainId;
+        const contractAddress = await chips.getAddress();
+
+        const data = ethers.AbiCoder.defaultAbiCoder().encode(
+            ['address', 'uint256', 'uint256', 'uint256', 'bool'],
+            [contractAddress, chainId, amount, Math.floor(Date.now() / 1000) + 3600, false]
+        );
+        const nonce = 1;
+        const message = ethers.solidityPacked(['address', 'bytes', 'uint256'], [wallet.address, data, nonce]);
+        const messageHash = ethers.keccak256(message);
+        const signature = await deployer.signMessage(ethers.getBytes(messageHash));
+
+        await token.connect(wallet).approve(await chips.getAddress(), amount);
+        await chips.connect(wallet).deposit(data, nonce, signature);
     }
 
     describe('Initialization', function () {
@@ -66,9 +94,9 @@ describe('Chips', function () {
         });
 
         it('Should set the correct roles', async function () {
-            const { chips, manager, game } = await loadFixture(deployFixtures);
+            const { chips, manager, gameServer } = await loadFixture(deployFixtures);
             expect(await chips.hasRole(await chips.MANAGER_ROLE(), manager.address)).to.be.true;
-            expect(await chips.hasRole(await chips.GAME_ROLE(), game.address)).to.be.true;
+            expect(await chips.hasRole(await chips.GAME_SERVER_ROLE(), gameServer.address)).to.be.true;
         });
 
         it('Should set the correct decimals', async function () {
@@ -96,10 +124,7 @@ describe('Chips', function () {
                 [contractAddress, chainId, amount, Math.floor(Date.now() / 1000) + 3600, false] // Add 1 hour to current timestamp
             );
             const nonce = 1;
-            const message = ethers.solidityPacked(
-                ['address', 'bytes', 'uint256'],
-                [user1.address, data, nonce]
-            );
+            const message = ethers.solidityPacked(['address', 'bytes', 'uint256'], [user1.address, data, nonce]);
             const messageHash = ethers.keccak256(message);
             const signature = await manager.signMessage(ethers.getBytes(messageHash));
 
@@ -154,10 +179,7 @@ describe('Chips', function () {
             const amount = ethers.parseEther('100');
 
             await mockToken.connect(manager).approve(await chips.getAddress(), amount * 2n);
-            await chips.connect(manager).adminDeposit(
-                [user1.address, user2.address],
-                [amount, amount]
-            );
+            await chips.connect(manager).adminDeposit([user1.address, user2.address], [amount, amount]);
 
             expect(await chips.totalSupply()).to.equal(amount * 2n);
         });
@@ -168,10 +190,7 @@ describe('Chips', function () {
 
             // First deposit
             await mockToken.connect(manager).approve(await chips.getAddress(), amount * 2n);
-            await chips.connect(manager).adminDeposit(
-                [user1.address, user2.address],
-                [amount, amount]
-            );
+            await chips.connect(manager).adminDeposit([user1.address, user2.address], [amount, amount]);
 
             // Pause and withdraw
             await chips.connect(manager).pause();
@@ -193,10 +212,7 @@ describe('Chips', function () {
                 [contractAddress, chainId, amount, Math.floor(Date.now() / 1000) + 3600, false] // Add 1 hour to current timestamp
             );
             const nonce = 1;
-            const message = ethers.solidityPacked(
-                ['address', 'bytes', 'uint256'],
-                [user1.address, data, nonce]
-            );
+            const message = ethers.solidityPacked(['address', 'bytes', 'uint256'], [user1.address, data, nonce]);
             const messageHash = ethers.keccak256(message);
             const signature = await manager.signMessage(ethers.getBytes(messageHash));
 
@@ -259,15 +275,14 @@ describe('Chips', function () {
                 [contractAddress, chainId, amount, Math.floor(Date.now() / 1000) + 3600, true] // Add 1 hour to current timestamp
             );
             const nonce = 1;
-            const message = ethers.solidityPacked(
-                ['address', 'bytes', 'uint256'],
-                [user1.address, data, nonce]
-            );
+            const message = ethers.solidityPacked(['address', 'bytes', 'uint256'], [user1.address, data, nonce]);
             const messageHash = ethers.keccak256(message);
             const signature = await manager.signMessage(ethers.getBytes(messageHash));
 
-            await expect(chips.connect(user1).withdraw(data, nonce, signature))
-                .to.be.revertedWithCustomError(chips, 'ChipInsufficientBalance');
+            await expect(chips.connect(user1).withdraw(data, nonce, signature)).to.be.revertedWithCustomError(
+                chips,
+                'ChipInsufficientBalance'
+            );
         });
 
         it('Should revert if signature is invalid', async function () {
@@ -281,16 +296,12 @@ describe('Chips', function () {
                 [contractAddress, chainId, amount, Math.floor(Date.now() / 1000) + 3600, false] // Add 1 hour to current timestamp
             );
             const nonce = 1;
-            const message = ethers.solidityPacked(
-                ['address', 'bytes', 'uint256'],
-                [user1.address, data, nonce]
-            );
+            const message = ethers.solidityPacked(['address', 'bytes', 'uint256'], [user1.address, data, nonce]);
             const messageHash = ethers.keccak256(message);
             // Sign with different user instead of devWallet
             const signature = await user2.signMessage(ethers.getBytes(messageHash));
 
-            await expect(chips.connect(user1).deposit(data, nonce, signature))
-                .to.be.reverted;
+            await expect(chips.connect(user1).deposit(data, nonce, signature)).to.be.reverted;
         });
 
         it('Should revert if chain ID is incorrect', async function () {
@@ -304,15 +315,14 @@ describe('Chips', function () {
                 [contractAddress, wrongChainId, amount, Math.floor(Date.now() / 1000) + 3600, false] // Add 1 hour to current timestamp
             );
             const nonce = 1;
-            const message = ethers.solidityPacked(
-                ['address', 'bytes', 'uint256'],
-                [user1.address, data, nonce]
-            );
+            const message = ethers.solidityPacked(['address', 'bytes', 'uint256'], [user1.address, data, nonce]);
             const messageHash = ethers.keccak256(message);
             const signature = await manager.signMessage(ethers.getBytes(messageHash));
 
-            await expect(chips.connect(user1).deposit(data, nonce, signature))
-                .to.be.revertedWithCustomError(chips, 'InvalidSeed');
+            await expect(chips.connect(user1).deposit(data, nonce, signature)).to.be.revertedWithCustomError(
+                chips,
+                'InvalidSeed'
+            );
         });
     });
 
@@ -325,10 +335,7 @@ describe('Chips', function () {
             await mockToken.connect(manager).approve(await chips.getAddress(), amount * 2n);
 
             // Manager deposits to users
-            await chips.connect(manager).adminDeposit(
-                [user1.address, user2.address],
-                [amount, amount]
-            );
+            await chips.connect(manager).adminDeposit([user1.address, user2.address], [amount, amount]);
 
             expect(await chips.balanceOf(user1.address)).to.equal(amount);
             expect(await chips.balanceOf(user2.address)).to.equal(amount);
@@ -338,17 +345,14 @@ describe('Chips', function () {
         it('Should allow manager to withdraw all chips from users when paused', async function () {
             const { chips, mockToken, manager, user1, user2 } = await loadFixture(deployFixtures);
             const amount = ethers.parseEther('100');
-            const initialBalance = await mockToken.balanceOf(user1.address)
+            const initialBalance = await mockToken.balanceOf(user1.address);
             // First deposit to users
             await mockToken.connect(manager).approve(await chips.getAddress(), amount * 2n);
-            await chips.connect(manager).adminDeposit(
-                [user1.address, user2.address],
-                [amount, amount]
-            );
+            await chips.connect(manager).adminDeposit([user1.address, user2.address], [amount, amount]);
             // Verify initial balances
             expect(await chips.balanceOf(user1.address)).to.equal(amount);
             expect(await chips.balanceOf(user2.address)).to.equal(amount);
-            const deposits = await mockToken.balanceOf(await chips.getAddress())
+            const deposits = await mockToken.balanceOf(await chips.getAddress());
             expect(deposits).to.equal(amount * 2n);
             // Pause the contract
             await chips.connect(manager).pause();
@@ -368,126 +372,9 @@ describe('Chips', function () {
 
         it('Should revert if non-manager tries manager operations', async function () {
             const { chips, user1 } = await loadFixture(deployFixtures);
-            await expect(chips.connect(user1).adminDeposit([user1.address], [ethers.parseEther('100')]))
-                .to.be.revertedWithCustomError(chips, 'AccessControlUnauthorizedAccount');
-        });
-    });
-
-    describe('Game Operations', function () {
-        it('Should allow game to retrieve buy-in', async function () {
-            const { chips, mockToken, game, user1, manager } = await loadFixture(deployFixtures);
-            const amount = ethers.parseEther('100');
-            const chainId = (await ethers.provider.getNetwork()).chainId;
-            const contractAddress = await chips.getAddress();
-
-            // First deposit
-            const data = ethers.AbiCoder.defaultAbiCoder().encode(
-                ['address', 'uint256', 'uint256', 'uint256', 'bool'],
-                [contractAddress, chainId, amount, Math.floor(Date.now() / 1000) + 3600, false] // Add 1 hour to current timestamp
-            );
-            const nonce = 1;
-            const message = ethers.solidityPacked(
-                ['address', 'bytes', 'uint256'],
-                [user1.address, data, nonce]
-            );
-            const messageHash = ethers.keccak256(message);
-            const signature = await manager.signMessage(ethers.getBytes(messageHash));
-
-            await mockToken.connect(user1).approve(await chips.getAddress(), amount);
-            await chips.connect(user1).deposit(data, nonce, signature);
-
-            // Then retrieve buy-in
-            await chips.connect(game).retrieveBuyIn(user1.address, amount);
-
-            expect(await chips.balanceOf(user1.address)).to.equal(0);
-        });
-
-        it('Should allow game to distribute chips', async function () {
-            const { chips, mockToken, game, user1, user2, manager } = await loadFixture(deployFixtures);
-            const amount = ethers.parseEther('100');
-            const chainId = (await ethers.provider.getNetwork()).chainId;
-            const contractAddress = await chips.getAddress();
-
-            // First deposit to game
-            const data = ethers.AbiCoder.defaultAbiCoder().encode(
-                ['address', 'uint256', 'uint256', 'uint256', 'bool'],
-                [contractAddress, chainId, amount * 2n, Math.floor(Date.now() / 1000) + 3600, false] // Add 1 hour to current timestamp
-            );
-            const nonce = 1;
-            const message = ethers.solidityPacked(
-                ['address', 'bytes', 'uint256'],
-                [game.address, data, nonce]
-            );
-            const messageHash = ethers.keccak256(message);
-            const signature = await manager.signMessage(ethers.getBytes(messageHash));
-
-            await mockToken.connect(game).approve(await chips.getAddress(), amount * 2n);
-            await chips.connect(game).deposit(data, nonce, signature);
-
-            // Then distribute
-            await chips.connect(game).distributeChips(
-                [user1.address, user2.address],
-                [amount, amount]
-            );
-
-            expect(await chips.balanceOf(user1.address)).to.equal(amount);
-            expect(await chips.balanceOf(user2.address)).to.equal(amount);
-        });
-
-        it('Should revert if non-game tries game operations', async function () {
-            const { chips, user1 } = await loadFixture(deployFixtures);
-            await expect(chips.connect(user1).retrieveBuyIn(user1.address, ethers.parseEther('100')))
-                .to.be.revertedWithCustomError(chips, 'AccessControlUnauthorizedAccount');
-        });
-
-        it('Should revert on retrieveBuyIn with insufficient balance', async function () {
-            const { chips, game, user1 } = await loadFixture(deployFixtures);
-            const amount = ethers.parseEther('100');
-
-            await expect(chips.connect(game).retrieveBuyIn(user1.address, amount))
-                .to.be.revertedWithCustomError(chips, 'ChipInsufficientBalance');
-        });
-
-        it('Should handle distributeChips with zero amounts', async function () {
-            const { chips, mockToken, game, user1, user2, manager } = await loadFixture(deployFixtures);
-            const amount = ethers.parseEther('100');
-            const chainId = (await ethers.provider.getNetwork()).chainId;
-            const contractAddress = await chips.getAddress();
-
-            // First deposit to game
-            const data = ethers.AbiCoder.defaultAbiCoder().encode(
-                ['address', 'uint256', 'uint256', 'uint256', 'bool'],
-                [contractAddress, chainId, amount, Math.floor(Date.now() / 1000) + 3600, false] // Add 1 hour to current timestamp
-            );
-            const nonce = 1;
-            const message = ethers.solidityPacked(
-                ['address', 'bytes', 'uint256'],
-                [game.address, data, nonce]
-            );
-            const messageHash = ethers.keccak256(message);
-            const signature = await manager.signMessage(ethers.getBytes(messageHash));
-
-            await mockToken.connect(game).approve(await chips.getAddress(), amount);
-            await chips.connect(game).deposit(data, nonce, signature);
-
-            // Distribute zero amounts
-            await chips.connect(game).distributeChips(
-                [user1.address, user2.address],
-                [0, 0]
-            );
-
-            expect(await chips.balanceOf(user1.address)).to.equal(0);
-            expect(await chips.balanceOf(user2.address)).to.equal(0);
-        });
-
-        it('Should revert on distributeChips with mismatched array lengths', async function () {
-            const { chips, game, user1 } = await loadFixture(deployFixtures);
-            const amount = ethers.parseEther('100');
-
-            await expect(chips.connect(game).distributeChips(
-                [user1.address],
-                [amount, amount]
-            )).to.be.revertedWithCustomError(chips, 'ArrayLengthMismatch');
+            await expect(
+                chips.connect(user1).adminDeposit([user1.address], [ethers.parseEther('100')])
+            ).to.be.revertedWithCustomError(chips, 'AccessControlUnauthorizedAccount');
         });
     });
 
@@ -513,33 +400,30 @@ describe('Chips', function () {
                 [contractAddress, chainId, amount, Math.floor(Date.now() / 1000) + 3600, false] // Add 1 hour to current timestamp
             );
             const nonce = 1;
-            const message = ethers.solidityPacked(
-                ['address', 'bytes', 'uint256'],
-                [user1.address, data, nonce]
-            );
+            const message = ethers.solidityPacked(['address', 'bytes', 'uint256'], [user1.address, data, nonce]);
             const messageHash = ethers.keccak256(message);
             const signature = await manager.signMessage(ethers.getBytes(messageHash));
 
             await chips.connect(manager).pause();
             await mockToken.connect(user1).approve(await chips.getAddress(), amount);
 
-            await expect(chips.connect(user1).deposit(data, nonce, signature))
-                .to.be.revertedWithCustomError(chips, 'EnforcedPause');
+            await expect(chips.connect(user1).deposit(data, nonce, signature)).to.be.revertedWithCustomError(
+                chips,
+                'EnforcedPause'
+            );
         });
 
         it('Should revert on unpause when not paused', async function () {
             const { chips, manager } = await loadFixture(deployFixtures);
             expect(await chips.paused()).to.be.false;
-            await expect(chips.connect(manager).unpause())
-                .to.be.revertedWithCustomError(chips, 'ExpectedPause');
+            await expect(chips.connect(manager).unpause()).to.be.revertedWithCustomError(chips, 'ExpectedPause');
         });
 
         it('Should revert on pause when already paused', async function () {
             const { chips, manager } = await loadFixture(deployFixtures);
             await chips.connect(manager).pause();
             expect(await chips.paused()).to.be.true;
-            await expect(chips.connect(manager).pause())
-                .to.be.revertedWithCustomError(chips, 'EnforcedPause');
+            await expect(chips.connect(manager).pause()).to.be.revertedWithCustomError(chips, 'EnforcedPause');
         });
     });
 
@@ -555,10 +439,7 @@ describe('Chips', function () {
                 [contractAddress, chainId, amount, Math.floor(Date.now() / 1000) + 3600, false] // Add 1 hour to current timestamp
             );
             const nonce = 1;
-            const message = ethers.solidityPacked(
-                ['address', 'bytes', 'uint256'],
-                [user1.address, data, nonce]
-            );
+            const message = ethers.solidityPacked(['address', 'bytes', 'uint256'], [user1.address, data, nonce]);
             const messageHash = ethers.keccak256(message);
             const signature = await manager.signMessage(ethers.getBytes(messageHash));
 
@@ -584,10 +465,7 @@ describe('Chips', function () {
                 [contractAddress, chainId, amount, Math.floor(Date.now() / 1000) + 3600, true] // Add 1 hour to current timestamp
             );
             const nonce = 1;
-            const message = ethers.solidityPacked(
-                ['address', 'bytes', 'uint256'],
-                [user1.address, data, nonce]
-            );
+            const message = ethers.solidityPacked(['address', 'bytes', 'uint256'], [user1.address, data, nonce]);
             const messageHash = ethers.keccak256(message);
             const signature = await manager.signMessage(ethers.getBytes(messageHash));
 
@@ -602,10 +480,9 @@ describe('Chips', function () {
             const { chips, manager, user1 } = await loadFixture(deployFixtures);
             const amount = ethers.parseEther('100');
 
-            await expect(chips.connect(manager).adminDeposit(
-                [user1.address],
-                [amount, amount]
-            )).to.be.revertedWithCustomError(chips, 'ArrayLengthMismatch');
+            await expect(
+                chips.connect(manager).adminDeposit([user1.address], [amount, amount])
+            ).to.be.revertedWithCustomError(chips, 'ArrayLengthMismatch');
         });
 
         it('Should revert on withdrawAllAdmin when not paused', async function () {
@@ -614,13 +491,11 @@ describe('Chips', function () {
 
             // First deposit
             await mockToken.connect(manager).approve(await chips.getAddress(), amount * 2n);
-            await chips.connect(manager).adminDeposit(
-                [user1.address, user2.address],
-                [amount, amount]
-            );
+            await chips.connect(manager).adminDeposit([user1.address, user2.address], [amount, amount]);
 
-            await expect(chips.connect(manager).withdrawAllAdmin([user1.address, user2.address]))
-                .to.be.revertedWithCustomError(chips, 'ExpectedPause');
+            await expect(
+                chips.connect(manager).withdrawAllAdmin([user1.address, user2.address])
+            ).to.be.revertedWithCustomError(chips, 'ExpectedPause');
         });
 
         it('Should handle maximum token amount deposits', async function () {
@@ -634,89 +509,12 @@ describe('Chips', function () {
                 [contractAddress, chainId, amount, Math.floor(Date.now() / 1000) + 3600, false] // Add 1 hour to current timestamp
             );
             const nonce = 1;
-            const message = ethers.solidityPacked(
-                ['address', 'bytes', 'uint256'],
-                [user1.address, data, nonce]
-            );
+            const message = ethers.solidityPacked(['address', 'bytes', 'uint256'], [user1.address, data, nonce]);
             const messageHash = ethers.keccak256(message);
             const signature = await manager.signMessage(ethers.getBytes(messageHash));
 
             await mockToken.connect(user1).approve(await chips.getAddress(), amount);
-            await expect(chips.connect(user1).deposit(data, nonce, signature))
-                .to.be.reverted; // Should revert due to overflow
-        });
-
-    });
-
-    describe('Game Operations Edge Cases', function () {
-        it('Should revert on retrieveBuyIn when paused', async function () {
-            const { chips, mockToken, manager, game, user1 } = await loadFixture(deployFixtures);
-            const amount = ethers.parseEther('100');
-            const chainId = (await ethers.provider.getNetwork()).chainId;
-            const contractAddress = await chips.getAddress();
-
-            // First deposit
-            const data = ethers.AbiCoder.defaultAbiCoder().encode(
-                ['address', 'uint256', 'uint256', 'uint256', 'bool'],
-                [contractAddress, chainId, amount, Math.floor(Date.now() / 1000) + 3600, false] // Add 1 hour to current timestamp
-            );
-            const nonce = 1;
-            const message = ethers.solidityPacked(
-                ['address', 'bytes', 'uint256'],
-                [user1.address, data, nonce]
-            );
-            const messageHash = ethers.keccak256(message);
-            const signature = await manager.signMessage(ethers.getBytes(messageHash));
-
-            await mockToken.connect(user1).approve(await chips.getAddress(), amount);
-            await chips.connect(user1).deposit(data, nonce, signature);
-
-            // Pause contract
-            await chips.connect(manager).pause();
-
-            await expect(chips.connect(game).retrieveBuyIn(user1.address, amount))
-                .to.be.revertedWithCustomError(chips, 'EnforcedPause');
-        });
-
-        it('Should revert on distributeChips when paused', async function () {
-            const { chips, mockToken, manager, game, user1, user2 } = await loadFixture(deployFixtures);
-            const amount = ethers.parseEther('100');
-            const chainId = (await ethers.provider.getNetwork()).chainId;
-            const contractAddress = await chips.getAddress();
-
-            // First deposit to game
-            const data = ethers.AbiCoder.defaultAbiCoder().encode(
-                ['address', 'uint256', 'uint256', 'uint256', 'bool'],
-                [contractAddress, chainId, amount * 2n, Math.floor(Date.now() / 1000) + 3600, false] // Add 1 hour to current timestamp
-            );
-            const nonce = 1;
-            const message = ethers.solidityPacked(
-                ['address', 'bytes', 'uint256'],
-                [game.address, data, nonce]
-            );
-            const messageHash = ethers.keccak256(message);
-            const signature = await manager.signMessage(ethers.getBytes(messageHash));
-
-            await mockToken.connect(game).approve(await chips.getAddress(), amount * 2n);
-            await chips.connect(game).deposit(data, nonce, signature);
-
-            // Pause contract
-            await chips.connect(manager).pause();
-
-            await expect(chips.connect(game).distributeChips(
-                [user1.address, user2.address],
-                [amount, amount]
-            )).to.be.revertedWithCustomError(chips, 'EnforcedPause');
-        });
-
-        it('Should revert on distributeChips with insufficient balance', async function () {
-            const { chips, game, user1, user2 } = await loadFixture(deployFixtures);
-            const amount = ethers.parseEther('100');
-
-            await expect(chips.connect(game).distributeChips(
-                [user1.address, user2.address],
-                [amount, amount]
-            )).to.be.revertedWithCustomError(chips, 'ChipInsufficientBalance');
+            await expect(chips.connect(user1).deposit(data, nonce, signature)).to.be.reverted; // Should revert due to overflow
         });
     });
 
@@ -730,8 +528,10 @@ describe('Chips', function () {
         it('Should revert if non-manager tries to upgrade', async function () {
             const { chips, user1 } = await loadFixture(deployFixtures);
             const ChipsV2 = await ethers.getContractFactory('Chips', user1);
-            await expect(upgrades.upgradeProxy(chips, ChipsV2))
-                .to.be.revertedWithCustomError(chips, 'AccessControlUnauthorizedAccount');
+            await expect(upgrades.upgradeProxy(chips, ChipsV2)).to.be.revertedWithCustomError(
+                chips,
+                'AccessControlUnauthorizedAccount'
+            );
         });
     });
 
@@ -758,8 +558,10 @@ describe('Chips', function () {
             // Verify user1 doesn't have manager role
             expect(await chips.hasRole(await chips.MANAGER_ROLE(), user1.address)).to.be.false;
 
-            await expect(chips.connect(user1).setExchangeRate(2, 1))
-                .to.be.revertedWithCustomError(chips, 'AccessControlUnauthorizedAccount');
+            await expect(chips.connect(user1).setExchangeRate(2, 1)).to.be.revertedWithCustomError(
+                chips,
+                'AccessControlUnauthorizedAccount'
+            );
         });
 
         it('Should emit ExchangeRateSet event when rate is updated', async function () {
@@ -774,14 +576,18 @@ describe('Chips', function () {
 
         it('Should revert if numerator is zero', async function () {
             const { chips, manager } = await loadFixture(deployFixtures);
-            await expect(chips.connect(manager).setExchangeRate(0, 1))
-                .to.be.revertedWithCustomError(chips, 'ExchangeRateCannotBeZero');
+            await expect(chips.connect(manager).setExchangeRate(0, 1)).to.be.revertedWithCustomError(
+                chips,
+                'ExchangeRateCannotBeZero'
+            );
         });
 
         it('Should revert if denominator is zero', async function () {
             const { chips, manager } = await loadFixture(deployFixtures);
-            await expect(chips.connect(manager).setExchangeRate(1, 0))
-                .to.be.revertedWithCustomError(chips, 'ExchangeRateCannotBeZero');
+            await expect(chips.connect(manager).setExchangeRate(1, 0)).to.be.revertedWithCustomError(
+                chips,
+                'ExchangeRateCannotBeZero'
+            );
         });
 
         it('Should apply exchange rate correctly on deposit', async function () {
@@ -799,10 +605,7 @@ describe('Chips', function () {
                 [contractAddress, chainId, amount, Math.floor(Date.now() / 1000) + 3600, false] // Add 1 hour to current timestamp
             );
             const nonce = 1;
-            const message = ethers.solidityPacked(
-                ['address', 'bytes', 'uint256'],
-                [user1.address, data, nonce]
-            );
+            const message = ethers.solidityPacked(['address', 'bytes', 'uint256'], [user1.address, data, nonce]);
             const messageHash = ethers.keccak256(message);
             const signature = await manager.signMessage(ethers.getBytes(messageHash));
 
@@ -868,10 +671,7 @@ describe('Chips', function () {
             const amount = ethers.parseEther('100');
 
             await mockToken.connect(manager).approve(await chips.getAddress(), amount * 2n);
-            await chips.connect(manager).adminDeposit(
-                [user1.address, user2.address],
-                [amount, amount]
-            );
+            await chips.connect(manager).adminDeposit([user1.address, user2.address], [amount, amount]);
 
             // Each user should receive 2x the amount in chips
             expect(await chips.balanceOf(user1.address)).to.equal(amount * 2n);
@@ -889,10 +689,7 @@ describe('Chips', function () {
 
             // First deposit
             await mockToken.connect(manager).approve(await chips.getAddress(), amount * 2n);
-            await chips.connect(manager).adminDeposit(
-                [user1.address, user2.address],
-                [amount, amount]
-            );
+            await chips.connect(manager).adminDeposit([user1.address, user2.address], [amount, amount]);
 
             // Pause and withdraw
             await chips.connect(manager).pause();
@@ -918,10 +715,7 @@ describe('Chips', function () {
                 [contractAddress, chainId, amount, Math.floor(Date.now() / 1000) + 3600, false] // Add 1 hour to current timestamp
             );
             const nonce = 1;
-            const message = ethers.solidityPacked(
-                ['address', 'bytes', 'uint256'],
-                [user1.address, data, nonce]
-            );
+            const message = ethers.solidityPacked(['address', 'bytes', 'uint256'], [user1.address, data, nonce]);
             const messageHash = ethers.keccak256(message);
             const signature = await manager.signMessage(ethers.getBytes(messageHash));
 
@@ -946,10 +740,7 @@ describe('Chips', function () {
                 [contractAddress, chainId, amount, Math.floor(Date.now() / 1000) + 3600, false] // Add 1 hour to current timestamp
             );
             const nonce = 1;
-            const message = ethers.solidityPacked(
-                ['address', 'bytes', 'uint256'],
-                [user1.address, data, nonce]
-            );
+            const message = ethers.solidityPacked(['address', 'bytes', 'uint256'], [user1.address, data, nonce]);
             const messageHash = ethers.keccak256(message);
             const signature = await manager.signMessage(ethers.getBytes(messageHash));
 
@@ -1012,27 +803,28 @@ describe('Chips', function () {
 
     describe('Role Management', function () {
         it('Should allow manager to revoke roles', async function () {
-            const { chips, manager, game } = await loadFixture(deployFixtures);
-            await chips.connect(manager).revokeRole(await chips.GAME_ROLE(), game.address);
-            expect(await chips.hasRole(await chips.GAME_ROLE(), game.address)).to.be.false;
+            const { chips, manager, gameServer } = await loadFixture(deployFixtures);
+            await chips.connect(manager).revokeRole(await chips.GAME_SERVER_ROLE(), gameServer.address);
+            expect(await chips.hasRole(await chips.GAME_SERVER_ROLE(), gameServer.address)).to.be.false;
         });
 
         it('Should revert if non-manager tries to revoke roles', async function () {
-            const { chips, user1, game } = await loadFixture(deployFixtures);
-            await expect(chips.connect(user1).revokeRole(await chips.GAME_ROLE(), game.address))
-                .to.be.revertedWithCustomError(chips, 'AccessControlUnauthorizedAccount');
+            const { chips, user1, gameServer } = await loadFixture(deployFixtures);
+            await expect(
+                chips.connect(user1).revokeRole(await chips.GAME_SERVER_ROLE(), gameServer.address)
+            ).to.be.revertedWithCustomError(chips, 'AccessControlUnauthorizedAccount');
         });
 
         it('Should handle role management correctly', async function () {
             const { chips, manager, user1 } = await loadFixture(deployFixtures);
 
             // Grant GAME_ROLE to user1
-            await chips.connect(manager).grantRole(await chips.GAME_ROLE(), user1.address);
-            expect(await chips.hasRole(await chips.GAME_ROLE(), user1.address)).to.be.true;
+            await chips.connect(manager).grantRole(await chips.GAME_SERVER_ROLE(), user1.address);
+            expect(await chips.hasRole(await chips.GAME_SERVER_ROLE(), user1.address)).to.be.true;
 
             // Revoke GAME_ROLE from user1
-            await chips.connect(manager).revokeRole(await chips.GAME_ROLE(), user1.address);
-            expect(await chips.hasRole(await chips.GAME_ROLE(), user1.address)).to.be.false;
+            await chips.connect(manager).revokeRole(await chips.GAME_SERVER_ROLE(), user1.address);
+            expect(await chips.hasRole(await chips.GAME_SERVER_ROLE(), user1.address)).to.be.false;
         });
 
         it('Should allow manager to grant and revoke READABLE_ROLE', async function () {
@@ -1062,13 +854,13 @@ describe('Chips', function () {
         it('Should allow users to renounce their roles', async function () {
             const { chips, manager, user1 } = await loadFixture(deployFixtures);
 
-            // Grant GAME_ROLE to user1
-            await chips.connect(manager).grantRole(await chips.GAME_ROLE(), user1.address);
-            expect(await chips.hasRole(await chips.GAME_ROLE(), user1.address)).to.be.true;
+            // Grant GAME_SERVER_ROLE to user1
+            await chips.connect(manager).grantRole(await chips.GAME_SERVER_ROLE(), user1.address);
+            expect(await chips.hasRole(await chips.GAME_SERVER_ROLE(), user1.address)).to.be.true;
 
             // User1 renounces their role
-            await chips.connect(user1).renounceRole(await chips.GAME_ROLE(), user1.address);
-            expect(await chips.hasRole(await chips.GAME_ROLE(), user1.address)).to.be.false;
+            await chips.connect(user1).renounceRole(await chips.GAME_SERVER_ROLE(), user1.address);
+            expect(await chips.hasRole(await chips.GAME_SERVER_ROLE(), user1.address)).to.be.false;
         });
     });
 
@@ -1084,18 +876,16 @@ describe('Chips', function () {
                 [contractAddress, chainId, amount, Math.floor(Date.now() / 1000) + 3600, false] // Add 1 hour to current timestamp
             );
             const nonce = 1;
-            const message = ethers.solidityPacked(
-                ['address', 'bytes', 'uint256'],
-                [user1.address, data, nonce]
-            );
+            const message = ethers.solidityPacked(['address', 'bytes', 'uint256'], [user1.address, data, nonce]);
             const messageHash = ethers.keccak256(message);
             const signature = await manager.signMessage(ethers.getBytes(messageHash));
 
             await mockToken.connect(user1).approve(await chips.getAddress(), amount);
             await chips.connect(user1).deposit(data, nonce, signature);
             // Try to replay the same signature
-            await expect(chips.connect(user1).deposit(data, nonce, signature))
-                .to.be.revertedWith("AlreadyUsedSignature");
+            await expect(chips.connect(user1).deposit(data, nonce, signature)).to.be.revertedWith(
+                'AlreadyUsedSignature'
+            );
         });
 
         it('Should revert on signature with different chain ID', async function () {
@@ -1109,16 +899,15 @@ describe('Chips', function () {
                 [contractAddress, wrongChainId, amount, Math.floor(Date.now() / 1000) + 3600, false] // Add 1 hour to current timestamp
             );
             const nonce = 1;
-            const message = ethers.solidityPacked(
-                ['address', 'bytes', 'uint256'],
-                [user1.address, data, nonce]
-            );
+            const message = ethers.solidityPacked(['address', 'bytes', 'uint256'], [user1.address, data, nonce]);
             const messageHash = ethers.keccak256(message);
             const signature = await manager.signMessage(ethers.getBytes(messageHash));
 
             await mockToken.connect(user1).approve(await chips.getAddress(), amount);
-            await expect(chips.connect(user1).deposit(data, nonce, signature))
-                .to.be.revertedWithCustomError(chips, 'InvalidSeed');
+            await expect(chips.connect(user1).deposit(data, nonce, signature)).to.be.revertedWithCustomError(
+                chips,
+                'InvalidSeed'
+            );
         });
 
         it('Should revert on signature with different contract address', async function () {
@@ -1132,16 +921,15 @@ describe('Chips', function () {
                 [wrongContractAddress, chainId, amount, Math.floor(Date.now() / 1000) + 3600, false] // Add 1 hour to current timestamp
             );
             const nonce = 1;
-            const message = ethers.solidityPacked(
-                ['address', 'bytes', 'uint256'],
-                [user1.address, data, nonce]
-            );
+            const message = ethers.solidityPacked(['address', 'bytes', 'uint256'], [user1.address, data, nonce]);
             const messageHash = ethers.keccak256(message);
             const signature = await manager.signMessage(ethers.getBytes(messageHash));
 
             await mockToken.connect(user1).approve(await chips.getAddress(), amount);
-            await expect(chips.connect(user1).deposit(data, nonce, signature))
-                .to.be.revertedWithCustomError(chips, 'InvalidSeed');
+            await expect(chips.connect(user1).deposit(data, nonce, signature)).to.be.revertedWithCustomError(
+                chips,
+                'InvalidSeed'
+            );
         });
 
         it('Should revert on expired signature', async () => {
@@ -1155,14 +943,13 @@ describe('Chips', function () {
                 [contractAddress, chainId, amount, timestamp, false]
             );
             const nonce = 1;
-            const message = ethers.solidityPacked(
-                ['address', 'bytes', 'uint256'],
-                [user1.address, data, nonce]
-            );
+            const message = ethers.solidityPacked(['address', 'bytes', 'uint256'], [user1.address, data, nonce]);
             const messageHash = ethers.keccak256(message);
             const signature = await manager.signMessage(ethers.getBytes(messageHash));
-            await expect(chips.connect(user1).deposit(data, nonce, signature))
-                .to.be.revertedWithCustomError(chips, 'InvalidTimestamp');
+            await expect(chips.connect(user1).deposit(data, nonce, signature)).to.be.revertedWithCustomError(
+                chips,
+                'InvalidTimestamp'
+            );
         });
 
         it('Should prevent replay attacks', async () => {
@@ -1176,58 +963,14 @@ describe('Chips', function () {
                 [contractAddress, chainId, amount, timestamp, false]
             );
             const nonce = 1;
-            const message = ethers.solidityPacked(
-                ['address', 'bytes', 'uint256'],
-                [user1.address, data, nonce]
-            );
+            const message = ethers.solidityPacked(['address', 'bytes', 'uint256'], [user1.address, data, nonce]);
             const messageHash = ethers.keccak256(message);
             const signature = await manager.signMessage(ethers.getBytes(messageHash));
             await mockToken.connect(user1).approve(await chips.getAddress(), amount);
             await chips.connect(user1).deposit(data, nonce, signature);
-            await expect(chips.connect(user1).deposit(data, nonce, signature))
-                .to.be.revertedWith('AlreadyUsedSignature');
-        });
-
-        it('Should revert when using withdraw data for deposit', async () => {
-            const { chips, user1, manager } = await loadFixture(deployFixtures);
-            const amount = 100n;
-            const contractAddress = await chips.getAddress();
-            const chainId = (await ethers.provider.getNetwork()).chainId;
-            const timestamp = Math.floor(Date.now() / 1000) + 3600;
-            const data = ethers.AbiCoder.defaultAbiCoder().encode(
-                ['address', 'uint256', 'uint256', 'uint256', 'bool'],
-                [contractAddress, chainId, amount, timestamp, true]
+            await expect(chips.connect(user1).deposit(data, nonce, signature)).to.be.revertedWith(
+                'AlreadyUsedSignature'
             );
-            const nonce = 1;
-            const message = ethers.solidityPacked(
-                ['address', 'bytes', 'uint256'],
-                [user1.address, data, nonce]
-            );
-            const messageHash = ethers.keccak256(message);
-            const signature = await manager.signMessage(ethers.getBytes(messageHash));
-            await expect(chips.connect(user1).deposit(data, nonce, signature))
-                .to.be.revertedWithCustomError(chips, 'WrongFunction');
-        });
-
-        it('Should revert when using deposit data for withdraw', async () => {
-            const { chips, user1, manager } = await loadFixture(deployFixtures);
-            const amount = 100n;
-            const contractAddress = await chips.getAddress();
-            const chainId = (await ethers.provider.getNetwork()).chainId;
-            const timestamp = Math.floor(Date.now() / 1000) + 3600;
-            const data = ethers.AbiCoder.defaultAbiCoder().encode(
-                ['address', 'uint256', 'uint256', 'uint256', 'bool'],
-                [contractAddress, chainId, amount, timestamp, false]
-            );
-            const nonce = 1;
-            const message = ethers.solidityPacked(
-                ['address', 'bytes', 'uint256'],
-                [user1.address, data, nonce]
-            );
-            const messageHash = ethers.keccak256(message);
-            const signature = await manager.signMessage(ethers.getBytes(messageHash));
-            await expect(chips.connect(user1).withdraw(data, nonce, signature))
-                .to.be.revertedWithCustomError(chips, 'WrongFunction');
         });
     });
 
@@ -1247,10 +990,7 @@ describe('Chips', function () {
                 [contractAddress, chainId, amount, Math.floor(Date.now() / 1000) + 3600, false] // Add 1 hour to current timestamp
             );
             const nonce = 1;
-            const message = ethers.solidityPacked(
-                ['address', 'bytes', 'uint256'],
-                [user1.address, data, nonce]
-            );
+            const message = ethers.solidityPacked(['address', 'bytes', 'uint256'], [user1.address, data, nonce]);
             const messageHash = ethers.keccak256(message);
             const signature = await manager.signMessage(ethers.getBytes(messageHash));
 
@@ -1275,10 +1015,7 @@ describe('Chips', function () {
                 [contractAddress, chainId, amount, Math.floor(Date.now() / 1000) + 3600, false] // Add 1 hour to current timestamp
             );
             const nonce = 1;
-            const message = ethers.solidityPacked(
-                ['address', 'bytes', 'uint256'],
-                [user1.address, data, nonce]
-            );
+            const message = ethers.solidityPacked(['address', 'bytes', 'uint256'], [user1.address, data, nonce]);
             const messageHash = ethers.keccak256(message);
             const signature = await manager.signMessage(ethers.getBytes(messageHash));
 
@@ -1292,8 +1029,10 @@ describe('Chips', function () {
     describe('Balance Access Control', function () {
         it('Should revert on unauthorized balance query', async function () {
             const { chips, user1, user2 } = await loadFixture(deployFixtures);
-            await expect(chips.connect(user1).balanceOf(user2.address))
-                .to.be.revertedWithCustomError(chips, 'NotAuthorized');
+            await expect(chips.connect(user1).balanceOf(user2.address)).to.be.revertedWithCustomError(
+                chips,
+                'NotAuthorized'
+            );
         });
 
         it('Should allow balance query with READABLE_ROLE', async function () {
@@ -1320,10 +1059,7 @@ describe('Chips', function () {
                 [contractAddress, chainId, amount, Math.floor(Date.now() / 1000) + 3600, false] // Add 1 hour to current timestamp
             );
             const nonce = 1;
-            const message = ethers.solidityPacked(
-                ['address', 'bytes', 'uint256'],
-                [user1.address, data, nonce]
-            );
+            const message = ethers.solidityPacked(['address', 'bytes', 'uint256'], [user1.address, data, nonce]);
             const messageHash = ethers.keccak256(message);
             const signature = await manager.signMessage(ethers.getBytes(messageHash));
 
@@ -1342,10 +1078,7 @@ describe('Chips', function () {
             const { chips, mockToken, manager, user1, user2 } = await loadFixture(deployFixtures);
 
             await mockToken.connect(manager).approve(await chips.getAddress(), 0);
-            await chips.connect(manager).adminDeposit(
-                [user1.address, user2.address],
-                [0, 0]
-            );
+            await chips.connect(manager).adminDeposit([user1.address, user2.address], [0, 0]);
 
             expect(await chips.balanceOf(user1.address)).to.equal(0);
             expect(await chips.balanceOf(user2.address)).to.equal(0);
@@ -1365,11 +1098,88 @@ describe('Chips', function () {
     });
 
     describe('Upgrade Tests', function () {
-
         it('Should handle upgrade with same implementation', async function () {
             const { chips, manager } = await loadFixture(deployFixtures);
             const ChipsV2 = await ethers.getContractFactory('Chips', manager);
             await upgrades.upgradeProxy(chips, ChipsV2);
+        });
+    });
+
+    describe('Payout', function () {
+        let chips: Chips;
+        let token: MockERC20;
+        let deployer: SignerWithAddress;
+        let user1: SignerWithAddress;
+        let user2: SignerWithAddress;
+        let treasury: SignerWithAddress;
+        let gameServer: SignerWithAddress;
+        let playCost: bigint;
+
+        beforeEach(async function () {
+            ({
+                chips,
+                mockToken: token,
+                manager: deployer,
+                user1,
+                user2,
+                treasury,
+                defaultPlayCost: playCost,
+                gameServer,
+            } = await loadFixture(deployFixtures));
+        });
+
+        it('Should payout to users and emit an event', async function () {
+            const players = [user1, user2];
+            const winners = [user1];
+            const totalCost = BigInt(players.length) * playCost;
+            const rakePercentage = ethers.parseEther('10');
+            const rakeAmount = (totalCost * rakePercentage) / ethers.parseEther('100');
+            let winnerPrize = totalCost - rakeAmount;
+
+            if (winners.length > 1) {
+                winnerPrize = winnerPrize / BigInt(winners.length);
+            }
+
+            await token.connect(user1).approve(await chips.getAddress(), totalCost);
+            await depositChips(chips, token, deployer, user1, totalCost);
+            await depositChips(chips, token, deployer, user2, totalCost);
+
+            const user1BalanceBefore = await chips.balanceOf(user1.address);
+            const user2BalanceBefore = await chips.balanceOf(user2.address);
+
+            await expect(chips.connect(gameServer).payout(playCost, rakePercentage, players, winners))
+                .to.emit(chips, 'Payout')
+                .withArgs(players, winners, winnerPrize);
+
+            expect(await chips.balanceOf(user1.address)).to.equal(user1BalanceBefore - playCost + winnerPrize);
+            expect(await chips.balanceOf(user2.address)).to.equal(user2BalanceBefore - playCost);
+        });
+
+        it('Should payout to multiple users', async function () {
+            const players = [user1, user2];
+            const winners = [user1, user2];
+            const totalCost = BigInt(players.length) * playCost;
+            const rakePercentage = ethers.parseEther('10');
+            const rakeAmount = (totalCost * rakePercentage) / ethers.parseEther('100');
+            let winnerPrize = totalCost - rakeAmount;
+
+            if (winners.length > 1) {
+                winnerPrize = winnerPrize / BigInt(winners.length);
+            }
+
+            await token.connect(user1).approve(await chips.getAddress(), totalCost);
+            await depositChips(chips, token, deployer, user1, totalCost);
+            await depositChips(chips, token, deployer, user2, totalCost);
+
+            const user1BalanceBefore = await chips.balanceOf(user1.address);
+            const user2BalanceBefore = await chips.balanceOf(user2.address);
+
+            await expect(chips.connect(gameServer).payout(playCost, rakePercentage, players, winners))
+                .to.emit(chips, 'Payout')
+                .withArgs(players, winners, winnerPrize);
+
+            expect(await chips.balanceOf(user1.address)).to.equal(user1BalanceBefore - playCost + winnerPrize);
+            expect(await chips.balanceOf(user2.address)).to.equal(user2BalanceBefore - playCost + winnerPrize);
         });
     });
 });

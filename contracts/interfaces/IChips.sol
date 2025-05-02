@@ -14,13 +14,6 @@ interface IChips {
         bytes calldata signature
     ) external;
 
-    function retrieveBuyIn(address from, uint256 amount) external;
-
-    function distributeChips(
-        address[] memory users,
-        uint256[] memory amounts
-    ) external;
-
     function pause() external;
 
     function unpause() external;

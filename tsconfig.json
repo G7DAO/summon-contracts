@@ -23,6 +23,7 @@
         "types",
         "scripts",
         "tests",
+        "test",
         "helpers",
         "./arbitrum.config.ts",
         "./base.config.ts",
