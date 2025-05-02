@@ -84,7 +84,6 @@ contract Chips is
 
     error AddressIsZero();
     error NotAuthorized(address account);
-    error PlayCostCannotBeChanged(uint256 gameNumber, uint256 value);
     error ExchangeRateCannotBeZero();
     error ArrayLengthMismatch();
     error InvalidSeed();
