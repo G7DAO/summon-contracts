@@ -71,8 +71,6 @@ export default async function (
     const proxyAdminAddress = await hre.upgrades.erc1967.getAdminAddress(contractAddress);
     const proxyAdminAbiContent = fs.readFileSync(path.resolve(PROXY_ADMIN_ABI_PATH), 'utf8');
     const { abi: proxyAdminAbi } = JSON.parse(proxyAdminAbiContent);
-    const proxyAdminContract = await hre.ethers.getContractAt(proxyAdminAbi, proxyAdminAddress);
-    const proxyAdminOwnerAddress = await proxyAdminContract.owner();
 
     log('=====================================================');
     log(`VERIFY: ${contract.verify}`);
@@ -128,7 +126,7 @@ export default async function (
         proxyType: PROXY_CONTRACT_TYPE.TransparentUpgradeableProxy,
         proxyAdmin: {
             address: proxyAdminAddress,
-            owner: proxyAdminOwnerAddress,
+            owner: wallet.address,
             abi: proxyAdminAbi,
         },
         implementation: {

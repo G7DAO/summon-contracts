@@ -379,16 +379,6 @@ export const ChipsArgs = {
     },   
 }
 
-export const GameArgs = {
-    TESTNET: {
-        _chips: TESTNET_CHIPS_CONTRACT,
-        _treasury: TESTNET_TREASURY_WALLET,
-        _defaultPlayCost: 1000,
-        _isPaused: true,
-        _devWallet: TESTNET_DEV_WALLET
-    },   
-}
-
 export const AccessTokenG7Args = {
     MAINNET: {
         _devWallet: 'DEPLOYER_WALLET',

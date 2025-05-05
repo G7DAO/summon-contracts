@@ -26,7 +26,6 @@ export enum CONTRACT_TYPE {
     Metadata = 'Metadata',
     CamelotDistributor = 'CamelotDistributor',
     Chips = 'Chips',
-    Game = 'Game'
 }
 
 export enum PROXY_CONTRACT_TYPE {
@@ -85,7 +84,6 @@ export enum CONTRACT_UPGRADABLE_FILE_NAME {
     BurnableToken = 'BurnableTokenV1',
     Marketplace = 'Marketplace',
     Chips = 'Chips',
-    Game = 'Game'
 }
 
 export enum CONTRACT_UPGRADABLE_FILE_NAME_V2 {
@@ -127,7 +125,6 @@ export enum CONTRACT_NAME {
     Distributor = 'Distributor',
     PositionMetadata = 'PositionMetadata',
     Chips = 'Chips',
-    Game = 'Game'
 }
 
 export enum CONTRACT_UPGRADABLE_NAME {
