@@ -7,9 +7,6 @@ import {
     IERC20
 } from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import {
-    IERC20Metadata
-} from "@openzeppelin/contracts/token/ERC20/extensions/IERC20Metadata.sol";
-import {
     AccessControlUpgradeable
 } from "@openzeppelin/contracts-upgradeable/access/AccessControlUpgradeable.sol";
 import {
@@ -41,41 +38,15 @@ contract Chips is
 {
     using SafeERC20 for IERC20;
 
-    event ChipsUpdate(address indexed from, address indexed to, uint256 value);
     event Deposit(address indexed user, uint256 amount);
     event Withdraw(address indexed user, uint256 amount);
-    event AdminDeposit(
-        address indexed admin,
-        address[] users,
-        uint256[] amounts
-    );
-    event WithdrawAllAdmin(address indexed admin, address[] users);
-    event RetrieveBuyIn(
-        address indexed game,
-        address indexed user,
-        uint256 amount
-    );
-    event DistributeChips(
-        address indexed game,
-        address[] users,
-        uint256[] amounts
-    );
-    event ExchangeRateSet(
-        address indexed admin,
-        uint256 numerator,
-        uint256 denominator
-    );
-    event PlaysBought(
-        address indexed player,
-        uint256 indexed gameNumber,
-        uint256 indexed numPlays
-    );
+    event ExchangeRateSet(uint256 numerator, uint256 denominator);
     event Payout(
         address[] players,
         address[] winners,
-        uint256 winnerPrize
+        uint256 winnerPrize,
+        uint256 collectedFees
     );
-
     error ChipInsufficientBalance(
         address from,
         uint256 fromBalance,
@@ -88,44 +59,29 @@ contract Chips is
     error ArrayLengthMismatch();
     error InvalidSeed();
     error InvalidTimestamp();
-    error WrongFunction();
-
-    error InsufficientChipBalance(address player, uint256 balanceRequired);
-    error TotalChipsInPlayExceeded(
-        uint256 totalChipsInPlay,
-        uint256 totalSupply
-    );
-    error TreasuryAddressNotSet();
 
     bytes32 public constant DEV_CONFIG_ROLE = keccak256("DEV_CONFIG_ROLE");
     bytes32 public constant MANAGER_ROLE = keccak256("MANAGER_ROLE");
     bytes32 public constant READABLE_ROLE = keccak256("READABLE_ROLE");
     bytes32 public constant GAME_SERVER_ROLE = keccak256("GAME_SERVER_ROLE");
 
-    IERC20 public token;
-    mapping(address => uint256) public _balances;
-    uint256 public _totalSupply;
-    uint8 private _decimals;
+    address public token;
+    mapping(address => uint256) public balances;
+    uint256 public totalSupply;
 
     uint256 public numeratorExchangeRate;
     uint256 public denominatorExchangeRate;
 
-    address public treasury;
-    uint256 public totalChipsInPlay;
-    uint256 public defaultPlayCost;
+    uint256 public collectedFees;
 
     // @dev Initializes the contract
     // @param _token The address of the token to use for the chips
     // @param _isPaused Whether the contract is paused
     // @param _devWallet The address of the developer wallet
-    // @param _treasury The address of the treasury
-    // @param _defaultPlayCost The default play cost
     function initialize(
         address _token,
         bool _isPaused,
-        address _devWallet,
-        address _treasury,
-        uint256 _defaultPlayCost
+        address _devWallet
     ) public initializer {
         __ReentrancyGuard_init();
         __Pausable_init();
@@ -144,20 +100,10 @@ contract Chips is
         _setRoleAdmin(READABLE_ROLE, MANAGER_ROLE);
 
         _addWhitelistSigner(_devWallet);
-        token = IERC20(_token);
-        treasury = _treasury;
-        defaultPlayCost = _defaultPlayCost;
-        _decimals = IERC20Metadata(_token).decimals();
+        token = _token;
 
         // @dev Default exchange rate is 1:1
-        numeratorExchangeRate = 1;
-        denominatorExchangeRate = 1;
-
-        emit ExchangeRateSet(
-            _devWallet,
-            numeratorExchangeRate,
-            denominatorExchangeRate
-        );
+        _setExchangeRate(1, 1);
 
         if (_isPaused) _pause();
     }
@@ -177,11 +123,10 @@ contract Chips is
         nonReentrant
     {
         uint256 amount = _verifyContractChainIdAndDecode(data);
-        token.safeTransferFrom(msg.sender, address(this), amount);
-        uint256 amountInChips = _parseCurrencyToChips(amount);
-        _mintChips(msg.sender, amountInChips);
-        emit Deposit(msg.sender, amountInChips);
+        _deposit(msg.sender, amount);
     }
+
+
 
     // @dev Withdraws the chips from the user
     // @param data The data to withdraw
@@ -198,10 +143,7 @@ contract Chips is
         nonReentrant
     {
         uint256 amountInChips = _verifyContractChainIdAndDecode(data);
-        _burnChips(msg.sender, amountInChips);
-        uint256 amountInTokens = _parseChipsToCurrency(amountInChips);
-        token.safeTransfer(msg.sender, amountInTokens);
-        emit Withdraw(msg.sender, amountInTokens);
+        _withdraw(msg.sender, amountInChips);
     }
 
     // @dev Deposits the chips to the user
@@ -211,16 +153,12 @@ contract Chips is
         address[] memory users,
         uint256[] memory amounts
     ) external onlyRole(MANAGER_ROLE) nonReentrant {
-        address admin = _msgSender();
         if (users.length != amounts.length) {
             revert ArrayLengthMismatch();
         }
         for (uint256 i = 0; i < users.length; i++) {
-            token.safeTransferFrom(admin, address(this), amounts[i]);
-            uint256 amountInChips = _parseCurrencyToChips(amounts[i]);
-            _mintChips(users[i], amountInChips);
+            _deposit(users[i], amounts[i]);
         }
-        emit AdminDeposit(admin, users, amounts);
     }
 
     // @dev Withdraws all the chips from the user
@@ -229,14 +167,11 @@ contract Chips is
         address[] memory users
     ) external onlyRole(MANAGER_ROLE) whenPaused nonReentrant {
         for (uint256 i = 0; i < users.length; i++) {
-            uint256 balance = _balances[users[i]];
+            uint256 balance = balances[users[i]];
             if (balance > 0) {
-                _burnChips(users[i], balance);
-                uint256 amountInTokens = _parseChipsToCurrency(balance);
-                token.safeTransfer(users[i], amountInTokens);
+                _withdraw(users[i], balance);
             }
         }
-        emit WithdrawAllAdmin(_msgSender(), users);
     }
 
     function payout(
@@ -246,8 +181,8 @@ contract Chips is
         address[] calldata _winners
     ) external onlyRole(GAME_SERVER_ROLE) whenNotPaused nonReentrant {
         uint256 totalPrizePool = _betAmount * _players.length;
-        uint256 feeAmount = totalPrizePool * _feePercentage / 100 ether;
-        uint256 winnerPrize = totalPrizePool - feeAmount;
+        collectedFees += totalPrizePool * _feePercentage / 100 ether;
+        uint256 winnerPrize = totalPrizePool - collectedFees;
 
         if (_winners.length > 1) {
             // If there are multiple winners, distribute the prize pool equally
@@ -264,25 +199,34 @@ contract Chips is
             _mintChips(_winners[i], winnerPrize);
         }
 
-        if (treasury != address(0)) {
-            uint256 feeAmountInTokens = _parseChipsToCurrency(feeAmount);
-            token.safeTransfer(treasury, feeAmountInTokens);
-        }
+        emit Payout(_players, _winners, winnerPrize, collectedFees);
+    }
 
-        emit Payout(_players, _winners, winnerPrize);
+    function _deposit(address _to, uint256 _amount) internal {
+        IERC20(token).safeTransferFrom(msg.sender, address(this), _amount);
+        uint256 amountInChips = _parseCurrencyToChips(_amount);
+        _mintChips(_to, amountInChips);
+        emit Deposit(_to, amountInChips);
+    }
+
+    function _withdraw(address _to, uint256 _amount) internal {
+        _burnChips(_to, _amount);
+        uint256 amountInTokens = _parseChipsToCurrency(_amount);
+        IERC20(token).safeTransfer(_to, amountInTokens);
+        emit Withdraw(_to, amountInTokens);
     }
 
     function _mintChips(address _to, uint256 _amount) internal {
-        _balances[_to] += _amount;
-        _totalSupply += _amount;
+        balances[_to] += _amount;
+        totalSupply += _amount;
     }
 
     function _burnChips(address _from, uint256 _amount) internal {
-        if (_balances[_from] < _amount) {
-            revert ChipInsufficientBalance(_from, _balances[_from], _amount);
+        if (balances[_from] < _amount) {
+            revert ChipInsufficientBalance(_from, balances[_from], _amount);
         }
-        _balances[_from] -= _amount;
-        _totalSupply -= _amount;
+        balances[_from] -= _amount;
+        totalSupply -= _amount;
     }
 
     // @dev Pauses the contract
@@ -295,19 +239,30 @@ contract Chips is
         _unpause();
     }
 
+    // @dev Withdraws the collected fees
+    // @param _to The address to withdraw the fees to
+    function withdrawFees(address _to) external onlyRole(DEV_CONFIG_ROLE) {
+        IERC20(token).safeTransfer(_to, collectedFees);
+        delete collectedFees; // @dev hack to get some gas back by freeing up storage
+    }
+
     // @dev Sets the exchange rate
     // @param _numerator The numerator of the exchange rate
     // @param _denominator The denominator of the exchange rate
     function setExchangeRate(
         uint256 _numerator,
         uint256 _denominator
-    ) external onlyRole(MANAGER_ROLE) {
+    ) external onlyRole(DEV_CONFIG_ROLE) {
+        _setExchangeRate(_numerator, _denominator);
+    }
+
+    function _setExchangeRate(uint256 _numerator, uint256 _denominator) internal {
         if (_numerator == 0 || _denominator == 0) {
             revert ExchangeRateCannotBeZero();
         }
         numeratorExchangeRate = _numerator;
         denominatorExchangeRate = _denominator;
-        emit ExchangeRateSet(_msgSender(), _numerator, _denominator);
+        emit ExchangeRateSet(_numerator, _denominator);
     }
 
     // @dev Returns the exchange rate
@@ -345,20 +300,10 @@ contract Chips is
             hasRole(READABLE_ROLE, _msgSender()) ||
             _msgSender() == account
         ) {
-            return _balances[account];
+            return balances[account];
         } else {
             revert NotAuthorized(_msgSender());
         }
-    }
-
-    // @dev Returns the total supply of the chips
-    function totalSupply() external view returns (uint256) {
-        return _totalSupply;
-    }
-
-    // @dev Returns the decimals of the chips
-    function decimals() external view returns (uint8) {
-        return _decimals;
     }
 
     // @dev Returns true if the contract implements the interface

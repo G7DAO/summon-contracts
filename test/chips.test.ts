@@ -13,8 +13,6 @@ describe('Chips', function () {
         const mockToken = await MockToken.deploy('Mock Token', 'MTK');
         await mockToken.waitForDeployment();
 
-        const defaultPlayCost = 1000n;
-
         // Deploy Chips implementation
         const ChipsFactory = await ethers.getContractFactory('Chips');
 
@@ -25,8 +23,6 @@ describe('Chips', function () {
                 await mockToken.getAddress(), // _token
                 false, // _isPaused
                 manager.address, // _devWallet
-                treasury.address, // _treasury
-                defaultPlayCost, // _defaultPlayCost
             ],
             {
                 initializer: 'initialize',
@@ -59,8 +55,6 @@ describe('Chips', function () {
             manager,
             user1,
             user2,
-            treasury,
-            defaultPlayCost,
             gameServer,
         };
     }
@@ -97,11 +91,6 @@ describe('Chips', function () {
             const { chips, manager, gameServer } = await loadFixture(deployFixtures);
             expect(await chips.hasRole(await chips.MANAGER_ROLE(), manager.address)).to.be.true;
             expect(await chips.hasRole(await chips.GAME_SERVER_ROLE(), gameServer.address)).to.be.true;
-        });
-
-        it('Should set the correct decimals', async function () {
-            const { chips, mockToken } = await loadFixture(deployFixtures);
-            expect(await chips.decimals()).to.equal(await mockToken.decimals());
         });
 
         it('Should support required interfaces', async function () {
@@ -571,7 +560,7 @@ describe('Chips', function () {
 
             await expect(chips.connect(manager).setExchangeRate(numerator, denominator))
                 .to.emit(chips, 'ExchangeRateSet')
-                .withArgs(manager.address, numerator, denominator);
+                .withArgs(numerator, denominator);
         });
 
         it('Should revert if numerator is zero', async function () {
@@ -1111,9 +1100,8 @@ describe('Chips', function () {
         let deployer: SignerWithAddress;
         let user1: SignerWithAddress;
         let user2: SignerWithAddress;
-        let treasury: SignerWithAddress;
         let gameServer: SignerWithAddress;
-        let playCost: bigint;
+        const playCost = 1000n;
 
         beforeEach(async function () {
             ({
@@ -1122,8 +1110,6 @@ describe('Chips', function () {
                 manager: deployer,
                 user1,
                 user2,
-                treasury,
-                defaultPlayCost: playCost,
                 gameServer,
             } = await loadFixture(deployFixtures));
         });
@@ -1149,7 +1135,7 @@ describe('Chips', function () {
 
             await expect(chips.connect(gameServer).payout(playCost, rakePercentage, players, winners))
                 .to.emit(chips, 'Payout')
-                .withArgs(players, winners, winnerPrize);
+                .withArgs(players, winners, winnerPrize, rakeAmount);
 
             expect(await chips.balanceOf(user1.address)).to.equal(user1BalanceBefore - playCost + winnerPrize);
             expect(await chips.balanceOf(user2.address)).to.equal(user2BalanceBefore - playCost);
@@ -1176,7 +1162,7 @@ describe('Chips', function () {
 
             await expect(chips.connect(gameServer).payout(playCost, rakePercentage, players, winners))
                 .to.emit(chips, 'Payout')
-                .withArgs(players, winners, winnerPrize);
+                .withArgs(players, winners, winnerPrize, rakeAmount);
 
             expect(await chips.balanceOf(user1.address)).to.equal(user1BalanceBefore - playCost + winnerPrize);
             expect(await chips.balanceOf(user2.address)).to.equal(user2BalanceBefore - playCost + winnerPrize);

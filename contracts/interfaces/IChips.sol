@@ -27,9 +27,5 @@ interface IChips {
 
     function balanceOf(address account) external view returns (uint256);
 
-    function totalSupply() external view returns (uint256);
-
-    function decimals() external view returns (uint8);
-
     function getExchangeRate() external view returns (uint256, uint256);
 }
