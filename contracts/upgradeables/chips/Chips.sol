@@ -230,12 +230,12 @@ contract Chips is
     }
 
     // @dev Pauses the contract
-    function pause() external onlyRole(MANAGER_ROLE) {
+    function pause() external onlyRole(DEV_CONFIG_ROLE) {
         _pause();
     }
 
     // @dev Unpauses the contract
-    function unpause() external onlyRole(MANAGER_ROLE) {
+    function unpause() external onlyRole(DEV_CONFIG_ROLE) {
         _unpause();
     }
 
