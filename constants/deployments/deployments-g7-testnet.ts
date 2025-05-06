@@ -8,7 +8,6 @@ import {
     CamelotDistributorArgs,
     StakerArgs,
     ChipsArgs,
-    GameArgs,
 } from '@constants/constructor-args';
 import {
     CONTRACT_TYPE,
@@ -216,37 +215,6 @@ export const G7_TESTNET_CONTRACTS: DeploymentContract[] = [
             ChipsArgs.TESTNET._token,
             ChipsArgs.TESTNET._isPaused,
             ChipsArgs.TESTNET._devWallet
-        ],
-    },
-    {
-        contractFileName: CONTRACT_UPGRADABLE_FILE_NAME.Game,
-        type: CONTRACT_TYPE.Game,
-        name: CONTRACT_NAME.Game,
-        chain,
-        networkType,
-        tenants: [TENANT.Game7],
-        verify: true,
-        upgradable: true,
-        dependencies: [],
-        functionCalls: [
-            {
-                contractName: CONTRACT_NAME.Game,
-                functionName: 'initialize',
-                args: [
-                    GameArgs.TESTNET._chips,
-                    GameArgs.TESTNET._treasury,
-                    GameArgs.TESTNET._defaultPlayCost,
-                    GameArgs.TESTNET._isPaused,
-                    GameArgs.TESTNET._devWallet
-                ],
-            },
-        ],
-        args: [
-            GameArgs.TESTNET._chips,
-            GameArgs.TESTNET._treasury,
-            GameArgs.TESTNET._defaultPlayCost,
-            GameArgs.TESTNET._isPaused,
-            GameArgs.TESTNET._devWallet
         ],
     },
 ];

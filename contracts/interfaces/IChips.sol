@@ -14,13 +14,6 @@ interface IChips {
         bytes calldata signature
     ) external;
 
-    function retrieveBuyIn(address from, uint256 amount) external;
-
-    function distributeChips(
-        address[] memory users,
-        uint256[] memory amounts
-    ) external;
-
     function pause() external;
 
     function unpause() external;
@@ -33,10 +26,6 @@ interface IChips {
     function withdrawAllAdmin(address[] memory users) external;
 
     function balanceOf(address account) external view returns (uint256);
-
-    function totalSupply() external view returns (uint256);
-
-    function decimals() external view returns (uint8);
 
     function getExchangeRate() external view returns (uint256, uint256);
 }
