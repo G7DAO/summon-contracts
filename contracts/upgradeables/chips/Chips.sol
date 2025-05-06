@@ -7,6 +7,9 @@ import {
     IERC20
 } from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import {
+    IERC20Metadata
+} from "@openzeppelin/contracts/token/ERC20/extensions/IERC20Metadata.sol";
+import {
     AccessControlUpgradeable
 } from "@openzeppelin/contracts-upgradeable/access/AccessControlUpgradeable.sol";
 import {
@@ -67,6 +70,7 @@ contract Chips is
 
     uint256 public numeratorExchangeRate;
     uint256 public denominatorExchangeRate;
+    uint256 public tokenDecimals;
 
     uint256 public collectedFees;
 
@@ -96,6 +100,7 @@ contract Chips is
 
         _addWhitelistSigner(_devWallet);
         token = _token;
+        tokenDecimals = IERC20Metadata(_token).decimals();
 
         // @dev Default exchange rate is 1:1
         _setExchangeRate(1, 1);
@@ -176,7 +181,7 @@ contract Chips is
         address[] calldata _winners
     ) external onlyRole(GAME_SERVER_ROLE) whenNotPaused nonReentrant {
         uint256 totalPrizePool = _betAmount * _players.length;
-        collectedFees += totalPrizePool * _feePercentage / 100 ether;
+        collectedFees += totalPrizePool * _feePercentage / (100 * 10 ** tokenDecimals);
         uint256 winnerPrize = totalPrizePool - collectedFees;
 
         if (_winners.length > 1) {
