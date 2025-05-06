@@ -1,8 +1,11 @@
+import { PROXY_ADMIN_ABI_PATH } from '@constants/proxy-deployments';
 import { SignerWithAddress } from '@nomicfoundation/hardhat-ethers/signers';
 import { loadFixture } from '@nomicfoundation/hardhat-network-helpers';
 import { expect } from 'chai';
 import { ethers, upgrades } from 'hardhat';
 import { Chips, MockERC20 } from 'typechain-types';
+import fs from 'fs';
+import path from 'path';
 
 describe('Chips', function () {
     async function deployFixtures() {
@@ -26,7 +29,6 @@ describe('Chips', function () {
             ],
             {
                 initializer: 'initialize',
-                kind: 'uups',
             }
         );
         await chipsContract.waitForDeployment();
@@ -517,10 +519,7 @@ describe('Chips', function () {
         it('Should revert if non-manager tries to upgrade', async function () {
             const { chips, user1 } = await loadFixture(deployFixtures);
             const ChipsV2 = await ethers.getContractFactory('Chips', user1);
-            await expect(upgrades.upgradeProxy(chips, ChipsV2)).to.be.revertedWithCustomError(
-                chips,
-                'AccessControlUnauthorizedAccount'
-            );
+            await expect(upgrades.upgradeProxy(chips, ChipsV2)).to.be.reverted
         });
     });
 
@@ -1166,6 +1165,19 @@ describe('Chips', function () {
 
             expect(await chips.balanceOf(user1.address)).to.equal(user1BalanceBefore - playCost + winnerPrize);
             expect(await chips.balanceOf(user2.address)).to.equal(user2BalanceBefore - playCost + winnerPrize);
+        });
+    });
+
+    describe('Proxy Admin', function () {
+        it('Should handle proxy admin operations', async function () {
+            const { chips, manager } = await loadFixture(deployFixtures);
+            const chipsAddress = await chips.getAddress();
+            const proxyAdmin = await upgrades.erc1967.getAdminAddress(chipsAddress);
+            const proxyAdminAbiContent = fs.readFileSync(path.resolve(PROXY_ADMIN_ABI_PATH), 'utf8');
+            const { abi: proxyAdminAbi } = JSON.parse(proxyAdminAbiContent);
+            const proxyAdminContract = await ethers.getContractAt(proxyAdminAbi, proxyAdmin) as any;
+            const proxyAdminOwner = await proxyAdminContract.owner();
+            expect(proxyAdminOwner).to.equal(manager.address);
         });
     });
 });

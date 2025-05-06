@@ -19,9 +19,6 @@ import {
 import {
     ReentrancyGuardUpgradeable
 } from "@openzeppelin/contracts-upgradeable/utils/ReentrancyGuardUpgradeable.sol";
-import {
-    UUPSUpgradeable
-} from "@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
 
 import {
     ERCWhitelistSignatureUpgradeable
@@ -33,8 +30,7 @@ contract Chips is
     AccessControlUpgradeable,
     ERCWhitelistSignatureUpgradeable,
     PausableUpgradeable,
-    ReentrancyGuardUpgradeable,
-    UUPSUpgradeable
+    ReentrancyGuardUpgradeable
 {
     using SafeERC20 for IERC20;
 
@@ -86,7 +82,6 @@ contract Chips is
         __ReentrancyGuard_init();
         __Pausable_init();
         __AccessControl_init();
-        __UUPSUpgradeable_init();
         __ERCWhitelistSignatureUpgradeable_init();
 
         if (_devWallet == address(0)) {
@@ -312,14 +307,6 @@ contract Chips is
         bytes4 interfaceId
     ) public view override(AccessControlUpgradeable) returns (bool) {
         return AccessControlUpgradeable.supportsInterface(interfaceId);
-    }
-
-    // @dev Authorizes the upgrade
-    // @param newImplementation The address of the new implementation
-    function _authorizeUpgrade(
-        address newImplementation
-    ) internal view override onlyRole(DEV_CONFIG_ROLE) {
-        // The onlyRole modifier already checks for the manager role
     }
 
     // @dev Returns the chain id
