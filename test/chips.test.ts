@@ -58,6 +58,7 @@ describe('Chips', function () {
             user1,
             user2,
             gameServer,
+            treasury,
         };
     }
 
@@ -100,6 +101,36 @@ describe('Chips', function () {
             // AccessControl interface ID
             const ACCESS_CONTROL_INTERFACE_ID = '0x7965db0b';
             expect(await chips.supportsInterface(ACCESS_CONTROL_INTERFACE_ID)).to.be.true;
+        });
+
+        it("Should NOT deploy with devWallet as zero address", async function () {
+            const { chips,mockToken } = await loadFixture(deployFixtures);
+            const ChipsFactory = await ethers.getContractFactory('Chips');
+            await expect(upgrades.deployProxy(
+                ChipsFactory,
+                [
+                    await mockToken.getAddress(), // _token
+                    false, // _isPaused
+                    ethers.ZeroAddress, // _devWallet
+                ]
+            )).to.be.revertedWithCustomError(chips, 'AddressIsZero');
+        });
+        it("Should NOT initialize twice", async function () {
+            const { chips,mockToken, manager } = await loadFixture(deployFixtures);
+            await expect(chips.initialize(await mockToken.getAddress(), false, manager.address)).to.be.revertedWithCustomError(chips, 'InvalidInitialization');
+        });
+        it("Should initialize paused", async function () {
+            const { mockToken, manager } = await loadFixture(deployFixtures);
+            const ChipsFactory = await ethers.getContractFactory('Chips');
+            const chipsContract = await upgrades.deployProxy(
+                ChipsFactory,
+                [
+                    await mockToken.getAddress(), // _token
+                    true, // _isPaused
+                    manager.address, // _devWallet
+                ]
+            )
+            expect(await chipsContract.paused()).to.be.true;
         });
     });
 
@@ -369,6 +400,19 @@ describe('Chips', function () {
         });
     });
 
+    describe("Readable role", function () {
+        it("Should allow readable role to read", async function () {
+            const { chips, user1, user2, manager} = await loadFixture(deployFixtures);
+            await chips.connect(manager).grantRole(await chips.READABLE_ROLE(), user1.address);
+            expect(await chips.hasRole(await chips.READABLE_ROLE(), user1.address)).to.be.true;
+            await expect(chips.connect(user1).balanceOf(user2.address)).to.not.be.reverted;
+        });
+        it("Should NOT get exchange rate if not readable", async function () {
+            const { chips, user1 } = await loadFixture(deployFixtures);
+            await expect(chips.connect(user1).getExchangeRate()).to.be.revertedWithCustomError(chips, 'AccessControlUnauthorizedAccount');
+        });
+    });
+
     describe('Pausable', function () {
         it('Should allow manager to pause and unpause', async function () {
             const { chips, manager } = await loadFixture(deployFixtures);
@@ -415,6 +459,14 @@ describe('Chips', function () {
             await chips.connect(manager).pause();
             expect(await chips.paused()).to.be.true;
             await expect(chips.connect(manager).pause()).to.be.revertedWithCustomError(chips, 'EnforcedPause');
+        });
+        it("Should NOT pause if not caller does not have dev config role", async function () {
+            const { chips, user1 } = await loadFixture(deployFixtures);
+            await expect(chips.connect(user1).pause()).to.be.revertedWithCustomError(chips, 'AccessControlUnauthorizedAccount');
+        });
+        it("Should NOT unpause if not caller does not have dev config role", async function () {
+            const { chips, user1 } = await loadFixture(deployFixtures);
+            await expect(chips.connect(user1).unpause()).to.be.revertedWithCustomError(chips, 'AccessControlUnauthorizedAccount');
         });
     });
 
@@ -1114,11 +1166,13 @@ describe('Chips', function () {
         });
 
         it('Should payout to users and emit an event', async function () {
+            const playCost = 1000n;
             const players = [user1, user2];
             const winners = [user1];
             const totalCost = BigInt(players.length) * playCost;
             const rakePercentage = ethers.parseEther('10');
             const rakeAmount = (totalCost * rakePercentage) / ethers.parseEther('100');
+          
             let winnerPrize = totalCost - rakeAmount;
 
             if (winners.length > 1) {
@@ -1166,6 +1220,22 @@ describe('Chips', function () {
             expect(await chips.balanceOf(user1.address)).to.equal(user1BalanceBefore - playCost + winnerPrize);
             expect(await chips.balanceOf(user2.address)).to.equal(user2BalanceBefore - playCost + winnerPrize);
         });
+        it("Should NOT payout if contract is paused", async function () {
+            const playCost = 1000n;
+            const players = [user1, user2];
+            const winners = [user1];
+            const rakePercentage = ethers.parseEther('10');
+
+            await chips.connect(deployer).pause();
+            await expect(chips.connect(gameServer).payout(playCost, rakePercentage, players, winners)).to.be.revertedWithCustomError(chips, 'EnforcedPause');
+        });
+        it("Should NOT payout if caller is not game server", async function () {
+            const playCost = 1000n;
+            const players = [user1, user2];
+            const winners = [user1];
+            const rakePercentage = ethers.parseEther('10');
+            await expect(chips.connect(deployer).payout(playCost, rakePercentage, players, winners)).to.be.revertedWithCustomError(chips, 'AccessControlUnauthorizedAccount');
+        });
     });
 
     describe('Proxy Admin', function () {
@@ -1178,6 +1248,52 @@ describe('Chips', function () {
             const proxyAdminContract = await ethers.getContractAt(proxyAdminAbi, proxyAdmin) as any;
             const proxyAdminOwner = await proxyAdminContract.owner();
             expect(proxyAdminOwner).to.equal(manager.address);
+        });
+    });
+
+    describe("Withdraw fees", function () {
+        let chips: Chips;
+        let token: MockERC20;
+        let user1: SignerWithAddress;
+        let user2: SignerWithAddress;
+        let gameServer: SignerWithAddress;
+        let manager: SignerWithAddress;
+        let rakeAmount: bigint;
+        let treasury: SignerWithAddress;
+        
+        beforeEach(async function () {
+            ({ chips, mockToken: token, manager, user1, user2, gameServer, treasury } = await loadFixture(deployFixtures));
+            await depositChips(chips, token, manager, user1, 1000n);
+            await depositChips(chips, token, manager, user2, 1000n);
+            const players = [user1, user2];
+            const winners = [user1, user2];
+            const playCost = 1000n;
+            const totalCost = BigInt(players.length) * playCost;
+            const rakePercentage = ethers.parseEther('10');
+            rakeAmount = (totalCost * rakePercentage) / ethers.parseEther('100');
+            await chips.connect(gameServer).payout(playCost, rakePercentage, players, winners)
+        });
+        it("Should allow manager to withdraw fees", async function () {
+            expect(await chips.collectedFees()).to.equal(rakeAmount);
+            expect(await token.balanceOf(treasury.address)).to.equal(0);
+            await chips.connect(manager).withdrawFees(treasury.address);
+            expect(await token.balanceOf(treasury.address)).to.equal(rakeAmount);
+            expect(await chips.collectedFees()).to.equal(0);
+        });
+    });
+    describe("Decode data", function () {
+        it("Should decode data", async function () {
+            const { chips, manager } = await loadFixture(deployFixtures);
+            const contractAddress = await chips.getAddress();
+            const chainId = (await ethers.provider.getNetwork()).chainId;
+            const amount = 1000n;
+            const unixTimestamp = Math.floor(Date.now() / 1000);
+            const data = ethers.AbiCoder.defaultAbiCoder().encode(
+                ['address', 'uint256', 'uint256', 'uint256'],
+                [contractAddress, chainId, amount, unixTimestamp]
+            );
+            const decodedData = await chips.decodeData(data);
+            expect(decodedData).to.be.deep.equal([contractAddress, chainId, amount, unixTimestamp]);
         });
     });
 });
