@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.24;
 
-import { IChips } from "../../interfaces/IChips.sol";
+import { IGUnits } from "../../interfaces/IGUnits.sol";
 import {
     SafeERC20,
     IERC20
@@ -27,8 +27,8 @@ import {
     ERCWhitelistSignatureUpgradeable
 } from "../ercs/ERCWhitelistSignatureUpgradeable.sol";
 
-contract Chips is
-    IChips,
+contract GUnits is
+    IGUnits,
     Initializable,
     AccessControlUpgradeable,
     ERCWhitelistSignatureUpgradeable,
@@ -142,8 +142,8 @@ contract Chips is
         signatureCheck(_msgSender(), nonce, data, signature)
         nonReentrant
     {
-        uint256 amountInChips = _verifyContractChainIdAndDecode(data);
-        _withdraw(msg.sender, amountInChips);
+        uint256 amountInGUnits = _verifyContractChainIdAndDecode(data);
+        _withdraw(msg.sender, amountInGUnits);
     }
 
     // @dev Deposits the chips to the user
@@ -191,12 +191,12 @@ contract Chips is
 
         // Burn the chips - aka buy in
         for (uint256 i = 0; i < _players.length; i++) {
-            _burnChips(_players[i], _betAmount);
+            _burnGUnits(_players[i], _betAmount);
         }
 
         // Mint the chips - aka payout
         for (uint256 i = 0; i < _winners.length; i++) {
-            _mintChips(_winners[i], winnerPrize);
+            _mintGUnits(_winners[i], winnerPrize);
         }
 
         emit Payout(_players, _winners, winnerPrize, collectedFees);
@@ -204,24 +204,24 @@ contract Chips is
 
     function _deposit(address _to, uint256 _amount) internal {
         IERC20(token).safeTransferFrom(msg.sender, address(this), _amount);
-        uint256 amountInChips = _parseCurrencyToChips(_amount);
-        _mintChips(_to, amountInChips);
-        emit Deposit(_to, amountInChips);
+        uint256 amountInGUnits = _parseCurrencyToGUnits(_amount);
+        _mintGUnits(_to, amountInGUnits);
+        emit Deposit(_to, amountInGUnits);
     }
 
     function _withdraw(address _to, uint256 _amount) internal {
-        _burnChips(_to, _amount);
-        uint256 amountInTokens = _parseChipsToCurrency(_amount);
+        _burnGUnits(_to, _amount);
+        uint256 amountInTokens = _parseGUnitsToCurrency(_amount);
         IERC20(token).safeTransfer(_to, amountInTokens);
         emit Withdraw(_to, amountInTokens);
     }
 
-    function _mintChips(address _to, uint256 _amount) internal {
+    function _mintGUnits(address _to, uint256 _amount) internal {
         balances[_to] += _amount;
         totalSupply += _amount;
     }
 
-    function _burnChips(address _from, uint256 _amount) internal {
+    function _burnGUnits(address _from, uint256 _amount) internal {
         if (balances[_from] < _amount) {
             revert ChipInsufficientBalance(_from, balances[_from], _amount);
         }
@@ -277,7 +277,7 @@ contract Chips is
 
     // @dev Parses the currency to chips
     // @param currencyBalance The balance of the currency
-    function _parseCurrencyToChips(
+    function _parseCurrencyToGUnits(
         uint256 currencyBalance
     ) internal view returns (uint256) {
         return
@@ -286,7 +286,7 @@ contract Chips is
 
     // @dev Parses the chips to currency
     // @param chipsBalance The balance of the chips
-    function _parseChipsToCurrency(
+    function _parseGUnitsToCurrency(
         uint256 chipsBalance
     ) internal view returns (uint256) {
         return (chipsBalance * denominatorExchangeRate) / numeratorExchangeRate;

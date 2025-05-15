@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.24;
 
-interface IChips {
+interface IGUnits {
     function deposit(
         bytes calldata data,
         uint256 nonce,
