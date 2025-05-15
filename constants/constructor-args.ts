@@ -371,7 +371,7 @@ export const RewardTokenArgs = {
     },
 };
 
-export const ChipsArgs = {
+export const GUnitsArgs = {
     TESTNET: {
         _token: TESTNET_UDCE_TOKEN,
         _isPaused: true,

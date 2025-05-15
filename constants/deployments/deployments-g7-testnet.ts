@@ -7,7 +7,7 @@ import {
     RewardsNativeG7Args,
     CamelotDistributorArgs,
     StakerArgs,
-    ChipsArgs,
+    GUnitsArgs,
 } from '@constants/constructor-args';
 import {
     CONTRACT_TYPE,
@@ -191,9 +191,9 @@ export const G7_TESTNET_CONTRACTS: DeploymentContract[] = [
         args: StakerArgs.TESTNET,
     },
     {
-        contractFileName: CONTRACT_UPGRADABLE_FILE_NAME.Chips,
-        type: CONTRACT_TYPE.Chips,
-        name: CONTRACT_NAME.Chips,
+        contractFileName: CONTRACT_UPGRADABLE_FILE_NAME.GUnits,
+        type: CONTRACT_TYPE.GUnits,
+        name: CONTRACT_NAME.GUnits,
         chain,
         networkType,
         tenants: [TENANT.Game7],
@@ -202,19 +202,19 @@ export const G7_TESTNET_CONTRACTS: DeploymentContract[] = [
         dependencies: [],
         functionCalls: [
             {
-                contractName: CONTRACT_NAME.Chips,
+                contractName: CONTRACT_NAME.GUnits,
                 functionName: 'initialize',
                 args: [
-                    ChipsArgs.TESTNET._token,
-                    ChipsArgs.TESTNET._isPaused,
-                    ChipsArgs.TESTNET._devWallet
+                    GUnitsArgs.TESTNET._token,
+                    GUnitsArgs.TESTNET._isPaused,
+                    GUnitsArgs.TESTNET._devWallet
                 ],
             },
         ],
         args: [
-            ChipsArgs.TESTNET._token,
-            ChipsArgs.TESTNET._isPaused,
-            ChipsArgs.TESTNET._devWallet
+            GUnitsArgs.TESTNET._token,
+            GUnitsArgs.TESTNET._isPaused,
+            GUnitsArgs.TESTNET._devWallet
         ],
     },
 ];

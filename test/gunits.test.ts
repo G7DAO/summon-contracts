@@ -3,11 +3,11 @@ import { SignerWithAddress } from '@nomicfoundation/hardhat-ethers/signers';
 import { loadFixture } from '@nomicfoundation/hardhat-network-helpers';
 import { expect } from 'chai';
 import { ethers, upgrades } from 'hardhat';
-import { Chips, MockERC20 } from 'typechain-types';
+import { GUnits, MockERC20 } from 'typechain-types';
 import fs from 'fs';
 import path from 'path';
 
-describe('Chips', function () {
+describe('GUnits', function () {
     async function deployFixtures() {
         const [manager, user1, user2, treasury, gameServer] = await ethers.getSigners();
 
@@ -16,12 +16,12 @@ describe('Chips', function () {
         const mockToken = await MockToken.deploy('Mock Token', 'MTK');
         await mockToken.waitForDeployment();
 
-        // Deploy Chips implementation
-        const ChipsFactory = await ethers.getContractFactory('Chips');
+        // Deploy GUnits implementation
+        const GUnitsFactory = await ethers.getContractFactory('GUnits');
 
         // Deploy as UUPS proxy with all required initialization parameters
         const chipsContract = await upgrades.deployProxy(
-            ChipsFactory,
+            GUnitsFactory,
             [
                 await mockToken.getAddress(), // _token
                 false, // _isPaused
@@ -32,7 +32,7 @@ describe('Chips', function () {
             }
         );
         await chipsContract.waitForDeployment();
-        const chips = await ethers.getContractAt('Chips', await chipsContract.getAddress());
+        const chips = await ethers.getContractAt('GUnits', await chipsContract.getAddress());
 
         // Verify initial role setup
         expect(await chips.hasRole(await chips.DEV_CONFIG_ROLE(), manager.address)).to.be.true;
@@ -62,7 +62,7 @@ describe('Chips', function () {
         };
     }
 
-    async function depositChips(chips: Chips, token: MockERC20, deployer: SignerWithAddress, wallet: SignerWithAddress, amount: bigint) {
+    async function depositGUnits(chips: GUnits, token: MockERC20, deployer: SignerWithAddress, wallet: SignerWithAddress, amount: bigint) {
         const chainId = (await ethers.provider.getNetwork()).chainId;
         const contractAddress = await chips.getAddress();
 
@@ -105,9 +105,9 @@ describe('Chips', function () {
 
         it("Should NOT deploy with devWallet as zero address", async function () {
             const { chips,mockToken } = await loadFixture(deployFixtures);
-            const ChipsFactory = await ethers.getContractFactory('Chips');
+            const GUnitsFactory = await ethers.getContractFactory('GUnits');
             await expect(upgrades.deployProxy(
-                ChipsFactory,
+                GUnitsFactory,
                 [
                     await mockToken.getAddress(), // _token
                     false, // _isPaused
@@ -121,9 +121,9 @@ describe('Chips', function () {
         });
         it("Should initialize paused", async function () {
             const { mockToken, manager } = await loadFixture(deployFixtures);
-            const ChipsFactory = await ethers.getContractFactory('Chips');
+            const GUnitsFactory = await ethers.getContractFactory('GUnits');
             const chipsContract = await upgrades.deployProxy(
-                ChipsFactory,
+                GUnitsFactory,
                 [
                     await mockToken.getAddress(), // _token
                     true, // _isPaused
@@ -564,14 +564,14 @@ describe('Chips', function () {
     describe('Upgrade Authorization', function () {
         it('Should allow manager to upgrade contract', async function () {
             const { chips, manager } = await loadFixture(deployFixtures);
-            const ChipsV2 = await ethers.getContractFactory('Chips', manager);
-            await upgrades.upgradeProxy(chips, ChipsV2);
+            const GUnitsV2 = await ethers.getContractFactory('GUnits', manager);
+            await upgrades.upgradeProxy(chips, GUnitsV2);
         });
 
         it('Should revert if non-manager tries to upgrade', async function () {
             const { chips, user1 } = await loadFixture(deployFixtures);
-            const ChipsV2 = await ethers.getContractFactory('Chips', user1);
-            await expect(upgrades.upgradeProxy(chips, ChipsV2)).to.be.reverted
+            const GUnitsV2 = await ethers.getContractFactory('GUnits', user1);
+            await expect(upgrades.upgradeProxy(chips, GUnitsV2)).to.be.reverted
         });
     });
 
@@ -1084,8 +1084,8 @@ describe('Chips', function () {
     describe('Contract Upgrade', function () {
         it('Should allow upgrade with DEV_CONFIG_ROLE', async function () {
             const { chips, manager } = await loadFixture(deployFixtures);
-            const ChipsV2 = await ethers.getContractFactory('Chips', manager);
-            await upgrades.upgradeProxy(chips, ChipsV2);
+            const GUnitsV2 = await ethers.getContractFactory('GUnits', manager);
+            await upgrades.upgradeProxy(chips, GUnitsV2);
         });
 
         it('Should preserve state after upgrade', async function () {
@@ -1106,8 +1106,8 @@ describe('Chips', function () {
             await mockToken.connect(user1).approve(await chips.getAddress(), amount);
             await chips.connect(user1).deposit(data, nonce, signature);
 
-            const ChipsV2 = await ethers.getContractFactory('Chips', manager);
-            const upgraded = await upgrades.upgradeProxy(chips, ChipsV2);
+            const GUnitsV2 = await ethers.getContractFactory('GUnits', manager);
+            const upgraded = await upgrades.upgradeProxy(chips, GUnitsV2);
 
             expect(await upgraded.balanceOf(user1.address)).to.equal(amount);
         });
@@ -1140,13 +1140,13 @@ describe('Chips', function () {
     describe('Upgrade Tests', function () {
         it('Should handle upgrade with same implementation', async function () {
             const { chips, manager } = await loadFixture(deployFixtures);
-            const ChipsV2 = await ethers.getContractFactory('Chips', manager);
-            await upgrades.upgradeProxy(chips, ChipsV2);
+            const GUnitsV2 = await ethers.getContractFactory('GUnits', manager);
+            await upgrades.upgradeProxy(chips, GUnitsV2);
         });
     });
 
     describe('Payout', function () {
-        let chips: Chips;
+        let chips: GUnits;
         let token: MockERC20;
         let deployer: SignerWithAddress;
         let user1: SignerWithAddress;
@@ -1180,8 +1180,8 @@ describe('Chips', function () {
             }
 
             await token.connect(user1).approve(await chips.getAddress(), totalCost);
-            await depositChips(chips, token, deployer, user1, totalCost);
-            await depositChips(chips, token, deployer, user2, totalCost);
+            await depositGUnits(chips, token, deployer, user1, totalCost);
+            await depositGUnits(chips, token, deployer, user2, totalCost);
 
             const user1BalanceBefore = await chips.balanceOf(user1.address);
             const user2BalanceBefore = await chips.balanceOf(user2.address);
@@ -1207,8 +1207,8 @@ describe('Chips', function () {
             }
 
             await token.connect(user1).approve(await chips.getAddress(), totalCost);
-            await depositChips(chips, token, deployer, user1, totalCost);
-            await depositChips(chips, token, deployer, user2, totalCost);
+            await depositGUnits(chips, token, deployer, user1, totalCost);
+            await depositGUnits(chips, token, deployer, user2, totalCost);
 
             const user1BalanceBefore = await chips.balanceOf(user1.address);
             const user2BalanceBefore = await chips.balanceOf(user2.address);
@@ -1252,7 +1252,7 @@ describe('Chips', function () {
     });
 
     describe("Withdraw fees", function () {
-        let chips: Chips;
+        let chips: GUnits;
         let token: MockERC20;
         let user1: SignerWithAddress;
         let user2: SignerWithAddress;
@@ -1263,8 +1263,8 @@ describe('Chips', function () {
         
         beforeEach(async function () {
             ({ chips, mockToken: token, manager, user1, user2, gameServer, treasury } = await loadFixture(deployFixtures));
-            await depositChips(chips, token, manager, user1, 1000n);
-            await depositChips(chips, token, manager, user2, 1000n);
+            await depositGUnits(chips, token, manager, user1, 1000n);
+            await depositGUnits(chips, token, manager, user2, 1000n);
             const players = [user1, user2];
             const winners = [user1, user2];
             const playCost = 1000n;
