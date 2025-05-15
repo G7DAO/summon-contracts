@@ -106,6 +106,7 @@ export default async function (
         paymasterAddresses: [],
         fakeContractAddress: '',
         explorerUrl: `${blockExplorerBaseUrl}/address/${contractAddress}#contract`,
+        createdAt: Date.now(),
     };
 
     log(`*****************************************************`);

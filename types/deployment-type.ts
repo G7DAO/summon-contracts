@@ -47,6 +47,7 @@ export interface Deployment {
         functions: ExtensionFunction[];
         name: CONTRACT_EXTENSION_NAME;
     }[];
+    createdAt?: number;
 }
 
 export interface DeploymentContract {

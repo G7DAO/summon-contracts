@@ -1,4 +1,4 @@
-import { ERC20DecimalsAgs } from '@constants/constructor-args';
+import { ChipsArgs, ERC20DecimalsAgs } from '@constants/constructor-args';
 import {
     CONTRACT_NAME,
     CONTRACT_TYPE,
@@ -26,5 +26,32 @@ export const ARBITRUM_SEPOLIA_CONTRACTS: DeploymentContract[] = [
         dependencies: [],
         functionCalls: [],
         args: ERC20DecimalsAgs.TESTNET,
+    },
+    {
+        contractFileName: CONTRACT_UPGRADABLE_FILE_NAME.Chips,
+        type: CONTRACT_TYPE.Chips,
+        name: CONTRACT_NAME.Chips,
+        chain,
+        networkType,
+        tenants: [TENANT.Game7],
+        verify: true,
+        upgradable: true,
+        dependencies: [],
+        functionCalls: [
+            {
+                contractName: CONTRACT_NAME.Chips,
+                functionName: 'initialize',
+                args: [
+                    ChipsArgs.ARBITRUM_SEPOLIA._token,
+                    ChipsArgs.ARBITRUM_SEPOLIA._isPaused,
+                    ChipsArgs.ARBITRUM_SEPOLIA._devWallet
+                ],
+            },
+        ],
+        args: [
+            ChipsArgs.ARBITRUM_SEPOLIA._token,
+            ChipsArgs.ARBITRUM_SEPOLIA._isPaused,
+            ChipsArgs.ARBITRUM_SEPOLIA._devWallet
+        ],
     },
 ];
