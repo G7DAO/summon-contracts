@@ -8,6 +8,7 @@ const TESTNET_DEV_WALLET = '0x60b6f7B5F31331CD8c16b1328023ed088E82f85f';
 const TESTNET_CHIPS_CONTRACT = '0xc5A563F1d671ee1Ec3819EC96F06A6b19645E08e';
 const TESTNET_TREASURY_WALLET = '0x9ed191DB1829371F116Deb9748c26B49467a592A';
 const MOCK_ERC20_ARB_SEPOLIA = '0xd53a54CaC216F13835748ABed84C6089178e80B8';
+const USDC_ARBITRUM_ONE = '0xaf88d065e77c8cC2239327C5EDb3A432268e5831';
 export interface ConstructorArgs {
     name: string;
     symbol: string;
@@ -381,6 +382,11 @@ export const GUnitsArgs = {
         _token: MOCK_ERC20_ARB_SEPOLIA,
         _isPaused: true,
         _devWallet: TESTNET_DEV_WALLET
+    },
+    ARBITRUM_ONE: {
+        _token: USDC_ARBITRUM_ONE,
+        _isPaused: false,
+        _devWallet: 'DEPLOYER_WALLET'
     }
 }
 
