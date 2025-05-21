@@ -1,7 +1,38 @@
+import { CONTRACT_NAME, CONTRACT_TYPE, CONTRACT_UPGRADABLE_FILE_NAME } from '@constants/contract';
 import { DeploymentContract } from '../../types/deployment-type';
 import { NETWORK_TYPE, NetworkName } from '../network';
+import { TENANT } from '@constants/tenant';
+import { GUnitsArgs } from '@constants/constructor-args';
 
 const chain = NetworkName.ArbitrumOne;
 const networkType = NETWORK_TYPE.MAINNET;
 
-export const ARBITRUM_ONE_CONTRACTS: DeploymentContract[] = [];
+export const ARBITRUM_ONE_CONTRACTS: DeploymentContract[] = [
+    {
+        contractFileName: CONTRACT_UPGRADABLE_FILE_NAME.GUnits,
+        type: CONTRACT_TYPE.GUnits,
+        name: CONTRACT_NAME.GUnits,
+        chain,
+        networkType,
+        tenants: [TENANT.Game7],
+        verify: true,
+        upgradable: true,
+        dependencies: [],
+        functionCalls: [
+            {
+                contractName: CONTRACT_NAME.GUnits,
+                functionName: 'initialize',
+                args: [
+                    GUnitsArgs.ARBITRUM_ONE._token,
+                    GUnitsArgs.ARBITRUM_ONE._isPaused,
+                    GUnitsArgs.ARBITRUM_ONE._devWallet
+                ],
+            },
+        ],
+        args: [
+            GUnitsArgs.ARBITRUM_ONE._token,
+            GUnitsArgs.ARBITRUM_ONE._isPaused,
+            GUnitsArgs.ARBITRUM_ONE._devWallet
+        ],
+    },
+];
