@@ -238,14 +238,14 @@ contract GUnits is
 
     function _deposit(address _to, uint256 _amount) internal {
         IERC20(token).safeTransferFrom(msg.sender, address(this), _amount);
-        uint256 amountInGUnits = _parseCurrencyToGUnits(_amount);
+        uint256 amountInGUnits = parseCurrencyToGUnits(_amount);
         _mintGUnits(_to, amountInGUnits);
         emit Deposit(_to, amountInGUnits);
     }
 
     function _withdraw(address _to, uint256 _amount) internal {
         _burnGUnits(_to, _amount);
-        uint256 amountInTokens = _parseGUnitsToCurrency(_amount);
+        uint256 amountInTokens = parseGUnitsToCurrency(_amount);
         IERC20(token).safeTransfer(_to, amountInTokens);
         emit Withdraw(_to, amountInTokens);
     }
@@ -311,18 +311,18 @@ contract GUnits is
 
     // @dev Parses the currency to g-units
     // @param currencyBalance The balance of the currency
-    function _parseCurrencyToGUnits(
+    function parseCurrencyToGUnits(
         uint256 currencyBalance
-    ) internal view returns (uint256) {
+    ) public view returns (uint256) {
         return
             (currencyBalance * numeratorExchangeRate) / denominatorExchangeRate;
     }
 
     // @dev Parses the g-units to currency
     // @param gUnitsBalance The balance of the g-units
-    function _parseGUnitsToCurrency(
+    function parseGUnitsToCurrency(
         uint256 gUnitsBalance
-    ) internal view returns (uint256) {
+    ) public view returns (uint256) {
         return (gUnitsBalance * denominatorExchangeRate) / numeratorExchangeRate;
     }
 
@@ -340,6 +340,16 @@ contract GUnits is
         } else {
             revert NotAuthorized(_msgSender());
         }
+    }
+
+    // @dev Returns the balance of the users
+    // @param accounts The addresses of the users to get the balance of
+    function balanceOfBatch(address[] memory accounts) external view returns (uint256[] memory) {
+        uint256[] memory batchBalances = new uint256[](accounts.length);
+        for (uint256 i = 0; i < accounts.length; i++) {
+            batchBalances[i] = balances[accounts[i]];
+        }
+        return batchBalances;
     }
 
     // @dev Returns true if the contract implements the interface
