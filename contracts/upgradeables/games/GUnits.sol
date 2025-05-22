@@ -63,6 +63,7 @@ contract GUnits is
     bytes32 public constant MANAGER_ROLE = keccak256("MANAGER_ROLE");
     bytes32 public constant READABLE_ROLE = keccak256("READABLE_ROLE");
     bytes32 public constant GAME_SERVER_ROLE = keccak256("GAME_SERVER_ROLE");
+    bytes32 public constant LIVE_OPS_ROLE = keccak256("LIVE_OPS_ROLE");
 
     address public token;
     mapping(address => uint256) public balances;
@@ -95,8 +96,10 @@ contract GUnits is
         _grantRole(DEFAULT_ADMIN_ROLE, _devWallet);
         _grantRole(DEV_CONFIG_ROLE, _devWallet);
         _grantRole(MANAGER_ROLE, _devWallet);
+        _grantRole(LIVE_OPS_ROLE, _devWallet);
         _setRoleAdmin(MANAGER_ROLE, DEV_CONFIG_ROLE);
         _setRoleAdmin(READABLE_ROLE, MANAGER_ROLE);
+        _setRoleAdmin(LIVE_OPS_ROLE, DEV_CONFIG_ROLE);
 
         _addWhitelistSigner(_devWallet);
         token = _token;
@@ -152,7 +155,10 @@ contract GUnits is
     function adminDeposit(
         address[] memory users,
         uint256[] memory amounts
-    ) external onlyRole(MANAGER_ROLE) nonReentrant {
+    ) external nonReentrant {
+        if (!hasRole(LIVE_OPS_ROLE, _msgSender()) && !hasRole(GAME_SERVER_ROLE, _msgSender())) {
+            revert NotAuthorized(_msgSender());
+        }
         if (users.length != amounts.length) {
             revert ArrayLengthMismatch();
         }
@@ -174,12 +180,35 @@ contract GUnits is
         }
     }
 
+    // @dev Pays out the winners
+    // @param _betAmount The amount of chips bet
+    // @param _feePercentage The percentage of the fee
+    // @param _players The addresses of the players
+    // @param _winners The addresses of the winners
+    function adminPayout(
+        uint256 _betAmount,
+        uint256 _feePercentage,
+        address[] calldata _players,
+        address[] calldata _winners
+    ) external onlyRole(LIVE_OPS_ROLE) whenNotPaused nonReentrant {
+        _payout(_betAmount, _feePercentage, _players, _winners);
+    }
+
+    // @dev Pays out the winners
+    // @param _betAmount The amount of chips bet
+    // @param _feePercentage The percentage of the fee
+    // @param _players The addresses of the players
+    // @param _winners The addresses of the winners
     function payout(
         uint256 _betAmount,
         uint256 _feePercentage,
         address[] calldata _players,
         address[] calldata _winners
     ) external onlyRole(GAME_SERVER_ROLE) whenNotPaused nonReentrant {
+        _payout(_betAmount, _feePercentage, _players, _winners);
+    }
+
+    function _payout(uint256 _betAmount, uint256 _feePercentage, address[] memory _players, address[] memory _winners) internal {
         uint256 totalPrizePool = _betAmount * _players.length;
         collectedFees += totalPrizePool * _feePercentage / (100 * 10 ** tokenDecimals);
         uint256 winnerPrize = totalPrizePool - collectedFees;
@@ -298,6 +327,8 @@ contract GUnits is
         if (
             hasRole(MANAGER_ROLE, _msgSender()) ||
             hasRole(READABLE_ROLE, _msgSender()) ||
+            hasRole(LIVE_OPS_ROLE, _msgSender()) ||
+            hasRole(GAME_SERVER_ROLE, _msgSender()) ||
             _msgSender() == account
         ) {
             return balances[account];

@@ -9,7 +9,7 @@ import path from 'path';
 
 describe('GUnits', function () {
     async function deployFixtures() {
-        const [manager, user1, user2, treasury, gameServer] = await ethers.getSigners();
+        const [devWallet, manager, user1, user2, treasury, gameServer, liveOps] = await ethers.getSigners();
 
         // Deploy mock token for testing
         const MockToken = await ethers.getContractFactory('MockERC20');
@@ -25,7 +25,7 @@ describe('GUnits', function () {
             [
                 await mockToken.getAddress(), // _token
                 false, // _isPaused
-                manager.address, // _devWallet
+                devWallet.address, // _devWallet
             ],
             {
                 initializer: 'initialize',
@@ -35,21 +35,26 @@ describe('GUnits', function () {
         const chips = await ethers.getContractAt('GUnits', await chipsContract.getAddress());
 
         // Verify initial role setup
-        expect(await chips.hasRole(await chips.DEV_CONFIG_ROLE(), manager.address)).to.be.true;
-        expect(await chips.hasRole(await chips.MANAGER_ROLE(), manager.address)).to.be.true;
-        expect(await chips.hasRole(await chips.DEFAULT_ADMIN_ROLE(), manager.address)).to.be.true;
-
+        expect(await chips.hasRole(await chips.DEV_CONFIG_ROLE(), devWallet.address)).to.be.true;
+        expect(await chips.hasRole(await chips.MANAGER_ROLE(), devWallet.address)).to.be.true;
+        expect(await chips.hasRole(await chips.DEFAULT_ADMIN_ROLE(), devWallet.address)).to.be.true;
+        expect(await chips.hasRole(await chips.LIVE_OPS_ROLE(), devWallet.address)).to.be.true;
         // Grant game role
-        await chips.connect(manager).grantRole(await chips.READABLE_ROLE(), manager.address);
+        await chips.connect(devWallet).grantRole(await chips.MANAGER_ROLE(), manager.address);
+        expect(await chips.hasRole(await chips.MANAGER_ROLE(), manager.address)).to.be.true;
+        await chips.connect(devWallet).grantRole(await chips.READABLE_ROLE(), manager.address);
         expect(await chips.hasRole(await chips.READABLE_ROLE(), manager.address)).to.be.true;
-        await chips.connect(manager).grantRole(await chips.GAME_SERVER_ROLE(), gameServer.address);
+        await chips.connect(devWallet).grantRole(await chips.GAME_SERVER_ROLE(), gameServer.address);
         expect(await chips.hasRole(await chips.GAME_SERVER_ROLE(), gameServer.address)).to.be.true;
+        await chips.connect(devWallet).grantRole(await chips.LIVE_OPS_ROLE(), liveOps.address);
+        expect(await chips.hasRole(await chips.LIVE_OPS_ROLE(), liveOps.address)).to.be.true;
 
         // Mint some tokens to users for testing
         await mockToken.mint(user1.address, ethers.parseEther('1000'));
         await mockToken.mint(user2.address, ethers.parseEther('1000'));
         await mockToken.mint(manager.address, ethers.parseEther('1000'));
         await mockToken.mint(gameServer.address, ethers.parseEther('1000'));
+        await mockToken.mint(liveOps.address, ethers.parseEther('1000'));
 
         return {
             chips,
@@ -59,6 +64,8 @@ describe('GUnits', function () {
             user2,
             gameServer,
             treasury,
+            liveOps,
+            devWallet,
         };
     }
 
@@ -136,7 +143,7 @@ describe('GUnits', function () {
 
     describe('Total Supply', function () {
         it('Should update total supply on deposit', async function () {
-            const { chips, mockToken, user1, manager } = await loadFixture(deployFixtures);
+            const { chips, mockToken, user1, devWallet } = await loadFixture(deployFixtures);
             const amount = ethers.parseEther('100');
             const chainId = (await ethers.provider.getNetwork()).chainId;
             const contractAddress = await chips.getAddress();
@@ -148,7 +155,7 @@ describe('GUnits', function () {
             const nonce = 1;
             const message = ethers.solidityPacked(['address', 'bytes', 'uint256'], [user1.address, data, nonce]);
             const messageHash = ethers.keccak256(message);
-            const signature = await manager.signMessage(ethers.getBytes(messageHash));
+            const signature = await devWallet.signMessage(ethers.getBytes(messageHash));
 
             await mockToken.connect(user1).approve(await chips.getAddress(), amount);
             await chips.connect(user1).deposit(data, nonce, signature);
@@ -157,7 +164,7 @@ describe('GUnits', function () {
         });
 
         it('Should update total supply on withdrawal', async function () {
-            const { chips, mockToken, user1, manager } = await loadFixture(deployFixtures);
+            const { chips, mockToken, user1, devWallet } = await loadFixture(deployFixtures);
             const amount = ethers.parseEther('100');
             const chainId = (await ethers.provider.getNetwork()).chainId;
             const contractAddress = await chips.getAddress();
@@ -173,7 +180,7 @@ describe('GUnits', function () {
                 [user1.address, depositData, depositNonce]
             );
             const depositMessageHash = ethers.keccak256(depositMessage);
-            const depositSignature = await manager.signMessage(ethers.getBytes(depositMessageHash));
+            const depositSignature = await devWallet.signMessage(ethers.getBytes(depositMessageHash));
 
             await mockToken.connect(user1).approve(await chips.getAddress(), amount);
             await chips.connect(user1).deposit(depositData, depositNonce, depositSignature);
@@ -189,7 +196,7 @@ describe('GUnits', function () {
                 [user1.address, withdrawData, withdrawNonce]
             );
             const withdrawMessageHash = ethers.keccak256(withdrawMessage);
-            const withdrawSignature = await manager.signMessage(ethers.getBytes(withdrawMessageHash));
+            const withdrawSignature = await devWallet.signMessage(ethers.getBytes(withdrawMessageHash));
 
             await chips.connect(user1).withdraw(withdrawData, withdrawNonce, withdrawSignature);
 
@@ -197,26 +204,26 @@ describe('GUnits', function () {
         });
 
         it('Should update total supply on admin deposit', async function () {
-            const { chips, mockToken, manager, user1, user2 } = await loadFixture(deployFixtures);
+            const { chips, mockToken, gameServer, user1, user2 } = await loadFixture(deployFixtures);
             const amount = ethers.parseEther('100');
 
-            await mockToken.connect(manager).approve(await chips.getAddress(), amount * 2n);
-            await chips.connect(manager).adminDeposit([user1.address, user2.address], [amount, amount]);
+            await mockToken.connect(gameServer).approve(await chips.getAddress(), amount * 2n);
+            await chips.connect(gameServer).adminDeposit([user1.address, user2.address], [amount, amount]);
 
             expect(await chips.totalSupply()).to.equal(amount * 2n);
         });
 
         it('Should update total supply on admin withdrawal', async function () {
-            const { chips, mockToken, manager, user1, user2 } = await loadFixture(deployFixtures);
+            const { chips, mockToken, devWallet, gameServer, user1, user2 } = await loadFixture(deployFixtures);
             const amount = ethers.parseEther('100');
 
             // First deposit
-            await mockToken.connect(manager).approve(await chips.getAddress(), amount * 2n);
-            await chips.connect(manager).adminDeposit([user1.address, user2.address], [amount, amount]);
+            await mockToken.connect(gameServer).approve(await chips.getAddress(), amount * 2n);
+            await chips.connect(gameServer).adminDeposit([user1.address, user2.address], [amount, amount]);
 
             // Pause and withdraw
-            await chips.connect(manager).pause();
-            await chips.connect(manager).withdrawAllAdmin([user1.address, user2.address]);
+            await chips.connect(devWallet).pause();
+            await chips.connect(devWallet).withdrawAllAdmin([user1.address, user2.address]);
 
             expect(await chips.totalSupply()).to.equal(0);
         });
@@ -224,7 +231,7 @@ describe('GUnits', function () {
 
     describe('Deposit and Withdraw', function () {
         it('Should allow users to deposit chips', async function () {
-            const { chips, mockToken, user1, manager } = await loadFixture(deployFixtures);
+            const { chips, mockToken, user1, devWallet } = await loadFixture(deployFixtures);
             const amount = ethers.parseEther('100');
             const chainId = (await ethers.provider.getNetwork()).chainId;
             const contractAddress = await chips.getAddress();
@@ -236,7 +243,7 @@ describe('GUnits', function () {
             const nonce = 1;
             const message = ethers.solidityPacked(['address', 'bytes', 'uint256'], [user1.address, data, nonce]);
             const messageHash = ethers.keccak256(message);
-            const signature = await manager.signMessage(ethers.getBytes(messageHash));
+            const signature = await devWallet.signMessage(ethers.getBytes(messageHash));
 
             await mockToken.connect(user1).approve(await chips.getAddress(), amount);
             await chips.connect(user1).deposit(data, nonce, signature);
@@ -246,7 +253,7 @@ describe('GUnits', function () {
         });
 
         it('Should allow users to withdraw chips', async function () {
-            const { chips, mockToken, user1, manager } = await loadFixture(deployFixtures);
+            const { chips, mockToken, user1, devWallet } = await loadFixture(deployFixtures);
             const amount = ethers.parseEther('100');
             const chainId = (await ethers.provider.getNetwork()).chainId;
             const contractAddress = await chips.getAddress();
@@ -262,7 +269,7 @@ describe('GUnits', function () {
                 [user1.address, depositData, depositNonce]
             );
             const depositMessageHash = ethers.keccak256(depositMessage);
-            const depositSignature = await manager.signMessage(ethers.getBytes(depositMessageHash));
+            const depositSignature = await devWallet.signMessage(ethers.getBytes(depositMessageHash));
 
             await mockToken.connect(user1).approve(await chips.getAddress(), amount);
             await chips.connect(user1).deposit(depositData, depositNonce, depositSignature);
@@ -278,7 +285,7 @@ describe('GUnits', function () {
                 [user1.address, withdrawData, withdrawNonce]
             );
             const withdrawMessageHash = ethers.keccak256(withdrawMessage);
-            const withdrawSignature = await manager.signMessage(ethers.getBytes(withdrawMessageHash));
+            const withdrawSignature = await devWallet.signMessage(ethers.getBytes(withdrawMessageHash));
 
             await chips.connect(user1).withdraw(withdrawData, withdrawNonce, withdrawSignature);
 
@@ -287,7 +294,7 @@ describe('GUnits', function () {
         });
 
         it('Should revert if user tries to withdraw more than balance', async function () {
-            const { chips, user1, manager } = await loadFixture(deployFixtures);
+            const { chips, user1, devWallet } = await loadFixture(deployFixtures);
             const amount = ethers.parseEther('1');
             const chainId = (await ethers.provider.getNetwork()).chainId;
             const contractAddress = await chips.getAddress();
@@ -299,7 +306,7 @@ describe('GUnits', function () {
             const nonce = 1;
             const message = ethers.solidityPacked(['address', 'bytes', 'uint256'], [user1.address, data, nonce]);
             const messageHash = ethers.keccak256(message);
-            const signature = await manager.signMessage(ethers.getBytes(messageHash));
+            const signature = await devWallet.signMessage(ethers.getBytes(messageHash));
 
             await expect(chips.connect(user1).withdraw(data, nonce, signature)).to.be.revertedWithCustomError(
                 chips,
@@ -308,7 +315,7 @@ describe('GUnits', function () {
         });
 
         it('Should revert if signature is invalid', async function () {
-            const { chips, user1, user2, manager } = await loadFixture(deployFixtures);
+            const { chips, user1, user2, devWallet } = await loadFixture(deployFixtures);
             const amount = ethers.parseEther('100');
             const chainId = (await ethers.provider.getNetwork()).chainId;
             const contractAddress = await chips.getAddress();
@@ -327,7 +334,7 @@ describe('GUnits', function () {
         });
 
         it('Should revert if chain ID is incorrect', async function () {
-            const { chips, user1, manager } = await loadFixture(deployFixtures);
+            const { chips, user1, devWallet } = await loadFixture(deployFixtures);
             const amount = ethers.parseEther('100');
             const wrongChainId = 12345; // Wrong chain ID
             const contractAddress = await chips.getAddress();
@@ -339,7 +346,7 @@ describe('GUnits', function () {
             const nonce = 1;
             const message = ethers.solidityPacked(['address', 'bytes', 'uint256'], [user1.address, data, nonce]);
             const messageHash = ethers.keccak256(message);
-            const signature = await manager.signMessage(ethers.getBytes(messageHash));
+            const signature = await devWallet.signMessage(ethers.getBytes(messageHash));
 
             await expect(chips.connect(user1).deposit(data, nonce, signature)).to.be.revertedWithCustomError(
                 chips,
@@ -350,14 +357,14 @@ describe('GUnits', function () {
 
     describe('Manager Operations', function () {
         it('Should allow manager to deposit to multiple users', async function () {
-            const { chips, mockToken, manager, user1, user2 } = await loadFixture(deployFixtures);
+            const { chips, mockToken, gameServer, user1, user2 } = await loadFixture(deployFixtures);
             const amount = ethers.parseEther('100');
 
             // Manager needs to approve the chips contract to spend tokens
-            await mockToken.connect(manager).approve(await chips.getAddress(), amount * 2n);
+            await mockToken.connect(gameServer).approve(await chips.getAddress(), amount * 2n);
 
             // Manager deposits to users
-            await chips.connect(manager).adminDeposit([user1.address, user2.address], [amount, amount]);
+            await chips.connect(gameServer).adminDeposit([user1.address, user2.address], [amount, amount]);
 
             expect(await chips.balanceOf(user1.address)).to.equal(amount);
             expect(await chips.balanceOf(user2.address)).to.equal(amount);
@@ -365,19 +372,19 @@ describe('GUnits', function () {
         });
 
         it('Should allow manager to withdraw all chips from users when paused', async function () {
-            const { chips, mockToken, manager, user1, user2 } = await loadFixture(deployFixtures);
+            const { chips, mockToken, gameServer, devWallet, manager, user1, user2 } = await loadFixture(deployFixtures);
             const amount = ethers.parseEther('100');
             const initialBalance = await mockToken.balanceOf(user1.address);
             // First deposit to users
-            await mockToken.connect(manager).approve(await chips.getAddress(), amount * 2n);
-            await chips.connect(manager).adminDeposit([user1.address, user2.address], [amount, amount]);
+            await mockToken.connect(gameServer).approve(await chips.getAddress(), amount * 2n);
+            await chips.connect(gameServer).adminDeposit([user1.address, user2.address], [amount, amount]);
             // Verify initial balances
             expect(await chips.balanceOf(user1.address)).to.equal(amount);
             expect(await chips.balanceOf(user2.address)).to.equal(amount);
             const deposits = await mockToken.balanceOf(await chips.getAddress());
             expect(deposits).to.equal(amount * 2n);
             // Pause the contract
-            await chips.connect(manager).pause();
+            await chips.connect(devWallet).pause();
             expect(await chips.paused()).to.be.true;
 
             // Withdraw all chips from users
@@ -396,8 +403,22 @@ describe('GUnits', function () {
             const { chips, user1 } = await loadFixture(deployFixtures);
             await expect(
                 chips.connect(user1).adminDeposit([user1.address], [ethers.parseEther('100')])
-            ).to.be.revertedWithCustomError(chips, 'AccessControlUnauthorizedAccount');
+            ).to.be.revertedWithCustomError(chips, 'NotAuthorized');
         });
+        it("Should allow live ops to adminDeposit", async function () {
+            const { chips, mockToken, user1, user2, liveOps } = await loadFixture(deployFixtures);
+            const amount = ethers.parseEther('100');
+            await mockToken.connect(liveOps).approve(await chips.getAddress(), amount * 2n);
+            await expect(chips.connect(liveOps).adminDeposit([user1.address, user2.address], [amount, amount])).to.not.be.reverted;
+            expect(await chips.balanceOf(user1.address)).to.equal(amount);
+            expect(await chips.balanceOf(user2.address)).to.equal(amount);
+        })
+        it("Should allow live ops to adminPayout", async function () {
+            const { chips, mockToken, user1, user2, liveOps } = await loadFixture(deployFixtures);
+            const amount = ethers.parseEther('100');
+            await mockToken.connect(liveOps).approve(await chips.getAddress(), amount * 2n);
+            await expect(chips.connect(liveOps).adminDeposit([user1.address, user2.address], [amount, amount])).to.not.be.reverted;
+        })
     });
 
     describe("Readable role", function () {
@@ -415,17 +436,17 @@ describe('GUnits', function () {
 
     describe('Pausable', function () {
         it('Should allow manager to pause and unpause', async function () {
-            const { chips, manager } = await loadFixture(deployFixtures);
+            const { chips, devWallet } = await loadFixture(deployFixtures);
 
-            await chips.connect(manager).pause();
+            await chips.connect(devWallet).pause();
             expect(await chips.paused()).to.be.true;
 
-            await chips.connect(manager).unpause();
+            await chips.connect(devWallet).unpause();
             expect(await chips.paused()).to.be.false;
         });
 
         it('Should prevent deposits when paused', async function () {
-            const { chips, mockToken, manager, user1 } = await loadFixture(deployFixtures);
+            const { chips, mockToken, devWallet, user1 } = await loadFixture(deployFixtures);
             const amount = ethers.parseEther('100');
             const chainId = (await ethers.provider.getNetwork()).chainId;
             const contractAddress = await chips.getAddress();
@@ -437,9 +458,9 @@ describe('GUnits', function () {
             const nonce = 1;
             const message = ethers.solidityPacked(['address', 'bytes', 'uint256'], [user1.address, data, nonce]);
             const messageHash = ethers.keccak256(message);
-            const signature = await manager.signMessage(ethers.getBytes(messageHash));
+            const signature = await devWallet.signMessage(ethers.getBytes(messageHash));
 
-            await chips.connect(manager).pause();
+            await chips.connect(devWallet).pause();
             await mockToken.connect(user1).approve(await chips.getAddress(), amount);
 
             await expect(chips.connect(user1).deposit(data, nonce, signature)).to.be.revertedWithCustomError(
@@ -449,16 +470,16 @@ describe('GUnits', function () {
         });
 
         it('Should revert on unpause when not paused', async function () {
-            const { chips, manager } = await loadFixture(deployFixtures);
+            const { chips, devWallet } = await loadFixture(deployFixtures);
             expect(await chips.paused()).to.be.false;
-            await expect(chips.connect(manager).unpause()).to.be.revertedWithCustomError(chips, 'ExpectedPause');
+            await expect(chips.connect(devWallet).unpause()).to.be.revertedWithCustomError(chips, 'ExpectedPause');
         });
 
         it('Should revert on pause when already paused', async function () {
-            const { chips, manager } = await loadFixture(deployFixtures);
-            await chips.connect(manager).pause();
+            const { chips, devWallet } = await loadFixture(deployFixtures);
+            await chips.connect(devWallet).pause();
             expect(await chips.paused()).to.be.true;
-            await expect(chips.connect(manager).pause()).to.be.revertedWithCustomError(chips, 'EnforcedPause');
+            await expect(chips.connect(devWallet).pause()).to.be.revertedWithCustomError(chips, 'EnforcedPause');
         });
         it("Should NOT pause if not caller does not have dev config role", async function () {
             const { chips, user1 } = await loadFixture(deployFixtures);
@@ -472,7 +493,7 @@ describe('GUnits', function () {
 
     describe('Edge Cases', function () {
         it('Should allow zero amount deposit', async function () {
-            const { chips, mockToken, user1, manager } = await loadFixture(deployFixtures);
+            const { chips, mockToken, user1, devWallet } = await loadFixture(deployFixtures);
             const amount = ethers.parseEther('0');
             const chainId = (await ethers.provider.getNetwork()).chainId;
             const contractAddress = await chips.getAddress();
@@ -484,7 +505,7 @@ describe('GUnits', function () {
             const nonce = 1;
             const message = ethers.solidityPacked(['address', 'bytes', 'uint256'], [user1.address, data, nonce]);
             const messageHash = ethers.keccak256(message);
-            const signature = await manager.signMessage(ethers.getBytes(messageHash));
+            const signature = await devWallet.signMessage(ethers.getBytes(messageHash));
 
             // Approve zero amount
             await mockToken.connect(user1).approve(await chips.getAddress(), amount);
@@ -498,7 +519,7 @@ describe('GUnits', function () {
         });
 
         it('Should allow zero amount withdrawal', async function () {
-            const { chips, user1, manager } = await loadFixture(deployFixtures);
+            const { chips, user1, devWallet } = await loadFixture(deployFixtures);
             const amount = ethers.parseEther('0');
             const chainId = (await ethers.provider.getNetwork()).chainId;
             const contractAddress = await chips.getAddress();
@@ -510,7 +531,7 @@ describe('GUnits', function () {
             const nonce = 1;
             const message = ethers.solidityPacked(['address', 'bytes', 'uint256'], [user1.address, data, nonce]);
             const messageHash = ethers.keccak256(message);
-            const signature = await manager.signMessage(ethers.getBytes(messageHash));
+            const signature = await devWallet.signMessage(ethers.getBytes(messageHash));
 
             // Should succeed with zero amount
             await chips.connect(user1).withdraw(data, nonce, signature);
@@ -520,21 +541,21 @@ describe('GUnits', function () {
         });
 
         it('Should revert on mismatched array lengths in adminDeposit', async function () {
-            const { chips, manager, user1 } = await loadFixture(deployFixtures);
+            const { chips, gameServer, user1 } = await loadFixture(deployFixtures);
             const amount = ethers.parseEther('100');
 
             await expect(
-                chips.connect(manager).adminDeposit([user1.address], [amount, amount])
+                chips.connect(gameServer).adminDeposit([user1.address], [amount, amount])
             ).to.be.revertedWithCustomError(chips, 'ArrayLengthMismatch');
         });
 
         it('Should revert on withdrawAllAdmin when not paused', async function () {
-            const { chips, mockToken, manager, user1, user2 } = await loadFixture(deployFixtures);
+            const { chips, mockToken, gameServer, manager, user1, user2 } = await loadFixture(deployFixtures);
             const amount = ethers.parseEther('100');
 
             // First deposit
-            await mockToken.connect(manager).approve(await chips.getAddress(), amount * 2n);
-            await chips.connect(manager).adminDeposit([user1.address, user2.address], [amount, amount]);
+            await mockToken.connect(gameServer).approve(await chips.getAddress(), amount * 2n);
+            await chips.connect(gameServer).adminDeposit([user1.address, user2.address], [amount, amount]);
 
             await expect(
                 chips.connect(manager).withdrawAllAdmin([user1.address, user2.address])
@@ -542,7 +563,7 @@ describe('GUnits', function () {
         });
 
         it('Should handle maximum token amount deposits', async function () {
-            const { chips, mockToken, user1, manager } = await loadFixture(deployFixtures);
+            const { chips, mockToken, user1, devWallet } = await loadFixture(deployFixtures);
             const amount = ethers.MaxUint256;
             const chainId = (await ethers.provider.getNetwork()).chainId;
             const contractAddress = await chips.getAddress();
@@ -554,7 +575,7 @@ describe('GUnits', function () {
             const nonce = 1;
             const message = ethers.solidityPacked(['address', 'bytes', 'uint256'], [user1.address, data, nonce]);
             const messageHash = ethers.keccak256(message);
-            const signature = await manager.signMessage(ethers.getBytes(messageHash));
+            const signature = await devWallet.signMessage(ethers.getBytes(messageHash));
 
             await mockToken.connect(user1).approve(await chips.getAddress(), amount);
             await expect(chips.connect(user1).deposit(data, nonce, signature)).to.be.reverted; // Should revert due to overflow
@@ -563,8 +584,8 @@ describe('GUnits', function () {
 
     describe('Upgrade Authorization', function () {
         it('Should allow manager to upgrade contract', async function () {
-            const { chips, manager } = await loadFixture(deployFixtures);
-            const GUnitsV2 = await ethers.getContractFactory('GUnits', manager);
+            const { chips } = await loadFixture(deployFixtures);
+            const GUnitsV2 = await ethers.getContractFactory('GUnits');
             await upgrades.upgradeProxy(chips, GUnitsV2);
         });
 
@@ -577,7 +598,7 @@ describe('GUnits', function () {
 
     describe('Exchange Rate', function () {
         it('Should allow manager to set exchange rate', async function () {
-            const { chips, manager } = await loadFixture(deployFixtures);
+            const { chips, manager, devWallet } = await loadFixture(deployFixtures);
             const numerator = 2;
             const denominator = 1;
 
@@ -585,9 +606,9 @@ describe('GUnits', function () {
             expect(await chips.hasRole(await chips.MANAGER_ROLE(), manager.address)).to.be.true;
             expect(await chips.hasRole(await chips.READABLE_ROLE(), manager.address)).to.be.true;
 
-            await chips.connect(manager).setExchangeRate(numerator, denominator);
+            await chips.connect(devWallet).setExchangeRate(numerator, denominator);
 
-            const [actualNumerator, actualDenominator] = await chips.getExchangeRate();
+            const [actualNumerator, actualDenominator] = await chips.connect(manager).getExchangeRate();
             expect(actualNumerator).to.equal(numerator);
             expect(actualDenominator).to.equal(denominator);
         });
@@ -605,36 +626,36 @@ describe('GUnits', function () {
         });
 
         it('Should emit ExchangeRateSet event when rate is updated', async function () {
-            const { chips, manager } = await loadFixture(deployFixtures);
+            const { chips, devWallet } = await loadFixture(deployFixtures);
             const numerator = 2;
             const denominator = 1;
 
-            await expect(chips.connect(manager).setExchangeRate(numerator, denominator))
+            await expect(chips.connect(devWallet).setExchangeRate(numerator, denominator))
                 .to.emit(chips, 'ExchangeRateSet')
                 .withArgs(numerator, denominator);
         });
 
         it('Should revert if numerator is zero', async function () {
-            const { chips, manager } = await loadFixture(deployFixtures);
-            await expect(chips.connect(manager).setExchangeRate(0, 1)).to.be.revertedWithCustomError(
+            const { chips, devWallet } = await loadFixture(deployFixtures);
+            await expect(chips.connect(devWallet).setExchangeRate(0, 1)).to.be.revertedWithCustomError(
                 chips,
                 'ExchangeRateCannotBeZero'
             );
         });
 
         it('Should revert if denominator is zero', async function () {
-            const { chips, manager } = await loadFixture(deployFixtures);
-            await expect(chips.connect(manager).setExchangeRate(1, 0)).to.be.revertedWithCustomError(
+            const { chips, devWallet } = await loadFixture(deployFixtures);
+            await expect(chips.connect(devWallet).setExchangeRate(1, 0)).to.be.revertedWithCustomError(
                 chips,
                 'ExchangeRateCannotBeZero'
             );
         });
 
         it('Should apply exchange rate correctly on deposit', async function () {
-            const { chips, mockToken, user1, manager } = await loadFixture(deployFixtures);
+            const { chips, mockToken, user1, devWallet } = await loadFixture(deployFixtures);
             const numerator = 2;
             const denominator = 1;
-            await chips.connect(manager).setExchangeRate(numerator, denominator);
+            await chips.connect(devWallet).setExchangeRate(numerator, denominator);
 
             const amount = ethers.parseEther('100');
             const chainId = (await ethers.provider.getNetwork()).chainId;
@@ -647,7 +668,7 @@ describe('GUnits', function () {
             const nonce = 1;
             const message = ethers.solidityPacked(['address', 'bytes', 'uint256'], [user1.address, data, nonce]);
             const messageHash = ethers.keccak256(message);
-            const signature = await manager.signMessage(ethers.getBytes(messageHash));
+            const signature = await devWallet.signMessage(ethers.getBytes(messageHash));
 
             await mockToken.connect(user1).approve(await chips.getAddress(), amount);
             await chips.connect(user1).deposit(data, nonce, signature);
@@ -657,10 +678,10 @@ describe('GUnits', function () {
         });
 
         it('Should apply exchange rate correctly on withdrawal', async function () {
-            const { chips, mockToken, user1, manager } = await loadFixture(deployFixtures);
+            const { chips, mockToken, user1, devWallet } = await loadFixture(deployFixtures);
             const numerator = 2;
             const denominator = 1;
-            await chips.connect(manager).setExchangeRate(numerator, denominator);
+            await chips.connect(devWallet).setExchangeRate(numerator, denominator);
 
             const amount = ethers.parseEther('100');
             const chainId = (await ethers.provider.getNetwork()).chainId;
@@ -677,7 +698,7 @@ describe('GUnits', function () {
                 [user1.address, depositData, depositNonce]
             );
             const depositMessageHash = ethers.keccak256(depositMessage);
-            const depositSignature = await manager.signMessage(ethers.getBytes(depositMessageHash));
+            const depositSignature = await devWallet.signMessage(ethers.getBytes(depositMessageHash));
 
             await mockToken.connect(user1).approve(await chips.getAddress(), amount);
             await chips.connect(user1).deposit(depositData, depositNonce, depositSignature);
@@ -694,7 +715,7 @@ describe('GUnits', function () {
                 [user1.address, withdrawData, withdrawNonce]
             );
             const withdrawMessageHash = ethers.keccak256(withdrawMessage);
-            const withdrawSignature = await manager.signMessage(ethers.getBytes(withdrawMessageHash));
+            const withdrawSignature = await devWallet.signMessage(ethers.getBytes(withdrawMessageHash));
 
             await chips.connect(user1).withdraw(withdrawData, withdrawNonce, withdrawSignature);
 
@@ -703,15 +724,15 @@ describe('GUnits', function () {
         });
 
         it('Should apply exchange rate correctly on admin deposit', async function () {
-            const { chips, mockToken, manager, user1, user2 } = await loadFixture(deployFixtures);
+            const { chips, mockToken, devWallet, user1, user2, gameServer } = await loadFixture(deployFixtures);
             const numerator = 2;
             const denominator = 1;
-            await chips.connect(manager).setExchangeRate(numerator, denominator);
+            await chips.connect(devWallet).setExchangeRate(numerator, denominator);
 
             const amount = ethers.parseEther('100');
 
-            await mockToken.connect(manager).approve(await chips.getAddress(), amount * 2n);
-            await chips.connect(manager).adminDeposit([user1.address, user2.address], [amount, amount]);
+            await mockToken.connect(gameServer).approve(await chips.getAddress(), amount * 2n);
+            await chips.connect(gameServer).adminDeposit([user1.address, user2.address], [amount, amount]);
 
             // Each user should receive 2x the amount in chips
             expect(await chips.balanceOf(user1.address)).to.equal(amount * 2n);
@@ -719,21 +740,21 @@ describe('GUnits', function () {
         });
 
         it('Should apply exchange rate correctly on admin withdrawal', async function () {
-            const { chips, mockToken, manager, user1, user2 } = await loadFixture(deployFixtures);
+            const { chips, mockToken, devWallet, user1, user2, gameServer } = await loadFixture(deployFixtures);
             const numerator = 2;
             const denominator = 1;
-            await chips.connect(manager).setExchangeRate(numerator, denominator);
+            await chips.connect(devWallet).setExchangeRate(numerator, denominator);
 
             const amount = ethers.parseEther('100');
             const initialBalance = await mockToken.balanceOf(user1.address);
 
             // First deposit
-            await mockToken.connect(manager).approve(await chips.getAddress(), amount * 2n);
-            await chips.connect(manager).adminDeposit([user1.address, user2.address], [amount, amount]);
+            await mockToken.connect(gameServer).approve(await chips.getAddress(), amount * 2n);
+            await chips.connect(gameServer).adminDeposit([user1.address, user2.address], [amount, amount]);
 
             // Pause and withdraw
-            await chips.connect(manager).pause();
-            await chips.connect(manager).withdrawAllAdmin([user1.address, user2.address]);
+            await chips.connect(devWallet).pause();
+            await chips.connect(devWallet).withdrawAllAdmin([user1.address, user2.address]);
 
             // Should receive original amount back in tokens
             expect(await mockToken.balanceOf(user1.address)).to.equal(amount + initialBalance);
@@ -741,10 +762,10 @@ describe('GUnits', function () {
         });
 
         it('Should handle very large exchange rates', async function () {
-            const { chips, mockToken, user1, manager } = await loadFixture(deployFixtures);
+            const { chips, mockToken, user1, devWallet } = await loadFixture(deployFixtures);
             const numerator = ethers.MaxUint256;
             const denominator = 1n;
-            await chips.connect(manager).setExchangeRate(numerator, denominator);
+            await chips.connect(devWallet).setExchangeRate(numerator, denominator);
 
             const amount = 1n; // Smallest possible amount
             const chainId = (await ethers.provider.getNetwork()).chainId;
@@ -757,7 +778,7 @@ describe('GUnits', function () {
             const nonce = 1;
             const message = ethers.solidityPacked(['address', 'bytes', 'uint256'], [user1.address, data, nonce]);
             const messageHash = ethers.keccak256(message);
-            const signature = await manager.signMessage(ethers.getBytes(messageHash));
+            const signature = await devWallet.signMessage(ethers.getBytes(messageHash));
 
             await mockToken.connect(user1).approve(await chips.getAddress(), amount);
             await chips.connect(user1).deposit(data, nonce, signature);
@@ -766,10 +787,10 @@ describe('GUnits', function () {
         });
 
         it('Should handle very small exchange rates', async function () {
-            const { chips, mockToken, user1, manager } = await loadFixture(deployFixtures);
+            const { chips, mockToken, user1, devWallet } = await loadFixture(deployFixtures);
             const numerator = 1n;
             const denominator = 1000n;
-            await chips.connect(manager).setExchangeRate(numerator, denominator);
+            await chips.connect(devWallet).setExchangeRate(numerator, denominator);
 
             const amount = ethers.parseEther('1000');
             const chainId = (await ethers.provider.getNetwork()).chainId;
@@ -782,7 +803,7 @@ describe('GUnits', function () {
             const nonce = 1;
             const message = ethers.solidityPacked(['address', 'bytes', 'uint256'], [user1.address, data, nonce]);
             const messageHash = ethers.keccak256(message);
-            const signature = await manager.signMessage(ethers.getBytes(messageHash));
+            const signature = await devWallet.signMessage(ethers.getBytes(messageHash));
 
             await mockToken.connect(user1).approve(await chips.getAddress(), amount);
             await chips.connect(user1).deposit(data, nonce, signature);
@@ -791,10 +812,10 @@ describe('GUnits', function () {
         });
 
         it('Should handle exchange rate changes between deposit and withdrawal', async function () {
-            const { chips, mockToken, user1, manager } = await loadFixture(deployFixtures);
+            const { chips, mockToken, user1, devWallet } = await loadFixture(deployFixtures);
 
             // Initial exchange rate 1:1
-            await chips.connect(manager).setExchangeRate(1n, 1n);
+            await chips.connect(devWallet).setExchangeRate(1n, 1n);
 
             const amount = ethers.parseEther('100');
             const chainId = (await ethers.provider.getNetwork()).chainId;
@@ -811,14 +832,14 @@ describe('GUnits', function () {
                 [user1.address, depositData, depositNonce]
             );
             const depositMessageHash = ethers.keccak256(depositMessage);
-            const depositSignature = await manager.signMessage(ethers.getBytes(depositMessageHash));
+            const depositSignature = await devWallet.signMessage(ethers.getBytes(depositMessageHash));
 
             await mockToken.connect(user1).approve(await chips.getAddress(), amount);
             await chips.connect(user1).deposit(depositData, depositNonce, depositSignature);
             expect(await chips.balanceOf(user1.address)).to.equal(amount);
             expect(await mockToken.balanceOf(user1.address)).to.equal(ethers.parseEther('900'));
             // Change exchange rate to 2:1
-            await chips.connect(manager).setExchangeRate(2n, 1n);
+            await chips.connect(devWallet).setExchangeRate(2n, 1n);
 
             // Withdraw should use new exchange rate
             // At 2:1 rate, 100 chips = 50 tokens
@@ -833,7 +854,7 @@ describe('GUnits', function () {
                 [user1.address, withdrawData, withdrawNonce]
             );
             const withdrawMessageHash = ethers.keccak256(withdrawMessage);
-            const withdrawSignature = await manager.signMessage(ethers.getBytes(withdrawMessageHash));
+            const withdrawSignature = await devWallet.signMessage(ethers.getBytes(withdrawMessageHash));
 
             await chips.connect(user1).withdraw(withdrawData, withdrawNonce, withdrawSignature);
 
@@ -843,8 +864,8 @@ describe('GUnits', function () {
 
     describe('Role Management', function () {
         it('Should allow manager to revoke roles', async function () {
-            const { chips, manager, gameServer } = await loadFixture(deployFixtures);
-            await chips.connect(manager).revokeRole(await chips.GAME_SERVER_ROLE(), gameServer.address);
+            const { chips, devWallet, gameServer } = await loadFixture(deployFixtures);
+            await chips.connect(devWallet).revokeRole(await chips.GAME_SERVER_ROLE(), gameServer.address);
             expect(await chips.hasRole(await chips.GAME_SERVER_ROLE(), gameServer.address)).to.be.false;
         });
 
@@ -856,46 +877,46 @@ describe('GUnits', function () {
         });
 
         it('Should handle role management correctly', async function () {
-            const { chips, manager, user1 } = await loadFixture(deployFixtures);
+            const { chips, devWallet, user1 } = await loadFixture(deployFixtures);
 
             // Grant GAME_ROLE to user1
-            await chips.connect(manager).grantRole(await chips.GAME_SERVER_ROLE(), user1.address);
+            await chips.connect(devWallet).grantRole(await chips.GAME_SERVER_ROLE(), user1.address);
             expect(await chips.hasRole(await chips.GAME_SERVER_ROLE(), user1.address)).to.be.true;
 
             // Revoke GAME_ROLE from user1
-            await chips.connect(manager).revokeRole(await chips.GAME_SERVER_ROLE(), user1.address);
+            await chips.connect(devWallet).revokeRole(await chips.GAME_SERVER_ROLE(), user1.address);
             expect(await chips.hasRole(await chips.GAME_SERVER_ROLE(), user1.address)).to.be.false;
         });
 
         it('Should allow manager to grant and revoke READABLE_ROLE', async function () {
-            const { chips, manager, user1 } = await loadFixture(deployFixtures);
+            const { chips, devWallet, user1 } = await loadFixture(deployFixtures);
 
             // Grant READABLE_ROLE
-            await chips.connect(manager).grantRole(await chips.READABLE_ROLE(), user1.address);
+            await chips.connect(devWallet).grantRole(await chips.READABLE_ROLE(), user1.address);
             expect(await chips.hasRole(await chips.READABLE_ROLE(), user1.address)).to.be.true;
 
             // Revoke READABLE_ROLE
-            await chips.connect(manager).revokeRole(await chips.READABLE_ROLE(), user1.address);
+            await chips.connect(devWallet).revokeRole(await chips.READABLE_ROLE(), user1.address);
             expect(await chips.hasRole(await chips.READABLE_ROLE(), user1.address)).to.be.false;
         });
 
         it('Should allow manager to grant and revoke DEV_CONFIG_ROLE', async function () {
-            const { chips, manager, user1 } = await loadFixture(deployFixtures);
+            const { chips, devWallet, user1 } = await loadFixture(deployFixtures);
 
             // Grant DEV_CONFIG_ROLE
-            await chips.connect(manager).grantRole(await chips.DEV_CONFIG_ROLE(), user1.address);
+            await chips.connect(devWallet).grantRole(await chips.DEV_CONFIG_ROLE(), user1.address);
             expect(await chips.hasRole(await chips.DEV_CONFIG_ROLE(), user1.address)).to.be.true;
 
             // Revoke DEV_CONFIG_ROLE
-            await chips.connect(manager).revokeRole(await chips.DEV_CONFIG_ROLE(), user1.address);
+            await chips.connect(devWallet).revokeRole(await chips.DEV_CONFIG_ROLE(), user1.address);
             expect(await chips.hasRole(await chips.DEV_CONFIG_ROLE(), user1.address)).to.be.false;
         });
 
         it('Should allow users to renounce their roles', async function () {
-            const { chips, manager, user1 } = await loadFixture(deployFixtures);
+            const { chips, devWallet, user1 } = await loadFixture(deployFixtures);
 
             // Grant GAME_SERVER_ROLE to user1
-            await chips.connect(manager).grantRole(await chips.GAME_SERVER_ROLE(), user1.address);
+            await chips.connect(devWallet).grantRole(await chips.GAME_SERVER_ROLE(), user1.address);
             expect(await chips.hasRole(await chips.GAME_SERVER_ROLE(), user1.address)).to.be.true;
 
             // User1 renounces their role
@@ -906,7 +927,7 @@ describe('GUnits', function () {
 
     describe('Signature Verification', function () {
         it('Should prevent replay attacks', async function () {
-            const { chips, mockToken, user1, manager } = await loadFixture(deployFixtures);
+            const { chips, mockToken, user1, devWallet } = await loadFixture(deployFixtures);
             const amount = ethers.parseEther('100');
             const chainId = (await ethers.provider.getNetwork()).chainId;
             const contractAddress = await chips.getAddress();
@@ -918,7 +939,7 @@ describe('GUnits', function () {
             const nonce = 1;
             const message = ethers.solidityPacked(['address', 'bytes', 'uint256'], [user1.address, data, nonce]);
             const messageHash = ethers.keccak256(message);
-            const signature = await manager.signMessage(ethers.getBytes(messageHash));
+            const signature = await devWallet.signMessage(ethers.getBytes(messageHash));
 
             await mockToken.connect(user1).approve(await chips.getAddress(), amount);
             await chips.connect(user1).deposit(data, nonce, signature);
@@ -929,7 +950,7 @@ describe('GUnits', function () {
         });
 
         it('Should revert on signature with different chain ID', async function () {
-            const { chips, mockToken, user1, manager } = await loadFixture(deployFixtures);
+            const { chips, mockToken, user1, devWallet } = await loadFixture(deployFixtures);
             const amount = ethers.parseEther('100');
             const wrongChainId = 12345;
             const contractAddress = await chips.getAddress();
@@ -941,7 +962,7 @@ describe('GUnits', function () {
             const nonce = 1;
             const message = ethers.solidityPacked(['address', 'bytes', 'uint256'], [user1.address, data, nonce]);
             const messageHash = ethers.keccak256(message);
-            const signature = await manager.signMessage(ethers.getBytes(messageHash));
+            const signature = await devWallet.signMessage(ethers.getBytes(messageHash));
 
             await mockToken.connect(user1).approve(await chips.getAddress(), amount);
             await expect(chips.connect(user1).deposit(data, nonce, signature)).to.be.revertedWithCustomError(
@@ -951,7 +972,7 @@ describe('GUnits', function () {
         });
 
         it('Should revert on signature with different contract address', async function () {
-            const { chips, mockToken, user1, manager } = await loadFixture(deployFixtures);
+            const { chips, mockToken, user1, devWallet } = await loadFixture(deployFixtures);
             const amount = ethers.parseEther('100');
             const chainId = (await ethers.provider.getNetwork()).chainId;
             const wrongContractAddress = ethers.ZeroAddress;
@@ -963,7 +984,7 @@ describe('GUnits', function () {
             const nonce = 1;
             const message = ethers.solidityPacked(['address', 'bytes', 'uint256'], [user1.address, data, nonce]);
             const messageHash = ethers.keccak256(message);
-            const signature = await manager.signMessage(ethers.getBytes(messageHash));
+            const signature = await devWallet.signMessage(ethers.getBytes(messageHash));
 
             await mockToken.connect(user1).approve(await chips.getAddress(), amount);
             await expect(chips.connect(user1).deposit(data, nonce, signature)).to.be.revertedWithCustomError(
@@ -973,7 +994,7 @@ describe('GUnits', function () {
         });
 
         it('Should revert on expired signature', async () => {
-            const { chips, user1, manager } = await loadFixture(deployFixtures);
+            const { chips, user1, devWallet } = await loadFixture(deployFixtures);
             const amount = 100n;
             const contractAddress = await chips.getAddress();
             const chainId = (await ethers.provider.getNetwork()).chainId;
@@ -985,7 +1006,7 @@ describe('GUnits', function () {
             const nonce = 1;
             const message = ethers.solidityPacked(['address', 'bytes', 'uint256'], [user1.address, data, nonce]);
             const messageHash = ethers.keccak256(message);
-            const signature = await manager.signMessage(ethers.getBytes(messageHash));
+            const signature = await devWallet.signMessage(ethers.getBytes(messageHash));
             await expect(chips.connect(user1).deposit(data, nonce, signature)).to.be.revertedWithCustomError(
                 chips,
                 'InvalidTimestamp'
@@ -993,7 +1014,7 @@ describe('GUnits', function () {
         });
 
         it('Should prevent replay attacks', async () => {
-            const { chips, mockToken, user1, manager } = await loadFixture(deployFixtures);
+            const { chips, mockToken, user1, devWallet } = await loadFixture(deployFixtures);
             const amount = 100n;
             const contractAddress = await chips.getAddress();
             const chainId = (await ethers.provider.getNetwork()).chainId;
@@ -1005,7 +1026,7 @@ describe('GUnits', function () {
             const nonce = 1;
             const message = ethers.solidityPacked(['address', 'bytes', 'uint256'], [user1.address, data, nonce]);
             const messageHash = ethers.keccak256(message);
-            const signature = await manager.signMessage(ethers.getBytes(messageHash));
+            const signature = await devWallet.signMessage(ethers.getBytes(messageHash));
             await mockToken.connect(user1).approve(await chips.getAddress(), amount);
             await chips.connect(user1).deposit(data, nonce, signature);
             await expect(chips.connect(user1).deposit(data, nonce, signature)).to.be.revertedWith(
@@ -1016,10 +1037,10 @@ describe('GUnits', function () {
 
     describe('Exchange Rate Edge Cases', function () {
         it('Should handle exchange rate overflow', async function () {
-            const { chips, mockToken, user1, manager } = await loadFixture(deployFixtures);
+            const { chips, mockToken, user1, devWallet } = await loadFixture(deployFixtures);
             const numerator = ethers.MaxUint256;
             const denominator = 1n;
-            await chips.connect(manager).setExchangeRate(numerator, denominator);
+            await chips.connect(devWallet).setExchangeRate(numerator, denominator);
 
             const amount = 1n; // Smallest possible amount
             const chainId = (await ethers.provider.getNetwork()).chainId;
@@ -1032,7 +1053,7 @@ describe('GUnits', function () {
             const nonce = 1;
             const message = ethers.solidityPacked(['address', 'bytes', 'uint256'], [user1.address, data, nonce]);
             const messageHash = ethers.keccak256(message);
-            const signature = await manager.signMessage(ethers.getBytes(messageHash));
+            const signature = await devWallet.signMessage(ethers.getBytes(messageHash));
 
             await mockToken.connect(user1).approve(await chips.getAddress(), amount);
             await chips.connect(user1).deposit(data, nonce, signature);
@@ -1041,10 +1062,10 @@ describe('GUnits', function () {
         });
 
         it('Should handle exchange rate precision loss', async function () {
-            const { chips, mockToken, user1, manager } = await loadFixture(deployFixtures);
+            const { chips, mockToken, user1, devWallet } = await loadFixture(deployFixtures);
             const numerator = 1n;
             const denominator = 3n;
-            await chips.connect(manager).setExchangeRate(numerator, denominator);
+            await chips.connect(devWallet).setExchangeRate(numerator, denominator);
 
             const amount = ethers.parseEther('3');
             const chainId = (await ethers.provider.getNetwork()).chainId;
@@ -1057,7 +1078,7 @@ describe('GUnits', function () {
             const nonce = 1;
             const message = ethers.solidityPacked(['address', 'bytes', 'uint256'], [user1.address, data, nonce]);
             const messageHash = ethers.keccak256(message);
-            const signature = await manager.signMessage(ethers.getBytes(messageHash));
+            const signature = await devWallet.signMessage(ethers.getBytes(messageHash));
 
             await mockToken.connect(user1).approve(await chips.getAddress(), amount);
             await chips.connect(user1).deposit(data, nonce, signature);
@@ -1083,13 +1104,13 @@ describe('GUnits', function () {
 
     describe('Contract Upgrade', function () {
         it('Should allow upgrade with DEV_CONFIG_ROLE', async function () {
-            const { chips, manager } = await loadFixture(deployFixtures);
-            const GUnitsV2 = await ethers.getContractFactory('GUnits', manager);
+            const { chips, devWallet } = await loadFixture(deployFixtures);
+            const GUnitsV2 = await ethers.getContractFactory('GUnits', devWallet);
             await upgrades.upgradeProxy(chips, GUnitsV2);
         });
 
         it('Should preserve state after upgrade', async function () {
-            const { chips, mockToken, user1, manager } = await loadFixture(deployFixtures);
+            const { chips, mockToken, user1, devWallet } = await loadFixture(deployFixtures);
             const amount = ethers.parseEther('100');
             const chainId = (await ethers.provider.getNetwork()).chainId;
             const contractAddress = await chips.getAddress();
@@ -1101,12 +1122,12 @@ describe('GUnits', function () {
             const nonce = 1;
             const message = ethers.solidityPacked(['address', 'bytes', 'uint256'], [user1.address, data, nonce]);
             const messageHash = ethers.keccak256(message);
-            const signature = await manager.signMessage(ethers.getBytes(messageHash));
+            const signature = await devWallet.signMessage(ethers.getBytes(messageHash));
 
             await mockToken.connect(user1).approve(await chips.getAddress(), amount);
             await chips.connect(user1).deposit(data, nonce, signature);
 
-            const GUnitsV2 = await ethers.getContractFactory('GUnits', manager);
+            const GUnitsV2 = await ethers.getContractFactory('GUnits', devWallet);
             const upgraded = await upgrades.upgradeProxy(chips, GUnitsV2);
 
             expect(await upgraded.balanceOf(user1.address)).to.equal(amount);
@@ -1115,32 +1136,32 @@ describe('GUnits', function () {
 
     describe('Admin Operations', function () {
         it('Should handle adminDeposit with zero amounts', async function () {
-            const { chips, mockToken, manager, user1, user2 } = await loadFixture(deployFixtures);
+            const { chips, mockToken, devWallet, user1, user2 } = await loadFixture(deployFixtures);
 
-            await mockToken.connect(manager).approve(await chips.getAddress(), 0);
-            await chips.connect(manager).adminDeposit([user1.address, user2.address], [0, 0]);
+            await mockToken.connect(devWallet).approve(await chips.getAddress(), 0);
+            await chips.connect(devWallet).adminDeposit([user1.address, user2.address], [0, 0]);
 
             expect(await chips.balanceOf(user1.address)).to.equal(0);
             expect(await chips.balanceOf(user2.address)).to.equal(0);
         });
 
         it('Should handle withdrawAllAdmin with empty arrays', async function () {
-            const { chips, manager } = await loadFixture(deployFixtures);
-            await chips.connect(manager).pause();
-            await chips.connect(manager).withdrawAllAdmin([]);
+            const { chips, devWallet } = await loadFixture(deployFixtures);
+            await chips.connect(devWallet).pause();
+            await chips.connect(devWallet).withdrawAllAdmin([]);
         });
 
         it('Should handle withdrawAllAdmin with users having zero balance', async function () {
-            const { chips, manager, user1, user2 } = await loadFixture(deployFixtures);
-            await chips.connect(manager).pause();
-            await chips.connect(manager).withdrawAllAdmin([user1.address, user2.address]);
+            const { chips, devWallet, user1, user2 } = await loadFixture(deployFixtures);
+            await chips.connect(devWallet).pause();
+            await chips.connect(devWallet).withdrawAllAdmin([user1.address, user2.address]);
         });
     });
 
     describe('Upgrade Tests', function () {
         it('Should handle upgrade with same implementation', async function () {
-            const { chips, manager } = await loadFixture(deployFixtures);
-            const GUnitsV2 = await ethers.getContractFactory('GUnits', manager);
+            const { chips, devWallet } = await loadFixture(deployFixtures);
+            const GUnitsV2 = await ethers.getContractFactory('GUnits', devWallet);
             await upgrades.upgradeProxy(chips, GUnitsV2);
         });
     });
@@ -1148,20 +1169,22 @@ describe('GUnits', function () {
     describe('Payout', function () {
         let chips: GUnits;
         let token: MockERC20;
-        let deployer: SignerWithAddress;
+        let manager: SignerWithAddress;
         let user1: SignerWithAddress;
         let user2: SignerWithAddress;
         let gameServer: SignerWithAddress;
+        let devWallet: SignerWithAddress;
         const playCost = 1000n;
 
         beforeEach(async function () {
             ({
                 chips,
                 mockToken: token,
-                manager: deployer,
+                manager,
                 user1,
                 user2,
                 gameServer,
+                devWallet
             } = await loadFixture(deployFixtures));
         });
 
@@ -1180,8 +1203,8 @@ describe('GUnits', function () {
             }
 
             await token.connect(user1).approve(await chips.getAddress(), totalCost);
-            await depositGUnits(chips, token, deployer, user1, totalCost);
-            await depositGUnits(chips, token, deployer, user2, totalCost);
+            await depositGUnits(chips, token, devWallet, user1, totalCost);
+            await depositGUnits(chips, token, devWallet, user2, totalCost);
 
             const user1BalanceBefore = await chips.balanceOf(user1.address);
             const user2BalanceBefore = await chips.balanceOf(user2.address);
@@ -1207,8 +1230,8 @@ describe('GUnits', function () {
             }
 
             await token.connect(user1).approve(await chips.getAddress(), totalCost);
-            await depositGUnits(chips, token, deployer, user1, totalCost);
-            await depositGUnits(chips, token, deployer, user2, totalCost);
+            await depositGUnits(chips, token, devWallet, user1, totalCost);
+            await depositGUnits(chips, token, devWallet, user2, totalCost);
 
             const user1BalanceBefore = await chips.balanceOf(user1.address);
             const user2BalanceBefore = await chips.balanceOf(user2.address);
@@ -1226,7 +1249,7 @@ describe('GUnits', function () {
             const winners = [user1];
             const rakePercentage = ethers.parseEther('10');
 
-            await chips.connect(deployer).pause();
+            await chips.connect(devWallet).pause();
             await expect(chips.connect(gameServer).payout(playCost, rakePercentage, players, winners)).to.be.revertedWithCustomError(chips, 'EnforcedPause');
         });
         it("Should NOT payout if caller is not game server", async function () {
@@ -1234,20 +1257,20 @@ describe('GUnits', function () {
             const players = [user1, user2];
             const winners = [user1];
             const rakePercentage = ethers.parseEther('10');
-            await expect(chips.connect(deployer).payout(playCost, rakePercentage, players, winners)).to.be.revertedWithCustomError(chips, 'AccessControlUnauthorizedAccount');
+            await expect(chips.connect(manager).payout(playCost, rakePercentage, players, winners)).to.be.revertedWithCustomError(chips, 'AccessControlUnauthorizedAccount');
         });
     });
 
     describe('Proxy Admin', function () {
         it('Should handle proxy admin operations', async function () {
-            const { chips, manager } = await loadFixture(deployFixtures);
+            const { chips, devWallet } = await loadFixture(deployFixtures);
             const chipsAddress = await chips.getAddress();
             const proxyAdmin = await upgrades.erc1967.getAdminAddress(chipsAddress);
             const proxyAdminAbiContent = fs.readFileSync(path.resolve(PROXY_ADMIN_ABI_PATH), 'utf8');
             const { abi: proxyAdminAbi } = JSON.parse(proxyAdminAbiContent);
             const proxyAdminContract = await ethers.getContractAt(proxyAdminAbi, proxyAdmin) as any;
             const proxyAdminOwner = await proxyAdminContract.owner();
-            expect(proxyAdminOwner).to.equal(manager.address);
+            expect(proxyAdminOwner).to.equal(devWallet.address);
         });
     });
 
@@ -1257,14 +1280,14 @@ describe('GUnits', function () {
         let user1: SignerWithAddress;
         let user2: SignerWithAddress;
         let gameServer: SignerWithAddress;
-        let manager: SignerWithAddress;
         let rakeAmount: bigint;
         let treasury: SignerWithAddress;
+        let devWallet: SignerWithAddress;
         
         beforeEach(async function () {
-            ({ chips, mockToken: token, manager, user1, user2, gameServer, treasury } = await loadFixture(deployFixtures));
-            await depositGUnits(chips, token, manager, user1, 1000n);
-            await depositGUnits(chips, token, manager, user2, 1000n);
+            ({ chips, mockToken: token, user1, user2, gameServer, treasury, devWallet } = await loadFixture(deployFixtures));
+            await depositGUnits(chips, token, devWallet, user1, 1000n);
+            await depositGUnits(chips, token, devWallet, user2, 1000n);
             const players = [user1, user2];
             const winners = [user1, user2];
             const playCost = 1000n;
@@ -1276,14 +1299,14 @@ describe('GUnits', function () {
         it("Should allow manager to withdraw fees", async function () {
             expect(await chips.collectedFees()).to.equal(rakeAmount);
             expect(await token.balanceOf(treasury.address)).to.equal(0);
-            await chips.connect(manager).withdrawFees(treasury.address);
+            await chips.connect(devWallet).withdrawFees(treasury.address);
             expect(await token.balanceOf(treasury.address)).to.equal(rakeAmount);
             expect(await chips.collectedFees()).to.equal(0);
         });
     });
     describe("Decode data", function () {
         it("Should decode data", async function () {
-            const { chips, manager } = await loadFixture(deployFixtures);
+            const { chips } = await loadFixture(deployFixtures);
             const contractAddress = await chips.getAddress();
             const chainId = (await ethers.provider.getNetwork()).chainId;
             const amount = 1000n;
