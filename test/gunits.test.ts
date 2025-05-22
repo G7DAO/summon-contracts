@@ -414,10 +414,15 @@ describe('GUnits', function () {
             expect(await chips.balanceOf(user2.address)).to.equal(amount);
         })
         it("Should allow live ops to adminPayout", async function () {
-            const { chips, mockToken, user1, user2, liveOps } = await loadFixture(deployFixtures);
+            const { chips, mockToken, user1, user2, gameServer } = await loadFixture(deployFixtures);
             const amount = ethers.parseEther('100');
-            await mockToken.connect(liveOps).approve(await chips.getAddress(), amount * 2n);
-            await expect(chips.connect(liveOps).adminDeposit([user1.address, user2.address], [amount, amount])).to.not.be.reverted;
+            await mockToken.connect(gameServer).approve(await chips.getAddress(), amount * 2n);
+            await expect(chips.connect(gameServer).adminDeposit([user1.address, user2.address], [amount, amount])).to.not.be.reverted;
+            expect(await chips.balanceOf(user1.address)).to.equal(amount);
+            expect(await chips.balanceOf(user2.address)).to.equal(amount);
+            await expect(chips.connect(gameServer).adminPayout(amount, 0, [user1.address, user2.address], [user2.address])).to.not.be.reverted;
+            expect(await chips.balanceOf(user1.address)).to.equal(0);
+            expect(await chips.balanceOf(user2.address)).to.equal(amount * 2n);
         })
     });
 

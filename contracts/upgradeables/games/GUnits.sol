@@ -190,7 +190,7 @@ contract GUnits is
         uint256 _feePercentage,
         address[] calldata _players,
         address[] calldata _winners
-    ) external onlyRole(LIVE_OPS_ROLE) whenNotPaused nonReentrant {
+    ) external onlyRole(GAME_SERVER_ROLE) whenNotPaused nonReentrant {
         _payout(_betAmount, _feePercentage, _players, _winners);
     }
 
