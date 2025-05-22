@@ -76,7 +76,7 @@ contract GUnits is
     uint256 public collectedFees;
 
     // @dev Initializes the contract
-    // @param _token The address of the token to use for the chips
+    // @param _token The address of the token to use for the g-units
     // @param _isPaused Whether the contract is paused
     // @param _devWallet The address of the developer wallet
     function initialize(
@@ -111,7 +111,7 @@ contract GUnits is
         if (_isPaused) _pause();
     }
 
-    // @dev Deposits the chips to the user
+    // @dev Deposits the g-units to the user
     // @param data The data to deposit
     // @param nonce The nonce of the deposit
     // @param signature The signature of the deposit
@@ -131,7 +131,7 @@ contract GUnits is
 
 
 
-    // @dev Withdraws the chips from the user
+    // @dev Withdraws the g-units from the user
     // @param data The data to withdraw
     // @param nonce The nonce of the withdraw
     // @param signature The signature of the withdraw
@@ -149,9 +149,14 @@ contract GUnits is
         _withdraw(msg.sender, amountInGUnits);
     }
 
-    // @dev Deposits the chips to the user
-    // @param users The addresses of the users to deposit the chips to
-    // @param amounts The amounts of chips to deposit to the users
+    // @dev Withdraws all the g-units from the user
+    function withdrawAll() external whenNotPaused nonReentrant {
+        _withdraw(_msgSender(), balances[_msgSender()]);
+    }
+
+    // @dev Deposits the g-units to the user
+    // @param users The addresses of the users to deposit the g-units to
+    // @param amounts The amounts of g-units to deposit to the users
     function adminDeposit(
         address[] memory users,
         uint256[] memory amounts
@@ -167,8 +172,8 @@ contract GUnits is
         }
     }
 
-    // @dev Withdraws all the chips from the user
-    // @param users The addresses of the users to withdraw the chips from
+    // @dev Withdraws all the g-units from the user
+    // @param users The addresses of the users to withdraw the g-units from
     function withdrawAllAdmin(
         address[] memory users
     ) external onlyRole(MANAGER_ROLE) whenPaused nonReentrant {
@@ -181,7 +186,7 @@ contract GUnits is
     }
 
     // @dev Pays out the winners
-    // @param _betAmount The amount of chips bet
+    // @param _betAmount The amount of g-units bet
     // @param _feePercentage The percentage of the fee
     // @param _players The addresses of the players
     // @param _winners The addresses of the winners
@@ -195,7 +200,7 @@ contract GUnits is
     }
 
     // @dev Pays out the winners
-    // @param _betAmount The amount of chips bet
+    // @param _betAmount The amount of g-units bet
     // @param _feePercentage The percentage of the fee
     // @param _players The addresses of the players
     // @param _winners The addresses of the winners
@@ -218,12 +223,12 @@ contract GUnits is
             winnerPrize = winnerPrize / _winners.length;
         }
 
-        // Burn the chips - aka buy in
+        // Burn the g-units - aka buy in
         for (uint256 i = 0; i < _players.length; i++) {
             _burnGUnits(_players[i], _betAmount);
         }
 
-        // Mint the chips - aka payout
+        // Mint the g-units - aka payout
         for (uint256 i = 0; i < _winners.length; i++) {
             _mintGUnits(_winners[i], winnerPrize);
         }
@@ -304,7 +309,7 @@ contract GUnits is
         return (numeratorExchangeRate, denominatorExchangeRate);
     }
 
-    // @dev Parses the currency to chips
+    // @dev Parses the currency to g-units
     // @param currencyBalance The balance of the currency
     function _parseCurrencyToGUnits(
         uint256 currencyBalance
@@ -313,12 +318,12 @@ contract GUnits is
             (currencyBalance * numeratorExchangeRate) / denominatorExchangeRate;
     }
 
-    // @dev Parses the chips to currency
-    // @param chipsBalance The balance of the chips
+    // @dev Parses the g-units to currency
+    // @param gUnitsBalance The balance of the g-units
     function _parseGUnitsToCurrency(
-        uint256 chipsBalance
+        uint256 gUnitsBalance
     ) internal view returns (uint256) {
-        return (chipsBalance * denominatorExchangeRate) / numeratorExchangeRate;
+        return (gUnitsBalance * denominatorExchangeRate) / numeratorExchangeRate;
     }
 
     // @dev Returns the balance of the user
