@@ -63,9 +63,10 @@ contract GUnits is
     bytes32 public constant MANAGER_ROLE = keccak256("MANAGER_ROLE");
     bytes32 public constant READABLE_ROLE = keccak256("READABLE_ROLE");
     bytes32 public constant GAME_SERVER_ROLE = keccak256("GAME_SERVER_ROLE");
+    bytes32 public constant LIVE_OPS_ROLE = keccak256("LIVE_OPS_ROLE");
 
     address public token;
-    mapping(address => uint256) public balances;
+    mapping(address => uint256) private balances;
     uint256 public totalSupply;
 
     uint256 public numeratorExchangeRate;
@@ -75,7 +76,7 @@ contract GUnits is
     uint256 public collectedFees;
 
     // @dev Initializes the contract
-    // @param _token The address of the token to use for the chips
+    // @param _token The address of the token to use for the g-units
     // @param _isPaused Whether the contract is paused
     // @param _devWallet The address of the developer wallet
     function initialize(
@@ -95,8 +96,10 @@ contract GUnits is
         _grantRole(DEFAULT_ADMIN_ROLE, _devWallet);
         _grantRole(DEV_CONFIG_ROLE, _devWallet);
         _grantRole(MANAGER_ROLE, _devWallet);
+        _grantRole(LIVE_OPS_ROLE, _devWallet);
         _setRoleAdmin(MANAGER_ROLE, DEV_CONFIG_ROLE);
         _setRoleAdmin(READABLE_ROLE, MANAGER_ROLE);
+        _setRoleAdmin(LIVE_OPS_ROLE, DEV_CONFIG_ROLE);
 
         _addWhitelistSigner(_devWallet);
         token = _token;
@@ -108,7 +111,7 @@ contract GUnits is
         if (_isPaused) _pause();
     }
 
-    // @dev Deposits the chips to the user
+    // @dev Deposits the g-units to the user
     // @param data The data to deposit
     // @param nonce The nonce of the deposit
     // @param signature The signature of the deposit
@@ -128,7 +131,7 @@ contract GUnits is
 
 
 
-    // @dev Withdraws the chips from the user
+    // @dev Withdraws the g-units from the user
     // @param data The data to withdraw
     // @param nonce The nonce of the withdraw
     // @param signature The signature of the withdraw
@@ -146,13 +149,21 @@ contract GUnits is
         _withdraw(msg.sender, amountInGUnits);
     }
 
-    // @dev Deposits the chips to the user
-    // @param users The addresses of the users to deposit the chips to
-    // @param amounts The amounts of chips to deposit to the users
+    // @dev Withdraws all the g-units from the user
+    function withdrawAll() external whenNotPaused nonReentrant {
+        _withdraw(_msgSender(), balances[_msgSender()]);
+    }
+
+    // @dev Deposits the g-units to the user
+    // @param users The addresses of the users to deposit the g-units to
+    // @param amounts The amounts of g-units to deposit to the users
     function adminDeposit(
         address[] memory users,
         uint256[] memory amounts
-    ) external onlyRole(MANAGER_ROLE) nonReentrant {
+    ) external nonReentrant {
+        if (!hasRole(LIVE_OPS_ROLE, _msgSender()) && !hasRole(GAME_SERVER_ROLE, _msgSender())) {
+            revert NotAuthorized(_msgSender());
+        }
         if (users.length != amounts.length) {
             revert ArrayLengthMismatch();
         }
@@ -161,8 +172,8 @@ contract GUnits is
         }
     }
 
-    // @dev Withdraws all the chips from the user
-    // @param users The addresses of the users to withdraw the chips from
+    // @dev Withdraws all the g-units from the user
+    // @param users The addresses of the users to withdraw the g-units from
     function withdrawAllAdmin(
         address[] memory users
     ) external onlyRole(MANAGER_ROLE) whenPaused nonReentrant {
@@ -174,12 +185,35 @@ contract GUnits is
         }
     }
 
+    // @dev Pays out the winners
+    // @param _betAmount The amount of g-units bet
+    // @param _feePercentage The percentage of the fee
+    // @param _players The addresses of the players
+    // @param _winners The addresses of the winners
+    function adminPayout(
+        uint256 _betAmount,
+        uint256 _feePercentage,
+        address[] calldata _players,
+        address[] calldata _winners
+    ) external onlyRole(GAME_SERVER_ROLE) whenNotPaused nonReentrant {
+        _payout(_betAmount, _feePercentage, _players, _winners);
+    }
+
+    // @dev Pays out the winners
+    // @param _betAmount The amount of g-units bet
+    // @param _feePercentage The percentage of the fee
+    // @param _players The addresses of the players
+    // @param _winners The addresses of the winners
     function payout(
         uint256 _betAmount,
         uint256 _feePercentage,
         address[] calldata _players,
         address[] calldata _winners
     ) external onlyRole(GAME_SERVER_ROLE) whenNotPaused nonReentrant {
+        _payout(_betAmount, _feePercentage, _players, _winners);
+    }
+
+    function _payout(uint256 _betAmount, uint256 _feePercentage, address[] memory _players, address[] memory _winners) internal {
         uint256 totalPrizePool = _betAmount * _players.length;
         collectedFees += totalPrizePool * _feePercentage / (100 * 10 ** tokenDecimals);
         uint256 winnerPrize = totalPrizePool - collectedFees;
@@ -189,12 +223,12 @@ contract GUnits is
             winnerPrize = winnerPrize / _winners.length;
         }
 
-        // Burn the chips - aka buy in
+        // Burn the g-units - aka buy in
         for (uint256 i = 0; i < _players.length; i++) {
             _burnGUnits(_players[i], _betAmount);
         }
 
-        // Mint the chips - aka payout
+        // Mint the g-units - aka payout
         for (uint256 i = 0; i < _winners.length; i++) {
             _mintGUnits(_winners[i], winnerPrize);
         }
@@ -275,7 +309,7 @@ contract GUnits is
         return (numeratorExchangeRate, denominatorExchangeRate);
     }
 
-    // @dev Parses the currency to chips
+    // @dev Parses the currency to g-units
     // @param currencyBalance The balance of the currency
     function _parseCurrencyToGUnits(
         uint256 currencyBalance
@@ -284,12 +318,12 @@ contract GUnits is
             (currencyBalance * numeratorExchangeRate) / denominatorExchangeRate;
     }
 
-    // @dev Parses the chips to currency
-    // @param chipsBalance The balance of the chips
+    // @dev Parses the g-units to currency
+    // @param gUnitsBalance The balance of the g-units
     function _parseGUnitsToCurrency(
-        uint256 chipsBalance
+        uint256 gUnitsBalance
     ) internal view returns (uint256) {
-        return (chipsBalance * denominatorExchangeRate) / numeratorExchangeRate;
+        return (gUnitsBalance * denominatorExchangeRate) / numeratorExchangeRate;
     }
 
     // @dev Returns the balance of the user
@@ -298,6 +332,8 @@ contract GUnits is
         if (
             hasRole(MANAGER_ROLE, _msgSender()) ||
             hasRole(READABLE_ROLE, _msgSender()) ||
+            hasRole(LIVE_OPS_ROLE, _msgSender()) ||
+            hasRole(GAME_SERVER_ROLE, _msgSender()) ||
             _msgSender() == account
         ) {
             return balances[account];
@@ -306,6 +342,16 @@ contract GUnits is
         }
     }
 
+    // @dev Returns the balance of the users
+    // @param accounts The addresses of the users to get the balance of
+    function balanceOfBatch(address[] memory accounts) onlyRole(READABLE_ROLE) external view returns (uint256[] memory) {
+        uint256[] memory batchBalances = new uint256[](accounts.length);
+        for (uint256 i = 0; i < accounts.length; i++) {
+            batchBalances[i] = balances[accounts[i]];
+        }
+        return batchBalances;
+    }
+    
     // @dev Returns true if the contract implements the interface
     // @param interfaceId The interface id to check
     function supportsInterface(
