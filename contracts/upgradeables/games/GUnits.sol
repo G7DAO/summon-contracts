@@ -66,7 +66,7 @@ contract GUnits is
     bytes32 public constant LIVE_OPS_ROLE = keccak256("LIVE_OPS_ROLE");
 
     address public token;
-    mapping(address => uint256) public balances;
+    mapping(address => uint256) private balances;
     uint256 public totalSupply;
 
     uint256 public numeratorExchangeRate;
@@ -238,14 +238,14 @@ contract GUnits is
 
     function _deposit(address _to, uint256 _amount) internal {
         IERC20(token).safeTransferFrom(msg.sender, address(this), _amount);
-        uint256 amountInGUnits = parseCurrencyToGUnits(_amount);
+        uint256 amountInGUnits = _parseCurrencyToGUnits(_amount);
         _mintGUnits(_to, amountInGUnits);
         emit Deposit(_to, amountInGUnits);
     }
 
     function _withdraw(address _to, uint256 _amount) internal {
         _burnGUnits(_to, _amount);
-        uint256 amountInTokens = parseGUnitsToCurrency(_amount);
+        uint256 amountInTokens = _parseGUnitsToCurrency(_amount);
         IERC20(token).safeTransfer(_to, amountInTokens);
         emit Withdraw(_to, amountInTokens);
     }
@@ -311,18 +311,18 @@ contract GUnits is
 
     // @dev Parses the currency to g-units
     // @param currencyBalance The balance of the currency
-    function parseCurrencyToGUnits(
+    function _parseCurrencyToGUnits(
         uint256 currencyBalance
-    ) public view returns (uint256) {
+    ) internal view returns (uint256) {
         return
             (currencyBalance * numeratorExchangeRate) / denominatorExchangeRate;
     }
 
     // @dev Parses the g-units to currency
     // @param gUnitsBalance The balance of the g-units
-    function parseGUnitsToCurrency(
+    function _parseGUnitsToCurrency(
         uint256 gUnitsBalance
-    ) public view returns (uint256) {
+    ) internal view returns (uint256) {
         return (gUnitsBalance * denominatorExchangeRate) / numeratorExchangeRate;
     }
 
@@ -344,14 +344,14 @@ contract GUnits is
 
     // @dev Returns the balance of the users
     // @param accounts The addresses of the users to get the balance of
-    function balanceOfBatch(address[] memory accounts) external view returns (uint256[] memory) {
+    function balanceOfBatch(address[] memory accounts) onlyRole(READABLE_ROLE) external view returns (uint256[] memory) {
         uint256[] memory batchBalances = new uint256[](accounts.length);
         for (uint256 i = 0; i < accounts.length; i++) {
             batchBalances[i] = balances[accounts[i]];
         }
         return batchBalances;
     }
-
+    
     // @dev Returns true if the contract implements the interface
     // @param interfaceId The interface id to check
     function supportsInterface(
