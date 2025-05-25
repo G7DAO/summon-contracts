@@ -28,6 +28,48 @@ import {
     ERCWhitelistSignatureUpgradeable
 } from "../ercs/ERCWhitelistSignatureUpgradeable.sol";
 
+// @author Game7.io Team - https://game7.io
+// @contributors: [ @ogarciarevett, @karacurt, @mrk-hub]
+/*
+ *
+ *
+ *
+ *
+ *                                         ..',,;;:::;;;,'..
+ *                                     .';ldkO0KXXNNNNNNNXXK0Okdl;'.
+ *                                 .,cdOKNWMMMMMMMMMMMMMMMMMMMMMWNXOdc,.
+ *                               'ckXWWMMMMMMMMMMMMMMMMMMMMMMMMMMMMMWWXkc'
+ *                            .,o0NMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMN0d,.
+ *                          .;dKWMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMWXx;.
+ *                        .'oKWMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMWKo'
+ *                       .:ONMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMNO:.
+ *                      .lKWMMMMMWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWMMMMMWKl.
+ *                     .lKWMMMMMWOoccccccccccccccccccccccccccccccccccccld0WMMMMMWKl.
+ *                    .c0MMMMMMMWKl.                                   .oXWMMMMMMMKc.
+ *                   ;OWMMMMMMMMMNx,                                 'oXMMMMMMMMMWO;
+ *                  .oXMMMMMMMMMMMNO:.                             .c0NMMMMMMMMMMMNo.
+ *                   ;kNMMMMMMMMMMMMMKo.          .;;;;;'.         .c0MMMMMMMMMMMMMWk;
+ *                  .c0WMMMMMMMMMMMMMMXd.        .cOXXXOl.        ;kXWMMMMMMMMMMMMMWKc.
+ *                  .lXWMMMMMMMMMMMMMMMNkl:::::::cdKWNKl.        ,OWMMMMMMMMMMMMMMMMXo.
+ *                  .oXMMMMMMMMMMMMMMMMMMWMMMMMMMMMWW0:        'o0WMMMMMMMMMMMMMMMMMXo.
+ *                  .lKWMMMMMMMMMMMMMMMMMMMMMMMMMWNkd:.       'kNMMMMMMMMMMMMMMMMMMWXl.
+ *                  .:0WMMMMMMMMMMMMMMMMMMMMMMMMMKl.        .:kNMMMMMMMMMMMMMMMMMMMW0c.
+ *                   ,xNMMMMMMMMMMMMMMMMMMMMMMMWKl.        .lKWMMMMMMMMMMMMMMMMMMMMNk,
+ *                   .lXMMMMMMMMMMMMMMMMMMMMMMWKl.        'oKWMMMMMMMMMMMMMMMMMMMMMXl.
+ *                   ,kNMMMMMMMMMMMMMMMMMMMMMMNk;       ,kNMMMMMMMMMMMMMMMMMMMMMMNk,
+ *                   .;OWMMMMMMMMMMMMMMMMMMMMMMWOc.   .:OWMMMMMMMMMMMMMMMMMMMMMMW0;.
+ *                     .:0WMMMMMMMMMMMMMMMMMMMMMMWXd:,,dXWMMMMMMMMMMMMMMMMMMMMMMW0c.
+ *                      .:ONMMMMMMMMMMMMMMMMMMMMMMMNKK0NMMMMMMMMMMMMMMMMMMMMMMMNO:.
+ *                       .,dXWMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMWXx,.
+ *                         .:ONMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMNOc.
+ *                           .lONMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMNOl.
+ *                             .ckXWMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMWXkc.
+ *                               .;oOXNWMMMMMMMMMMMMMMMMMMMMMMMMMMMWNXOo;.
+ *                                 ..'cdOKNWMMMMMMMMMMMMMMMMMMMWNKOdc,..
+ *                                      ..;codkO00KXXXXKKK0Okdoc;..
+ *
+ */
+
 contract GUnits is
     IGUnits,
     Initializable,
