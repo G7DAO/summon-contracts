@@ -51,6 +51,22 @@ contract GUnits is
         LibGUnits.PayoutData[] payoutData,
         uint256 rakeFeeAmount
     );
+    event FundsLocked(
+        address indexed user,
+        uint128 indexed gameSessionId,
+        uint256 amount
+    );
+    event FundsUnlocked(
+        address indexed user,
+        uint128 indexed gameSessionId,
+        uint256 amount
+    );
+    event FundsReleased(
+        address indexed user,
+        uint128 indexed gameSessionId,
+        uint256 amount,
+        bool returned
+    );
     error ChipInsufficientBalance(
         address from,
         uint256 fromBalance,
@@ -63,6 +79,14 @@ contract GUnits is
     error ArrayLengthMismatch();
     error InvalidSeed();
     error InvalidTimestamp();
+    error InsufficientUnlockedBalance(
+        address user,
+        uint256 requested,
+        uint256 available
+    );
+    error FundsAlreadyLocked(address user, uint128 gameSessionId);
+    error NoLockedFunds(address user, uint128 gameSessionId);
+    error InvalidAmount();
 
     bytes32 public constant DEV_CONFIG_ROLE = keccak256("DEV_CONFIG_ROLE");
     bytes32 public constant MANAGER_ROLE = keccak256("MANAGER_ROLE");
@@ -78,6 +102,14 @@ contract GUnits is
     uint256 public denominatorExchangeRate;
 
     uint256 private collectedFees;
+
+    // Locked funds tracking
+    // user => gameSessionId => locked amount
+    mapping(address => mapping(uint128 => uint256)) public lockedFunds;
+    // Track active game sessions for a user
+    mapping(address => uint128[]) public userActiveSessions;
+    // Track if a session exists in the array (for efficient removal)
+    mapping(address => mapping(uint128 => bool)) public sessionExists;
 
     // @dev Initializes the contract
     // @param _token The address of the token to use for the g-units
@@ -207,10 +239,60 @@ contract GUnits is
 
         for (uint256 i = 0; i < _payouts.length; i++) {
             LibGUnits.PayoutData memory currentPayout = _payouts[i];
+            uint256 lockedAmount = lockedFunds[currentPayout.player][
+                currentPayout.gameSessionId
+            ];
+
             if (currentPayout.isWinner) {
+                // Winner gets locked funds back + winnings
+                if (lockedAmount > 0) {
+                    lockedFunds[currentPayout.player][
+                        currentPayout.gameSessionId
+                    ] = 0;
+                    _removeActiveSession(
+                        currentPayout.player,
+                        currentPayout.gameSessionId
+                    );
+                    emit FundsReleased(
+                        currentPayout.player,
+                        currentPayout.gameSessionId,
+                        lockedAmount,
+                        true
+                    );
+                }
                 _mintGUnits(currentPayout.player, currentPayout.amount);
             } else {
-                _burnGUnits(currentPayout.player, currentPayout.amount);
+                // Loser loses locked funds
+                if (lockedAmount >= currentPayout.amount) {
+                    // Deduct from locked funds
+                    lockedFunds[currentPayout.player][
+                        currentPayout.gameSessionId
+                    ] -= currentPayout.amount;
+                    if (
+                        lockedFunds[currentPayout.player][
+                            currentPayout.gameSessionId
+                        ] == 0
+                    ) {
+                        _removeActiveSession(
+                            currentPayout.player,
+                            currentPayout.gameSessionId
+                        );
+                    }
+                    _burnGUnits(currentPayout.player, currentPayout.amount);
+                    emit FundsReleased(
+                        currentPayout.player,
+                        currentPayout.gameSessionId,
+                        currentPayout.amount,
+                        false
+                    );
+                } else {
+                    // This shouldn't happen if game server is working correctly
+                    revert InsufficientUnlockedBalance(
+                        currentPayout.player,
+                        currentPayout.amount,
+                        lockedAmount
+                    );
+                }
             }
         }
 
@@ -225,6 +307,13 @@ contract GUnits is
     }
 
     function _withdraw(address _to, uint256 _amount) internal {
+        // Check that user has enough unlocked funds
+        uint256 totalLocked = _getTotalLockedFunds(_to);
+        uint256 availableBalance = balances[_to] - totalLocked;
+        if (availableBalance < _amount) {
+            revert InsufficientUnlockedBalance(_to, _amount, availableBalance);
+        }
+
         _burnGUnits(_to, _amount);
         uint256 amountInTokens = _parseGUnitsToCurrency(_amount);
         IERC20(token).safeTransfer(_to, amountInTokens);
@@ -428,6 +517,128 @@ contract GUnits is
         return (contractAddress, chainId, amount, timestamp);
     }
 
+    // @dev Locks funds for a game session
+    // @param user The user whose funds to lock
+    // @param gameSessionId Unique identifier for the game session (could be hash of gameId + sessionId + roomId)
+    // @param amount The amount to lock in g-units
+    function lockFunds(
+        address user,
+        uint128 gameSessionId,
+        uint256 amount
+    ) external onlyRole(GAME_SERVER_ROLE) whenNotPaused nonReentrant {
+        if (amount == 0) revert InvalidAmount();
+        if (lockedFunds[user][gameSessionId] > 0) {
+            revert FundsAlreadyLocked(user, gameSessionId);
+        }
+
+        uint256 userBalance = balances[user];
+        uint256 totalLocked = _getTotalLockedFunds(user);
+        uint256 availableBalance = userBalance - totalLocked;
+
+        if (availableBalance < amount) {
+            revert InsufficientUnlockedBalance(user, amount, availableBalance);
+        }
+
+        lockedFunds[user][gameSessionId] = amount;
+
+        // Track the session
+        if (!sessionExists[user][gameSessionId]) {
+            userActiveSessions[user].push(gameSessionId);
+            sessionExists[user][gameSessionId] = true;
+        }
+
+        emit FundsLocked(user, gameSessionId, amount);
+    }
+
+    // @dev Unlocks funds for a game session (returns to available balance) - only live ops can call this, emergency unlock is handled by manager role
+    // @param user The user whose funds to unlock
+    // @param gameSessionId The game session identifier
+    function unlockFunds(
+        address user,
+        uint128 gameSessionId
+    ) external onlyRole(LIVE_OPS_ROLE) nonReentrant {
+        uint256 locked = lockedFunds[user][gameSessionId];
+        if (locked == 0) {
+            revert NoLockedFunds(user, gameSessionId);
+        }
+
+        lockedFunds[user][gameSessionId] = 0;
+        _removeActiveSession(user, gameSessionId);
+
+        emit FundsUnlocked(user, gameSessionId, locked);
+    }
+
+    // @dev Gets total locked funds for a user across all sessions
+    // @param user The user address
+    function getTotalLockedFunds(
+        address user
+    ) external view onlyRole(READABLE_ROLE) returns (uint256) {
+        return _getTotalLockedFunds(user);
+    }
+
+    function getTotalBalanceOf(
+        address user
+    ) external view onlyRole(READABLE_ROLE) returns (uint256) {
+        return balances[user] + _getTotalLockedFunds(user);
+    }
+
+    function _getTotalLockedFunds(
+        address user
+    ) internal view returns (uint256) {
+        uint256 total = 0;
+        uint128[] memory sessions = userActiveSessions[user];
+        for (uint256 i = 0; i < sessions.length; i++) {
+            total += lockedFunds[user][sessions[i]];
+        }
+        return total;
+    }
+
+    // @dev Gets available (unlocked) balance for a user
+    // @param user The user address
+    function getAvailableBalance(address user) external view returns (uint256) {
+        uint256 totalBalance = balances[user];
+        uint256 totalLocked = _getTotalLockedFunds(user);
+        return totalBalance > totalLocked ? totalBalance - totalLocked : 0;
+    }
+
+    // @dev Removes a session from active sessions tracking
+    function _removeActiveSession(
+        address user,
+        uint128 gameSessionId
+    ) internal {
+        if (!sessionExists[user][gameSessionId]) return;
+
+        uint128[] storage sessions = userActiveSessions[user];
+        for (uint256 i = 0; i < sessions.length; i++) {
+            if (sessions[i] == gameSessionId) {
+                sessions[i] = sessions[sessions.length - 1];
+                sessions.pop();
+                sessionExists[user][gameSessionId] = false;
+                break;
+            }
+        }
+    }
+
+    // @dev Emergency function to unlock all funds for a user (only when paused)
+    // @param user The user whose funds to unlock
+    function emergencyUnlockAllFunds(
+        address user
+    ) external onlyRole(MANAGER_ROLE) whenPaused {
+        uint128[] memory sessions = userActiveSessions[user];
+        for (uint256 i = 0; i < sessions.length; i++) {
+            uint256 locked = lockedFunds[user][sessions[i]];
+            if (locked > 0) {
+                lockedFunds[user][sessions[i]] = 0;
+                emit FundsUnlocked(user, sessions[i], locked);
+            }
+        }
+        delete userActiveSessions[user];
+        // Clean up session exists mapping
+        for (uint256 i = 0; i < sessions.length; i++) {
+            sessionExists[user][sessions[i]] = false;
+        }
+    }
+
     // Reserved storage space to allow for layout changes in the future.
-    uint256[49] private __gap;
+    uint256[45] private __gap;
 }
