@@ -1,3 +1,4 @@
 {
-    "prettier.configPath": ".prettierrc"
+    "prettier.configPath": ".prettierrc",
+    "makefile.configureOnOpen": false
 }

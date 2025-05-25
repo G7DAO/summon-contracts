@@ -420,8 +420,8 @@ describe('GUnits', function () {
             await expect(chips.connect(gameServer).adminDeposit([user1.address, user2.address], [amount, amount])).to.not.be.reverted;
             expect(await chips.balanceOf(user1.address)).to.equal(amount);
             expect(await chips.balanceOf(user2.address)).to.equal(amount);
-            await expect(chips.connect(gameServer).adminPayout(amount, 0, [user1.address, user2.address], [user2.address])).to.not.be.reverted;
-            expect(await chips.balanceOf(user1.address)).to.equal(0);
+            await expect(chips.connect(gameServer).adminPayout([{player: user1.address, isWinner: false, amount: 0n}, {player: user2.address, isWinner: true, amount: amount}], 0n)).to.not.be.reverted;
+            expect(await chips.balanceOf(user1.address)).to.equal(amount);
             expect(await chips.balanceOf(user2.address)).to.equal(amount * 2n);
         })
     });
@@ -1200,7 +1200,7 @@ describe('GUnits', function () {
             const totalCost = BigInt(players.length) * playCost;
             const rakePercentage = ethers.parseEther('10');
             const rakeAmount = (totalCost * rakePercentage) / ethers.parseEther('100');
-          
+
             let winnerPrize = totalCost - rakeAmount;
 
             if (winners.length > 1) {
@@ -1214,11 +1214,24 @@ describe('GUnits', function () {
             const user1BalanceBefore = await chips.balanceOf(user1.address);
             const user2BalanceBefore = await chips.balanceOf(user2.address);
 
-            await expect(chips.connect(gameServer).payout(playCost, rakePercentage, players, winners))
-                .to.emit(chips, 'Payout')
-                .withArgs(players, winners, winnerPrize, rakeAmount);
+            const payouts = [{
+                player: user1.address,
+                isWinner: true,
+                amount: winnerPrize
+            }, {
+                player: user2.address,
+                isWinner: false,
+                amount: playCost // For non-winners, this is the amount (playCost) to be burned
+            }];
 
-            expect(await chips.balanceOf(user1.address)).to.equal(user1BalanceBefore - playCost + winnerPrize);
+            // Transform the payouts array to match the expected event emission structure (array of arrays)
+            const expectedEventPayouts = payouts.map(p => [p.player, p.isWinner, p.amount]);
+
+            await expect(chips.connect(gameServer).adminPayout(payouts, rakeAmount))
+                .to.emit(chips, 'PayoutProcessed')
+                .withArgs(expectedEventPayouts, rakeAmount);
+
+            expect(await chips.balanceOf(user1.address)).to.equal(user1BalanceBefore + winnerPrize);
             expect(await chips.balanceOf(user2.address)).to.equal(user2BalanceBefore - playCost);
         });
 
@@ -1241,12 +1254,27 @@ describe('GUnits', function () {
             const user1BalanceBefore = await chips.balanceOf(user1.address);
             const user2BalanceBefore = await chips.balanceOf(user2.address);
 
-            await expect(chips.connect(gameServer).payout(playCost, rakePercentage, players, winners))
-                .to.emit(chips, 'Payout')
-                .withArgs(players, winners, winnerPrize, rakeAmount);
+            const payouts = [{
+                // 1st winner
+                player: user1.address,
+                isWinner: true,
+                amount: winnerPrize
+            }, {
+                // 2nd winner
+                player: user2.address,
+                isWinner: true,
+                amount: winnerPrize / 2n
+            }];
 
-            expect(await chips.balanceOf(user1.address)).to.equal(user1BalanceBefore - playCost + winnerPrize);
-            expect(await chips.balanceOf(user2.address)).to.equal(user2BalanceBefore - playCost + winnerPrize);
+            // Transform the payouts array to match the expected event emission structure (array of arrays)
+            const expectedEventPayouts = payouts.map(p => [p.player, p.isWinner, p.amount]);
+
+            await expect(chips.connect(gameServer).adminPayout(payouts, rakeAmount))
+                .to.emit(chips, 'PayoutProcessed')
+                .withArgs(expectedEventPayouts, rakeAmount);
+
+            expect(await chips.balanceOf(user1.address)).to.equal(user1BalanceBefore + winnerPrize);
+            expect(await chips.balanceOf(user2.address)).to.equal(user2BalanceBefore + winnerPrize / 2n);
         });
         it("Should NOT payout if contract is paused", async function () {
             const playCost = 1000n;
@@ -1255,14 +1283,14 @@ describe('GUnits', function () {
             const rakePercentage = ethers.parseEther('10');
 
             await chips.connect(devWallet).pause();
-            await expect(chips.connect(gameServer).payout(playCost, rakePercentage, players, winners)).to.be.revertedWithCustomError(chips, 'EnforcedPause');
+            await expect(chips.connect(gameServer).adminPayout([], 0n)).to.be.revertedWithCustomError(chips, 'EnforcedPause');
         });
         it("Should NOT payout if caller is not game server", async function () {
             const playCost = 1000n;
-            const players = [user1, user2];
-            const winners = [user1];
+            const players = [user1.address, user2.address];
+            const winners = [user1.address];
             const rakePercentage = ethers.parseEther('10');
-            await expect(chips.connect(manager).payout(playCost, rakePercentage, players, winners)).to.be.revertedWithCustomError(chips, 'AccessControlUnauthorizedAccount');
+            await expect(chips.connect(manager).adminPayout([], 0n)).to.be.revertedWithCustomError(chips, 'AccessControlUnauthorizedAccount');
         });
     });
 
@@ -1288,7 +1316,7 @@ describe('GUnits', function () {
         let rakeAmount: bigint;
         let treasury: SignerWithAddress;
         let devWallet: SignerWithAddress;
-        
+
         beforeEach(async function () {
             ({ chips, mockToken: token, user1, user2, gameServer, treasury, devWallet } = await loadFixture(deployFixtures));
             await depositGUnits(chips, token, devWallet, user1, 1000n);
@@ -1299,14 +1327,27 @@ describe('GUnits', function () {
             const totalCost = BigInt(players.length) * playCost;
             const rakePercentage = ethers.parseEther('10');
             rakeAmount = (totalCost * rakePercentage) / ethers.parseEther('100');
-            await chips.connect(gameServer).payout(playCost, rakePercentage, players, winners)
+
+            const winnerPrizeForFeeTest = totalCost - rakeAmount;
+            const prizePerWinnerForFeeTest = winnerPrizeForFeeTest / BigInt(winners.length);
+
+            const payoutsForFeeTest: { player: string; isWinner: boolean; amount: bigint }[] = [];
+            for (const p of players) {
+                const isWinner = winners.some(w => w.address === p.address);
+                payoutsForFeeTest.push({
+                    player: p.address,
+                    isWinner: isWinner,
+                    amount: isWinner ? prizePerWinnerForFeeTest : 0n 
+                });
+            }
+            await chips.connect(gameServer).adminPayout(payoutsForFeeTest, rakeAmount);
         });
         it("Should allow manager to withdraw fees", async function () {
-            expect(await chips.collectedFees()).to.equal(rakeAmount);
+            expect(await chips.getCollectedFees()).to.equal(rakeAmount);
             expect(await token.balanceOf(treasury.address)).to.equal(0);
             await chips.connect(devWallet).withdrawFees(treasury.address);
             expect(await token.balanceOf(treasury.address)).to.equal(rakeAmount);
-            expect(await chips.collectedFees()).to.equal(0);
+            expect(await chips.getCollectedFees()).to.equal(0);
         });
     });
     describe("Decode data", function () {

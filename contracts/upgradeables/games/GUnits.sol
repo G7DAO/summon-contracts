@@ -2,6 +2,7 @@
 pragma solidity ^0.8.24;
 
 import { IGUnits } from "../../interfaces/IGUnits.sol";
+import { LibGUnits } from "../../libraries/LibGUnits.sol";
 import {
     SafeERC20,
     IERC20
@@ -46,6 +47,10 @@ contract GUnits is
         uint256 winnerPrize,
         uint256 collectedFees
     );
+    event PayoutProcessed(
+        LibGUnits.PayoutData[] payoutData,
+        uint256 rakeFeeAmount
+    );
     error ChipInsufficientBalance(
         address from,
         uint256 fromBalance,
@@ -71,9 +76,8 @@ contract GUnits is
 
     uint256 public numeratorExchangeRate;
     uint256 public denominatorExchangeRate;
-    uint256 public tokenDecimals;
 
-    uint256 public collectedFees;
+    uint256 private collectedFees;
 
     // @dev Initializes the contract
     // @param _token The address of the token to use for the g-units
@@ -103,7 +107,6 @@ contract GUnits is
 
         _addWhitelistSigner(_devWallet);
         token = _token;
-        tokenDecimals = IERC20Metadata(_token).decimals();
 
         // @dev Default exchange rate is 1:1
         _setExchangeRate(1, 1);
@@ -128,8 +131,6 @@ contract GUnits is
         uint256 amount = _verifyContractChainIdAndDecode(data);
         _deposit(msg.sender, amount);
     }
-
-
 
     // @dev Withdraws the g-units from the user
     // @param data The data to withdraw
@@ -161,7 +162,10 @@ contract GUnits is
         address[] memory users,
         uint256[] memory amounts
     ) external nonReentrant {
-        if (!hasRole(LIVE_OPS_ROLE, _msgSender()) && !hasRole(GAME_SERVER_ROLE, _msgSender())) {
+        if (
+            !hasRole(LIVE_OPS_ROLE, _msgSender()) &&
+            !hasRole(GAME_SERVER_ROLE, _msgSender())
+        ) {
             revert NotAuthorized(_msgSender());
         }
         if (users.length != amounts.length) {
@@ -186,54 +190,31 @@ contract GUnits is
     }
 
     // @dev Pays out the winners
-    // @param _betAmount The amount of g-units bet
-    // @param _feePercentage The percentage of the fee
-    // @param _players The addresses of the players
-    // @param _winners The addresses of the winners
+    // @param _payouts The payout data
+    // @param _rakeFeeAmount The rake fee amount
     function adminPayout(
-        uint256 _betAmount,
-        uint256 _feePercentage,
-        address[] calldata _players,
-        address[] calldata _winners
+        LibGUnits.PayoutData[] calldata _payouts,
+        uint256 _rakeFeeAmount
     ) external onlyRole(GAME_SERVER_ROLE) whenNotPaused nonReentrant {
-        _payout(_betAmount, _feePercentage, _players, _winners);
+        _processPayouts(_payouts, _rakeFeeAmount);
     }
 
-    // @dev Pays out the winners
-    // @param _betAmount The amount of g-units bet
-    // @param _feePercentage The percentage of the fee
-    // @param _players The addresses of the players
-    // @param _winners The addresses of the winners
-    function payout(
-        uint256 _betAmount,
-        uint256 _feePercentage,
-        address[] calldata _players,
-        address[] calldata _winners
-    ) external onlyRole(GAME_SERVER_ROLE) whenNotPaused nonReentrant {
-        _payout(_betAmount, _feePercentage, _players, _winners);
-    }
+    function _processPayouts(
+        LibGUnits.PayoutData[] calldata _payouts,
+        uint256 _rakeFeeAmount
+    ) internal {
+        collectedFees += _rakeFeeAmount;
 
-    function _payout(uint256 _betAmount, uint256 _feePercentage, address[] memory _players, address[] memory _winners) internal {
-        uint256 totalPrizePool = _betAmount * _players.length;
-        collectedFees += totalPrizePool * _feePercentage / (100 * 10 ** tokenDecimals);
-        uint256 winnerPrize = totalPrizePool - collectedFees;
-
-        if (_winners.length > 1) {
-            // If there are multiple winners, distribute the prize pool equally
-            winnerPrize = winnerPrize / _winners.length;
+        for (uint256 i = 0; i < _payouts.length; i++) {
+            LibGUnits.PayoutData memory currentPayout = _payouts[i];
+            if (currentPayout.isWinner) {
+                _mintGUnits(currentPayout.player, currentPayout.amount);
+            } else {
+                _burnGUnits(currentPayout.player, currentPayout.amount);
+            }
         }
 
-        // Burn the g-units - aka buy in
-        for (uint256 i = 0; i < _players.length; i++) {
-            _burnGUnits(_players[i], _betAmount);
-        }
-
-        // Mint the g-units - aka payout
-        for (uint256 i = 0; i < _winners.length; i++) {
-            _mintGUnits(_winners[i], winnerPrize);
-        }
-
-        emit Payout(_players, _winners, winnerPrize, collectedFees);
+        emit PayoutProcessed(_payouts, _rakeFeeAmount);
     }
 
     function _deposit(address _to, uint256 _amount) internal {
@@ -275,9 +256,9 @@ contract GUnits is
 
     // @dev Withdraws the collected fees
     // @param _to The address to withdraw the fees to
-    function withdrawFees(address _to) external onlyRole(DEV_CONFIG_ROLE) {
+    function withdrawFees(address _to) external onlyRole(MANAGER_ROLE) {
         IERC20(token).safeTransfer(_to, collectedFees);
-        delete collectedFees; // @dev hack to get some gas back by freeing up storage
+        collectedFees = 0;
     }
 
     // @dev Sets the exchange rate
@@ -290,7 +271,10 @@ contract GUnits is
         _setExchangeRate(_numerator, _denominator);
     }
 
-    function _setExchangeRate(uint256 _numerator, uint256 _denominator) internal {
+    function _setExchangeRate(
+        uint256 _numerator,
+        uint256 _denominator
+    ) internal {
         if (_numerator == 0 || _denominator == 0) {
             revert ExchangeRateCannotBeZero();
         }
@@ -323,14 +307,14 @@ contract GUnits is
     function _parseGUnitsToCurrency(
         uint256 gUnitsBalance
     ) internal view returns (uint256) {
-        return (gUnitsBalance * denominatorExchangeRate) / numeratorExchangeRate;
+        return
+            (gUnitsBalance * denominatorExchangeRate) / numeratorExchangeRate;
     }
 
     // @dev Returns the balance of the user
     // @param account The address of the user to get the balance of
     function balanceOf(address account) public view returns (uint256) {
         if (
-            hasRole(MANAGER_ROLE, _msgSender()) ||
             hasRole(READABLE_ROLE, _msgSender()) ||
             hasRole(LIVE_OPS_ROLE, _msgSender()) ||
             hasRole(GAME_SERVER_ROLE, _msgSender()) ||
@@ -342,16 +326,44 @@ contract GUnits is
         }
     }
 
+    function getCollectedFees()
+        external
+        view
+        onlyRole(MANAGER_ROLE)
+        returns (uint256)
+    {
+        return collectedFees;
+    }
+
     // @dev Returns the balance of the users
     // @param accounts The addresses of the users to get the balance of
-    function balanceOfBatch(address[] memory accounts) onlyRole(READABLE_ROLE) external view returns (uint256[] memory) {
+    function balanceOfBatch(
+        address[] memory accounts
+    ) external view returns (uint256[] memory) {
+        if (
+            !hasRole(GAME_SERVER_ROLE, _msgSender()) &&
+            !hasRole(LIVE_OPS_ROLE, _msgSender()) &&
+            !hasRole(READABLE_ROLE, _msgSender())
+        ) {
+            bool isQueryingSelf = true;
+            for (uint256 i = 0; i < accounts.length; i++) {
+                if (accounts[i] != _msgSender()) {
+                    isQueryingSelf = false;
+                    break;
+                }
+            }
+            if (!isQueryingSelf) {
+                revert NotAuthorized(_msgSender());
+            }
+        }
+
         uint256[] memory batchBalances = new uint256[](accounts.length);
         for (uint256 i = 0; i < accounts.length; i++) {
             batchBalances[i] = balances[accounts[i]];
         }
         return batchBalances;
     }
-    
+
     // @dev Returns true if the contract implements the interface
     // @param interfaceId The interface id to check
     function supportsInterface(
@@ -417,5 +429,5 @@ contract GUnits is
     }
 
     // Reserved storage space to allow for layout changes in the future.
-    uint256[50] private __gap;
+    uint256[49] private __gap;
 }

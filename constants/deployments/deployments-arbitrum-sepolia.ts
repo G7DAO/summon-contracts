@@ -15,19 +15,6 @@ const networkType = NETWORK_TYPE.TESTNET;
 
 export const ARBITRUM_SEPOLIA_CONTRACTS: DeploymentContract[] = [
     {
-        contractFileName: CONTRACT_UPGRADABLE_FILE_NAME.BurnableToken,
-        type: CONTRACT_TYPE.ERC20,
-        name: CONTRACT_UPGRADABLE_NAME.ERC20,
-        chain,
-        networkType,
-        tenants: [TENANT.IronWorks],
-        verify: false,
-        upgradable: true,
-        dependencies: [],
-        functionCalls: [],
-        args: ERC20DecimalsAgs.TESTNET,
-    },
-    {
         contractFileName: CONTRACT_UPGRADABLE_FILE_NAME.GUnits,
         type: CONTRACT_TYPE.GUnits,
         name: CONTRACT_NAME.GUnits,
