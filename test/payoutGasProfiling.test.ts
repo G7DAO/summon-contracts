@@ -1,5 +1,6 @@
 import { SignerWithAddress } from '@nomicfoundation/hardhat-ethers/signers';
 import { loadFixture } from '@nomicfoundation/hardhat-network-helpers';
+import { expect } from 'chai';
 import { ethers, upgrades } from 'hardhat';
 import { MockERC20 } from 'typechain-types';
 import { GUnits } from 'typechain-types';
@@ -58,10 +59,38 @@ describe.skip('GUnits Gas Profiling', function () {
         await chips.connect(wallet).deposit(data, nonce, signature);
     }
 
+    function generateGameSessionId(gameId: string, sessionId: string, roomId: string, userId: string): bigint {
+        const abiCoder = new ethers.AbiCoder();
+        const hash = ethers.keccak256(
+            abiCoder.encode(
+                ['string', 'string', 'string', 'string', 'uint256'],
+                [gameId, sessionId, roomId, userId, Date.now()]
+            )
+        );
+        // Convert hash to uint128 by taking the first 16 bytes
+        return BigInt(hash.slice(0, 34)); // '0x' + 32 hex chars = 16 bytes = 128 bits
+    }
+
     it(`Profiles gas for ${ROUNDS_SIZE} payouts`, async function () {
         const { chips, mockToken, devWallet, gameServer, user1, user2 } = await loadFixture(deployFixtures);
-        const rakePercentage = 10n;
+        const rakeFeeAmount = 0n;
         const totalRoundsAmount = BET_AMOUNT * BigInt(ROUNDS_SIZE);
+        const winAmount = ethers.parseEther('45');
+        const gameSessionId = generateGameSessionId('game1', 'session1', 'room1', 'both');
+        const payouts = [
+            {
+                player: user1.address,
+                isWinner: false,
+                amount: winAmount,
+                gameSessionId: gameSessionId,
+            },
+            {
+                player: user2.address,
+                isWinner: true,
+                amount: winAmount,
+                gameSessionId: gameSessionId,
+            },
+        ];
 
         // Mint to gameServer for payouts
         await mockToken.connect(devWallet).mint(user1.address, totalRoundsAmount * 2n);
@@ -74,9 +103,7 @@ describe.skip('GUnits Gas Profiling', function () {
             console.log(`loading batch ${i / BATCH_SIZE + 1} of ${Math.ceil(ROUNDS_SIZE / BATCH_SIZE)}`);
             const promisesBatch = [];
             for (let j = 0; j < BATCH_SIZE; j++) {
-                const promise = chips
-                    .connect(gameServer)
-                    .adminPayout(BET_AMOUNT, rakePercentage, [user1.address, user2.address], [user1.address]);
+                const promise = chips.connect(gameServer).adminPayout(payouts, rakeFeeAmount);
                 promisesBatch.push(promise);
             }
             console.log(`processing batch ${i / BATCH_SIZE + 1} of ${Math.ceil(ROUNDS_SIZE / BATCH_SIZE)}`);
@@ -84,6 +111,34 @@ describe.skip('GUnits Gas Profiling', function () {
             console.log(`batch ${i / BATCH_SIZE + 1} of ${Math.ceil(ROUNDS_SIZE / BATCH_SIZE)} processed \n`);
         }
         console.log('Payout complete');
+    });
+
+    it(`Profiles gas for ${ROUNDS_SIZE} lock funds`, async function () {
+        const { chips, mockToken, devWallet, gameServer, user1, user2 } = await loadFixture(deployFixtures);
+        const lockAmount = ethers.parseEther('50');
+        const totalRoundsAmount = BET_AMOUNT * BigInt(ROUNDS_SIZE);
+
+        // Mint to gameServer for deposits
+        await mockToken.connect(devWallet).mint(user1.address, totalRoundsAmount);
+        await mockToken.connect(user1).approve(await chips.getAddress(), totalRoundsAmount);
+        await depositGUnits(chips, mockToken, devWallet, user1, totalRoundsAmount);
+
+        // Generate a game session ID
+        const gameSessionId = generateGameSessionId('game1', 'session1', 'room1', user1.address);
+        const promisesBatch = [];
+        for (let i = 0; i < ROUNDS_SIZE; i += BATCH_SIZE) {
+            console.log(`loading batch ${i / BATCH_SIZE + 1} of ${Math.ceil(ROUNDS_SIZE / BATCH_SIZE)}`);
+
+            for (let j = 0; j < BATCH_SIZE; j++) {
+                // Lock funds
+                const promise = chips.connect(gameServer).lockFunds(user1.address, gameSessionId, lockAmount);
+                promisesBatch.push(promise);
+            }
+            console.log(`processing batch ${i / BATCH_SIZE + 1} of ${Math.ceil(ROUNDS_SIZE / BATCH_SIZE)}`);
+            await Promise.all(promisesBatch);
+            console.log(`batch ${i / BATCH_SIZE + 1} of ${Math.ceil(ROUNDS_SIZE / BATCH_SIZE)} processed \n`);
+        }
+        console.log('Locking funds complete');
     });
 
     it(`Profiles gas for ${ROUNDS_SIZE} deposits`, async function () {
