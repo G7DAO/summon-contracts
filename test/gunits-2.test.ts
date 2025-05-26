@@ -137,22 +137,6 @@ describe('GUnits-2', function () {
                 .to.be.revertedWithCustomError(chips, 'InvalidAmount');
         });
 
-        it('Should revert if funds already locked for session', async function () {
-            const { chips, mockToken, gameServer, user1 } = await loadFixture(deployFixtures);
-            const depositAmount = ethers.parseEther('100');
-            const lockAmount = ethers.parseEther('50');
-            
-            await depositGUnits(chips, mockToken, gameServer, user1, depositAmount);
-            
-            const gameSessionId = generateGameSessionId('game1', 'session1', 'room1', user1.address);
-            
-            await chips.connect(gameServer).lockFunds(user1.address, gameSessionId, lockAmount);
-            
-            await expect(chips.connect(gameServer).lockFunds(user1.address, gameSessionId, lockAmount))
-                .to.be.revertedWithCustomError(chips, 'FundsAlreadyLocked')
-                .withArgs(user1.address, gameSessionId);
-        });
-
         it('Should revert if non-game-server tries to lock funds', async function () {
             const { chips, user1, user2 } = await loadFixture(deployFixtures);
             const gameSessionId = generateGameSessionId('game1', 'session1', 'room1', user1.address);

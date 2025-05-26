@@ -126,7 +126,6 @@ contract GUnits is
         uint256 requested,
         uint256 available
     );
-    error FundsAlreadyLocked(address user, uint128 gameSessionId);
     error NoLockedFunds(address user, uint128 gameSessionId);
     error InvalidAmount();
 
@@ -569,9 +568,6 @@ contract GUnits is
         uint256 amount
     ) external onlyRole(GAME_SERVER_ROLE) whenNotPaused nonReentrant {
         if (amount == 0) revert InvalidAmount();
-        if (lockedFunds[user][gameSessionId] > 0) {
-            revert FundsAlreadyLocked(user, gameSessionId);
-        }
 
         uint256 userBalance = balances[user];
         uint256 totalLocked = _getTotalLockedFunds(user);

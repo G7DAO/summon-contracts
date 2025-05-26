@@ -375,12 +375,12 @@ export const RewardTokenArgs = {
 export const GUnitsArgs = {
     TESTNET: {
         _token: TESTNET_UDCE_TOKEN,
-        _isPaused: true,
+        _isPaused: false,
         _devWallet: TESTNET_DEV_WALLET
     },   
     ARBITRUM_SEPOLIA: {
         _token: MOCK_ERC20_ARB_SEPOLIA,
-        _isPaused: true,
+        _isPaused: false,
         _devWallet: TESTNET_DEV_WALLET
     },
     ARBITRUM_ONE: {
