@@ -1381,4 +1381,29 @@ describe('GUnits', function () {
             expect(decodedData).to.be.deep.equal([contractAddress, chainId, amount, unixTimestamp]);
         });
     });
+
+    describe("Set Token", function () {
+        it("Should set token", async function () {
+            const { chips, mockToken, devWallet } = await loadFixture(deployFixtures);
+            const newTokenFactory = await ethers.getContractFactory('MockERC20', devWallet);
+            const newToken = await newTokenFactory.deploy('New Token', 'NT');
+            const newTokenAddress = await newToken.getAddress();
+            const currentTokenAddress = await mockToken.getAddress();
+
+            expect(await chips.token()).to.equal(currentTokenAddress);
+            await expect(chips.connect(devWallet).setToken(newTokenAddress))
+                .to.emit(chips, 'TokenSet')
+                .withArgs(newTokenAddress);
+            expect(await chips.token()).to.equal(newTokenAddress);
+        });
+        it("Should NOT set token to zero address", async function () {
+            const { chips, devWallet } = await loadFixture(deployFixtures);
+            await expect(chips.connect(devWallet).setToken(ethers.ZeroAddress)).to.be.revertedWithCustomError(chips, 'AddressIsZero');
+        });
+        it("Should NOT set token if caller does not have DEV_CONFIG_ROLE", async function () {
+            const { chips, user1 } = await loadFixture(deployFixtures);
+            expect(await chips.hasRole(await chips.DEV_CONFIG_ROLE(), user1.address)).to.be.false;
+            await expect(chips.connect(user1).setToken(ethers.ZeroAddress)).to.be.revertedWithCustomError(chips, 'AccessControlUnauthorizedAccount');
+        });
+    });
 });
