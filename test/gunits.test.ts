@@ -1446,12 +1446,16 @@ describe('GUnits', function () {
             const required = totalSupply * (10n ** (18n - 6n));
             await token18Decimals.mint(devWallet.address, required);
             await token18Decimals.connect(devWallet).approve(gUnits.target, required);
+
+            const previousTokenBalance = await token6Decimals.balanceOf(gUnits.target);
     
             await expect(gUnits.connect(devWallet).setToken(token18Decimals.target))
                 .to.emit(gUnits, 'TokenSet')
                 .withArgs(token18Decimals.target)
                 .to.emit(token18Decimals, 'Transfer')
-                .withArgs(devWallet.address, gUnits.target, required);
+                .withArgs(devWallet.address, gUnits.target, required)
+                .to.emit(token6Decimals, 'Transfer')
+                .withArgs(gUnits.target, devWallet.address, previousTokenBalance);
     
             expect(await gUnits.token()).to.equal(token18Decimals.target);
             expect(await gUnits.decimals()).to.equal(18);
@@ -1477,10 +1481,13 @@ describe('GUnits', function () {
             const required6 = totalSupply / (10n ** (18n - 6n));
             await newToken6Decimals.mint(devWallet.address, required6);
             await newToken6Decimals.connect(devWallet).approve(gUnits.target, required6);
+            const previousTokenBalance = await token18Decimals.balanceOf(gUnits.target);
     
             await expect(gUnits.connect(devWallet).setToken(newToken6Decimals.target))
                 .to.emit(gUnits, 'TokenSet')
-                .withArgs(newToken6Decimals.target);
+                .withArgs(newToken6Decimals.target)
+                .to.emit(token18Decimals, 'Transfer')
+                .withArgs(gUnits.target, devWallet.address, previousTokenBalance);
     
             expect(await gUnits.token()).to.equal(newToken6Decimals.target);
             expect(await gUnits.decimals()).to.equal(6);
@@ -1492,10 +1499,13 @@ describe('GUnits', function () {
             const required = totalSupply / (10n ** (6n - 4n));
             await token4Decimals.mint(devWallet.address, required);
             await token4Decimals.connect(devWallet).approve(gUnits.target, required);
+            const previousTokenBalance = await token6Decimals.balanceOf(gUnits.target);
     
             await expect(gUnits.connect(devWallet).setToken(token4Decimals.target))
                 .to.emit(gUnits, 'TokenSet')
-                .withArgs(token4Decimals.target);
+                .withArgs(token4Decimals.target)
+                .to.emit(token6Decimals, 'Transfer')
+                .withArgs(gUnits.target, devWallet.address, previousTokenBalance);
     
             expect(await gUnits.token()).to.equal(token4Decimals.target);
             expect(await gUnits.decimals()).to.equal(4);

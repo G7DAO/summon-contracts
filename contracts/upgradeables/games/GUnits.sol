@@ -377,6 +377,7 @@ contract GUnits is
 
     // @dev Sets the token
     // @param _token The address of the token to set
+    // @param _previousTokenRecipient The address to send the previous token to
     function setToken(address _newToken) external whenPaused onlyRole(DEV_CONFIG_ROLE) {
         if (_newToken == address(0)) {
             revert AddressIsZero();
@@ -384,6 +385,10 @@ contract GUnits is
 
         if (totalSupply > 0) {
             _rebalanceGUnitDecimals(_newToken);
+            uint256 _previousTokenBalance = IERC20(token).balanceOf(address(this));
+            if (_previousTokenBalance > 0) {
+                IERC20(token).safeTransfer(msg.sender, _previousTokenBalance);
+            }
         }
         
         token = _newToken;
