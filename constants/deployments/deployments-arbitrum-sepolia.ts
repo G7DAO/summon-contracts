@@ -41,4 +41,21 @@ export const ARBITRUM_SEPOLIA_CONTRACTS: DeploymentContract[] = [
             GUnitsArgs.ARBITRUM_SEPOLIA._devWallet
         ],
     },
+    {
+        contractFileName: CONTRACT_UPGRADABLE_FILE_NAME.MockUSDC,
+        type: CONTRACT_TYPE.MockUSDC,
+        name: CONTRACT_NAME.MockUSDC,
+        chain,
+        networkType,
+        tenants: [TENANT.Game7],
+        verify: true,
+        upgradable: false,
+        dependencies: [],
+        functionCalls: [],
+        args: [
+            'Karacurt USDC',
+            'kUSDC',
+            6,
+        ],
+    },
 ];

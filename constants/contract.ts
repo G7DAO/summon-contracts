@@ -26,6 +26,7 @@ export enum CONTRACT_TYPE {
     Metadata = 'Metadata',
     CamelotDistributor = 'CamelotDistributor',
     GUnits = 'GUnits',
+    MockUSDC = 'MockUSDC',
 }
 
 export enum PROXY_CONTRACT_TYPE {
@@ -84,6 +85,7 @@ export enum CONTRACT_UPGRADABLE_FILE_NAME {
     BurnableToken = 'BurnableTokenV1',
     Marketplace = 'Marketplace',
     GUnits = 'GUnits',
+    MockUSDC = 'MockUSDC',
 }
 
 export enum CONTRACT_UPGRADABLE_FILE_NAME_V2 {
@@ -125,6 +127,7 @@ export enum CONTRACT_NAME {
     Distributor = 'Distributor',
     PositionMetadata = 'PositionMetadata',
     GUnits = 'GUnits',
+    MockUSDC = 'MockUSDC',
 }
 
 export enum CONTRACT_UPGRADABLE_NAME {
