@@ -166,7 +166,7 @@ contract GUnits is
         __AccessControl_init();
         __ERCWhitelistSignatureUpgradeable_init();
 
-        if (_devWallet == address(0)) {
+        if (_devWallet == address(0) || _token == address(0)) {
             revert AddressIsZero();
         }
 
