@@ -372,7 +372,7 @@ contract GUnits is
 
     // @dev Sets the token
     // @param _token The address of the token to set
-    function setToken(address _token) external onlyRole(DEV_CONFIG_ROLE) {
+    function setToken(address _token) external whenPaused onlyRole(DEV_CONFIG_ROLE) {
         if (_token == address(0)) {
             revert AddressIsZero();
         }

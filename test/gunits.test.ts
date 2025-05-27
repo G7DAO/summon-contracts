@@ -1361,12 +1361,20 @@ describe('GUnits', function () {
     });
 
     describe("Set Token", function () {
+        let chips: GUnits;
+        let token: MockERC20;
+        let devWallet: SignerWithAddress;
+        let user1: SignerWithAddress;
+        let currentTokenAddress: string;
+        beforeEach(async function () {
+            ({ chips, mockToken: token, devWallet, user1 } = await loadFixture(deployFixtures));
+            await chips.connect(devWallet).pause();
+            currentTokenAddress = await token.getAddress();
+        });
         it("Should set token", async function () {
-            const { chips, mockToken, devWallet } = await loadFixture(deployFixtures);
             const newTokenFactory = await ethers.getContractFactory('MockERC20', devWallet);
             const newToken = await newTokenFactory.deploy('New Token', 'NT');
             const newTokenAddress = await newToken.getAddress();
-            const currentTokenAddress = await mockToken.getAddress();
 
             expect(await chips.token()).to.equal(currentTokenAddress);
             await expect(chips.connect(devWallet).setToken(newTokenAddress))
@@ -1375,13 +1383,17 @@ describe('GUnits', function () {
             expect(await chips.token()).to.equal(newTokenAddress);
         });
         it("Should NOT set token to zero address", async function () {
-            const { chips, devWallet } = await loadFixture(deployFixtures);
             await expect(chips.connect(devWallet).setToken(ethers.ZeroAddress)).to.be.revertedWithCustomError(chips, 'AddressIsZero');
         });
         it("Should NOT set token if caller does not have DEV_CONFIG_ROLE", async function () {
-            const { chips, user1 } = await loadFixture(deployFixtures);
             expect(await chips.hasRole(await chips.DEV_CONFIG_ROLE(), user1.address)).to.be.false;
             await expect(chips.connect(user1).setToken(ethers.ZeroAddress)).to.be.revertedWithCustomError(chips, 'AccessControlUnauthorizedAccount');
+        });
+        it("Should NOT set token if contract is not paused", async function () {
+            expect(await chips.paused()).to.be.true;
+            await chips.connect(devWallet).unpause();
+            expect(await chips.paused()).to.be.false;
+            await expect(chips.connect(devWallet).setToken(ethers.ZeroAddress)).to.be.revertedWithCustomError(chips, 'ExpectedPause');
         });
     });
 });
