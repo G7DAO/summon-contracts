@@ -9,6 +9,7 @@ const TESTNET_CHIPS_CONTRACT = '0xc5A563F1d671ee1Ec3819EC96F06A6b19645E08e';
 const TESTNET_TREASURY_WALLET = '0x9ed191DB1829371F116Deb9748c26B49467a592A';
 const MOCK_USDC_ARB_SEPOLIA = '0x39B29A0Da967CDd29B45e4f942086839795c32B0';
 const USDC_ARBITRUM_ONE = '0xaf88d065e77c8cC2239327C5EDb3A432268e5831';
+const USDT_ARBITRUM_ONE = '0xFd086bC7CD5C481DCC9C85ebE478A1C0b69FCbb9';
 export interface ConstructorArgs {
     name: string;
     symbol: string;
@@ -384,7 +385,7 @@ export const GUnitsArgs = {
         _devWallet: TESTNET_DEV_WALLET
     },
     ARBITRUM_ONE: {
-        _token: USDC_ARBITRUM_ONE,
+        _token: USDT_ARBITRUM_ONE,
         _isPaused: false,
         _devWallet: 'DEPLOYER_WALLET'
     }
