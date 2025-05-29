@@ -330,8 +330,8 @@ describe('GUnits-2', function () {
 
         it('Should handle complete loss of locked funds', async function () {
             const { chips, mockToken, gameServer, user1 } = await loadFixture(deployFixtures);
-            const depositAmount = ethers.parseEther('100');
-            const lockAmount = ethers.parseEther('50');
+            const depositAmount = ethers.parseUnits('100', 6);
+            const lockAmount = ethers.parseUnits('50', 6);
             
             await depositGUnits(chips, mockToken, gameServer, user1, depositAmount);
             
@@ -356,9 +356,9 @@ describe('GUnits-2', function () {
 
         it('Should revert if trying to deduct more than locked amount', async function () {
             const { chips, mockToken, gameServer, user1 } = await loadFixture(deployFixtures);
-            const depositAmount = ethers.parseEther('100');
-            const lockAmount = ethers.parseEther('30');
-            const lossAmount = ethers.parseEther('50'); // More than locked
+            const depositAmount = ethers.parseUnits('100', 6);
+            const lockAmount = ethers.parseUnits('30', 6);
+            const lossAmount = ethers.parseUnits('50', 6); // More than locked
             
             await depositGUnits(chips, mockToken, gameServer, user1, depositAmount);
             

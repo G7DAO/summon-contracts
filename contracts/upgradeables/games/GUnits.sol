@@ -301,37 +301,34 @@ contract GUnits is
                 }
                 _mintGUnits(currentPayout.player, currentPayout.amount);
             } else {
-                // Loser loses locked funds
-                if (lockedAmount >= currentPayout.amount) {
-                    // Deduct from locked funds
-                    lockedFunds[currentPayout.player][
-                        currentPayout.gameSessionId
-                    ] -= currentPayout.amount;
-                    if (
-                        lockedFunds[currentPayout.player][
-                            currentPayout.gameSessionId
-                        ] == 0
-                    ) {
-                        _removeActiveSession(
-                            currentPayout.player,
-                            currentPayout.gameSessionId
-                        );
-                    }
-                    _burnGUnits(currentPayout.player, currentPayout.amount);
-                    emit FundsReleased(
-                        currentPayout.player,
-                        currentPayout.gameSessionId,
-                        currentPayout.amount,
-                        false
-                    );
-                } else {
-                    // This shouldn't happen if game server is working correctly
+                // Deduct from locked funds
+                if (currentPayout.amount > lockedAmount) {
                     revert InsufficientUnlockedBalance(
                         currentPayout.player,
                         currentPayout.amount,
                         lockedAmount
                     );
                 }
+                lockedFunds[currentPayout.player][
+                    currentPayout.gameSessionId
+                ] -= currentPayout.amount;
+                if (
+                    lockedFunds[currentPayout.player][
+                        currentPayout.gameSessionId
+                    ] == 0
+                ) {
+                    _removeActiveSession(
+                        currentPayout.player,
+                        currentPayout.gameSessionId
+                    );
+                }
+                _burnGUnits(currentPayout.player, currentPayout.amount);
+                emit FundsReleased(
+                    currentPayout.player,
+                    currentPayout.gameSessionId,
+                    currentPayout.amount,
+                    false
+                );
             }
         }
 
