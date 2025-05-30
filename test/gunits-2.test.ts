@@ -98,7 +98,6 @@ describe('GUnits-2', function () {
                 .withArgs(user1.address, lockAmount);
             
             // Check locked funds
-            expect(await chips.lockedFunds(user1.address)).to.equal(lockAmount);
             expect(await chips.connect(gameServer).getTotalLockedFunds(user1.address)).to.equal(lockAmount);
             expect(await chips.getAvailableBalance(user1.address)).to.equal(depositAmount - lockAmount);
         });
@@ -167,7 +166,6 @@ describe('GUnits-2', function () {
                 .to.emit(chips, 'FundsUnlocked')
                 .withArgs(user1.address, lockAmount);
             
-            expect(await chips.lockedFunds(user1.address)).to.equal(0);
             expect(await chips.connect(liveOps).getTotalLockedFunds(user1.address)).to.equal(0);
             expect(await chips.getAvailableBalance(user1.address)).to.equal(depositAmount);
         });
@@ -323,8 +321,8 @@ describe('GUnits-2', function () {
             expect(await chips.balanceOf(user2.address)).to.equal(depositAmount + winAmount); // Won 45
             
             // Check locked funds - should be reduced for loser, cleared for winner
-            expect(await chips.lockedFunds(user1.address)).to.equal(lockAmount - winAmount); // 5 still locked
-            expect(await chips.lockedFunds(user2.address)).to.equal(0); // Winner's funds unlocked
+            expect(await chips.connect(gameServer).getTotalLockedFunds(user1.address)).to.equal(lockAmount - winAmount); // 5 still locked
+            expect(await chips.connect(gameServer).getTotalLockedFunds(user2.address)).to.equal(0); // Winner's funds unlocked
             
             // Check available balances
             expect(await chips.getAvailableBalance(user1.address)).to.equal(depositAmount - winAmount - (lockAmount - winAmount));
@@ -353,7 +351,6 @@ describe('GUnits-2', function () {
             await chips.connect(gameServer).adminPayout(payouts, 0);
             
             expect(await chips.balanceOf(user1.address)).to.equal(depositAmount - lockAmount);
-            expect(await chips.lockedFunds(user1.address)).to.equal(0);
             expect(await chips.connect(gameServer).getTotalLockedFunds(user1.address)).to.equal(0);
         });
 
@@ -458,7 +455,7 @@ describe('GUnits-2', function () {
             
             expect(await chips.connect(manager).getTotalLockedFunds(user1.address)).to.equal(0);
             expect(await chips.getAvailableBalance(user1.address)).to.equal(depositAmount);
-            expect(await chips.lockedFunds(user1.address)).to.equal(0);
+            expect(await chips.connect(gameServer).getTotalLockedFunds(user1.address)).to.equal(0);
         });
 
         it('Should revert emergency unlock when not paused', async function () {
@@ -551,8 +548,8 @@ describe('GUnits-2', function () {
             expect(await chips.getCollectedFees()).to.equal(rakeFee);
             
             // All funds should be unlocked
-            expect(await chips.lockedFunds(user1.address)).to.equal(0);
-            expect(await chips.lockedFunds(user2.address)).to.equal(0);
+            expect(await chips.connect(gameServer).getTotalLockedFunds(user1.address)).to.equal(0);
+            expect(await chips.connect(gameServer).getTotalLockedFunds(user2.address)).to.equal(0);
             
             // Withdraw fees
             const treasuryBalanceBefore = await mockToken.balanceOf(treasury.address);

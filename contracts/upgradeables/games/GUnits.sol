@@ -131,7 +131,7 @@ contract GUnits is
 
     // Locked funds tracking
     // user => total locked amount
-    mapping(address => uint256) public lockedFunds;
+    mapping(address => uint256) private lockedFunds;
 
     // @dev Initializes the contract
     // @param _token The address of the token to use for the g-units
