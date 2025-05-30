@@ -6,6 +6,5 @@ library LibGUnits {
         address player;
         bool isWinner;
         uint256 amount;
-        uint128 gameSessionId;
     }
 }
