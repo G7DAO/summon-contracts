@@ -564,16 +564,32 @@ contract GUnits is
 
     // @dev Gets total locked funds for a user across all sessions
     // @param user The user address
-    function getTotalLockedFunds(
-        address user
-    ) external view onlyRole(READABLE_ROLE) returns (uint256) {
-        return _getTotalLockedFunds(user);
+    function getTotalLockedFunds(address user) external view returns (uint256) {
+        if (user == address(0)) revert AddressIsZero();
+        if (
+            user == _msgSender() ||
+            hasRole(READABLE_ROLE, _msgSender()) ||
+            hasRole(LIVE_OPS_ROLE, _msgSender()) ||
+            hasRole(GAME_SERVER_ROLE, _msgSender())
+        ) {
+            return _getTotalLockedFunds(user);
+        }
+        revert NotAuthorized(_msgSender());
     }
 
     function getTotalBalanceOf(
         address user
     ) external view onlyRole(READABLE_ROLE) returns (uint256) {
-        return balances[user] + _getTotalLockedFunds(user);
+        if (user == address(0)) revert AddressIsZero();
+        if (
+            user == _msgSender() ||
+            hasRole(READABLE_ROLE, _msgSender()) ||
+            hasRole(LIVE_OPS_ROLE, _msgSender()) ||
+            hasRole(GAME_SERVER_ROLE, _msgSender())
+        ) {
+            return balances[user] + _getTotalLockedFunds(user);
+        }
+        revert NotAuthorized(_msgSender());
     }
 
     function _getTotalLockedFunds(
