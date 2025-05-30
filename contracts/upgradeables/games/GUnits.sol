@@ -647,5 +647,5 @@ contract GUnits is
     }
 
     // Reserved storage space to allow for layout changes in the future.
-    uint256[47] private __gap;
+    uint256[46] private __gap;
 }
