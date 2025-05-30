@@ -565,7 +565,6 @@ contract GUnits is
     // @dev Gets total locked funds for a user across all sessions
     // @param user The user address
     function getTotalLockedFunds(address user) external view returns (uint256) {
-        if (user == address(0)) revert AddressIsZero();
         if (
             user == _msgSender() ||
             hasRole(READABLE_ROLE, _msgSender()) ||
@@ -577,10 +576,7 @@ contract GUnits is
         revert NotAuthorized(_msgSender());
     }
 
-    function getTotalBalanceOf(
-        address user
-    ) external view onlyRole(READABLE_ROLE) returns (uint256) {
-        if (user == address(0)) revert AddressIsZero();
+    function getTotalBalanceOf(address user) external view returns (uint256) {
         if (
             user == _msgSender() ||
             hasRole(READABLE_ROLE, _msgSender()) ||
