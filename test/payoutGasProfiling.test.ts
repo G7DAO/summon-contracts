@@ -69,35 +69,12 @@ describe.skip('GUnits Gas Profiling', function () {
         return BigInt(hash.slice(0, 34)); // '0x' + 32 hex chars = 16 bytes = 128 bits
     }
 
-    it(`Profiles gas for 1000 payouts`, async function () {
+    it(`Profiles gas for ${ROUNDS_SIZE} payouts`, async function () {
         const { chips, mockToken, devWallet, gameServer, user1, user2 } = await loadFixture(deployFixtures);
-        const rakeFeeAmount = 0n;
+        const rakeFeeAmount = ethers.parseEther('5');
         const winAmount = ethers.parseEther('45');
         const lockAmount = ethers.parseEther('50');
         const totalRoundsAmount = lockAmount * BigInt(ROUNDS_SIZE);
-        const gameSessions = [];
-        const payouts = [];
-        const PAYOUT_ROUNDS = 10_000;
-        for (let i = 0; i < PAYOUT_ROUNDS; i++) {
-            const gameSessionId = generateGameSessionId(`game${i}`, `session${i}`, `room${i}`, `user${i}`);
-            gameSessions.push(gameSessionId);
-            const payout = [
-                {
-                    player: user1.address,
-                    isWinner: false,
-                    amount: winAmount,
-                    gameSessionId: gameSessionId,
-                },
-                {
-                    player: user2.address,
-                    isWinner: true,
-                    amount: winAmount,
-                    gameSessionId: gameSessionId,
-                },
-            ];
-
-            payouts.push(payout);
-        }
 
         // Mint to gameServer for payouts
         await mockToken.connect(devWallet).mint(user1.address, totalRoundsAmount);
@@ -106,22 +83,37 @@ describe.skip('GUnits Gas Profiling', function () {
         await depositGUnits(chips, mockToken, devWallet, user2, totalRoundsAmount);
 
         console.log('Locking funds...');
-        const lockPromises = []
-        for (let i = 0; i < PAYOUT_ROUNDS; i++) {
-            const lock1 = chips.connect(gameServer).lockFunds(user1.address, gameSessions[i], lockAmount);
-            const lock2 = chips.connect(gameServer).lockFunds(user2.address, gameSessions[i], lockAmount);
-            lockPromises.push(lock1, lock2);
-        }
-        await Promise.all(lockPromises);
+        const lock1 = chips.connect(gameServer).lockFunds(user1.address, totalRoundsAmount);
+        const lock2 = chips.connect(gameServer).lockFunds(user2.address, totalRoundsAmount);
+        await Promise.all([lock1, lock2]);
         console.log('Funds locked');
 
         console.log('Paying out...');
         const payoutPromises = []
-        for (let i = 0; i < PAYOUT_ROUNDS; i++) {
-            const payout = chips.connect(gameServer).adminPayout(payouts[i], rakeFeeAmount);
-            payoutPromises.push(payout);
+        const payoutData = [
+            {
+                player: user1.address,
+                isWinner: false,
+                amount: winAmount,
+            },
+            {
+                player: user2.address,
+                isWinner: true,
+                amount: winAmount,
+            },
+        ];
+        const promiseBatch = [];
+        for (let i = 0; i < ROUNDS_SIZE; i += BATCH_SIZE) {
+            console.log(`loading batch ${i / BATCH_SIZE + 1} of ${Math.ceil(ROUNDS_SIZE / BATCH_SIZE)}`);
+            for (let j = 0; j < BATCH_SIZE; j++) {
+                const payout = chips.connect(gameServer).adminPayout(payoutData, rakeFeeAmount);
+                promiseBatch.push(payout);
+            }
+            console.log(`processing batch ${i / BATCH_SIZE + 1} of ${Math.ceil(ROUNDS_SIZE / BATCH_SIZE)}`);
+            await Promise.all(promiseBatch);
+            console.log(`batch ${i / BATCH_SIZE + 1} of ${Math.ceil(ROUNDS_SIZE / BATCH_SIZE)} processed \n`);
         }
-        await Promise.all(payoutPromises);
+        await Promise.all(promiseBatch);
         console.log('Payout complete');
     });
 
@@ -136,14 +128,13 @@ describe.skip('GUnits Gas Profiling', function () {
         await depositGUnits(chips, mockToken, devWallet, user1, totalRoundsAmount);
 
         // Generate a game session ID
-        const gameSessionId = generateGameSessionId('game1', 'session1', 'room1', user1.address);
         const promisesBatch = [];
         for (let i = 0; i < ROUNDS_SIZE; i += BATCH_SIZE) {
             console.log(`loading batch ${i / BATCH_SIZE + 1} of ${Math.ceil(ROUNDS_SIZE / BATCH_SIZE)}`);
 
             for (let j = 0; j < BATCH_SIZE; j++) {
                 // Lock funds
-                const promise = chips.connect(gameServer).lockFunds(user1.address, gameSessionId, lockAmount);
+                const promise = chips.connect(gameServer).lockFunds(user1.address, lockAmount);
                 promisesBatch.push(promise);
             }
             console.log(`processing batch ${i / BATCH_SIZE + 1} of ${Math.ceil(ROUNDS_SIZE / BATCH_SIZE)}`);
