@@ -382,13 +382,11 @@ contract GUnits is
         if (_newToken == address(0)) {
             revert AddressIsZero();
         }
-
-        if (totalSupply > 0) {
+        
+        uint256 _previousTokenBalance = IERC20(token).balanceOf(address(this));
+        if (totalSupply > 0 && _previousTokenBalance > 0) {
             _rebalanceGUnitDecimals(_newToken);
-            uint256 _previousTokenBalance = IERC20(token).balanceOf(address(this));
-            if (_previousTokenBalance > 0) {
-                IERC20(token).safeTransfer(msg.sender, _previousTokenBalance);
-            }
+            IERC20(token).safeTransfer(msg.sender, _previousTokenBalance);
         }
         
         token = _newToken;
