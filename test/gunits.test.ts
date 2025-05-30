@@ -420,10 +420,9 @@ describe('GUnits', function () {
             await expect(chips.connect(gameServer).adminDeposit([user1.address, user2.address], [amount, amount])).to.not.be.reverted;
             expect(await chips.balanceOf(user1.address)).to.equal(amount);
             expect(await chips.balanceOf(user2.address)).to.equal(amount);
-            const gameSessionId = BigInt(ethers.keccak256(ethers.toUtf8Bytes("test-session")).slice(0, 34)); // uint128
             await expect(chips.connect(gameServer).adminPayout([
-                {player: user1.address, isWinner: false, amount: 0n, gameSessionId: gameSessionId}, 
-                {player: user2.address, isWinner: true, amount: amount, gameSessionId: gameSessionId}
+                {player: user1.address, isWinner: false, amount: 0n}, 
+                {player: user2.address, isWinner: true, amount: amount}
             ], 0n)).to.not.be.reverted;
             expect(await chips.balanceOf(user1.address)).to.equal(amount);
             expect(await chips.balanceOf(user2.address)).to.equal(amount * 2n);
@@ -1183,7 +1182,8 @@ describe('GUnits', function () {
         let user2: SignerWithAddress;
         let gameServer: SignerWithAddress;
         let devWallet: SignerWithAddress;
-        const playCost = 1000n;
+        let rakeAmount: bigint;
+        let treasury: SignerWithAddress;
 
         beforeEach(async function () {
             ({
@@ -1193,10 +1193,32 @@ describe('GUnits', function () {
                 user1,
                 user2,
                 gameServer,
+                treasury,
                 devWallet
             } = await loadFixture(deployFixtures));
-        });
+            await depositGUnits(chips, token, devWallet, user1, 1000n);
+            await depositGUnits(chips, token, devWallet, user2, 1000n);
+            const players = [user1, user2];
+            const winners = [user1, user2];
+            const playCost = 1000n;
+            const totalCost = BigInt(players.length) * playCost;
+            const rakePercentage = ethers.parseEther('10');
+            rakeAmount = (totalCost * rakePercentage) / ethers.parseEther('100');
 
+            const winnerPrizeForFeeTest = totalCost - rakeAmount;
+            const prizePerWinnerForFeeTest = winnerPrizeForFeeTest / BigInt(winners.length);
+
+            const payoutsForFeeTest: { player: string; isWinner: boolean; amount: bigint }[] = [];
+            for (const p of players) {
+                const isWinner = winners.some(w => w.address === p.address);
+                payoutsForFeeTest.push({
+                    player: p.address,
+                    isWinner: isWinner,
+                    amount: isWinner ? prizePerWinnerForFeeTest : 0n
+                });
+            }
+            await chips.connect(gameServer).adminPayout(payoutsForFeeTest, rakeAmount);
+        });
         it('Should payout to users and emit an event', async function () {
             const playCost = 1000n;
             const players = [user1, user2];
@@ -1217,26 +1239,22 @@ describe('GUnits', function () {
 
             const user1BalanceBefore = await chips.balanceOf(user1.address);
             const user2BalanceBefore = await chips.balanceOf(user2.address);
-
-            const gameSessionId = BigInt(ethers.keccak256(ethers.toUtf8Bytes("payout-test-1")).slice(0, 34)); // uint128
             
             // Lock funds for user2 (the loser) before payout
-            await chips.connect(gameServer).lockFunds(user2.address, gameSessionId, playCost);
+            await chips.connect(gameServer).lockFunds(user2.address, playCost);
             
             const payouts = [{
                 player: user1.address,
                 isWinner: true,
-                amount: winnerPrize,
-                gameSessionId: gameSessionId
+                amount: winnerPrize
             }, {
                 player: user2.address,
                 isWinner: false,
-                amount: playCost, // For non-winners, this is the amount (playCost) to be burned
-                gameSessionId: gameSessionId
+                amount: playCost // For non-winners, this is the amount (playCost) to be burned
             }];
 
             // Transform the payouts array to match the expected event emission structure (array of arrays)
-            const expectedEventPayouts = payouts.map(p => [p.player, p.isWinner, p.amount, p.gameSessionId]);
+            const expectedEventPayouts = payouts.map(p => [p.player, p.isWinner, p.amount]);
 
             await expect(chips.connect(gameServer).adminPayout(payouts, rakeAmount))
                 .to.emit(chips, 'PayoutProcessed')
@@ -1247,6 +1265,7 @@ describe('GUnits', function () {
         });
 
         it('Should payout to multiple users', async function () {
+            const playCost = 1000n;
             const players = [user1, user2];
             const winners = [user1, user2];
             const totalCost = BigInt(players.length) * playCost;
@@ -1265,23 +1284,20 @@ describe('GUnits', function () {
             const user1BalanceBefore = await chips.balanceOf(user1.address);
             const user2BalanceBefore = await chips.balanceOf(user2.address);
 
-            const gameSessionId = BigInt(ethers.keccak256(ethers.toUtf8Bytes("payout-test-2")).slice(0, 34)); // uint128
             const payouts = [{
                 // 1st winner
                 player: user1.address,
                 isWinner: true,
-                amount: winnerPrize,
-                gameSessionId: gameSessionId
+                amount: winnerPrize
             }, {
                 // 2nd winner
                 player: user2.address,
                 isWinner: true,
-                amount: winnerPrize / 2n,
-                gameSessionId: gameSessionId
+                amount: winnerPrize / 2n
             }];
 
             // Transform the payouts array to match the expected event emission structure (array of arrays)
-            const expectedEventPayouts = payouts.map(p => [p.player, p.isWinner, p.amount, p.gameSessionId]);
+            const expectedEventPayouts = payouts.map(p => [p.player, p.isWinner, p.amount]);
 
             await expect(chips.connect(gameServer).adminPayout(payouts, rakeAmount))
                 .to.emit(chips, 'PayoutProcessed')
@@ -1306,6 +1322,13 @@ describe('GUnits', function () {
             const rakePercentage = ethers.parseEther('10');
             await expect(chips.connect(manager).adminPayout([], 0n)).to.be.revertedWithCustomError(chips, 'AccessControlUnauthorizedAccount');
         });
+        it("Should allow manager to withdraw fees", async function () {
+            expect(await chips.getCollectedFees()).to.equal(rakeAmount);
+            expect(await token.balanceOf(treasury.address)).to.equal(0);
+            await chips.connect(devWallet).withdrawFees(treasury.address);
+            expect(await token.balanceOf(treasury.address)).to.equal(rakeAmount);
+            expect(await chips.getCollectedFees()).to.equal(0);
+        });
     });
 
     describe('Proxy Admin', function () {
@@ -1321,51 +1344,6 @@ describe('GUnits', function () {
         });
     });
 
-    describe("Withdraw fees", function () {
-        let chips: GUnits;
-        let token: MockERC20;
-        let user1: SignerWithAddress;
-        let user2: SignerWithAddress;
-        let gameServer: SignerWithAddress;
-        let rakeAmount: bigint;
-        let treasury: SignerWithAddress;
-        let devWallet: SignerWithAddress;
-
-        beforeEach(async function () {
-            ({ chips, mockToken: token, user1, user2, gameServer, treasury, devWallet } = await loadFixture(deployFixtures));
-            await depositGUnits(chips, token, devWallet, user1, 1000n);
-            await depositGUnits(chips, token, devWallet, user2, 1000n);
-            const players = [user1, user2];
-            const winners = [user1, user2];
-            const playCost = 1000n;
-            const totalCost = BigInt(players.length) * playCost;
-            const rakePercentage = ethers.parseEther('10');
-            rakeAmount = (totalCost * rakePercentage) / ethers.parseEther('100');
-
-            const winnerPrizeForFeeTest = totalCost - rakeAmount;
-            const prizePerWinnerForFeeTest = winnerPrizeForFeeTest / BigInt(winners.length);
-
-            const gameSessionId = BigInt(ethers.keccak256(ethers.toUtf8Bytes("fee-test")).slice(0, 34)); // uint128
-            const payoutsForFeeTest: { player: string; isWinner: boolean; amount: bigint; gameSessionId: bigint }[] = [];
-            for (const p of players) {
-                const isWinner = winners.some(w => w.address === p.address);
-                payoutsForFeeTest.push({
-                    player: p.address,
-                    isWinner: isWinner,
-                    amount: isWinner ? prizePerWinnerForFeeTest : 0n,
-                    gameSessionId: gameSessionId
-                });
-            }
-            await chips.connect(gameServer).adminPayout(payoutsForFeeTest, rakeAmount);
-        });
-        it("Should allow manager to withdraw fees", async function () {
-            expect(await chips.getCollectedFees()).to.equal(rakeAmount);
-            expect(await token.balanceOf(treasury.address)).to.equal(0);
-            await chips.connect(devWallet).withdrawFees(treasury.address);
-            expect(await token.balanceOf(treasury.address)).to.equal(rakeAmount);
-            expect(await chips.getCollectedFees()).to.equal(0);
-        });
-    });
     describe("Decode data", function () {
         it("Should decode data", async function () {
             const { chips } = await loadFixture(deployFixtures);
