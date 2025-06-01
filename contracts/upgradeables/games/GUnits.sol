@@ -92,7 +92,7 @@ contract GUnits is
     );
     event FundsLocked(address indexed user, uint256 amount);
     event FundsUnlocked(address indexed user, uint256 amount);
-    event FundsReleased(address indexed user, uint256 amount, bool returned);
+    event FundsReleased(address indexed user, uint256 amount);
     event TokenSet(address indexed newToken);
     error ChipInsufficientBalance(
         address from,
@@ -113,11 +113,6 @@ contract GUnits is
     );
     error NoLockedFunds(address user);
     error InvalidAmount();
-    error InsufficientLockedBalance(
-        address user,
-        uint256 requested,
-        uint256 locked
-    );
 
     bytes32 public constant DEV_CONFIG_ROLE = keccak256("DEV_CONFIG_ROLE");
     bytes32 public constant MANAGER_ROLE = keccak256("MANAGER_ROLE");
@@ -269,32 +264,21 @@ contract GUnits is
 
             uint256 lockedAmount = lockedFunds[currentPayout.player];
 
-            if (currentPayout.isWinner) {
-                // Winner gets locked funds back + winnings
-                if (lockedAmount > 0) {
-                    lockedFunds[currentPayout.player] = 0;
-                    emit FundsReleased(
-                        currentPayout.player,
-                        lockedAmount,
-                        true
-                    );
-                }
-                _mintGUnits(currentPayout.player, currentPayout.amount);
-            } else {
-                // Deduct from locked funds
-                if (currentPayout.amount > lockedAmount) {
-                    revert InsufficientUnlockedBalance(
-                        currentPayout.player,
-                        currentPayout.amount,
-                        lockedAmount
-                    );
-                }
-                lockedFunds[currentPayout.player] -= currentPayout.amount;
-                _burnGUnits(currentPayout.player, currentPayout.amount);
-                emit FundsReleased(
+            if (lockedAmount < currentPayout.buyInAmount) {
+                revert InsufficientUnlockedBalance(
                     currentPayout.player,
-                    currentPayout.amount,
-                    false
+                    currentPayout.buyInAmount,
+                    lockedAmount
+                );
+            }
+
+            lockedFunds[currentPayout.player] -= currentPayout.buyInAmount;
+            emit FundsReleased(currentPayout.player, currentPayout.buyInAmount);
+
+            if (currentPayout.isWinner) {
+                _mintGUnits(
+                    currentPayout.player,
+                    currentPayout.amount + currentPayout.buyInAmount
                 );
             }
         }
@@ -310,14 +294,13 @@ contract GUnits is
     }
 
     function _withdraw(address _to, uint256 _amount) internal {
-        // Check that user has enough unlocked funds
-        uint256 totalLocked = _getTotalLockedFunds(_to);
-        uint256 availableBalance = balances[_to] - totalLocked;
-        if (availableBalance < _amount) {
-            revert InsufficientUnlockedBalance(_to, _amount, availableBalance);
+        // _amount is the amount of GUnits the user wants to withdraw from their LIQUID balance
+        uint256 liquidBalance = balances[_to]; // balances[_to] is already the liquid part
+        if (liquidBalance < _amount) {
+            revert InsufficientUnlockedBalance(_to, _amount, liquidBalance);
         }
 
-        _burnGUnits(_to, _amount);
+        _burnGUnits(_to, _amount); // Decreases balances[_to] and totalSupply
         uint256 amountInTokens = _parseGUnitsToCurrency(_amount);
         IERC20(token).safeTransfer(_to, amountInTokens);
         emit Withdraw(_to, amountInTokens);
@@ -510,14 +493,15 @@ contract GUnits is
         if (amount == 0) revert InvalidAmount();
 
         uint256 userBalance = balances[user];
-        uint256 totalLocked = _getTotalLockedFunds(user);
+        uint256 totalLocked = lockedFunds[user];
         uint256 availableBalance = userBalance - totalLocked;
 
         if (availableBalance < amount) {
             revert InsufficientUnlockedBalance(user, amount, availableBalance);
         }
 
-        lockedFunds[user] = amount;
+        lockedFunds[user] += amount;
+        balances[user] -= amount;
 
         emit FundsLocked(user, amount);
     }
@@ -562,9 +546,10 @@ contract GUnits is
             revert NoLockedFunds(user);
         }
         if (amount > locked) {
-            revert InsufficientLockedBalance(user, amount, locked);
+            revert InsufficientUnlockedBalance(user, amount, locked);
         }
         lockedFunds[user] -= amount;
+        balances[user] += amount;
         emit FundsUnlocked(user, amount);
     }
 
@@ -589,9 +574,9 @@ contract GUnits is
         address[] memory accounts
     ) external view returns (uint256[] memory) {
         if (
-            !hasRole(GAME_SERVER_ROLE, _msgSender()) &&
-            !hasRole(LIVE_OPS_ROLE, _msgSender()) &&
-            !hasRole(READABLE_ROLE, _msgSender())
+            hasRole(GAME_SERVER_ROLE, _msgSender()) ||
+            hasRole(LIVE_OPS_ROLE, _msgSender()) ||
+            hasRole(READABLE_ROLE, _msgSender())
         ) {
             uint256[] memory batchBalances = new uint256[](accounts.length);
             for (uint256 i = 0; i < accounts.length; i++) {
@@ -673,33 +658,6 @@ contract GUnits is
         return lockedFunds[user];
     }
 
-    // @dev Gets available (unlocked) balance for a user
-    // @param user The user address
-    function getAvailableBalance(address user) external view returns (uint256) {
-        if (
-            hasRole(READABLE_ROLE, _msgSender()) ||
-            hasRole(LIVE_OPS_ROLE, _msgSender()) ||
-            hasRole(GAME_SERVER_ROLE, _msgSender())
-        ) {
-            uint256 totalBalance = balances[user];
-            uint256 totalLocked = _getTotalLockedFunds(user);
-            return totalBalance > totalLocked ? totalBalance - totalLocked : 0;
-        }
-        revert NotAuthorized(_msgSender());
-    }
-
-    // @dev Emergency function to unlock funds for users (only when paused)
-    // @param user The user whose funds to unlock
-    function emergencyUnlockFunds(
-        address user
-    ) external onlyRole(MANAGER_ROLE) whenPaused {
-        uint256 locked = lockedFunds[user];
-        if (locked > 0) {
-            lockedFunds[user] = 0;
-            emit FundsUnlocked(user, locked);
-        }
-    }
-
     // Reserved storage space to allow for layout changes in the future.
-    uint256[45] private __gap;
+    uint256[43] private __gap;
 }

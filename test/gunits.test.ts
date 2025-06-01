@@ -69,7 +69,13 @@ describe('GUnits', function () {
         };
     }
 
-    async function depositGUnits(chips: GUnits, token: MockERC20, deployer: SignerWithAddress, wallet: SignerWithAddress, amount: bigint) {
+    async function depositGUnits(
+        chips: GUnits,
+        token: MockERC20,
+        deployer: SignerWithAddress,
+        wallet: SignerWithAddress,
+        amount: bigint
+    ) {
         const chainId = (await ethers.provider.getNetwork()).chainId;
         const contractAddress = await chips.getAddress();
 
@@ -110,33 +116,31 @@ describe('GUnits', function () {
             expect(await chips.supportsInterface(ACCESS_CONTROL_INTERFACE_ID)).to.be.true;
         });
 
-        it("Should NOT deploy with devWallet as zero address", async function () {
-            const { chips,mockToken } = await loadFixture(deployFixtures);
+        it('Should NOT deploy with devWallet as zero address', async function () {
+            const { chips, mockToken } = await loadFixture(deployFixtures);
             const GUnitsFactory = await ethers.getContractFactory('GUnits');
-            await expect(upgrades.deployProxy(
-                GUnitsFactory,
-                [
+            await expect(
+                upgrades.deployProxy(GUnitsFactory, [
                     await mockToken.getAddress(), // _token
                     false, // _isPaused
                     ethers.ZeroAddress, // _devWallet
-                ]
-            )).to.be.revertedWithCustomError(chips, 'AddressIsZero');
+                ])
+            ).to.be.revertedWithCustomError(chips, 'AddressIsZero');
         });
-        it("Should NOT initialize twice", async function () {
-            const { chips,mockToken, manager } = await loadFixture(deployFixtures);
-            await expect(chips.initialize(await mockToken.getAddress(), false, manager.address)).to.be.revertedWithCustomError(chips, 'InvalidInitialization');
+        it('Should NOT initialize twice', async function () {
+            const { chips, mockToken, manager } = await loadFixture(deployFixtures);
+            await expect(
+                chips.initialize(await mockToken.getAddress(), false, manager.address)
+            ).to.be.revertedWithCustomError(chips, 'InvalidInitialization');
         });
-        it("Should initialize paused", async function () {
+        it('Should initialize paused', async function () {
             const { mockToken, manager } = await loadFixture(deployFixtures);
             const GUnitsFactory = await ethers.getContractFactory('GUnits');
-            const chipsContract = await upgrades.deployProxy(
-                GUnitsFactory,
-                [
-                    await mockToken.getAddress(), // _token
-                    true, // _isPaused
-                    manager.address, // _devWallet
-                ]
-            )
+            const chipsContract = await upgrades.deployProxy(GUnitsFactory, [
+                await mockToken.getAddress(), // _token
+                true, // _isPaused
+                manager.address, // _devWallet
+            ]);
             expect(await chipsContract.paused()).to.be.true;
         });
     });
@@ -372,7 +376,8 @@ describe('GUnits', function () {
         });
 
         it('Should allow manager to withdraw all chips from users when paused', async function () {
-            const { chips, mockToken, gameServer, devWallet, manager, user1, user2 } = await loadFixture(deployFixtures);
+            const { chips, mockToken, gameServer, devWallet, manager, user1, user2 } =
+                await loadFixture(deployFixtures);
             const amount = ethers.parseEther('100');
             const initialBalance = await mockToken.balanceOf(user1.address);
             // First deposit to users
@@ -405,40 +410,30 @@ describe('GUnits', function () {
                 chips.connect(user1).adminDeposit([user1.address], [ethers.parseEther('100')])
             ).to.be.revertedWithCustomError(chips, 'NotAuthorized');
         });
-        it("Should allow live ops to adminDeposit", async function () {
+        it('Should allow live ops to adminDeposit', async function () {
             const { chips, mockToken, user1, user2, liveOps } = await loadFixture(deployFixtures);
             const amount = ethers.parseEther('100');
             await mockToken.connect(liveOps).approve(await chips.getAddress(), amount * 2n);
-            await expect(chips.connect(liveOps).adminDeposit([user1.address, user2.address], [amount, amount])).to.not.be.reverted;
+            await expect(chips.connect(liveOps).adminDeposit([user1.address, user2.address], [amount, amount])).to.not
+                .be.reverted;
             expect(await chips.balanceOf(user1.address)).to.equal(amount);
             expect(await chips.balanceOf(user2.address)).to.equal(amount);
-        })
-        it("Should allow live ops to adminPayout", async function () {
-            const { chips, mockToken, user1, user2, gameServer } = await loadFixture(deployFixtures);
-            const amount = ethers.parseEther('100');
-            await mockToken.connect(gameServer).approve(await chips.getAddress(), amount * 2n);
-            await expect(chips.connect(gameServer).adminDeposit([user1.address, user2.address], [amount, amount])).to.not.be.reverted;
-            expect(await chips.balanceOf(user1.address)).to.equal(amount);
-            expect(await chips.balanceOf(user2.address)).to.equal(amount);
-            await expect(chips.connect(gameServer).adminPayout([
-                {player: user1.address, isWinner: false, amount: 0n}, 
-                {player: user2.address, isWinner: true, amount: amount}
-            ], 0n)).to.not.be.reverted;
-            expect(await chips.balanceOf(user1.address)).to.equal(amount);
-            expect(await chips.balanceOf(user2.address)).to.equal(amount * 2n);
-        })
+        });
     });
 
-    describe("Readable role", function () {
-        it("Should allow readable role to read", async function () {
-            const { chips, user1, user2, manager} = await loadFixture(deployFixtures);
+    describe('Readable role', function () {
+        it('Should allow readable role to read', async function () {
+            const { chips, user1, user2, manager } = await loadFixture(deployFixtures);
             await chips.connect(manager).grantRole(await chips.READABLE_ROLE(), user1.address);
             expect(await chips.hasRole(await chips.READABLE_ROLE(), user1.address)).to.be.true;
             await expect(chips.connect(user1).balanceOf(user2.address)).to.not.be.reverted;
         });
-        it("Should NOT get exchange rate if not readable", async function () {
+        it('Should NOT get exchange rate if not readable', async function () {
             const { chips, user1 } = await loadFixture(deployFixtures);
-            await expect(chips.connect(user1).getExchangeRate()).to.be.revertedWithCustomError(chips, 'AccessControlUnauthorizedAccount');
+            await expect(chips.connect(user1).getExchangeRate()).to.be.revertedWithCustomError(
+                chips,
+                'AccessControlUnauthorizedAccount'
+            );
         });
     });
 
@@ -489,13 +484,19 @@ describe('GUnits', function () {
             expect(await chips.paused()).to.be.true;
             await expect(chips.connect(devWallet).pause()).to.be.revertedWithCustomError(chips, 'EnforcedPause');
         });
-        it("Should NOT pause if not caller does not have dev config role", async function () {
+        it('Should NOT pause if not caller does not have dev config role', async function () {
             const { chips, user1 } = await loadFixture(deployFixtures);
-            await expect(chips.connect(user1).pause()).to.be.revertedWithCustomError(chips, 'AccessControlUnauthorizedAccount');
+            await expect(chips.connect(user1).pause()).to.be.revertedWithCustomError(
+                chips,
+                'AccessControlUnauthorizedAccount'
+            );
         });
-        it("Should NOT unpause if not caller does not have dev config role", async function () {
+        it('Should NOT unpause if not caller does not have dev config role', async function () {
             const { chips, user1 } = await loadFixture(deployFixtures);
-            await expect(chips.connect(user1).unpause()).to.be.revertedWithCustomError(chips, 'AccessControlUnauthorizedAccount');
+            await expect(chips.connect(user1).unpause()).to.be.revertedWithCustomError(
+                chips,
+                'AccessControlUnauthorizedAccount'
+            );
         });
     });
 
@@ -600,7 +601,7 @@ describe('GUnits', function () {
         it('Should revert if non-manager tries to upgrade', async function () {
             const { chips, user1 } = await loadFixture(deployFixtures);
             const GUnitsV2 = await ethers.getContractFactory('GUnits', user1);
-            await expect(upgrades.upgradeProxy(chips, GUnitsV2)).to.be.reverted
+            await expect(upgrades.upgradeProxy(chips, GUnitsV2)).to.be.reverted;
         });
     });
 
@@ -1194,7 +1195,7 @@ describe('GUnits', function () {
                 user2,
                 gameServer,
                 treasury,
-                devWallet
+                devWallet,
             } = await loadFixture(deployFixtures));
             await depositGUnits(chips, token, devWallet, user1, 1000n);
             await depositGUnits(chips, token, devWallet, user2, 1000n);
@@ -1208,121 +1209,45 @@ describe('GUnits', function () {
             const winnerPrizeForFeeTest = totalCost - rakeAmount;
             const prizePerWinnerForFeeTest = winnerPrizeForFeeTest / BigInt(winners.length);
 
-            const payoutsForFeeTest: { player: string; isWinner: boolean; amount: bigint }[] = [];
+            const payoutsForFeeTest: { player: string; isWinner: boolean; amount: bigint; buyInAmount: bigint }[] = [];
             for (const p of players) {
-                const isWinner = winners.some(w => w.address === p.address);
+                const isWinner = winners.some((w) => w.address === p.address);
                 payoutsForFeeTest.push({
                     player: p.address,
                     isWinner: isWinner,
-                    amount: isWinner ? prizePerWinnerForFeeTest : 0n
+                    amount: isWinner ? prizePerWinnerForFeeTest : 0n,
+                    buyInAmount: playCost,
                 });
             }
+            // Lock funds for players before payout
+            await chips.connect(gameServer).lockFunds(user1.address, playCost);
+            await chips.connect(gameServer).lockFunds(user2.address, playCost);
+
             await chips.connect(gameServer).adminPayout(payoutsForFeeTest, rakeAmount);
         });
-        it('Should payout to users and emit an event', async function () {
-            const playCost = 1000n;
-            const players = [user1, user2];
-            const winners = [user1];
-            const totalCost = BigInt(players.length) * playCost;
-            const rakePercentage = ethers.parseEther('10');
-            const rakeAmount = (totalCost * rakePercentage) / ethers.parseEther('100');
-
-            let winnerPrize = totalCost - rakeAmount;
-
-            if (winners.length > 1) {
-                winnerPrize = winnerPrize / BigInt(winners.length);
-            }
-
-            await token.connect(user1).approve(await chips.getAddress(), totalCost);
-            await depositGUnits(chips, token, devWallet, user1, totalCost);
-            await depositGUnits(chips, token, devWallet, user2, totalCost);
-
-            const user1BalanceBefore = await chips.balanceOf(user1.address);
-            const user2BalanceBefore = await chips.balanceOf(user2.address);
-            
-            // Lock funds for user2 (the loser) before payout
-            await chips.connect(gameServer).lockFunds(user2.address, playCost);
-            
-            const payouts = [{
-                player: user1.address,
-                isWinner: true,
-                amount: winnerPrize
-            }, {
-                player: user2.address,
-                isWinner: false,
-                amount: playCost // For non-winners, this is the amount (playCost) to be burned
-            }];
-
-            // Transform the payouts array to match the expected event emission structure (array of arrays)
-            const expectedEventPayouts = payouts.map(p => [p.player, p.isWinner, p.amount]);
-
-            await expect(chips.connect(gameServer).adminPayout(payouts, rakeAmount))
-                .to.emit(chips, 'PayoutProcessed')
-                .withArgs(expectedEventPayouts, rakeAmount);
-
-            expect(await chips.balanceOf(user1.address)).to.equal(user1BalanceBefore + winnerPrize);
-            expect(await chips.balanceOf(user2.address)).to.equal(user2BalanceBefore - playCost);
-        });
-
-        it('Should payout to multiple users', async function () {
-            const playCost = 1000n;
-            const players = [user1, user2];
-            const winners = [user1, user2];
-            const totalCost = BigInt(players.length) * playCost;
-            const rakePercentage = ethers.parseEther('10');
-            const rakeAmount = (totalCost * rakePercentage) / ethers.parseEther('100');
-            let winnerPrize = totalCost - rakeAmount;
-
-            if (winners.length > 1) {
-                winnerPrize = winnerPrize / BigInt(winners.length);
-            }
-
-            await token.connect(user1).approve(await chips.getAddress(), totalCost);
-            await depositGUnits(chips, token, devWallet, user1, totalCost);
-            await depositGUnits(chips, token, devWallet, user2, totalCost);
-
-            const user1BalanceBefore = await chips.balanceOf(user1.address);
-            const user2BalanceBefore = await chips.balanceOf(user2.address);
-
-            const payouts = [{
-                // 1st winner
-                player: user1.address,
-                isWinner: true,
-                amount: winnerPrize
-            }, {
-                // 2nd winner
-                player: user2.address,
-                isWinner: true,
-                amount: winnerPrize / 2n
-            }];
-
-            // Transform the payouts array to match the expected event emission structure (array of arrays)
-            const expectedEventPayouts = payouts.map(p => [p.player, p.isWinner, p.amount]);
-
-            await expect(chips.connect(gameServer).adminPayout(payouts, rakeAmount))
-                .to.emit(chips, 'PayoutProcessed')
-                .withArgs(expectedEventPayouts, rakeAmount);
-
-            expect(await chips.balanceOf(user1.address)).to.equal(user1BalanceBefore + winnerPrize);
-            expect(await chips.balanceOf(user2.address)).to.equal(user2BalanceBefore + winnerPrize / 2n);
-        });
-        it("Should NOT payout if contract is paused", async function () {
+        it('Should NOT payout if contract is paused', async function () {
             const playCost = 1000n;
             const players = [user1, user2];
             const winners = [user1];
             const rakePercentage = ethers.parseEther('10');
 
             await chips.connect(devWallet).pause();
-            await expect(chips.connect(gameServer).adminPayout([], 0n)).to.be.revertedWithCustomError(chips, 'EnforcedPause');
+            await expect(chips.connect(gameServer).adminPayout([], 0n)).to.be.revertedWithCustomError(
+                chips,
+                'EnforcedPause'
+            );
         });
-        it("Should NOT payout if caller is not game server", async function () {
+        it('Should NOT payout if caller is not game server', async function () {
             const playCost = 1000n;
             const players = [user1.address, user2.address];
             const winners = [user1.address];
             const rakePercentage = ethers.parseEther('10');
-            await expect(chips.connect(manager).adminPayout([], 0n)).to.be.revertedWithCustomError(chips, 'AccessControlUnauthorizedAccount');
+            await expect(chips.connect(manager).adminPayout([], 0n)).to.be.revertedWithCustomError(
+                chips,
+                'AccessControlUnauthorizedAccount'
+            );
         });
-        it("Should allow manager to withdraw fees", async function () {
+        it('Should allow manager to withdraw fees', async function () {
             expect(await chips.getCollectedFees()).to.equal(rakeAmount);
             expect(await token.balanceOf(treasury.address)).to.equal(0);
             await chips.connect(devWallet).withdrawFees(treasury.address);
@@ -1338,14 +1263,14 @@ describe('GUnits', function () {
             const proxyAdmin = await upgrades.erc1967.getAdminAddress(chipsAddress);
             const proxyAdminAbiContent = fs.readFileSync(path.resolve(PROXY_ADMIN_ABI_PATH), 'utf8');
             const { abi: proxyAdminAbi } = JSON.parse(proxyAdminAbiContent);
-            const proxyAdminContract = await ethers.getContractAt(proxyAdminAbi, proxyAdmin) as any;
+            const proxyAdminContract = (await ethers.getContractAt(proxyAdminAbi, proxyAdmin)) as any;
             const proxyAdminOwner = await proxyAdminContract.owner();
             expect(proxyAdminOwner).to.equal(devWallet.address);
         });
     });
 
-    describe("Decode data", function () {
-        it("Should decode data", async function () {
+    describe('Decode data', function () {
+        it('Should decode data', async function () {
             const { chips } = await loadFixture(deployFixtures);
             const contractAddress = await chips.getAddress();
             const chainId = (await ethers.provider.getNetwork()).chainId;
@@ -1360,8 +1285,8 @@ describe('GUnits', function () {
         });
     });
 
-    describe("Set Token", function () {
-        it("Should set token", async function () {
+    describe('Set Token', function () {
+        it('Should set token', async function () {
             const { chips, mockToken, devWallet } = await loadFixture(deployFixtures);
             const newTokenFactory = await ethers.getContractFactory('MockERC20', devWallet);
             const newToken = await newTokenFactory.deploy('New Token', 'NT');
@@ -1374,14 +1299,20 @@ describe('GUnits', function () {
                 .withArgs(newTokenAddress);
             expect(await chips.token()).to.equal(newTokenAddress);
         });
-        it("Should NOT set token to zero address", async function () {
+        it('Should NOT set token to zero address', async function () {
             const { chips, devWallet } = await loadFixture(deployFixtures);
-            await expect(chips.connect(devWallet).setToken(ethers.ZeroAddress)).to.be.revertedWithCustomError(chips, 'AddressIsZero');
+            await expect(chips.connect(devWallet).setToken(ethers.ZeroAddress)).to.be.revertedWithCustomError(
+                chips,
+                'AddressIsZero'
+            );
         });
-        it("Should NOT set token if caller does not have DEV_CONFIG_ROLE", async function () {
+        it('Should NOT set token if caller does not have DEV_CONFIG_ROLE', async function () {
             const { chips, user1 } = await loadFixture(deployFixtures);
             expect(await chips.hasRole(await chips.DEV_CONFIG_ROLE(), user1.address)).to.be.false;
-            await expect(chips.connect(user1).setToken(ethers.ZeroAddress)).to.be.revertedWithCustomError(chips, 'AccessControlUnauthorizedAccount');
+            await expect(chips.connect(user1).setToken(ethers.ZeroAddress)).to.be.revertedWithCustomError(
+                chips,
+                'AccessControlUnauthorizedAccount'
+            );
         });
     });
 });

@@ -1,4 +1,6 @@
 {
     "prettier.configPath": ".prettierrc",
-    "makefile.configureOnOpen": false
+    "makefile.configureOnOpen": false,
+    "editor.formatOnSave": true,
+    "editor.defaultFormatter": "esbenp.prettier-vscode"
 }
