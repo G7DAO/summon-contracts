@@ -676,9 +676,16 @@ contract GUnits is
     // @dev Gets available (unlocked) balance for a user
     // @param user The user address
     function getAvailableBalance(address user) external view returns (uint256) {
-        uint256 totalBalance = balances[user];
-        uint256 totalLocked = _getTotalLockedFunds(user);
-        return totalBalance > totalLocked ? totalBalance - totalLocked : 0;
+        if (
+            hasRole(READABLE_ROLE, _msgSender()) ||
+            hasRole(LIVE_OPS_ROLE, _msgSender()) ||
+            hasRole(GAME_SERVER_ROLE, _msgSender())
+        ) {
+            uint256 totalBalance = balances[user];
+            uint256 totalLocked = _getTotalLockedFunds(user);
+            return totalBalance > totalLocked ? totalBalance - totalLocked : 0;
+        }
+        revert NotAuthorized(_msgSender());
     }
 
     // @dev Emergency function to unlock funds for users (only when paused)
