@@ -413,21 +413,6 @@ contract GUnits is
             (gUnitsBalance * denominatorExchangeRate) / numeratorExchangeRate;
     }
 
-    // @dev Returns the balance of the user
-    // @param account The address of the user to get the balance of
-    function balanceOf(address account) public view returns (uint256) {
-        if (
-            hasRole(READABLE_ROLE, _msgSender()) ||
-            hasRole(LIVE_OPS_ROLE, _msgSender()) ||
-            hasRole(GAME_SERVER_ROLE, _msgSender()) ||
-            _msgSender() == account
-        ) {
-            return balances[account];
-        } else {
-            revert NotAuthorized(_msgSender());
-        }
-    }
-
     function getCollectedFees()
         external
         view
@@ -435,35 +420,6 @@ contract GUnits is
         returns (uint256)
     {
         return collectedFees;
-    }
-
-    // @dev Returns the balance of the users
-    // @param accounts The addresses of the users to get the balance of
-    function balanceOfBatch(
-        address[] memory accounts
-    ) external view returns (uint256[] memory) {
-        if (
-            !hasRole(GAME_SERVER_ROLE, _msgSender()) &&
-            !hasRole(LIVE_OPS_ROLE, _msgSender()) &&
-            !hasRole(READABLE_ROLE, _msgSender())
-        ) {
-            bool isQueryingSelf = true;
-            for (uint256 i = 0; i < accounts.length; i++) {
-                if (accounts[i] != _msgSender()) {
-                    isQueryingSelf = false;
-                    break;
-                }
-            }
-            if (!isQueryingSelf) {
-                revert NotAuthorized(_msgSender());
-            }
-        }
-
-        uint256[] memory batchBalances = new uint256[](accounts.length);
-        for (uint256 i = 0; i < accounts.length; i++) {
-            batchBalances[i] = balances[accounts[i]];
-        }
-        return batchBalances;
     }
 
     // @dev Returns true if the contract implements the interface
@@ -590,8 +546,7 @@ contract GUnits is
     function unlockFunds(address user, uint256 amount) external nonReentrant {
         if (
             !hasRole(LIVE_OPS_ROLE, _msgSender()) &&
-            !hasRole(GAME_SERVER_ROLE, _msgSender()) &&
-            user != _msgSender()
+            !hasRole(GAME_SERVER_ROLE, _msgSender())
         ) {
             revert NotAuthorized(_msgSender());
         }
@@ -613,9 +568,44 @@ contract GUnits is
         emit FundsUnlocked(user, amount);
     }
 
+    // @dev Returns the balance of the user
+    // @param account The address of the user to get the balance of
+    function balanceOf(address account) public view returns (uint256) {
+        if (
+            hasRole(READABLE_ROLE, _msgSender()) ||
+            hasRole(LIVE_OPS_ROLE, _msgSender()) ||
+            hasRole(GAME_SERVER_ROLE, _msgSender()) ||
+            _msgSender() == account
+        ) {
+            return balances[account];
+        } else {
+            revert NotAuthorized(_msgSender());
+        }
+    }
+
+    // @dev Returns the balance of the users
+    // @param accounts The addresses of the users to get the balance of
+    function balanceOfBatch(
+        address[] memory accounts
+    ) external view returns (uint256[] memory) {
+        if (
+            !hasRole(GAME_SERVER_ROLE, _msgSender()) &&
+            !hasRole(LIVE_OPS_ROLE, _msgSender()) &&
+            !hasRole(READABLE_ROLE, _msgSender())
+        ) {
+            uint256[] memory batchBalances = new uint256[](accounts.length);
+            for (uint256 i = 0; i < accounts.length; i++) {
+                batchBalances[i] = balances[accounts[i]];
+            }
+            return batchBalances;
+        } else {
+            revert NotAuthorized(_msgSender());
+        }
+    }
+
     // @dev Gets total locked funds for a user across all sessions
     // @param user The user address
-    function getTotalLockedFunds(address user) external view returns (uint256) {
+    function balanceOfLocked(address user) external view returns (uint256) {
         if (
             user == _msgSender() ||
             hasRole(READABLE_ROLE, _msgSender()) ||
@@ -627,7 +617,25 @@ contract GUnits is
         revert NotAuthorized(_msgSender());
     }
 
-    function getTotalBalanceOf(address user) external view returns (uint256) {
+    function balanceOfLockedBatch(
+        address[] memory users
+    ) external view returns (uint256[] memory) {
+        if (
+            hasRole(READABLE_ROLE, _msgSender()) ||
+            hasRole(LIVE_OPS_ROLE, _msgSender()) ||
+            hasRole(GAME_SERVER_ROLE, _msgSender())
+        ) {
+            uint256[] memory totalLocked = new uint256[](users.length);
+            for (uint256 i = 0; i < users.length; i++) {
+                totalLocked[i] = _getTotalLockedFunds(users[i]);
+            }
+            return totalLocked;
+        } else {
+            revert NotAuthorized(_msgSender());
+        }
+    }
+
+    function totalBalanceOf(address user) external view returns (uint256) {
         if (
             user == _msgSender() ||
             hasRole(READABLE_ROLE, _msgSender()) ||
@@ -637,6 +645,26 @@ contract GUnits is
             return balances[user] + _getTotalLockedFunds(user);
         }
         revert NotAuthorized(_msgSender());
+    }
+
+    function totalBalanceOfBatch(
+        address[] memory users
+    ) external view returns (uint256[] memory) {
+        if (
+            hasRole(READABLE_ROLE, _msgSender()) ||
+            hasRole(LIVE_OPS_ROLE, _msgSender()) ||
+            hasRole(GAME_SERVER_ROLE, _msgSender())
+        ) {
+            uint256[] memory totalBalances = new uint256[](users.length);
+            for (uint256 i = 0; i < users.length; i++) {
+                totalBalances[i] =
+                    balances[users[i]] +
+                    _getTotalLockedFunds(users[i]);
+            }
+            return totalBalances;
+        } else {
+            revert NotAuthorized(_msgSender());
+        }
     }
 
     function _getTotalLockedFunds(

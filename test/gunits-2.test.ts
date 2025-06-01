@@ -41,9 +41,9 @@ describe('GUnits-2', function () {
         await chips.connect(devWallet).grantRole(await chips.READABLE_ROLE(), liveOps.address);
 
         // Mint some tokens to users for testing
-        await mockToken.mint(user1.address, ethers.parseEther('1000'));
-        await mockToken.mint(user2.address, ethers.parseEther('1000'));
-        await mockToken.mint(gameServer.address, ethers.parseEther('1000'));
+        await mockToken.mint(user1.address, ethers.parseUnits('1000', 6));
+        await mockToken.mint(user2.address, ethers.parseUnits('1000', 6));
+        await mockToken.mint(gameServer.address, ethers.parseUnits('1000', 6));
 
         return {
             chips,
@@ -66,8 +66,8 @@ describe('GUnits-2', function () {
     describe('Lock Funds', function () {
         it('Should allow game server to lock funds', async function () {
             const { chips, mockToken, gameServer, user1 } = await loadFixture(deployFixtures);
-            const depositAmount = ethers.parseEther('100');
-            const lockAmount = ethers.parseEther('50');
+            const depositAmount = ethers.parseUnits('100', 6);
+            const lockAmount = ethers.parseUnits('50', 6);
             
             // First deposit some funds
             await depositGUnits(chips, mockToken, gameServer, user1, depositAmount);
@@ -79,15 +79,15 @@ describe('GUnits-2', function () {
                 .withArgs(user1.address, lockAmount);
             
             // Check locked funds
-            expect(await chips.connect(gameServer).getTotalLockedFunds(user1.address)).to.equal(lockAmount);
+            expect(await chips.connect(gameServer).balanceOfLocked(user1.address)).to.equal(lockAmount);
             expect(await chips.getAvailableBalance(user1.address)).to.equal(depositAmount - lockAmount);
         });
 
         it('Should track multiple game sessions for same user', async function () {
             const { chips, mockToken, gameServer, user1 } = await loadFixture(deployFixtures);
-            const depositAmount = ethers.parseEther('200');
-            const lockAmount1 = ethers.parseEther('50');
-            const lockAmount2 = ethers.parseEther('30');
+            const depositAmount = ethers.parseUnits('200', 6);
+            const lockAmount1 = ethers.parseUnits('50', 6);
+            const lockAmount2 = ethers.parseUnits('30', 6);
             
             await depositGUnits(chips, mockToken, gameServer, user1, depositAmount);
             
@@ -95,14 +95,14 @@ describe('GUnits-2', function () {
             await chips.connect(gameServer).lockFunds(user1.address, lockAmount2);
             
             // The contract appears to replace the locked amount, not accumulate it
-            expect(await chips.connect(gameServer).getTotalLockedFunds(user1.address)).to.equal(lockAmount2);
+            expect(await chips.connect(gameServer).balanceOfLocked(user1.address)).to.equal(lockAmount2);
             expect(await chips.getAvailableBalance(user1.address)).to.equal(depositAmount - lockAmount2);
         });
 
         it('Should revert if trying to lock more than available balance', async function () {
             const { chips, mockToken, gameServer, user1 } = await loadFixture(deployFixtures);
-            const depositAmount = ethers.parseEther('100');
-            const lockAmount = ethers.parseEther('150');
+            const depositAmount = ethers.parseUnits('100', 6);
+            const lockAmount = ethers.parseUnits('150', 6);
             
             await depositGUnits(chips, mockToken, gameServer, user1, depositAmount);
             
@@ -122,7 +122,7 @@ describe('GUnits-2', function () {
         it('Should revert if non-game-server tries to lock funds', async function () {
             const { chips, user1, user2 } = await loadFixture(deployFixtures);
             
-            await expect(chips.connect(user2).lockFunds(user1.address, ethers.parseEther('50')))
+            await expect(chips.connect(user2).lockFunds(user1.address, ethers.parseUnits('50', 6)))
                 .to.be.revertedWithCustomError(chips, 'AccessControlUnauthorizedAccount');
         });
     });
@@ -130,8 +130,8 @@ describe('GUnits-2', function () {
     describe('Unlock Funds', function () {
         it('Should allow live ops to unlock funds', async function () {
             const { chips, mockToken, gameServer, liveOps, user1 } = await loadFixture(deployFixtures);
-            const depositAmount = ethers.parseEther('100');
-            const lockAmount = ethers.parseEther('50');
+            const depositAmount = ethers.parseUnits('100', 6);
+            const lockAmount = ethers.parseUnits('50', 6);
             
             await depositGUnits(chips, mockToken, gameServer, user1, depositAmount);
             
@@ -143,22 +143,22 @@ describe('GUnits-2', function () {
                 .to.emit(chips, 'FundsUnlocked')
                 .withArgs(user1.address, lockAmount);
             
-            expect(await chips.connect(liveOps).getTotalLockedFunds(user1.address)).to.equal(0);
+            expect(await chips.connect(liveOps).balanceOfLocked(user1.address)).to.equal(0);
             expect(await chips.getAvailableBalance(user1.address)).to.equal(depositAmount);
         });
 
         it('Should revert if no locked funds exist', async function () {
             const { chips, liveOps, user1 } = await loadFixture(deployFixtures);
             
-            await expect(chips.connect(liveOps).unlockFunds(user1.address, ethers.parseEther('1')))
+            await expect(chips.connect(liveOps).unlockFunds(user1.address, ethers.parseUnits('1', 6)))
                 .to.be.revertedWithCustomError(chips, 'NoLockedFunds')
                 .withArgs(user1.address);
         });
 
         it('Should revert if non-live-ops or game-server tries to unlock funds', async function () {
             const { chips, mockToken, gameServer, user1, user2 } = await loadFixture(deployFixtures);
-            const depositAmount = ethers.parseEther('100');
-            const lockAmount = ethers.parseEther('50');
+            const depositAmount = ethers.parseUnits('100', 6);
+            const lockAmount = ethers.parseUnits('50', 6);
             
             await depositGUnits(chips, mockToken, gameServer, user1, depositAmount);
             
@@ -173,9 +173,9 @@ describe('GUnits-2', function () {
     describe('Withdrawals with Locked Funds', function () {
         it('Should only allow withdrawal of unlocked funds', async function () {
             const { chips, mockToken, gameServer, user1, devWallet } = await loadFixture(deployFixtures);
-            const depositAmount = ethers.parseEther('100');
-            const lockAmount = ethers.parseEther('60');
-            const withdrawAmount = ethers.parseEther('40');
+            const depositAmount = ethers.parseUnits('100', 6);
+            const lockAmount = ethers.parseUnits('60', 6);
+            const withdrawAmount = ethers.parseUnits('40', 6);
             
             await depositGUnits(chips, mockToken, gameServer, user1, depositAmount);
             
@@ -206,9 +206,9 @@ describe('GUnits-2', function () {
 
         it('Should revert withdrawal if amount exceeds available balance', async function () {
             const { chips, mockToken, gameServer, user1, devWallet } = await loadFixture(deployFixtures);
-            const depositAmount = ethers.parseEther('100');
-            const lockAmount = ethers.parseEther('60');
-            const withdrawAmount = ethers.parseEther('50'); // More than available (40)
+            const depositAmount = ethers.parseUnits('100', 6);
+            const lockAmount = ethers.parseUnits('60', 6);
+            const withdrawAmount = ethers.parseUnits('50', 6); // More than available (40)
             
             await depositGUnits(chips, mockToken, gameServer, user1, depositAmount);
             
@@ -236,8 +236,8 @@ describe('GUnits-2', function () {
 
         it('Should allow withdrawAll only up to available balance', async function () {
             const { chips, mockToken, gameServer, user1 } = await loadFixture(deployFixtures);
-            const depositAmount = ethers.parseEther('100');
-            const lockAmount = ethers.parseEther('60');
+            const depositAmount = ethers.parseUnits('100', 6);
+            const lockAmount = ethers.parseUnits('60', 6);
             
             await depositGUnits(chips, mockToken, gameServer, user1, depositAmount);
             
@@ -254,9 +254,9 @@ describe('GUnits-2', function () {
     describe('Admin Payout with Locked Funds', function () {
         it('Should handle winner payout correctly with locked funds', async function () {
             const { chips, mockToken, gameServer, user1, user2 } = await loadFixture(deployFixtures);
-            const depositAmount = ethers.parseEther('100');
-            const lockAmount = ethers.parseEther('50');
-            const winAmount = ethers.parseEther('45'); // Winner gets 45 from loser
+            const depositAmount = ethers.parseUnits('100', 6);
+            const lockAmount = ethers.parseUnits('50', 6);
+            const winAmount = ethers.parseUnits('45', 6); // Winner gets 45 from loser
             
             // Setup initial balances
             await depositGUnits(chips, mockToken, gameServer, user1, depositAmount);
@@ -280,7 +280,7 @@ describe('GUnits-2', function () {
                 }
             ];
             
-            const rakeFee = ethers.parseEther('5');
+            const rakeFee = ethers.parseUnits('5', 6);
             
             await expect(chips.connect(gameServer).adminPayout(payouts, rakeFee))
                 .to.emit(chips, 'PayoutProcessed')
@@ -291,8 +291,8 @@ describe('GUnits-2', function () {
             expect(await chips.balanceOf(user2.address)).to.equal(depositAmount + winAmount); // Won 45
             
             // Check locked funds - should be reduced for loser, cleared for winner
-            expect(await chips.connect(gameServer).getTotalLockedFunds(user1.address)).to.equal(lockAmount - winAmount); // 5 still locked
-            expect(await chips.connect(gameServer).getTotalLockedFunds(user2.address)).to.equal(0); // Winner's funds unlocked
+            expect(await chips.connect(gameServer).balanceOfLocked(user1.address)).to.equal(lockAmount - winAmount); // 5 still locked
+            expect(await chips.connect(gameServer).balanceOfLocked(user2.address)).to.equal(0); // Winner's funds unlocked
             
             // Check available balances
             expect(await chips.getAvailableBalance(user1.address)).to.equal(depositAmount - winAmount - (lockAmount - winAmount));
@@ -319,7 +319,7 @@ describe('GUnits-2', function () {
             await chips.connect(gameServer).adminPayout(payouts, 0);
             
             expect(await chips.balanceOf(user1.address)).to.equal(depositAmount - lockAmount);
-            expect(await chips.connect(gameServer).getTotalLockedFunds(user1.address)).to.equal(0);
+            expect(await chips.connect(gameServer).balanceOfLocked(user1.address)).to.equal(0);
         });
 
         it('Should revert if trying to deduct more than locked amount', async function () {
@@ -359,8 +359,8 @@ describe('GUnits-2', function () {
             await chips.connect(gameServer).lockFunds(user2.address, lockAmount);
             
             // Verify funds are locked correctly
-            expect(await chips.connect(gameServer).getTotalLockedFunds(user1.address)).to.equal(lockAmount);
-            expect(await chips.connect(gameServer).getTotalLockedFunds(user2.address)).to.equal(lockAmount);
+            expect(await chips.connect(gameServer).balanceOfLocked(user1.address)).to.equal(lockAmount);
+            expect(await chips.connect(gameServer).balanceOfLocked(user2.address)).to.equal(lockAmount);
             
             
             // Attempt payout with a different session ID - should succeed
@@ -386,17 +386,17 @@ describe('GUnits-2', function () {
             expect(await chips.balanceOf(user2.address)).to.equal(depositAmount - ethers.parseUnits('10', 6));
             
             // Verify locked funds are updated
-            expect(await chips.connect(gameServer).getTotalLockedFunds(user1.address)).to.equal(0); // Winner's funds unlocked
-            expect(await chips.connect(gameServer).getTotalLockedFunds(user2.address)).to.equal(0); // Loser's remaining funds unlocked
+            expect(await chips.connect(gameServer).balanceOfLocked(user1.address)).to.equal(0); // Winner's funds unlocked
+            expect(await chips.connect(gameServer).balanceOfLocked(user2.address)).to.equal(0); // Loser's remaining funds unlocked
         });
     });
 
     describe('Emergency Functions', function () {
         it('Should allow manager to emergency unlock funds when paused', async function () {
             const { chips, mockToken, gameServer, manager, devWallet, user1 } = await loadFixture(deployFixtures);
-            const depositAmount = ethers.parseEther('200');
-            const lockAmount1 = ethers.parseEther('50');
-            const lockAmount2 = ethers.parseEther('30');
+            const depositAmount = ethers.parseUnits('200', 6);
+            const lockAmount1 = ethers.parseUnits('50', 6);
+            const lockAmount2 = ethers.parseUnits('30', 6);
             
             await depositGUnits(chips, mockToken, gameServer, user1, depositAmount);
             
@@ -412,9 +412,9 @@ describe('GUnits-2', function () {
                 .to.emit(chips, 'FundsUnlocked')
                 .withArgs(user1.address, lockAmount2); // Only the last locked amount
             
-            expect(await chips.connect(manager).getTotalLockedFunds(user1.address)).to.equal(0);
+            expect(await chips.connect(manager).balanceOfLocked(user1.address)).to.equal(0);
             expect(await chips.getAvailableBalance(user1.address)).to.equal(depositAmount);
-            expect(await chips.connect(gameServer).getTotalLockedFunds(user1.address)).to.equal(0);
+            expect(await chips.connect(gameServer).balanceOfLocked(user1.address)).to.equal(0);
         });
 
         it('Should revert emergency unlock when not paused', async function () {
@@ -437,12 +437,12 @@ describe('GUnits-2', function () {
     describe('View Functions', function () {
         it('Should correctly report total locked funds across sessions', async function () {
             const { chips, mockToken, gameServer, user1 } = await loadFixture(deployFixtures);
-            const depositAmount = ethers.parseEther('300');
+            const depositAmount = ethers.parseUnits('300', 6);
             
             await depositGUnits(chips, mockToken, gameServer, user1, depositAmount);
             
             // Lock in 3 different sessions
-            const amounts = [ethers.parseEther('50'), ethers.parseEther('30'), ethers.parseEther('20')];
+            const amounts = [ethers.parseUnits('50', 6), ethers.parseUnits('30', 6), ethers.parseUnits('20', 6)];
             
             for (let i = 0; i < amounts.length; i++) {
                 await chips.connect(gameServer).lockFunds(user1.address, amounts[i]);
@@ -450,14 +450,14 @@ describe('GUnits-2', function () {
             
             // The contract only tracks the last locked amount, not cumulative
             const lastAmount = amounts[amounts.length - 1];
-            expect(await chips.connect(gameServer).getTotalLockedFunds(user1.address)).to.equal(lastAmount);
+            expect(await chips.connect(gameServer).balanceOfLocked(user1.address)).to.equal(lastAmount);
             expect(await chips.getAvailableBalance(user1.address)).to.equal(depositAmount - lastAmount);
         });
 
         it('Should return zero for users with no locked funds', async function () {
             const { chips, user1, manager } = await loadFixture(deployFixtures);
             
-            expect(await chips.connect(manager).getTotalLockedFunds(user1.address)).to.equal(0);
+            expect(await chips.connect(manager).balanceOfLocked(user1.address)).to.equal(0);
             expect(await chips.getAvailableBalance(user1.address)).to.equal(0);
         });
     });
@@ -465,8 +465,8 @@ describe('GUnits-2', function () {
     describe('Integration Scenarios', function () {
         it('Should handle complex game scenario with multiple players', async function () {
             const { chips, mockToken, gameServer, user1, user2, treasury, devWallet } = await loadFixture(deployFixtures);
-            const entryFee = ethers.parseEther('50');
-            const depositAmount = ethers.parseEther('200');
+            const entryFee = ethers.parseUnits('50', 6);
+            const depositAmount = ethers.parseUnits('200', 6);
             
             // Setup initial balances
             await depositGUnits(chips, mockToken, gameServer, user1, depositAmount);
@@ -477,8 +477,8 @@ describe('GUnits-2', function () {
             await chips.connect(gameServer).lockFunds(user2.address, entryFee);
             
             // Game ends: user1 wins, gets 90 (100 - 10% rake), user2 loses 50
-            const winAmount = ethers.parseEther('90');
-            const rakeFee = ethers.parseEther('10');
+            const winAmount = ethers.parseUnits('90', 6);
+            const rakeFee = ethers.parseUnits('10', 6);
             
             const payouts = [
                 {
@@ -501,8 +501,8 @@ describe('GUnits-2', function () {
             expect(await chips.getCollectedFees()).to.equal(rakeFee);
             
             // All funds should be unlocked
-            expect(await chips.connect(gameServer).getTotalLockedFunds(user1.address)).to.equal(0);
-            expect(await chips.connect(gameServer).getTotalLockedFunds(user2.address)).to.equal(0);
+            expect(await chips.connect(gameServer).balanceOfLocked(user1.address)).to.equal(0);
+            expect(await chips.connect(gameServer).balanceOfLocked(user2.address)).to.equal(0);
             
             // Withdraw fees
             const treasuryBalanceBefore = await mockToken.balanceOf(treasury.address);
@@ -510,4 +510,246 @@ describe('GUnits-2', function () {
             expect(await mockToken.balanceOf(treasury.address)).to.equal(treasuryBalanceBefore + rakeFee);
         });
     });
+
+    describe('Batch Lock and Unlock', function () {
+        it('Should allow game server to lock funds for multiple users in a batch', async function () {
+            const { chips, mockToken, gameServer, user1, user2 } = await loadFixture(deployFixtures);
+            const depositAmount = ethers.parseUnits('100', 6);
+            const lockAmount = ethers.parseUnits('50', 6);
+
+            // Deposit funds for users
+            await depositGUnits(chips, mockToken, gameServer, user1, depositAmount);
+            await depositGUnits(chips, mockToken, gameServer, user2, depositAmount);
+
+            const users = [user1.address, user2.address];
+            const amounts = [lockAmount, lockAmount];
+
+            // Lock funds in batch
+            await expect(chips.connect(gameServer).lockFundsBatch(users, amounts))
+                .to.emit(chips, 'FundsLocked').withArgs(user1.address, lockAmount)
+                .and.to.emit(chips, 'FundsLocked').withArgs(user2.address, lockAmount);
+
+            // Check locked funds and available balances
+            expect(await chips.connect(gameServer).balanceOfLocked(user1.address)).to.equal(lockAmount);
+            expect(await chips.getAvailableBalance(user1.address)).to.equal(depositAmount - lockAmount);
+            expect(await chips.connect(gameServer).balanceOfLocked(user2.address)).to.equal(lockAmount);
+            expect(await chips.getAvailableBalance(user2.address)).to.equal(depositAmount - lockAmount);
+        });
+
+        it('Should allow game server to lock funds for a large batch of users (50 users)', async function () {
+            const { chips, mockToken, gameServer } = await loadFixture(deployFixtures);
+            const allSigners = await ethers.getSigners();
+            
+            const fixedSignersCount = 7; // devWallet, manager, user1, user2, treasury, gameServer, liveOps
+            if (allSigners.length <= fixedSignersCount) {
+                throw new Error(`Not enough signers for test users. Available: ${allSigners.length}, Needed > ${fixedSignersCount}`);
+            }
+            const userSigners = allSigners.slice(fixedSignersCount);
+            const numUniqueUserSigners = userSigners.length;
+            if (numUniqueUserSigners === 0) {
+                throw new Error('No available user signers for the test after accounting for fixed roles.');
+            }
+
+            const targetBatchSize = 50;
+            const depositAmountPerUser = ethers.parseUnits('10', 6); // Each unique user gets this much deposited
+            const lockAmountPerOperation = ethers.parseUnits('5', 6); // Each lock operation in the batch uses this amount
+            
+            const batchLockAddresses = [];
+            const batchLockAmounts = [];
+
+            // Mint enough tokens to gameServer for all deposits it will make for unique users
+            const totalGameServerMintForDeposits = depositAmountPerUser * BigInt(numUniqueUserSigners);
+            await mockToken.mint(gameServer.address, totalGameServerMintForDeposits);
+
+            // Deposit funds for each unique user signer
+            for (let i = 0; i < numUniqueUserSigners; i++) {
+                const userSigner = userSigners[i];
+                await depositGUnits(chips, mockToken, gameServer, userSigner, depositAmountPerUser);
+            }
+
+            // Prepare batch arrays for the 50 lock operations
+            // Each unique user will be targeted multiple times if targetBatchSize > numUniqueUserSigners
+            for (let i = 0; i < targetBatchSize; i++) {
+                const userSignerForThisEntry = userSigners[i % numUniqueUserSigners];
+                batchLockAddresses.push(userSignerForThisEntry.address);
+                batchLockAmounts.push(lockAmountPerOperation);
+            }
+            
+            // Lock funds in batch
+            const tx = await chips.connect(gameServer).lockFundsBatch(batchLockAddresses, batchLockAmounts);
+            const receipt = await tx.wait();
+
+            // Check events - Expect 50 FundsLocked events
+            let fundsLockedEvents = 0;
+            if (receipt?.logs) {
+                for (const log of receipt.logs) {
+                    try {
+                        const parsedLog = chips.interface.parseLog(log as any);
+                        if (parsedLog && parsedLog.name === 'FundsLocked') {
+                            fundsLockedEvents++;
+                        }
+                    } catch (e) { /* Ignore other events */ }
+                }
+            }
+            expect(fundsLockedEvents).to.equal(targetBatchSize);
+
+            // Check final balances for each unique user signer
+            // Since lockedFunds[user] = amount (it's an overwrite, not cumulative for a single user from _lockFunds perspective),
+            // and all operations in the batch use \`lockAmountPerOperation\`,
+            // the final locked amount for any user who was part of the batch will be \`lockAmountPerOperation\`.
+            for (let i = 0; i < numUniqueUserSigners; i++) {
+                const userSigner = userSigners[i];
+                expect(await chips.connect(gameServer).balanceOfLocked(userSigner.address))
+                    .to.equal(lockAmountPerOperation);
+                expect(await chips.getAvailableBalance(userSigner.address))
+                    .to.equal(depositAmountPerUser - lockAmountPerOperation);
+            }
+        });
+
+        it('Should revert lockFundsBatch if users and amounts arrays have different lengths', async function () {
+            const { chips, gameServer, user1 } = await loadFixture(deployFixtures);
+            const users = [user1.address];
+            const amounts = [ethers.parseUnits('50', 6), ethers.parseUnits('30', 6)]; // Mismatched length
+
+            const shortAmounts = [ethers.parseUnits('50', 6)];
+            const longUsers = [user1.address, gameServer.address]; 
+
+            await expect(chips.connect(gameServer).lockFundsBatch(longUsers, shortAmounts))
+                .to.be.reverted; 
+        });
+
+
+        it('Should revert lockFundsBatch if any user has insufficient available balance', async function () {
+            const { chips, mockToken, gameServer, user1, user2 } = await loadFixture(deployFixtures);
+            const depositAmount = ethers.parseUnits('100', 6);
+            const insufficientDeposit = ethers.parseUnits('10', 6);
+            const lockAmount = ethers.parseUnits('50', 6);
+
+            await depositGUnits(chips, mockToken, gameServer, user1, depositAmount); 
+            await depositGUnits(chips, mockToken, gameServer, user2, insufficientDeposit); 
+
+            const users = [user1.address, user2.address];
+            const amounts = [lockAmount, lockAmount];
+
+            await expect(chips.connect(gameServer).lockFundsBatch(users, amounts))
+                .to.be.revertedWithCustomError(chips, 'InsufficientUnlockedBalance')
+                .withArgs(user2.address, lockAmount, insufficientDeposit);
+        });
+
+        it('Should revert lockFundsBatch if called by non-game-server', async function () {
+            const { chips, user1, user2 } = await loadFixture(deployFixtures);
+            const users = [user1.address];
+            const amounts = [ethers.parseUnits('50', 6)];
+
+            await expect(chips.connect(user2).lockFundsBatch(users, amounts))
+                .to.be.revertedWithCustomError(chips, 'AccessControlUnauthorizedAccount');
+        });
+
+        // Tests for unlockFundsBatch
+        it('Should allow live ops to unlock funds for multiple users in a batch', async function () {
+            const { chips, mockToken, gameServer, liveOps, user1, user2 } = await loadFixture(deployFixtures);
+            const depositAmount = ethers.parseUnits('100', 6);
+            const lockAmount = ethers.parseUnits('50', 6);
+
+            // Deposit and lock funds
+            await depositGUnits(chips, mockToken, gameServer, user1, depositAmount);
+            await depositGUnits(chips, mockToken, gameServer, user2, depositAmount);
+            await chips.connect(gameServer).lockFundsBatch([user1.address, user2.address], [lockAmount, lockAmount]);
+
+            // Unlock funds in batch by liveOps
+            await expect(chips.connect(liveOps).unlockFundsBatch([user1.address, user2.address], [lockAmount, lockAmount]))
+                .to.emit(chips, 'FundsUnlocked').withArgs(user1.address, lockAmount)
+                .and.to.emit(chips, 'FundsUnlocked').withArgs(user2.address, lockAmount);
+
+            expect(await chips.connect(liveOps).balanceOfLocked(user1.address)).to.equal(0);
+            expect(await chips.getAvailableBalance(user1.address)).to.equal(depositAmount);
+            expect(await chips.connect(liveOps).balanceOfLocked(user2.address)).to.equal(0);
+            expect(await chips.getAvailableBalance(user2.address)).to.equal(depositAmount);
+        });
+        
+        it('Should allow game server to unlock funds for multiple users in a batch', async function () {
+            const { chips, mockToken, gameServer, user1, user2 } = await loadFixture(deployFixtures);
+            const depositAmount = ethers.parseUnits('100', 6);
+            const lockAmount = ethers.parseUnits('50', 6);
+
+            // Deposit and lock funds
+            await depositGUnits(chips, mockToken, gameServer, user1, depositAmount);
+            await depositGUnits(chips, mockToken, gameServer, user2, depositAmount);
+            await chips.connect(gameServer).lockFundsBatch([user1.address, user2.address], [lockAmount, lockAmount]);
+
+            // Unlock funds in batch by gameServer
+            await expect(chips.connect(gameServer).unlockFundsBatch([user1.address, user2.address], [lockAmount, lockAmount]))
+                .to.emit(chips, 'FundsUnlocked').withArgs(user1.address, lockAmount)
+                .and.to.emit(chips, 'FundsUnlocked').withArgs(user2.address, lockAmount);
+
+            expect(await chips.connect(gameServer).balanceOfLocked(user1.address)).to.equal(0);
+            expect(await chips.getAvailableBalance(user1.address)).to.equal(depositAmount);
+            expect(await chips.connect(gameServer).balanceOfLocked(user2.address)).to.equal(0);
+            expect(await chips.getAvailableBalance(user2.address)).to.equal(depositAmount);
+        });
+
+        it('Should revert unlockFundsBatch if users and amounts arrays have different lengths', async function () {
+            const { chips, liveOps, user1 } = await loadFixture(deployFixtures);
+            const users = [user1.address];
+            const amounts = [ethers.parseUnits('50', 6), ethers.parseUnits('30', 6)];
+
+            const shortAmounts = [ethers.parseUnits('50', 6)];
+            const longUsers = [user1.address, liveOps.address]; 
+
+            await expect(chips.connect(liveOps).unlockFundsBatch(longUsers, shortAmounts))
+                .to.be.reverted;
+        });
+
+        it('Should revert unlockFundsBatch if any user has insufficient locked funds', async function () {
+            const { chips, mockToken, gameServer, liveOps, user1, user2 } = await loadFixture(deployFixtures);
+            const depositAmount = ethers.parseUnits('100', 6);
+            const lockAmountUser1 = ethers.parseUnits('50', 6);
+            const lockAmountUser2 = ethers.parseUnits('20', 6); // User2 has less locked
+            const unlockAmount = ethers.parseUnits('50', 6); // Attempt to unlock more than user2 has
+
+            // Deposit and lock
+            await depositGUnits(chips, mockToken, gameServer, user1, depositAmount);
+            await depositGUnits(chips, mockToken, gameServer, user2, depositAmount);
+            await chips.connect(gameServer).lockFunds(user1.address, lockAmountUser1);
+            await chips.connect(gameServer).lockFunds(user2.address, lockAmountUser2);
+
+
+            const users = [user1.address, user2.address];
+            const amounts = [unlockAmount, unlockAmount]; // User2 will fail here
+
+            await expect(chips.connect(liveOps).unlockFundsBatch(users, amounts))
+                .to.be.revertedWithCustomError(chips, 'InsufficientLockedBalance')
+                .withArgs(user2.address, unlockAmount, lockAmountUser2);
+        });
+        
+        it('Should revert unlockFundsBatch if any user has no locked funds', async function () {
+            const { chips, mockToken, gameServer, liveOps, user1, user2 } = await loadFixture(deployFixtures);
+            const depositAmount = ethers.parseUnits('100', 6);
+            const lockAmountUser1 = ethers.parseUnits('50', 6);
+            // User2 has no funds locked
+
+            await depositGUnits(chips, mockToken, gameServer, user1, depositAmount);
+            await depositGUnits(chips, mockToken, gameServer, user2, depositAmount); // User2 has balance but no lock
+            await chips.connect(gameServer).lockFunds(user1.address, lockAmountUser1);
+
+            const users = [user1.address, user2.address];
+            const amounts = [lockAmountUser1, ethers.parseUnits('10', 6)]; // Try to unlock for user2
+
+            await expect(chips.connect(liveOps).unlockFundsBatch(users, amounts))
+                .to.be.revertedWithCustomError(chips, 'NoLockedFunds')
+                .withArgs(user2.address);
+        });
+
+        it('Should revert unlockFundsBatch if called by non-authorized role (not liveOps or gameServer)', async function () {
+            const { chips, user1, user2, manager } = await loadFixture(deployFixtures); // manager is not authorized
+            const users = [user1.address];
+            const amounts = [ethers.parseUnits('50', 6)];
+
+            // manager is not LIVE_OPS_ROLE or GAME_SERVER_ROLE for unlockFundsBatch
+            await expect(chips.connect(manager).unlockFundsBatch(users, amounts))
+                .to.be.revertedWithCustomError(chips, 'NotAuthorized');
+        });
+
+    });
+
 }); 
