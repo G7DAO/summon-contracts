@@ -63,23 +63,6 @@ describe('GUnits-2', function () {
         await chips.connect(deployer).adminDeposit([wallet.address], [amount]);
     }
 
-    let gameIdCounter = 1;
-    function getNextGameId(): number {
-        return gameIdCounter++;
-    }
-
-    function generateGameSessionId(gameId: string, sessionId: string, roomId: string, userId: string): bigint {
-        const abiCoder = new ethers.AbiCoder();
-        const hash = ethers.keccak256(
-            abiCoder.encode(
-                ['string', 'string', 'string', 'string', 'uint256'],
-                [gameId, sessionId, roomId, userId, Date.now()]
-            )
-        );
-        // Convert hash to uint128 by taking the first 16 bytes
-        return BigInt(hash.slice(0, 34)); // '0x' + 32 hex chars = 16 bytes = 128 bits
-    }
-
     describe('Lock Funds', function () {
         it('Should allow game server to lock funds', async function () {
             const { chips, mockToken, gameServer, user1 } = await loadFixture(deployFixtures);
@@ -89,8 +72,6 @@ describe('GUnits-2', function () {
             // First deposit some funds
             await depositGUnits(chips, mockToken, gameServer, user1, depositAmount);
             
-            // Generate a game session ID
-            const gameSessionId = generateGameSessionId('game1', 'session1', 'room1', user1.address);
             
             // Lock funds
             await expect(chips.connect(gameServer).lockFunds(user1.address, lockAmount))
@@ -125,7 +106,6 @@ describe('GUnits-2', function () {
             
             await depositGUnits(chips, mockToken, gameServer, user1, depositAmount);
             
-            const gameSessionId = generateGameSessionId('game1', 'session1', 'room1', user1.address);
             
             await expect(chips.connect(gameServer).lockFunds(user1.address, lockAmount))
                 .to.be.revertedWithCustomError(chips, 'InsufficientUnlockedBalance')
@@ -134,7 +114,6 @@ describe('GUnits-2', function () {
 
         it('Should revert if trying to lock zero amount', async function () {
             const { chips, gameServer, user1 } = await loadFixture(deployFixtures);
-            const gameSessionId = generateGameSessionId('game1', 'session1', 'room1', user1.address);
             
             await expect(chips.connect(gameServer).lockFunds(user1.address, 0))
                 .to.be.revertedWithCustomError(chips, 'InvalidAmount');
@@ -142,7 +121,6 @@ describe('GUnits-2', function () {
 
         it('Should revert if non-game-server tries to lock funds', async function () {
             const { chips, user1, user2 } = await loadFixture(deployFixtures);
-            const gameSessionId = generateGameSessionId('game1', 'session1', 'room1', user1.address);
             
             await expect(chips.connect(user2).lockFunds(user1.address, ethers.parseEther('50')))
                 .to.be.revertedWithCustomError(chips, 'AccessControlUnauthorizedAccount');
@@ -157,12 +135,11 @@ describe('GUnits-2', function () {
             
             await depositGUnits(chips, mockToken, gameServer, user1, depositAmount);
             
-            const gameSessionId = generateGameSessionId('game1', 'session1', 'room1', user1.address);
             
             await chips.connect(gameServer).lockFunds(user1.address, lockAmount);
             
             // Unlock funds (now requires LIVE_OPS_ROLE)
-            await expect(chips.connect(liveOps).unlockFunds(user1.address))
+            await expect(chips.connect(liveOps).unlockFunds(user1.address, lockAmount))
                 .to.emit(chips, 'FundsUnlocked')
                 .withArgs(user1.address, lockAmount);
             
@@ -172,26 +149,24 @@ describe('GUnits-2', function () {
 
         it('Should revert if no locked funds exist', async function () {
             const { chips, liveOps, user1 } = await loadFixture(deployFixtures);
-            const gameSessionId = generateGameSessionId('game1', 'session1', 'room1', user1.address);
             
-            await expect(chips.connect(liveOps).unlockFunds(user1.address))
+            await expect(chips.connect(liveOps).unlockFunds(user1.address, ethers.parseEther('1')))
                 .to.be.revertedWithCustomError(chips, 'NoLockedFunds')
                 .withArgs(user1.address);
         });
 
-        it('Should revert if non-live-ops tries to unlock funds', async function () {
-            const { chips, mockToken, gameServer, user1 } = await loadFixture(deployFixtures);
+        it('Should revert if non-live-ops or game-server tries to unlock funds', async function () {
+            const { chips, mockToken, gameServer, user1, user2 } = await loadFixture(deployFixtures);
             const depositAmount = ethers.parseEther('100');
             const lockAmount = ethers.parseEther('50');
             
             await depositGUnits(chips, mockToken, gameServer, user1, depositAmount);
             
-            const gameSessionId = generateGameSessionId('game1', 'session1', 'room1', user1.address);
             await chips.connect(gameServer).lockFunds(user1.address, lockAmount);
             
             // Game server can no longer unlock funds
-            await expect(chips.connect(gameServer).unlockFunds(user1.address))
-                .to.be.revertedWithCustomError(chips, 'AccessControlUnauthorizedAccount');
+            await expect(chips.connect(user2).unlockFunds(user1.address, lockAmount))
+                .to.be.revertedWithCustomError(chips, 'NotAuthorized');
         });
     });
 
@@ -204,7 +179,6 @@ describe('GUnits-2', function () {
             
             await depositGUnits(chips, mockToken, gameServer, user1, depositAmount);
             
-            const gameSessionId = generateGameSessionId('game1', 'session1', 'room1', user1.address);
             await chips.connect(gameServer).lockFunds(user1.address, lockAmount);
             
             // Should be able to withdraw available balance
@@ -267,7 +241,6 @@ describe('GUnits-2', function () {
             
             await depositGUnits(chips, mockToken, gameServer, user1, depositAmount);
             
-            const gameSessionId = generateGameSessionId('game1', 'session1', 'room1', user1.address);
             await chips.connect(gameServer).lockFunds(user1.address, lockAmount);
             
             // withdrawAll tries to withdraw the entire balance, which should fail because some funds are locked
@@ -290,7 +263,6 @@ describe('GUnits-2', function () {
             await depositGUnits(chips, mockToken, gameServer, user2, depositAmount);
             
             // Lock funds for both players
-            const gameSessionId = generateGameSessionId('game1', 'session1', 'room1', 'both');
             await chips.connect(gameServer).lockFunds(user1.address, lockAmount);
             await chips.connect(gameServer).lockFunds(user2.address, lockAmount);
             
@@ -300,13 +272,11 @@ describe('GUnits-2', function () {
                     player: user1.address,
                     isWinner: false,
                     amount: winAmount,
-                    gameSessionId: gameSessionId
                 },
                 {
                     player: user2.address,
                     isWinner: true,
                     amount: winAmount,
-                    gameSessionId: gameSessionId
                 }
             ];
             
@@ -336,7 +306,6 @@ describe('GUnits-2', function () {
             
             await depositGUnits(chips, mockToken, gameServer, user1, depositAmount);
             
-            const gameSessionId = generateGameSessionId('game1', 'session1', 'room1', user1.address);
             await chips.connect(gameServer).lockFunds(user1.address, lockAmount);
             
             const payouts = [
@@ -344,7 +313,6 @@ describe('GUnits-2', function () {
                     player: user1.address,
                     isWinner: false,
                     amount: lockAmount, // Lose entire locked amount
-                    gameSessionId: gameSessionId
                 }
             ];
             
@@ -362,7 +330,6 @@ describe('GUnits-2', function () {
             
             await depositGUnits(chips, mockToken, gameServer, user1, depositAmount);
             
-            const gameSessionId = generateGameSessionId('game1', 'session1', 'room1', user1.address);
             await chips.connect(gameServer).lockFunds(user1.address, lockAmount);
             
             const payouts = [
@@ -370,7 +337,6 @@ describe('GUnits-2', function () {
                     player: user1.address,
                     isWinner: false,
                     amount: lossAmount,
-                    gameSessionId: gameSessionId
                 }
             ];
             
@@ -396,8 +362,6 @@ describe('GUnits-2', function () {
             expect(await chips.connect(gameServer).getTotalLockedFunds(user1.address)).to.equal(lockAmount);
             expect(await chips.connect(gameServer).getTotalLockedFunds(user2.address)).to.equal(lockAmount);
             
-            // Generate a DIFFERENT session ID for payout
-            const payoutSessionId = generateGameSessionId('game1', 'session1', 'room1', 'payout-time');
             
             // Attempt payout with a different session ID - should succeed
             const payouts = [
@@ -405,13 +369,11 @@ describe('GUnits-2', function () {
                     player: user1.address,
                     isWinner: true,
                     amount: ethers.parseUnits('10', 6), // Winner gets 10
-                    gameSessionId: payoutSessionId  // Different session ID
                 },
                 {
                     player: user2.address,
                     isWinner: false,
                     amount: ethers.parseUnits('10', 6), // Loser loses 10
-                    gameSessionId: payoutSessionId  // Different session ID
                 }
             ];
             
@@ -438,9 +400,6 @@ describe('GUnits-2', function () {
             
             await depositGUnits(chips, mockToken, gameServer, user1, depositAmount);
             
-            // Lock funds in multiple sessions
-            const gameSessionId1 = generateGameSessionId('game1', 'session1', 'room1', user1.address);
-            const gameSessionId2 = generateGameSessionId('game2', 'session2', 'room2', user1.address);
             
             await chips.connect(gameServer).lockFunds(user1.address, lockAmount1);
             await chips.connect(gameServer).lockFunds(user1.address, lockAmount2);
@@ -484,11 +443,8 @@ describe('GUnits-2', function () {
             
             // Lock in 3 different sessions
             const amounts = [ethers.parseEther('50'), ethers.parseEther('30'), ethers.parseEther('20')];
-            const sessionIds = [];
             
             for (let i = 0; i < amounts.length; i++) {
-                const sessionId = generateGameSessionId(`game${i}`, `session${i}`, `room${i}`, user1.address);
-                sessionIds.push(sessionId);
                 await chips.connect(gameServer).lockFunds(user1.address, amounts[i]);
             }
             
@@ -517,7 +473,6 @@ describe('GUnits-2', function () {
             await depositGUnits(chips, mockToken, gameServer, user2, depositAmount);
             
             // Both players join the game
-            const gameSessionId = generateGameSessionId('poker', 'session123', 'table5', 'multiplayer');
             await chips.connect(gameServer).lockFunds(user1.address, entryFee);
             await chips.connect(gameServer).lockFunds(user2.address, entryFee);
             
@@ -530,13 +485,11 @@ describe('GUnits-2', function () {
                     player: user1.address,
                     isWinner: true,
                     amount: winAmount,
-                    gameSessionId: gameSessionId
                 },
                 {
                     player: user2.address,
                     isWinner: false,
                     amount: entryFee,
-                    gameSessionId: gameSessionId
                 }
             ];
             

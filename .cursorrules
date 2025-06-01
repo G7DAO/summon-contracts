@@ -1,1 +1,2 @@
  - Use pnpm to run the scritps of this project
+ - Use `pnpm test` without compile the contracts first, hardhat will compile the contracts anyway

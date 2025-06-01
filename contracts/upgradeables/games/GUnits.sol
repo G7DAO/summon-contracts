@@ -113,6 +113,11 @@ contract GUnits is
     );
     error NoLockedFunds(address user);
     error InvalidAmount();
+    error InsufficientLockedBalance(
+        address user,
+        uint256 requested,
+        uint256 locked
+    );
 
     bytes32 public constant DEV_CONFIG_ROLE = keccak256("DEV_CONFIG_ROLE");
     bytes32 public constant MANAGER_ROLE = keccak256("MANAGER_ROLE");
@@ -532,6 +537,20 @@ contract GUnits is
         address user,
         uint256 amount
     ) external onlyRole(GAME_SERVER_ROLE) whenNotPaused nonReentrant {
+        _lockFunds(user, amount);
+    }
+
+    function lockFundsBatch(
+        address[] memory users,
+        uint256[] memory amounts
+    ) external onlyRole(GAME_SERVER_ROLE) whenNotPaused nonReentrant {
+        for (uint256 i = 0; i < users.length; i++) {
+            _lockFunds(users[i], amounts[i]);
+        }
+    }
+
+    function _lockFunds(address user, uint256 amount) internal {
+        if (user == address(0)) revert AddressIsZero();
         if (amount == 0) revert InvalidAmount();
 
         uint256 userBalance = balances[user];
@@ -547,19 +566,51 @@ contract GUnits is
         emit FundsLocked(user, amount);
     }
 
+    // @dev Unlocks funds for a batch of users (returns to available balance)
+    // @param users The users whose funds to unlock
+    // @param amounts The amounts to unlock
+    function unlockFundsBatch(
+        address[] memory users,
+        uint256[] memory amounts
+    ) external nonReentrant {
+        if (
+            !hasRole(LIVE_OPS_ROLE, _msgSender()) &&
+            !hasRole(GAME_SERVER_ROLE, _msgSender())
+        ) {
+            revert NotAuthorized(_msgSender());
+        }
+        for (uint256 i = 0; i < users.length; i++) {
+            _unlockFunds(users[i], amounts[i]);
+        }
+    }
+
     // @dev Unlocks funds for a user (returns to available balance)
     // @param user The user whose funds to unlock
-    function unlockFunds(
-        address user
-    ) external onlyRole(LIVE_OPS_ROLE) nonReentrant {
+    // @param amount The amount to unlock
+    function unlockFunds(address user, uint256 amount) external nonReentrant {
+        if (
+            !hasRole(LIVE_OPS_ROLE, _msgSender()) &&
+            !hasRole(GAME_SERVER_ROLE, _msgSender()) &&
+            user != _msgSender()
+        ) {
+            revert NotAuthorized(_msgSender());
+        }
+        _unlockFunds(user, amount);
+    }
+
+    // @dev Unlocks funds for a user (returns to available balance)
+    // @param user The user whose funds to unlock
+    // @param amount The amount to unlock
+    function _unlockFunds(address user, uint256 amount) internal {
         uint256 locked = lockedFunds[user];
         if (locked == 0) {
             revert NoLockedFunds(user);
         }
-
-        lockedFunds[user] = 0;
-
-        emit FundsUnlocked(user, locked);
+        if (amount > locked) {
+            revert InsufficientLockedBalance(user, amount, locked);
+        }
+        lockedFunds[user] -= amount;
+        emit FundsUnlocked(user, amount);
     }
 
     // @dev Gets total locked funds for a user across all sessions
@@ -615,5 +666,5 @@ contract GUnits is
     }
 
     // Reserved storage space to allow for layout changes in the future.
-    uint256[47] private __gap;
+    uint256[45] private __gap;
 }
