@@ -26,7 +26,7 @@ import {
 } from "../ercs/ERCWhitelistSignatureUpgradeable.sol";
 
 // @author Game7.io Team - https://game7.io
-// @contributors: [ @ogarciarevett, @karacurt, @mrk-hub]
+// @contributors: [ @ogarciarevett, @karacurt]
 /*
  *
  *
@@ -659,5 +659,5 @@ contract GUnits is
     }
 
     // Reserved storage space to allow for layout changes in the future.
-    uint256[43] private __gap;
+    uint256[47] private __gap;
 }

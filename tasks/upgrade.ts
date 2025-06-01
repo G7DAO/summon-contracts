@@ -10,28 +10,31 @@ import { HardhatRuntimeEnvironment } from 'hardhat/types';
 import { Deployment, DeploymentContract, FunctionCall } from 'types/deployment-type';
 
 import upgrade from '../deploy/upgrade';
+import { executeFunctionCallBatch, submitContractDeploymentsToDB } from '@helpers/contract';
 
 const upgradeOne = async (
     hre: HardhatRuntimeEnvironment,
     contract: DeploymentContract,
     tenant: string
 ): Promise<Deployment> => {
-    const abiPath = getABIFilePath(contract.contractName);
+    // const abiPath = getABIFilePath(contract.contractName); // No longer needed here
     const filePathDeploymentLatest = path.resolve(
         `${ACHIEVO_TMP_DIR}/${contract.chain}/${contract.upgradable ? 'upgradeables/' : ''}deployments-${
             contract.type
         }-${tenant}-latest.json`
     );
 
-    const upgradePayload = await upgrade(hre, contract, abiPath as string, tenant);
+    // Call the refactored upgrade function
+    const upgradePayload = await upgrade(hre, contract, tenant);
 
-    writeChecksumToFile(contract.contractName as unknown as string, tenant);
+    // writeChecksumToFile needs 3 arguments: contractFileName, logicalName, tenant
+    writeChecksumToFile(contract.contractFileName, contract.name, tenant);
 
     // Convert deployments to JSON
     const upgradeJson = JSON.stringify(upgradePayload, null, 2);
     // Write to the file
-    // fs.writeFileSync(filePathDeploymentLatest, upgradeJson);
-    // log(`Deployments saved to ${filePathDeploymentLatest}`);
+    fs.writeFileSync(filePathDeploymentLatest, upgradeJson);
+    log(`Upgrade information saved to ${filePathDeploymentLatest}`);
 
     return upgradePayload;
 };
@@ -49,7 +52,9 @@ task('upgrade', 'Upgrade Smart contracts')
 
         createDefaultFolders(network); // create default folders
 
-        const contract = CONTRACTS.find((d) => d.name === name && d.chain === network && d.version === contractVersion);
+        const contract = CONTRACTS.find(
+            (d: DeploymentContract) => d.name === name && d.chain === network && d.version === contractVersion
+        );
 
         if (!contract) {
             throw new Error(`Contract ${name} not found on ${network}`);
@@ -73,55 +78,21 @@ task('upgrade', 'Upgrade Smart contracts')
             log('=====================================================');
             log('\n');
 
-            // // submit to db
-            // try {
-            //     log('*******************************************');
-            //     log('[SUBMITTING] Deployments to db');
-            //     log('*******************************************');
-            //     await submitContractDeploymentsToDB(deployments, tenant);
-            //     log('*******************************************');
-            //     log('*** Deployments submitted to db ***');
-            //     log('*******************************************');
-            // } catch (error: any) {
-            //     log('*******************************************');
-            //     log('***', error.message, '***');
-            //     log('*******************************************');
-            // }
-
-            // const calls = [];
-            // for (const deployment of deployments) {
-            //     // write deployment payload per tenant
-            //     // Define the path to the file
-            //     const filePath = path.resolve(
-            //         `${ACHIEVO_TMP_DIR}/deployments/${contract.chain}/${
-            //             contract.upgradable ? 'upgradeables/' : ''
-            //         }deployments-${deployment.type}-${tenant}-${Date.now()}.json`
-            //     );
-            //     // Convert deployments to JSON
-            //     const deploymentsJson = JSON.stringify(deployment, null, 2);
-            //     // Write to the file
-            //     fs.writeFileSync(filePath, deploymentsJson);
-
-            //     log(`Deployments saved to ${filePath}`);
-
-            //     const deployedContract = CONTRACTS.find(
-            //         (d) => d.type === deployment.type && d.chain === network && d.upgradable === deployment.upgradable
-            //     );
-
-            //     if (!deployedContract?.functionCalls || deployedContract?.functionCalls?.length === 0) {
-            //         continue;
-            //     }
-
-            //     for (const call of deployedContract?.functionCalls) {
-            //         console.log(
-            //             `[CALLING]: ${deployedContract.contractName} on ${deployedContract.chain} for ${tenant} `
-            //         );
-            //         const _call = await prepFunctionOne(hre, call, tenant, deployment.contractAddress);
-            //         calls.push(_call);
-            //     }
-            // }
-
-            // // execute function calls
-            // await executeFunctionCallBatch(calls, tenant);
+            // submit to db - Adapted for single upgrade
+            try {
+                log('*******************************************');
+                log('[SUBMITTING] Upgrade info to db');
+                log('*******************************************');
+                // Assuming submitContractDeploymentsToDB can take Deployment[] and upgradedContract is a single Deployment object
+                await submitContractDeploymentsToDB([upgradedContract], tenant);
+                log('*******************************************');
+                log('*** Upgrade info submitted to db ***');
+                log('*******************************************');
+            } catch (error: any) {
+                console.error('Error submitting upgrade info to db:', JSON.stringify(error, null, 2));
+                log('*******************************************');
+                log('*** DB Submission Error:', error.message, '***');
+                log('*******************************************');
+            }
         }
     });
