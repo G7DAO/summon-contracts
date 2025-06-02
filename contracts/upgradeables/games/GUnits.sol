@@ -8,6 +8,9 @@ import {
     IERC20
 } from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import {
+    IERC20Metadata
+} from "@openzeppelin/contracts/token/ERC20/extensions/IERC20Metadata.sol";
+import {
     AccessControlUpgradeable
 } from "@openzeppelin/contracts-upgradeable/access/AccessControlUpgradeable.sol";
 import {
@@ -128,6 +131,7 @@ contract GUnits is
     uint256 public denominatorExchangeRate;
 
     uint256 private collectedFees;
+    uint256 public decimals;
 
     // Locked funds tracking
     // user => total locked amount
@@ -161,6 +165,7 @@ contract GUnits is
 
         _addWhitelistSigner(_devWallet);
         token = _token;
+        decimals = IERC20Metadata(token).decimals();
 
         // @dev Default exchange rate is 1:1
         _setExchangeRate(1, 1);
@@ -360,12 +365,35 @@ contract GUnits is
 
     // @dev Sets the token
     // @param _token The address of the token to set
-    function setToken(address _token) external onlyRole(DEV_CONFIG_ROLE) {
-        if (_token == address(0)) {
+    // @param _previousTokenRecipient The address to send the previous token to
+    function setToken(address _newToken) external whenPaused onlyRole(DEV_CONFIG_ROLE) {
+        if (_newToken == address(0)) {
             revert AddressIsZero();
         }
-        token = _token;
-        emit TokenSet(_token);
+        
+        if (totalSupply > 0) {
+            _rebalanceGUnitDecimals(_newToken);
+        }
+        
+        token = _newToken;
+        decimals = IERC20Metadata(_newToken).decimals();
+        emit TokenSet(_newToken);
+    }
+    
+    function _rebalanceGUnitDecimals(address _newToken) internal {
+        uint8 _newDecimals = IERC20Metadata(_newToken).decimals();
+        if (_newDecimals == decimals) return;
+        uint256 _requiredNewTokenAmount;
+
+        // Calculate the amount needed in the new token to back all G-Units
+        if (_newDecimals > decimals) {
+            _requiredNewTokenAmount = totalSupply * (10 ** (_newDecimals - decimals));
+        } else {
+            _requiredNewTokenAmount = totalSupply / (10 ** (decimals - _newDecimals));
+        }
+
+        // Require the admin to deposit the new token
+        IERC20(_newToken).safeTransferFrom(msg.sender, address(this), _requiredNewTokenAmount);
     }
 
     // @dev Returns the exchange rate
@@ -659,5 +687,5 @@ contract GUnits is
     }
 
     // Reserved storage space to allow for layout changes in the future.
-    uint256[47] private __gap;
+    uint256[46] private __gap;
 }

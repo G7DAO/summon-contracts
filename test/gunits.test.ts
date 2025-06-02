@@ -3,7 +3,7 @@ import { SignerWithAddress } from '@nomicfoundation/hardhat-ethers/signers';
 import { loadFixture } from '@nomicfoundation/hardhat-network-helpers';
 import { expect } from 'chai';
 import { ethers, upgrades } from 'hardhat';
-import { GUnits, MockERC20 } from 'typechain-types';
+import { GUnits, MockERC20, MockUSDC } from 'typechain-types';
 import fs from 'fs';
 import path from 'path';
 
@@ -71,7 +71,7 @@ describe('GUnits', function () {
 
     async function depositGUnits(
         chips: GUnits,
-        token: MockERC20,
+        token: MockERC20 | MockUSDC,
         deployer: SignerWithAddress,
         wallet: SignerWithAddress,
         amount: bigint
@@ -1284,14 +1284,22 @@ describe('GUnits', function () {
             expect(decodedData).to.be.deep.equal([contractAddress, chainId, amount, unixTimestamp]);
         });
     });
+    describe("Set Token", function () {
+        let chips: GUnits;
+        let token: MockERC20;
+        let devWallet: SignerWithAddress;
+        let user1: SignerWithAddress;
+        let currentTokenAddress: string;
+        beforeEach(async function () {
+            ({ chips, mockToken: token, devWallet, user1 } = await loadFixture(deployFixtures));
+            await chips.connect(devWallet).pause();
+            currentTokenAddress = await token.getAddress();
+        });
+        it("Should set token", async function () {
 
-    describe('Set Token', function () {
-        it('Should set token', async function () {
-            const { chips, mockToken, devWallet } = await loadFixture(deployFixtures);
             const newTokenFactory = await ethers.getContractFactory('MockERC20', devWallet);
             const newToken = await newTokenFactory.deploy('New Token', 'NT');
             const newTokenAddress = await newToken.getAddress();
-            const currentTokenAddress = await mockToken.getAddress();
 
             expect(await chips.token()).to.equal(currentTokenAddress);
             await expect(chips.connect(devWallet).setToken(newTokenAddress))
@@ -1299,20 +1307,138 @@ describe('GUnits', function () {
                 .withArgs(newTokenAddress);
             expect(await chips.token()).to.equal(newTokenAddress);
         });
-        it('Should NOT set token to zero address', async function () {
-            const { chips, devWallet } = await loadFixture(deployFixtures);
-            await expect(chips.connect(devWallet).setToken(ethers.ZeroAddress)).to.be.revertedWithCustomError(
-                chips,
-                'AddressIsZero'
-            );
+        it("Should NOT set token to zero address", async function () {
+            await expect(chips.connect(devWallet).setToken(ethers.ZeroAddress)).to.be.revertedWithCustomError(chips, 'AddressIsZero');
         });
-        it('Should NOT set token if caller does not have DEV_CONFIG_ROLE', async function () {
-            const { chips, user1 } = await loadFixture(deployFixtures);
+        it("Should NOT set token if caller does not have DEV_CONFIG_ROLE", async function () {
             expect(await chips.hasRole(await chips.DEV_CONFIG_ROLE(), user1.address)).to.be.false;
             await expect(chips.connect(user1).setToken(ethers.ZeroAddress)).to.be.revertedWithCustomError(
                 chips,
                 'AccessControlUnauthorizedAccount'
             );
+        });
+        it("Should NOT set token if contract is not paused", async function () {
+            expect(await chips.paused()).to.be.true;
+            await chips.connect(devWallet).unpause();
+            expect(await chips.paused()).to.be.false;
+            await expect(chips.connect(devWallet).setToken(ethers.ZeroAddress)).to.be.revertedWithCustomError(chips, 'ExpectedPause');
+        });
+    });
+
+    describe("Set Token with Decimals Migration", function () {
+        let gUnits: GUnits;
+        let devWallet: SignerWithAddress;
+        let user1: SignerWithAddress;
+        let token6Decimals: MockUSDC;
+        let token18Decimals: MockUSDC;
+        let token4Decimals: MockUSDC;
+        const totalSupply = 1_000_000n;
+    
+        beforeEach(async function () {
+            ({ devWallet, user1 } = await loadFixture(deployFixtures));
+
+             // Deploy tokens with different decimals
+             const Token4Decimals = await ethers.getContractFactory('MockUSDC', devWallet);
+             token4Decimals = await Token4Decimals.deploy('Token4', 'T4', 4);
+             const Token6Decimals = await ethers.getContractFactory('MockUSDC', devWallet);
+             token6Decimals = await Token6Decimals.deploy('Token6', 'T6', 6);
+             const Token18Decimals = await ethers.getContractFactory('MockUSDC', devWallet);
+             token18Decimals = await Token18Decimals.deploy('Token18', 'T18', 18);
+
+            // Deploy as UUPS proxy with all required initialization parameters
+            const GUnitsFactory = await ethers.getContractFactory('GUnits', devWallet);
+            const gUnitsDeployment = await upgrades.deployProxy(
+                GUnitsFactory,
+                [
+                    await token6Decimals.getAddress(), // _token
+                false, // _isPaused
+                devWallet.address, // _devWallet
+                ],
+                {
+                    initializer: 'initialize',
+                }
+            );
+            await gUnitsDeployment.waitForDeployment();
+            gUnits = await ethers.getContractAt('GUnits', await gUnitsDeployment.getAddress());
+    
+            // Mint and deposit some G-Units
+            await token6Decimals.mint(user1.address, totalSupply);
+            await token6Decimals.connect(user1).approve(gUnits.target, totalSupply);
+            await depositGUnits(gUnits, token6Decimals, devWallet, user1, totalSupply);
+            await gUnits.connect(devWallet).pause();
+            expect(await gUnits.paused()).to.be.true;
+        });
+    
+        it("Should migrate from 6 to 18 decimals and require correct deposit", async function () {
+            const totalSupply = await gUnits.totalSupply();
+            const required = totalSupply * (10n ** (18n - 6n));
+            await token18Decimals.mint(devWallet.address, required);
+            await token18Decimals.connect(devWallet).approve(gUnits.target, required);
+
+            await expect(gUnits.connect(devWallet).setToken(token18Decimals.target))
+                .to.emit(gUnits, 'TokenSet')
+                .withArgs(token18Decimals.target)
+                .to.emit(token18Decimals, 'Transfer')
+                .withArgs(devWallet.address, gUnits.target, required)
+
+            expect(await gUnits.token()).to.equal(token18Decimals.target);
+            expect(await gUnits.decimals()).to.equal(18);
+            expect(await token18Decimals.balanceOf(gUnits.target)).to.equal(required);
+        });
+    
+        it("Should migrate from 18 to 6 decimals and require correct deposit", async function () {
+            const NewToken6Decimals = await ethers.getContractFactory('MockUSDC', devWallet);
+            const newToken6Decimals = await NewToken6Decimals.deploy('New Token6', 'NT6', 6);
+
+            // First migrate to 18 decimals
+            const totalSupply = await gUnits.totalSupply();
+            const required18 = totalSupply * (10n ** (18n - 6n));
+            await token18Decimals.mint(devWallet.address, required18);
+            await token18Decimals.connect(devWallet).approve(gUnits.target, required18);
+            await expect(gUnits.connect(devWallet).setToken(token18Decimals.target))
+                .to.emit(gUnits, 'TokenSet')
+                .withArgs(token18Decimals.target)
+                .to.emit(token18Decimals, 'Transfer')
+                .withArgs(devWallet.address, gUnits.target, required18);
+    
+            // Now migrate to 6 decimals
+            const required6 = totalSupply / (10n ** (18n - 6n));
+            await newToken6Decimals.mint(devWallet.address, required6);
+            await newToken6Decimals.connect(devWallet).approve(gUnits.target, required6);
+    
+            await expect(gUnits.connect(devWallet).setToken(newToken6Decimals.target))
+                .to.emit(gUnits, 'TokenSet')
+                .withArgs(newToken6Decimals.target)
+    
+            expect(await gUnits.token()).to.equal(newToken6Decimals.target);
+            expect(await gUnits.decimals()).to.equal(6);
+            expect(await newToken6Decimals.balanceOf(gUnits.target)).to.equal(required6);
+        });
+    
+        it("Should migrate from 6 to 4 decimals and require correct deposit", async function () {
+            const totalSupply = await gUnits.totalSupply();
+            const required = totalSupply / (10n ** (6n - 4n));
+            await token4Decimals.mint(devWallet.address, required);
+            await token4Decimals.connect(devWallet).approve(gUnits.target, required);
+    
+            await expect(gUnits.connect(devWallet).setToken(token4Decimals.target))
+                .to.emit(gUnits, 'TokenSet')
+                .withArgs(token4Decimals.target)
+    
+            expect(await gUnits.token()).to.equal(token4Decimals.target);
+            expect(await gUnits.decimals()).to.equal(4);
+            expect(await token4Decimals.balanceOf(gUnits.target)).to.equal(required);
+        });
+    
+        it("Should revert if not enough new token is approved", async function () {
+            const totalSupply = await gUnits.totalSupply();
+            const required = totalSupply * (10n ** (18n - 6n));
+            // Do not approve enough
+            await token18Decimals.mint(devWallet.address, required - 1n);
+            await token18Decimals.connect(devWallet).approve(gUnits.target, required - 1n);
+    
+            await expect(gUnits.connect(devWallet).setToken(token18Decimals.target))
+                .to.be.reverted; // Should revert due to SafeERC20: transfer amount exceeds balance/allowance
         });
     });
 });
