@@ -29,7 +29,7 @@ import {
 } from "../ercs/ERCWhitelistSignatureUpgradeable.sol";
 
 // @author Game7.io Team - https://game7.io
-// @contributors: [ @ogarciarevett, @karacurt, @mrk-hub]
+// @contributors: [ @ogarciarevett, @karacurt]
 /*
  *
  *
@@ -95,7 +95,7 @@ contract GUnits is
     );
     event FundsLocked(address indexed user, uint256 amount);
     event FundsUnlocked(address indexed user, uint256 amount);
-    event FundsReleased(address indexed user, uint256 amount, bool returned);
+    event FundsReleased(address indexed user, uint256 amount);
     event TokenSet(address indexed newToken);
     error ChipInsufficientBalance(
         address from,
@@ -269,32 +269,21 @@ contract GUnits is
 
             uint256 lockedAmount = lockedFunds[currentPayout.player];
 
-            if (currentPayout.isWinner) {
-                // Winner gets locked funds back + winnings
-                if (lockedAmount > 0) {
-                    lockedFunds[currentPayout.player] = 0;
-                    emit FundsReleased(
-                        currentPayout.player,
-                        lockedAmount,
-                        true
-                    );
-                }
-                _mintGUnits(currentPayout.player, currentPayout.amount);
-            } else {
-                // Deduct from locked funds
-                if (currentPayout.amount > lockedAmount) {
-                    revert InsufficientUnlockedBalance(
-                        currentPayout.player,
-                        currentPayout.amount,
-                        lockedAmount
-                    );
-                }
-                lockedFunds[currentPayout.player] -= currentPayout.amount;
-                _burnGUnits(currentPayout.player, currentPayout.amount);
-                emit FundsReleased(
+            if (lockedAmount < currentPayout.buyInAmount) {
+                revert InsufficientUnlockedBalance(
                     currentPayout.player,
-                    currentPayout.amount,
-                    false
+                    currentPayout.buyInAmount,
+                    lockedAmount
+                );
+            }
+
+            lockedFunds[currentPayout.player] -= currentPayout.buyInAmount;
+            emit FundsReleased(currentPayout.player, currentPayout.buyInAmount);
+
+            if (currentPayout.isWinner) {
+                _mintGUnits(
+                    currentPayout.player,
+                    currentPayout.amount + currentPayout.buyInAmount
                 );
             }
         }
@@ -310,14 +299,13 @@ contract GUnits is
     }
 
     function _withdraw(address _to, uint256 _amount) internal {
-        // Check that user has enough unlocked funds
-        uint256 totalLocked = _getTotalLockedFunds(_to);
-        uint256 availableBalance = balances[_to] - totalLocked;
-        if (availableBalance < _amount) {
-            revert InsufficientUnlockedBalance(_to, _amount, availableBalance);
+        // _amount is the amount of GUnits the user wants to withdraw from their LIQUID balance
+        uint256 liquidBalance = balances[_to]; // balances[_to] is already the liquid part
+        if (liquidBalance < _amount) {
+            revert InsufficientUnlockedBalance(_to, _amount, liquidBalance);
         }
 
-        _burnGUnits(_to, _amount);
+        _burnGUnits(_to, _amount); // Decreases balances[_to] and totalSupply
         uint256 amountInTokens = _parseGUnitsToCurrency(_amount);
         IERC20(token).safeTransfer(_to, amountInTokens);
         emit Withdraw(_to, amountInTokens);
@@ -436,21 +424,6 @@ contract GUnits is
             (gUnitsBalance * denominatorExchangeRate) / numeratorExchangeRate;
     }
 
-    // @dev Returns the balance of the user
-    // @param account The address of the user to get the balance of
-    function balanceOf(address account) public view returns (uint256) {
-        if (
-            hasRole(READABLE_ROLE, _msgSender()) ||
-            hasRole(LIVE_OPS_ROLE, _msgSender()) ||
-            hasRole(GAME_SERVER_ROLE, _msgSender()) ||
-            _msgSender() == account
-        ) {
-            return balances[account];
-        } else {
-            revert NotAuthorized(_msgSender());
-        }
-    }
-
     function getCollectedFees()
         external
         view
@@ -458,35 +431,6 @@ contract GUnits is
         returns (uint256)
     {
         return collectedFees;
-    }
-
-    // @dev Returns the balance of the users
-    // @param accounts The addresses of the users to get the balance of
-    function balanceOfBatch(
-        address[] memory accounts
-    ) external view returns (uint256[] memory) {
-        if (
-            !hasRole(GAME_SERVER_ROLE, _msgSender()) &&
-            !hasRole(LIVE_OPS_ROLE, _msgSender()) &&
-            !hasRole(READABLE_ROLE, _msgSender())
-        ) {
-            bool isQueryingSelf = true;
-            for (uint256 i = 0; i < accounts.length; i++) {
-                if (accounts[i] != _msgSender()) {
-                    isQueryingSelf = false;
-                    break;
-                }
-            }
-            if (!isQueryingSelf) {
-                revert NotAuthorized(_msgSender());
-            }
-        }
-
-        uint256[] memory batchBalances = new uint256[](accounts.length);
-        for (uint256 i = 0; i < accounts.length; i++) {
-            batchBalances[i] = balances[accounts[i]];
-        }
-        return batchBalances;
     }
 
     // @dev Returns true if the contract implements the interface
@@ -560,39 +504,121 @@ contract GUnits is
         address user,
         uint256 amount
     ) external onlyRole(GAME_SERVER_ROLE) whenNotPaused nonReentrant {
+        _lockFunds(user, amount);
+    }
+
+    function lockFundsBatch(
+        address[] memory users,
+        uint256[] memory amounts
+    ) external onlyRole(GAME_SERVER_ROLE) whenNotPaused nonReentrant {
+        for (uint256 i = 0; i < users.length; i++) {
+            _lockFunds(users[i], amounts[i]);
+        }
+    }
+
+    function _lockFunds(address user, uint256 amount) internal {
+        if (user == address(0)) revert AddressIsZero();
         if (amount == 0) revert InvalidAmount();
 
         uint256 userBalance = balances[user];
-        uint256 totalLocked = _getTotalLockedFunds(user);
+        uint256 totalLocked = lockedFunds[user];
         uint256 availableBalance = userBalance - totalLocked;
 
         if (availableBalance < amount) {
             revert InsufficientUnlockedBalance(user, amount, availableBalance);
         }
 
-        lockedFunds[user] = amount;
+        lockedFunds[user] += amount;
+        balances[user] -= amount;
 
         emit FundsLocked(user, amount);
     }
 
+    // @dev Unlocks funds for a batch of users (returns to available balance)
+    // @param users The users whose funds to unlock
+    // @param amounts The amounts to unlock
+    function unlockFundsBatch(
+        address[] memory users,
+        uint256[] memory amounts
+    ) external nonReentrant {
+        if (
+            !hasRole(LIVE_OPS_ROLE, _msgSender()) &&
+            !hasRole(GAME_SERVER_ROLE, _msgSender())
+        ) {
+            revert NotAuthorized(_msgSender());
+        }
+        for (uint256 i = 0; i < users.length; i++) {
+            _unlockFunds(users[i], amounts[i]);
+        }
+    }
+
     // @dev Unlocks funds for a user (returns to available balance)
     // @param user The user whose funds to unlock
-    function unlockFunds(
-        address user
-    ) external onlyRole(LIVE_OPS_ROLE) nonReentrant {
+    // @param amount The amount to unlock
+    function unlockFunds(address user, uint256 amount) external nonReentrant {
+        if (
+            !hasRole(LIVE_OPS_ROLE, _msgSender()) &&
+            !hasRole(GAME_SERVER_ROLE, _msgSender())
+        ) {
+            revert NotAuthorized(_msgSender());
+        }
+        _unlockFunds(user, amount);
+    }
+
+    // @dev Unlocks funds for a user (returns to available balance)
+    // @param user The user whose funds to unlock
+    // @param amount The amount to unlock
+    function _unlockFunds(address user, uint256 amount) internal {
         uint256 locked = lockedFunds[user];
         if (locked == 0) {
             revert NoLockedFunds(user);
         }
+        if (amount > locked) {
+            revert InsufficientUnlockedBalance(user, amount, locked);
+        }
+        lockedFunds[user] -= amount;
+        balances[user] += amount;
+        emit FundsUnlocked(user, amount);
+    }
 
-        lockedFunds[user] = 0;
+    // @dev Returns the balance of the user
+    // @param account The address of the user to get the balance of
+    function balanceOf(address account) public view returns (uint256) {
+        if (
+            hasRole(READABLE_ROLE, _msgSender()) ||
+            hasRole(LIVE_OPS_ROLE, _msgSender()) ||
+            hasRole(GAME_SERVER_ROLE, _msgSender()) ||
+            _msgSender() == account
+        ) {
+            return balances[account];
+        } else {
+            revert NotAuthorized(_msgSender());
+        }
+    }
 
-        emit FundsUnlocked(user, locked);
+    // @dev Returns the balance of the users
+    // @param accounts The addresses of the users to get the balance of
+    function balanceOfBatch(
+        address[] memory accounts
+    ) external view returns (uint256[] memory) {
+        if (
+            hasRole(GAME_SERVER_ROLE, _msgSender()) ||
+            hasRole(LIVE_OPS_ROLE, _msgSender()) ||
+            hasRole(READABLE_ROLE, _msgSender())
+        ) {
+            uint256[] memory batchBalances = new uint256[](accounts.length);
+            for (uint256 i = 0; i < accounts.length; i++) {
+                batchBalances[i] = balances[accounts[i]];
+            }
+            return batchBalances;
+        } else {
+            revert NotAuthorized(_msgSender());
+        }
     }
 
     // @dev Gets total locked funds for a user across all sessions
     // @param user The user address
-    function getTotalLockedFunds(address user) external view returns (uint256) {
+    function balanceOfLocked(address user) external view returns (uint256) {
         if (
             user == _msgSender() ||
             hasRole(READABLE_ROLE, _msgSender()) ||
@@ -604,7 +630,25 @@ contract GUnits is
         revert NotAuthorized(_msgSender());
     }
 
-    function getTotalBalanceOf(address user) external view returns (uint256) {
+    function balanceOfLockedBatch(
+        address[] memory users
+    ) external view returns (uint256[] memory) {
+        if (
+            hasRole(READABLE_ROLE, _msgSender()) ||
+            hasRole(LIVE_OPS_ROLE, _msgSender()) ||
+            hasRole(GAME_SERVER_ROLE, _msgSender())
+        ) {
+            uint256[] memory totalLocked = new uint256[](users.length);
+            for (uint256 i = 0; i < users.length; i++) {
+                totalLocked[i] = _getTotalLockedFunds(users[i]);
+            }
+            return totalLocked;
+        } else {
+            revert NotAuthorized(_msgSender());
+        }
+    }
+
+    function totalBalanceOf(address user) external view returns (uint256) {
         if (
             user == _msgSender() ||
             hasRole(READABLE_ROLE, _msgSender()) ||
@@ -616,30 +660,30 @@ contract GUnits is
         revert NotAuthorized(_msgSender());
     }
 
+    function totalBalanceOfBatch(
+        address[] memory users
+    ) external view returns (uint256[] memory) {
+        if (
+            hasRole(READABLE_ROLE, _msgSender()) ||
+            hasRole(LIVE_OPS_ROLE, _msgSender()) ||
+            hasRole(GAME_SERVER_ROLE, _msgSender())
+        ) {
+            uint256[] memory totalBalances = new uint256[](users.length);
+            for (uint256 i = 0; i < users.length; i++) {
+                totalBalances[i] =
+                    balances[users[i]] +
+                    _getTotalLockedFunds(users[i]);
+            }
+            return totalBalances;
+        } else {
+            revert NotAuthorized(_msgSender());
+        }
+    }
+
     function _getTotalLockedFunds(
         address user
     ) internal view returns (uint256) {
         return lockedFunds[user];
-    }
-
-    // @dev Gets available (unlocked) balance for a user
-    // @param user The user address
-    function getAvailableBalance(address user) external view returns (uint256) {
-        uint256 totalBalance = balances[user];
-        uint256 totalLocked = _getTotalLockedFunds(user);
-        return totalBalance > totalLocked ? totalBalance - totalLocked : 0;
-    }
-
-    // @dev Emergency function to unlock funds for users (only when paused)
-    // @param user The user whose funds to unlock
-    function emergencyUnlockFunds(
-        address user
-    ) external onlyRole(MANAGER_ROLE) whenPaused {
-        uint256 locked = lockedFunds[user];
-        if (locked > 0) {
-            lockedFunds[user] = 0;
-            emit FundsUnlocked(user, locked);
-        }
     }
 
     // Reserved storage space to allow for layout changes in the future.

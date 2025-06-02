@@ -59,6 +59,7 @@ export interface DeploymentContract {
     tenants: TENANT[];
     verify: boolean;
     upgradable: boolean;
+    proxyAddress?: string;
     dependencies: string[];
     functionCalls?: FunctionCall[];
     args?: Record<string, any>;
