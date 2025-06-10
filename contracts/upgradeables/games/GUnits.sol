@@ -206,12 +206,31 @@ contract GUnits is
         nonReentrant
     {
         uint256 amountInGUnits = _verifyContractChainIdAndDecode(data);
-        _withdraw(msg.sender, amountInGUnits);
+        _withdraw(msg.sender, msg.sender, amountInGUnits);
+    }
+
+    // @dev Withdraws the g-units from the user to a specific recipient
+    // @param data The data to withdraw (includes recipient address)
+    // @param nonce The nonce of the withdraw
+    // @param signature The signature of the withdraw
+    function withdrawTo(
+        bytes calldata data,
+        uint256 nonce,
+        bytes calldata signature,
+        address to
+    )
+        external
+        whenNotPaused
+        signatureCheck(_msgSender(), nonce, data, signature)
+        nonReentrant
+    {
+        uint256 amountInGUnits = _verifyContractChainIdAndDecode(data);
+        _withdraw(msg.sender, to, amountInGUnits);
     }
 
     // @dev Withdraws all the g-units from the user
     function withdrawAll() external whenNotPaused nonReentrant {
-        _withdraw(_msgSender(), balances[_msgSender()]);
+        _withdraw(_msgSender(), _msgSender(), balances[_msgSender()]);
     }
 
     // @dev Deposits the g-units to the user
@@ -223,7 +242,8 @@ contract GUnits is
     ) external nonReentrant {
         if (
             !hasRole(LIVE_OPS_ROLE, _msgSender()) &&
-            !hasRole(GAME_SERVER_ROLE, _msgSender())
+            !hasRole(GAME_SERVER_ROLE, _msgSender()) &&
+            !hasRole(MANAGER_ROLE, _msgSender())
         ) {
             revert NotAuthorized(_msgSender());
         }
@@ -243,7 +263,58 @@ contract GUnits is
         for (uint256 i = 0; i < users.length; i++) {
             uint256 balance = balances[users[i]];
             if (balance > 0) {
-                _withdraw(users[i], balance);
+                _withdraw(users[i], users[i], balance);
+            }
+        }
+    }
+
+    // @dev Admin function to withdraw g-units on behalf of users to specific recipients
+    // @param users The addresses of the users whose g-units to withdraw
+    // @param recipients The addresses to send the withdrawn funds to
+    // @param amounts The amounts of g-units to withdraw
+    function adminWithdrawTo(
+        address[] memory users,
+        address[] memory recipients,
+        uint256[] memory amounts
+    ) external nonReentrant {
+        if (
+            !hasRole(LIVE_OPS_ROLE, _msgSender()) &&
+            !hasRole(MANAGER_ROLE, _msgSender())
+        ) {
+            revert NotAuthorized(_msgSender());
+        }
+        if (
+            users.length != recipients.length || users.length != amounts.length
+        ) {
+            revert ArrayLengthMismatch();
+        }
+        for (uint256 i = 0; i < users.length; i++) {
+            if (recipients[i] == address(0)) revert AddressIsZero();
+            _withdraw(users[i], recipients[i], amounts[i]);
+        }
+    }
+
+    // @dev Admin function to withdraw all g-units on behalf of users to specific recipients
+    // @param users The addresses of the users whose g-units to withdraw
+    // @param recipients The addresses to send the withdrawn funds to
+    function adminWithdrawAllTo(
+        address[] memory users,
+        address[] memory recipients
+    ) external nonReentrant {
+        if (
+            !hasRole(LIVE_OPS_ROLE, _msgSender()) &&
+            !hasRole(MANAGER_ROLE, _msgSender())
+        ) {
+            revert NotAuthorized(_msgSender());
+        }
+        if (users.length != recipients.length) {
+            revert ArrayLengthMismatch();
+        }
+        for (uint256 i = 0; i < users.length; i++) {
+            if (recipients[i] == address(0)) revert AddressIsZero();
+            uint256 balance = balances[users[i]];
+            if (balance > 0) {
+                _withdraw(users[i], recipients[i], balance);
             }
         }
     }
@@ -298,17 +369,17 @@ contract GUnits is
         emit Deposit(_to, amountInGUnits);
     }
 
-    function _withdraw(address _to, uint256 _amount) internal {
+    function _withdraw(address _from, address _to, uint256 _amount) internal {
         // _amount is the amount of GUnits the user wants to withdraw from their LIQUID balance
-        uint256 liquidBalance = balances[_to]; // balances[_to] is already the liquid part
+        uint256 liquidBalance = balances[_from];
         if (liquidBalance < _amount) {
-            revert InsufficientUnlockedBalance(_to, _amount, liquidBalance);
+            revert InsufficientUnlockedBalance(_from, _amount, liquidBalance);
         }
 
-        _burnGUnits(_to, _amount); // Decreases balances[_to] and totalSupply
+        _burnGUnits(_from, _amount); // Decreases balances[_from] and totalSupply
         uint256 amountInTokens = _parseGUnitsToCurrency(_amount);
         IERC20(token).safeTransfer(_to, amountInTokens);
-        emit Withdraw(_to, amountInTokens);
+        emit Withdraw(_from, amountInTokens);
     }
 
     function _mintGUnits(address _to, uint256 _amount) internal {
@@ -366,20 +437,22 @@ contract GUnits is
     // @dev Sets the token
     // @param _token The address of the token to set
     // @param _previousTokenRecipient The address to send the previous token to
-    function setToken(address _newToken) external whenPaused onlyRole(DEV_CONFIG_ROLE) {
+    function setToken(
+        address _newToken
+    ) external whenPaused onlyRole(DEV_CONFIG_ROLE) {
         if (_newToken == address(0)) {
             revert AddressIsZero();
         }
-        
+
         if (totalSupply > 0) {
             _rebalanceGUnitDecimals(_newToken);
         }
-        
+
         token = _newToken;
         decimals = IERC20Metadata(_newToken).decimals();
         emit TokenSet(_newToken);
     }
-    
+
     function _rebalanceGUnitDecimals(address _newToken) internal {
         uint8 _newDecimals = IERC20Metadata(_newToken).decimals();
         if (_newDecimals == decimals) return;
@@ -387,13 +460,21 @@ contract GUnits is
 
         // Calculate the amount needed in the new token to back all G-Units
         if (_newDecimals > decimals) {
-            _requiredNewTokenAmount = totalSupply * (10 ** (_newDecimals - decimals));
+            _requiredNewTokenAmount =
+                totalSupply *
+                (10 ** (_newDecimals - decimals));
         } else {
-            _requiredNewTokenAmount = totalSupply / (10 ** (decimals - _newDecimals));
+            _requiredNewTokenAmount =
+                totalSupply /
+                (10 ** (decimals - _newDecimals));
         }
 
         // Require the admin to deposit the new token
-        IERC20(_newToken).safeTransferFrom(msg.sender, address(this), _requiredNewTokenAmount);
+        IERC20(_newToken).safeTransferFrom(
+            msg.sender,
+            address(this),
+            _requiredNewTokenAmount
+        );
     }
 
     // @dev Returns the exchange rate
