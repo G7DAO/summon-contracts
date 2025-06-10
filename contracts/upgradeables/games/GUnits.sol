@@ -279,8 +279,7 @@ contract GUnits is
     ) external nonReentrant {
         if (
             !hasRole(LIVE_OPS_ROLE, _msgSender()) &&
-            !hasRole(MANAGER_ROLE, _msgSender()) &&
-            !hasRole(GAME_SERVER_ROLE, _msgSender())
+            !hasRole(MANAGER_ROLE, _msgSender())
         ) {
             revert NotAuthorized(_msgSender());
         }
@@ -304,8 +303,7 @@ contract GUnits is
     ) external nonReentrant {
         if (
             !hasRole(LIVE_OPS_ROLE, _msgSender()) &&
-            !hasRole(MANAGER_ROLE, _msgSender()) &&
-            !hasRole(GAME_SERVER_ROLE, _msgSender())
+            !hasRole(MANAGER_ROLE, _msgSender())
         ) {
             revert NotAuthorized(_msgSender());
         }

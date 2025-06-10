@@ -293,21 +293,6 @@ describe('GUnits - Withdraw to Different Address', function () {
             expect(await mockToken.balanceOf(recipient.address)).to.equal(withdrawAmount);
         });
 
-        it('Should allow GAME_SERVER_ROLE to withdraw on behalf of users', async function () {
-            const { chips, mockToken, gameServer, user1, recipient, devWallet } = await loadFixture(deployFixtures);
-            const depositAmount = ethers.parseUnits('100', 6);
-            const withdrawAmount = ethers.parseUnits('25', 6);
-
-            // Admin deposit funds first
-            await mockToken.connect(gameServer).approve(await chips.getAddress(), depositAmount);
-            await chips.connect(gameServer).adminDeposit([user1.address], [depositAmount]);
-
-            await chips.connect(gameServer).adminWithdrawTo([user1.address], [recipient.address], [withdrawAmount]);
-
-            expect(await chips.balanceOf(user1.address)).to.equal(ethers.parseUnits('75', 6));
-            expect(await mockToken.balanceOf(recipient.address)).to.equal(withdrawAmount);
-        });
-
         it('Should handle multiple withdrawals to same recipient', async function () {
             const { chips, mockToken, manager, user1, user2, recipient, devWallet, gameServer } =
                 await loadFixture(deployFixtures);
@@ -426,19 +411,6 @@ describe('GUnits - Withdraw to Different Address', function () {
             await chips.connect(liveOps).adminDeposit([user1.address], [depositAmount]);
 
             await chips.connect(liveOps).adminWithdrawAllTo([user1.address], [recipient.address]);
-
-            expect(await chips.balanceOf(user1.address)).to.equal(0);
-            expect(await mockToken.balanceOf(recipient.address)).to.equal(depositAmount);
-        });
-
-        it('Should allow GAME_SERVER_ROLE to withdraw all funds', async function () {
-            const { chips, mockToken, gameServer, user1, recipient, devWallet } = await loadFixture(deployFixtures);
-            const depositAmount = ethers.parseUnits('100', 6);
-
-            await mockToken.connect(gameServer).approve(await chips.getAddress(), depositAmount);
-            await chips.connect(gameServer).adminDeposit([user1.address], [depositAmount]);
-
-            await chips.connect(gameServer).adminWithdrawAllTo([user1.address], [recipient.address]);
 
             expect(await chips.balanceOf(user1.address)).to.equal(0);
             expect(await mockToken.balanceOf(recipient.address)).to.equal(depositAmount);
