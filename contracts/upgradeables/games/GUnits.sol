@@ -602,11 +602,9 @@ contract GUnits is
         if (amount == 0) revert InvalidAmount();
 
         uint256 userBalance = balances[user];
-        uint256 totalLocked = lockedFunds[user];
-        uint256 availableBalance = userBalance - totalLocked;
 
-        if (availableBalance < amount) {
-            revert InsufficientUnlockedBalance(user, amount, availableBalance);
+        if (userBalance < amount) {
+            revert InsufficientUnlockedBalance(user, amount, userBalance);
         }
 
         lockedFunds[user] += amount;
