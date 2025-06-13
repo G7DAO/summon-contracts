@@ -261,7 +261,7 @@ contract GUnits is
     function thirdPartyDeposit(
         address _to,
         uint256 _amount
-    ) external onlyRole(THIRD_PARTY_ROLE) {
+    ) external whenNotPaused nonReentrant onlyRole(THIRD_PARTY_ROLE) {
         _deposit(_to, _amount);
     }
 
