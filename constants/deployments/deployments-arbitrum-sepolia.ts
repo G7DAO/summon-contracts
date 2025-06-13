@@ -1,4 +1,4 @@
-import { GUnitsArgs, ERC20DecimalsAgs } from '@constants/constructor-args';
+import { GUnitsArgs, ERC20DecimalsAgs, GReceiptsArgs } from '@constants/constructor-args';
 import {
     CONTRACT_NAME,
     CONTRACT_TYPE,
@@ -31,14 +31,43 @@ export const ARBITRUM_SEPOLIA_CONTRACTS: DeploymentContract[] = [
                 args: [
                     GUnitsArgs.ARBITRUM_SEPOLIA._token,
                     GUnitsArgs.ARBITRUM_SEPOLIA._isPaused,
-                    GUnitsArgs.ARBITRUM_SEPOLIA._devWallet
+                    GUnitsArgs.ARBITRUM_SEPOLIA._devWallet,
                 ],
             },
         ],
         args: [
             GUnitsArgs.ARBITRUM_SEPOLIA._token,
             GUnitsArgs.ARBITRUM_SEPOLIA._isPaused,
-            GUnitsArgs.ARBITRUM_SEPOLIA._devWallet
+            GUnitsArgs.ARBITRUM_SEPOLIA._devWallet,
+        ],
+    },
+    {
+        contractFileName: CONTRACT_UPGRADABLE_FILE_NAME.GReceipts,
+        type: CONTRACT_TYPE.GReceipts,
+        name: CONTRACT_NAME.GReceipts,
+        chain,
+        networkType,
+        tenants: [TENANT.Game7],
+        verify: true,
+        upgradable: true,
+        dependencies: [],
+        functionCalls: [
+            {
+                contractName: CONTRACT_NAME.GUnits,
+                functionName: 'initialize',
+                args: [
+                    GReceiptsArgs.ARBITRUM_SEPOLIA._gUnits,
+                    GReceiptsArgs.ARBITRUM_SEPOLIA._paymentToken,
+                    GReceiptsArgs.ARBITRUM_SEPOLIA._isPaused,
+                    GReceiptsArgs.ARBITRUM_SEPOLIA._devWallet,
+                ],
+            },
+        ],
+        args: [
+            GReceiptsArgs.ARBITRUM_SEPOLIA._gUnits,
+            GReceiptsArgs.ARBITRUM_SEPOLIA._paymentToken,
+            GReceiptsArgs.ARBITRUM_SEPOLIA._isPaused,
+            GReceiptsArgs.ARBITRUM_SEPOLIA._devWallet,
         ],
     },
     {
@@ -52,10 +81,46 @@ export const ARBITRUM_SEPOLIA_CONTRACTS: DeploymentContract[] = [
         upgradable: false,
         dependencies: [],
         functionCalls: [],
-        args: [
-            'Karacurt USDC',
-            'kUSDC',
-            6,
+        args: ['Karacurt USDC', 'kUSDC', 6],
+    },
+    {
+        contractFileName: CONTRACT_UPGRADABLE_FILE_NAME.GUnits,
+        type: CONTRACT_TYPE.GUnits,
+        name: CONTRACT_NAME.GUnits,
+        chain,
+        networkType,
+        tenants: [TENANT.Game7],
+        verify: true,
+        upgradable: true,
+        dependencies: [],
+        functionCalls: [
+            {
+                contractName: CONTRACT_NAME.GUnits,
+                functionName: 'initialize',
+                args: [
+                    GUnitsArgs.ARBITRUM_SEPOLIA._token,
+                    GUnitsArgs.ARBITRUM_SEPOLIA._isPaused,
+                    GUnitsArgs.ARBITRUM_SEPOLIA._devWallet,
+                ],
+            },
         ],
+        args: [
+            GUnitsArgs.ARBITRUM_SEPOLIA._token,
+            GUnitsArgs.ARBITRUM_SEPOLIA._isPaused,
+            GUnitsArgs.ARBITRUM_SEPOLIA._devWallet,
+        ],
+    },
+    {
+        contractFileName: CONTRACT_UPGRADABLE_FILE_NAME.MockUSDC,
+        type: CONTRACT_TYPE.MockUSDC,
+        name: CONTRACT_NAME.MockUSDC,
+        chain,
+        networkType,
+        tenants: [TENANT.Game7],
+        verify: true,
+        upgradable: false,
+        dependencies: [],
+        functionCalls: [],
+        args: ['Karacurt USDC', 'kUSDC', 6],
     },
 ];

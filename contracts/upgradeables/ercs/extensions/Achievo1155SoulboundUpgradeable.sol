@@ -1,8 +1,6 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.24;
 
-
-
 // @author Summon.xyz Team - https://summon.xyz
 // @contributors: [ @ogarciarevett, @vasinl124]
 //....................................................................................................................................................
@@ -22,7 +20,9 @@ pragma solidity ^0.8.24;
 //....................&&&&&&&.........................................................................................................................
 //....................................................................................................................................................
 
-import { Initializable } from "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
+import {
+    Initializable
+} from "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
 
 contract Achievo1155SoulboundUpgradeable is Initializable {
     mapping(address => bool) internal _soulboundAddresses; // mid gas usage
@@ -30,8 +30,16 @@ contract Achievo1155SoulboundUpgradeable is Initializable {
     mapping(address => bool) internal whitelistAddresses;
 
     event SoulboundAddress(address indexed to);
-    event Soulbound(address indexed to, uint256 indexed tokenId, uint256 amount);
-    event SoulboundBatch(address indexed to, uint256[] indexed tokenIds, uint256[] indexed amounts);
+    event Soulbound(
+        address indexed to,
+        uint256 indexed tokenId,
+        uint256 amount
+    );
+    event SoulboundBatch(
+        address indexed to,
+        uint256[] indexed tokenIds,
+        uint256[] indexed amounts
+    );
 
     modifier soulboundCheckAndSync(
         address from,
@@ -62,24 +70,38 @@ contract Achievo1155SoulboundUpgradeable is Initializable {
         );
 
         for (uint256 i = 0; i < tokenIds.length; i++) {
-            _checkMultipleAmounts(from, to, tokenIds[i], amounts[i], totalAmounts[i]);
+            _checkMultipleAmounts(
+                from,
+                to,
+                tokenIds[i],
+                amounts[i],
+                totalAmounts[i]
+            );
             _syncSoulbound(from, to, tokenIds[i], amounts[i], totalAmounts[i]);
         }
         _;
     }
 
     modifier revertOperation() {
-        revert("Achievo1155SoulboundUpgradeable: Operation denied, soulbounded");
+        revert(
+            "Achievo1155SoulboundUpgradeable: Operation denied, soulbounded"
+        );
         _;
     }
 
-    function __Achievo1155SoulboundUpgradable_init() internal onlyInitializing {}
+    function __Achievo1155SoulboundUpgradable_init()
+        internal
+        onlyInitializing
+    {}
 
     /**
      * @dev Returns if a `tokenId` is soulbound
      *
      */
-    function soulboundBalance(address to, uint256 tokenId) external view virtual returns (uint256) {
+    function soulboundBalance(
+        address to,
+        uint256 tokenId
+    ) external view virtual returns (uint256) {
         return _soulbounds[to][tokenId];
     }
 
@@ -91,7 +113,10 @@ contract Achievo1155SoulboundUpgradeable is Initializable {
         return _soulboundAddresses[to];
     }
 
-    function _updateWhitelistAddress(address _address, bool _isWhitelisted) internal {
+    function _updateWhitelistAddress(
+        address _address,
+        bool _isWhitelisted
+    ) internal {
         whitelistAddresses[_address] = _isWhitelisted;
     }
 
@@ -102,9 +127,18 @@ contract Achievo1155SoulboundUpgradeable is Initializable {
         uint256 amount,
         uint256 totalAmount
     ) private view {
-        require(from != address(0), "Achievo1155SoulboundUpgradeable: can't be zero address");
-        require(amount > 0, "Achievo1155SoulboundUpgradeable: can't be zero amount");
-        require(amount <= totalAmount, "Achievo1155SoulboundUpgradeable: can't transfer more than you have");
+        require(
+            from != address(0),
+            "Achievo1155SoulboundUpgradeable: can't be zero address"
+        );
+        require(
+            amount > 0,
+            "Achievo1155SoulboundUpgradeable: can't be zero amount"
+        );
+        require(
+            amount <= totalAmount,
+            "Achievo1155SoulboundUpgradeable: can't transfer more than you have"
+        );
         // check if from or to whitelist addresses let it through
         if (whitelistAddresses[from] || whitelistAddresses[to]) {
             return;
@@ -117,9 +151,16 @@ contract Achievo1155SoulboundUpgradeable is Initializable {
         }
     }
 
-    function _syncSoulbound(address from, address to, uint256 tokenId, uint256 amount, uint256 totalAmount) private {
+    function _syncSoulbound(
+        address from,
+        address to,
+        uint256 tokenId,
+        uint256 amount,
+        uint256 totalAmount
+    ) private {
         if (_soulbounds[from][tokenId] > 0) {
-            uint256 nonSoulboundAmount = totalAmount - _soulbounds[from][tokenId];
+            uint256 nonSoulboundAmount = totalAmount -
+                _soulbounds[from][tokenId];
 
             if (nonSoulboundAmount < amount) {
                 uint256 soulboundDiffAmount = amount - nonSoulboundAmount;
@@ -137,7 +178,11 @@ contract Achievo1155SoulboundUpgradeable is Initializable {
      * Emits a {Soulbound} event.
      *
      */
-    function _soulbound(address to, uint256 tokenId, uint256 amount) internal virtual {
+    function _soulbound(
+        address to,
+        uint256 tokenId,
+        uint256 amount
+    ) internal virtual {
         _soulbounds[to][tokenId] += amount;
         emit Soulbound(to, tokenId, amount);
     }
@@ -148,7 +193,11 @@ contract Achievo1155SoulboundUpgradeable is Initializable {
      * Emits a {SoulboundBatch} event.
      *
      */
-    function _soulboundBatch(address to, uint256[] memory tokenIds, uint256[] memory amounts) internal virtual {
+    function _soulboundBatch(
+        address to,
+        uint256[] memory tokenIds,
+        uint256[] memory amounts
+    ) internal virtual {
         require(
             tokenIds.length == amounts.length,
             "Achievo1155SoulboundUpgradeable: tokenIds and amounts length mismatch"
@@ -169,7 +218,10 @@ contract Achievo1155SoulboundUpgradeable is Initializable {
      * - `to` cannot be the zero address.
      */
     function _soulboundAddress(address to) internal virtual {
-        require(to != address(0), "Achievo1155SoulboundUpgradeable: Bound to the zero address not allowed");
+        require(
+            to != address(0),
+            "Achievo1155SoulboundUpgradeable: Bound to the zero address not allowed"
+        );
         _soulboundAddresses[to] = true;
         emit SoulboundAddress(to);
     }
