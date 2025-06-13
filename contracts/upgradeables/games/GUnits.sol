@@ -122,6 +122,7 @@ contract GUnits is
     bytes32 public constant READABLE_ROLE = keccak256("READABLE_ROLE");
     bytes32 public constant GAME_SERVER_ROLE = keccak256("GAME_SERVER_ROLE");
     bytes32 public constant LIVE_OPS_ROLE = keccak256("LIVE_OPS_ROLE");
+    bytes32 public constant THIRD_PARTY_ROLE = keccak256("THIRD_PARTY_ROLE");
 
     address public token;
     mapping(address => uint256) private balances;
@@ -163,6 +164,7 @@ contract GUnits is
         _setRoleAdmin(MANAGER_ROLE, DEV_CONFIG_ROLE);
         _setRoleAdmin(READABLE_ROLE, MANAGER_ROLE);
         _setRoleAdmin(LIVE_OPS_ROLE, DEV_CONFIG_ROLE);
+        _setRoleAdmin(THIRD_PARTY_ROLE, DEV_CONFIG_ROLE);
 
         _addWhitelistSigner(_devWallet);
         token = _token;
@@ -254,6 +256,13 @@ contract GUnits is
         for (uint256 i = 0; i < users.length; i++) {
             _deposit(users[i], amounts[i]);
         }
+    }
+
+    function thirdPartyDeposit(
+        address _to,
+        uint256 _amount
+    ) external onlyRole(THIRD_PARTY_ROLE) {
+        _deposit(_to, _amount);
     }
 
     // @dev Withdraws all the g-units from the user
@@ -501,6 +510,22 @@ contract GUnits is
     ) internal view returns (uint256) {
         return
             (gUnitsBalance * denominatorExchangeRate) / numeratorExchangeRate;
+    }
+
+    // @dev Parses the g-units to currency
+    // @param _gUnitsAmount The amount of g-units to parse to currency
+    function parseGUnitsToCurrency(
+        uint256 _gUnitsAmount
+    ) external view returns (uint256) {
+        if (
+            !hasRole(READABLE_ROLE, _msgSender()) &&
+            !hasRole(LIVE_OPS_ROLE, _msgSender()) &&
+            !hasRole(GAME_SERVER_ROLE, _msgSender()) &&
+            !hasRole(THIRD_PARTY_ROLE, _msgSender())
+        ) {
+            revert NotAuthorized(_msgSender());
+        }
+        return _parseGUnitsToCurrency(_gUnitsAmount);
     }
 
     function getCollectedFees()
