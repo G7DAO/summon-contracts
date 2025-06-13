@@ -353,10 +353,7 @@ contract GUnits is
             emit FundsReleased(currentPayout.player, currentPayout.buyInAmount);
 
             if (currentPayout.isWinner) {
-                _mintGUnits(
-                    currentPayout.player,
-                    currentPayout.amount + currentPayout.buyInAmount
-                );
+                _mintGUnits(currentPayout.player, currentPayout.amount);
             }
         }
 

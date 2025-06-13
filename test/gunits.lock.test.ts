@@ -305,10 +305,11 @@ describe('GUnits-2', function () {
             } = await loadFixture(deployFixtures);
             const depositAmount = ethers.parseUnits('20', 6);
             const lockAmount = ethers.parseUnits('10', 6);
-            const firstPlaceAmount = ethers.parseUnits('43.2', 6);
-            const secondPlaceAmount = ethers.parseUnits('21.6', 6);
-            const thirdPlaceAmount = ethers.parseUnits('14.4', 6);
-            const fourthPlaceAmount = ethers.parseUnits('10.80', 6);
+            // Winners get payout minted on top of their 10 liquid balance
+            const firstPlaceAmount = ethers.parseUnits('43.2', 6); // 10 + 43.2 = 53.2 total
+            const secondPlaceAmount = ethers.parseUnits('21.6', 6); // 10 + 21.6 = 31.6 total
+            const thirdPlaceAmount = ethers.parseUnits('14.4', 6); // 10 + 14.4 = 24.4 total
+            const fourthPlaceAmount = ethers.parseUnits('10.80', 6); // 10 + 10.8 = 20.8 total
 
             // Setup initial balances
             await depositGUnitsBatch(
@@ -454,11 +455,11 @@ describe('GUnits-2', function () {
                         user10.address,
                     ])
             ).to.deep.equal([
-                depositAmount + firstPlaceAmount,
-                depositAmount + secondPlaceAmount,
-                depositAmount + thirdPlaceAmount,
-                depositAmount + fourthPlaceAmount,
-                depositAmount - lockAmount,
+                depositAmount - lockAmount + firstPlaceAmount, // 10 + 43.2 = 53.2
+                depositAmount - lockAmount + secondPlaceAmount, // 10 + 21.6 = 31.6
+                depositAmount - lockAmount + thirdPlaceAmount, // 10 + 14.4 = 24.4
+                depositAmount - lockAmount + fourthPlaceAmount, // 10 + 10.8 = 20.8
+                depositAmount - lockAmount, // Losers keep their 10 liquid
                 depositAmount - lockAmount,
                 depositAmount - lockAmount,
                 depositAmount - lockAmount,
@@ -562,7 +563,7 @@ describe('GUnits-2', function () {
             await chips.connect(gameServer).adminPayout(payouts, rakeFee);
 
             // Verify final state
-            expect(await chips.balanceOf(user1.address)).to.equal(depositAmount + winAmount);
+            expect(await chips.balanceOf(user1.address)).to.equal(depositAmount - entryFee + winAmount);
             expect(await chips.balanceOf(user2.address)).to.equal(depositAmount - entryFee);
             expect(await chips.getCollectedFees()).to.equal(rakeFee);
 
