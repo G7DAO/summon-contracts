@@ -131,11 +131,12 @@ contract GUnits is
     uint256 public denominatorExchangeRate;
 
     uint256 private collectedFees;
-    uint256 public decimals;
 
     // Locked funds tracking
     // user => total locked amount
     mapping(address => uint256) private lockedFunds;
+
+    uint256 public decimals;
 
     // @dev Initializes the contract
     // @param _token The address of the token to use for the g-units
@@ -352,10 +353,7 @@ contract GUnits is
             emit FundsReleased(currentPayout.player, currentPayout.buyInAmount);
 
             if (currentPayout.isWinner) {
-                _mintGUnits(
-                    currentPayout.player,
-                    currentPayout.amount + currentPayout.buyInAmount
-                );
+                _mintGUnits(currentPayout.player, currentPayout.amount);
             }
         }
 

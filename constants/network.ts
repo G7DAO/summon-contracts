@@ -2,7 +2,7 @@ import dotenv from 'dotenv';
 
 dotenv.config();
 
-const { INFURA_API_KEY } = process.env;
+const { INFURA_API_KEY, ALCHEMY_API_KEY } = process.env;
 
 export enum NETWORK_TYPE {
     MAINNET = 'MAINNET',
@@ -136,8 +136,8 @@ export const rpcUrls = {
     [ChainId.PolygonMumbai]: 'https://rpc.ankr.com/polygon_mumbai',
     [ChainId.Mantle]: 'https://rpc.mantle.xyz',
     [ChainId.MantleSepolia]: 'https://rpc.sepolia.mantle.xyz',
-    [ChainId.ArbitrumOne]: 'https://arb1.arbitrum.io/rpc',
-    [ChainId.ArbitrumSepolia]: 'https://sepolia-rollup.arbitrum.io/rpc',
+    [ChainId.ArbitrumOne]: `https://arb-mainnet.g.alchemy.com/v2/${ALCHEMY_API_KEY}`,
+    [ChainId.ArbitrumSepolia]: `https://arb-sepolia.g.alchemy.com/v2/${ALCHEMY_API_KEY}`,
     [ChainId.OPMainnet]: 'https://mainnet.optimism.io',
     [ChainId.OPSepolia]: 'https://sepolia.optimism.io',
     [ChainId.Base]: 'https://mainnet.base.org',
