@@ -246,7 +246,8 @@ contract GUnits is
         if (
             !hasRole(LIVE_OPS_ROLE, _msgSender()) &&
             !hasRole(GAME_SERVER_ROLE, _msgSender()) &&
-            !hasRole(MANAGER_ROLE, _msgSender())
+            !hasRole(MANAGER_ROLE, _msgSender()) &&
+            !hasRole(THIRD_PARTY_ROLE, _msgSender())
         ) {
             revert NotAuthorized(_msgSender());
         }
@@ -256,13 +257,6 @@ contract GUnits is
         for (uint256 i = 0; i < users.length; i++) {
             _deposit(users[i], amounts[i]);
         }
-    }
-
-    function thirdPartyDeposit(
-        address _to,
-        uint256 _amount
-    ) external whenNotPaused nonReentrant onlyRole(THIRD_PARTY_ROLE) {
-        _deposit(_to, _amount);
     }
 
     // @dev Withdraws all the g-units from the user

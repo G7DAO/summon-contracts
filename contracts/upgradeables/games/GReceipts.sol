@@ -81,10 +81,11 @@ contract GReceipts is
     event PaymentTokenSet(address indexed newPaymentToken);
     error AddressIsZero();
     error SoulboundError();
+    error InvalidAmount();
 
     bytes32 public constant DEV_CONFIG_ROLE = keccak256("DEV_CONFIG_ROLE");
-    bytes32 public constant THIRD_PARTY_MINTER_ROLE =
-        keccak256("THIRD_PARTY_MINTER_ROLE");
+    bytes32 public constant MANAGER_ROLE = keccak256("MANAGER_ROLE");
+    bytes32 public constant MINTER_ROLE = keccak256("MINTER_ROLE");
 
     address public gUnits;
     address public paymentToken;
@@ -116,7 +117,10 @@ contract GReceipts is
 
         _grantRole(DEFAULT_ADMIN_ROLE, _devWallet);
         _grantRole(DEV_CONFIG_ROLE, _devWallet);
-        _setRoleAdmin(THIRD_PARTY_MINTER_ROLE, DEV_CONFIG_ROLE);
+        _grantRole(MINTER_ROLE, _devWallet);
+        _grantRole(MANAGER_ROLE, _devWallet);
+        _setRoleAdmin(MINTER_ROLE, DEV_CONFIG_ROLE);
+        _setRoleAdmin(MANAGER_ROLE, DEV_CONFIG_ROLE);
 
         gUnits = _gUnits;
         paymentToken = _paymentToken;
@@ -126,17 +130,15 @@ contract GReceipts is
 
     function mint(
         address _to,
-        uint256 _id,
-        uint256 _amount,
-        bytes memory _data
-    ) external onlyRole(DEV_CONFIG_ROLE) {
-        _mint(_to, _id, _amount, _data);
-    }
-
-    function thirdPartyMint(
-        address _to,
         uint256 _amount
-    ) external onlyRole(THIRD_PARTY_MINTER_ROLE) {
+    ) external whenNotPaused onlyRole(MINTER_ROLE) {
+        if (_to == address(0)) {
+            revert AddressIsZero();
+        }
+        if (_amount == 0) {
+            revert InvalidAmount();
+        }
+        _soulbound(_to, DEFAULT_RECEIPT_ID, _amount);
         _mint(_to, DEFAULT_RECEIPT_ID, _amount, "");
         uint256 currencyAmount = IGUnits(gUnits).parseGUnitsToCurrency(_amount);
         IERC20(paymentToken).safeTransferFrom(
@@ -145,7 +147,11 @@ contract GReceipts is
             currencyAmount
         );
         IERC20(paymentToken).approve(gUnits, currencyAmount);
-        IGUnits(gUnits).thirdPartyDeposit(_to, _amount);
+        address[] memory users = new address[](1);
+        users[0] = _to;
+        uint256[] memory amounts = new uint256[](1);
+        amounts[0] = _amount;
+        IGUnits(gUnits).adminDeposit(users, amounts);
     }
 
     // @dev Pauses the contract
@@ -161,9 +167,7 @@ contract GReceipts is
     // @dev Sets the token
     // @param _token The address of the token to set
     // @param _previousTokenRecipient The address to send the previous token to
-    function setGUnits(
-        address _newGUnits
-    ) external whenPaused onlyRole(DEV_CONFIG_ROLE) {
+    function setGUnits(address _newGUnits) external onlyRole(DEV_CONFIG_ROLE) {
         if (_newGUnits == address(0)) {
             revert AddressIsZero();
         }
@@ -175,7 +179,7 @@ contract GReceipts is
     // @param _newPaymentToken The address of the new payment token
     function setPaymentToken(
         address _newPaymentToken
-    ) external whenPaused onlyRole(DEV_CONFIG_ROLE) {
+    ) external onlyRole(DEV_CONFIG_ROLE) {
         if (_newPaymentToken == address(0)) {
             revert AddressIsZero();
         }
@@ -219,5 +223,5 @@ contract GReceipts is
     }
 
     // Reserved storage space to allow for layout changes in the future.
-    uint256[50] private __gap;
+    uint256[47] private __gap;
 }

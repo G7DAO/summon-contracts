@@ -29,8 +29,6 @@ interface IGUnits {
 
     function getExchangeRate() external view returns (uint256, uint256);
 
-    function thirdPartyDeposit(address _to, uint256 _amount) external;
-
     function parseGUnitsToCurrency(
         uint256 _gUnitsAmount
     ) external view returns (uint256);
