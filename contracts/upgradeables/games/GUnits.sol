@@ -259,6 +259,24 @@ contract GUnits is
         }
     }
 
+    // @dev Admin function to deposit g-units to a specific user
+    // @param user The address of the user to deposit the g-units to
+    // @param amount The amount of g-units to deposit
+    function adminSingleDeposit(
+        address user,
+        uint256 amount
+    ) external nonReentrant {
+        if (
+            !hasRole(LIVE_OPS_ROLE, _msgSender()) &&
+            !hasRole(GAME_SERVER_ROLE, _msgSender()) &&
+            !hasRole(MANAGER_ROLE, _msgSender()) &&
+            !hasRole(THIRD_PARTY_ROLE, _msgSender())
+        ) {
+            revert NotAuthorized(_msgSender());
+        }
+        _deposit(user, amount);
+    }
+
     // @dev Withdraws all the g-units from the user
     // @param users The addresses of the users to withdraw the g-units from
     function withdrawAllAdmin(

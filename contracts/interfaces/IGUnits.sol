@@ -23,6 +23,8 @@ interface IGUnits {
         uint256[] memory amounts
     ) external;
 
+    function adminSingleDeposit(address user, uint256 amount) external;
+
     function withdrawAllAdmin(address[] memory users) external;
 
     function balanceOf(address account) external view returns (uint256);

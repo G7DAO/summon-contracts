@@ -147,11 +147,7 @@ contract GReceipts is
             currencyAmount
         );
         IERC20(paymentToken).approve(gUnits, currencyAmount);
-        address[] memory users = new address[](1);
-        users[0] = _to;
-        uint256[] memory amounts = new uint256[](1);
-        amounts[0] = _amount;
-        IGUnits(gUnits).adminDeposit(users, amounts);
+        IGUnits(gUnits).adminSingleDeposit(_to, currencyAmount);
     }
 
     // @dev Pauses the contract
