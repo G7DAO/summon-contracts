@@ -2,5 +2,6 @@
     "prettier.configPath": ".prettierrc",
     "makefile.configureOnOpen": false,
     "editor.formatOnSave": true,
-    "editor.defaultFormatter": "esbenp.prettier-vscode"
+    "editor.defaultFormatter": "esbenp.prettier-vscode",
+    "solidity.compileUsingRemoteVersion": "v0.8.24+commit.e11b9ed9"
 }
