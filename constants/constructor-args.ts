@@ -11,7 +11,10 @@ const MOCK_USDC_ARB_SEPOLIA = '0x39B29A0Da967CDd29B45e4f942086839795c32B0';
 const USDC_ARBITRUM_ONE = '0xaf88d065e77c8cC2239327C5EDb3A432268e5831';
 const USDT_ARBITRUM_ONE = '0xFd086bC7CD5C481DCC9C85ebE478A1C0b69FCbb9';
 const USDC_ARBITRUM_SEPOLIA = '0x75faf114eafb1BDbe2F0316DF893fd58CE46AA4d';
-const GUNITS_ARBITRUM_SEPOLIA = '0x0000000000000000000000000000000000000000';
+const GUNITS_ARBITRUM_SEPOLIA = '0x3E95CB707F2274e91Cd643f445128818304eD4B5';
+const GUNITS_ARBITRUM_ONE = '0x3E3a445731d7881a3729A3898D532D5290733Eb5';
+const USDXM_ARBITRUM_SEPOLIA = '0x14196F08a4Fa0B66B7331bC40dd6bCd8A1dEeA9F'
+
 export interface ConstructorArgs {
     name: string;
     symbol: string;
@@ -382,12 +385,12 @@ export const GUnitsArgs = {
         _devWallet: TESTNET_DEV_WALLET,
     },
     ARBITRUM_SEPOLIA: {
-        _token: MOCK_USDC_ARB_SEPOLIA,
+        _token: USDXM_ARBITRUM_SEPOLIA,
         _isPaused: false,
         _devWallet: TESTNET_DEV_WALLET,
     },
     ARBITRUM_ONE: {
-        _token: USDT_ARBITRUM_ONE,
+        _token: USDC_ARBITRUM_ONE,
         _isPaused: false,
         _devWallet: 'DEPLOYER_WALLET',
     },
@@ -399,6 +402,12 @@ export const GReceiptsArgs = {
         _paymentToken: USDC_ARBITRUM_SEPOLIA,
         _isPaused: false,
         _devWallet: TESTNET_DEV_WALLET,
+    },
+    ARBITRUM_ONE: {
+        _gUnits: GUNITS_ARBITRUM_ONE,
+        _paymentToken: USDC_ARBITRUM_ONE,
+        _isPaused: false,
+        _devWallet: 'DEPLOYER_WALLET',
     },
 };
 
