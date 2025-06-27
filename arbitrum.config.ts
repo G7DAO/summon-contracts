@@ -25,15 +25,13 @@ defaultConfig.networks = {
 };
 
 defaultConfig.etherscan = {
-    apiKey: {
-        [NetworkName.ArbitrumOne]: ARBISCAN_API_KEY!,
-    },
+    apiKey: ARBISCAN_API_KEY,
     customChains: [
         {
             network: NetworkName.ArbitrumOne,
             chainId: ChainId.ArbitrumOne,
             urls: {
-                apiURL: 'https://api.arbiscan.io/api',
+                apiURL: 'https://arbitrum.blockscout.com/api',
                 browserURL: NetworkExplorer.ArbitrumOne,
             },
         },
