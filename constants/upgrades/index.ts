@@ -46,6 +46,21 @@ export const CONTRACTS: DeploymentContract[] = [
         dependencies: [],
         functionCalls: [],
     },
+    {
+        name: 'GReceipts', // Logical name used in the --name parameter of the upgrade task
+        contractFileName: 'GReceipts', // The .sol file name of the NEW GUnits implementation (e.g., GUnitsV2 if different)
+        type: CONTRACT_TYPE.GReceipts, // Replace with your actual CONTRACT_TYPE if available and applicable
+        chain: NetworkName.ArbitrumOne, // << UPDATE THIS: e.g., 'arbitrumSepolia', 'mainnet', 'sepolia'
+        networkType: NETWORK_TYPE.MAINNET, // << UPDATE THIS: Your NETWORK_TYPE if applicable
+        version: 1, // << UPDATE THIS: The NEW version number this configuration represents
+        tenants: [TENANT.Game7], // << UPDATE THIS: Array of applicable TENANTs. Cast as any if TENANT is a complex type not imported.
+        upgradable: true,
+        proxyAddress: '0x6Bdecc2f78A911D5b166ce111cCd8b0e2703cE57', // << From your example
+        verify: true,
+        args: {},
+        dependencies: [],
+        functionCalls: [],
+    },
     // Add configurations for other contracts or other versions you might want to upgrade
 ];
 
