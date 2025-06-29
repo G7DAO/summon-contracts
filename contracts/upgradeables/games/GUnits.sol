@@ -80,6 +80,7 @@ contract GUnits is
 {
     using SafeERC20 for IERC20;
 
+    event BalanceUpdated(address indexed user, uint256 amount);
     event Deposit(address indexed user, uint256 amount);
     event Withdraw(address indexed user, uint256 amount);
     event ExchangeRateSet(uint256 numerator, uint256 denominator);
@@ -375,6 +376,10 @@ contract GUnits is
 
             if (currentPayout.isWinner) {
                 _mintGUnits(currentPayout.player, currentPayout.amount);
+                emit BalanceUpdated(
+                    currentPayout.player,
+                    balances[currentPayout.player]
+                );
             }
         }
 
@@ -386,6 +391,7 @@ contract GUnits is
         uint256 amountInGUnits = _parseCurrencyToGUnits(_amount);
         _mintGUnits(_to, amountInGUnits);
         emit Deposit(_to, amountInGUnits);
+        emit BalanceUpdated(_to, balances[_to]);
     }
 
     function _withdraw(address _from, address _to, uint256 _amount) internal {
@@ -399,6 +405,7 @@ contract GUnits is
         uint256 amountInTokens = _parseGUnitsToCurrency(_amount);
         IERC20(token).safeTransfer(_to, amountInTokens);
         emit Withdraw(_from, amountInTokens);
+        emit BalanceUpdated(_from, balances[_from]);
     }
 
     function _mintGUnits(address _to, uint256 _amount) internal {
@@ -646,6 +653,7 @@ contract GUnits is
         balances[user] -= amount;
 
         emit FundsLocked(user, amount);
+        emit BalanceUpdated(user, balances[user]);
     }
 
     // @dev Unlocks funds for a batch of users (returns to available balance)
