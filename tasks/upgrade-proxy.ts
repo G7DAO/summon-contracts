@@ -44,16 +44,18 @@ task('upgrade-proxy', 'Upgrade Smart contracts')
     .addParam('name', 'Contract Name you want to upgrade', undefined, types.string)
     .addParam('extension', 'Extension name', undefined, types.string)
     .addParam('action', 'Extension Manager Action', undefined, types.string)
+    .addFlag('submit', 'Do you want to submit to db?')
     .setAction(
         async (
             _args: {
                 name: CONTRACT_NAME;
                 extension: CONTRACT_EXTENSION_NAME;
                 action: ExtensionAction;
+                submit: boolean;
             },
             hre: HardhatRuntimeEnvironment
         ) => {
-            const { name, extension, action } = _args;
+            const { name, extension, action, submit } = _args;
             const network = hre.network.name;
 
             log('└─ args :\n');
@@ -87,19 +89,21 @@ task('upgrade-proxy', 'Upgrade Smart contracts')
                 log('=====================================================');
                 log('\n');
 
-               // submit to db
-                try {
-                    log('*******************************************');
-                    log('[SUBMITTING] Deployments to db');
-                    log('*******************************************');
-                    await submitContractDeploymentsToDB([deployment], tenant);
-                    log('*******************************************');
-                    log('*** Deployments submitted to db ***');
-                    log('*******************************************');
-                } catch (error: any) {
-                    log('*******************************************');
-                    log('***', error.message, '***');
-                    log('*******************************************');
+                // submit to db
+                if (submit) {
+                    try {
+                        log('*******************************************');
+                        log('[SUBMITTING] Deployments to db');
+                        log('*******************************************');
+                        await submitContractDeploymentsToDB([ deployment ], tenant);
+                        log('*******************************************');
+                        log('*** Deployments submitted to db ***');
+                        log('*******************************************');
+                    } catch (error: any) {
+                        log('*******************************************');
+                        log('***', error.message, '***');
+                        log('*******************************************');
+                    }
                 }
 
                 writeUpgradePayload(deployment, network, tenant);

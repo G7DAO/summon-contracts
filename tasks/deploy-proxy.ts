@@ -140,9 +140,9 @@ export async function populateProxyConstructorArgs(
     implementationContract?: Contract
 ) {
     for (const key in constructorArgs) {
-        constructorArgs[key] = await populateProxyParam(
+        constructorArgs[ key ] = await populateProxyParam(
             hre,
-            constructorArgs[key],
+            constructorArgs[ key ],
             tenant,
             contract,
             implementationContract
@@ -208,7 +208,7 @@ export const deployOne = async (
 };
 
 const getDependencies = (contractName: string, chain: string) => {
-    const dependencies = new Set([contractName]);
+    const dependencies = new Set([ contractName ]);
 
     function collect(contractName: string) {
         const contract = CONTRACTS.find((c) => c.name === contractName && c.chain === chain);
@@ -224,14 +224,15 @@ const getDependencies = (contractName: string, chain: string) => {
 
     collect(contractName);
 
-    return [...dependencies];
+    return [ ...dependencies ];
 };
 
 task('deploy-proxy', 'Deploys Smart contracts with proxy')
     .addParam('name', 'Contract Name you want to deploy', undefined, types.string)
+    .addFlag('submit', 'Do you want to submit to db?')
     .setAction(
-        async (_args: { name: CONTRACT_NAME; tenant: TENANT; force: boolean }, hre: HardhatRuntimeEnvironment) => {
-            const { name } = _args;
+        async (_args: { name: CONTRACT_NAME; tenant: TENANT; force: boolean; submit: boolean }, hre: HardhatRuntimeEnvironment) => {
+            const { name, submit } = _args;
 
             const network = hre.network.name;
             log('└─ args :\n');
@@ -383,18 +384,20 @@ task('deploy-proxy', 'Deploys Smart contracts with proxy')
                 log('\n');
 
                 // submit to db
-                try {
-                    log('*******************************************');
-                    log('[SUBMITTING] Deployments to db');
-                    log('*******************************************');
-                    await submitContractDeploymentsToDB(deployments, tenant);
-                    log('*******************************************');
-                    log('*** Deployments submitted to db ***');
-                    log('*******************************************');
-                } catch (error: any) {
-                    log('*******************************************');
-                    log('***', error.message, '***');
-                    log('*******************************************');
+                if (submit) {
+                    try {
+                        log('*******************************************');
+                        log('[SUBMITTING] Deployments to db');
+                        log('*******************************************');
+                        await submitContractDeploymentsToDB(deployments, tenant);
+                        log('*******************************************');
+                        log('*** Deployments submitted to db ***');
+                        log('*******************************************');
+                    } catch (error: any) {
+                        log('*******************************************');
+                        log('***', error.message, '***');
+                        log('*******************************************');
+                    }
                 }
 
                 const calls = [];
@@ -402,8 +405,7 @@ task('deploy-proxy', 'Deploys Smart contracts with proxy')
                     // write deployment payload per tenant
                     // Define the path to the file
                     const filePath = path.resolve(
-                        `${ACHIEVO_TMP_DIR}/deployments/${contract.chain}/upgradeables/deployments-${
-                            deployment.type
+                        `${ACHIEVO_TMP_DIR}/deployments/${contract.chain}/upgradeables/deployments-${deployment.type
                         }-${tenant}-${Date.now()}.json`
                     );
                     // Convert deployments to JSON

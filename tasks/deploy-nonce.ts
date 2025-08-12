@@ -77,11 +77,11 @@ const deployOne = async (
     const abiContent = fs.readFileSync(path.resolve(abiPath as string), 'utf8');
     const { abi: contractAbi, bytecode } = JSON.parse(abiContent);
 
-    const networkNameKey = Object.keys(NetworkName)[Object.values(NetworkName).indexOf(networkName)];
-    const chainId = ChainId[networkNameKey as keyof typeof ChainId];
-    const blockExplorerBaseUrl = NetworkExplorer[networkNameKey as keyof typeof NetworkExplorer];
-    const rpcUrl = rpcUrls[chainId];
-    const currency = Currency[networkNameKey as keyof typeof Currency];
+    const networkNameKey = Object.keys(NetworkName)[ Object.values(NetworkName).indexOf(networkName) ];
+    const chainId = ChainId[ networkNameKey as keyof typeof ChainId ];
+    const blockExplorerBaseUrl = NetworkExplorer[ networkNameKey as keyof typeof NetworkExplorer ];
+    const rpcUrl = rpcUrls[ chainId ];
+    const currency = Currency[ networkNameKey as keyof typeof Currency ];
 
     console.log('chainId', networkName, chainId);
 
@@ -100,7 +100,7 @@ const deployOne = async (
     const provider = new hre.ethers.JsonRpcProvider(rpcUrl);
     const deployerWallet = new hre.ethers.Wallet(PRIVATE_KEY, provider);
 
-    const initCode = bytecode + encoder(['address'], [deployerWallet.address], 2);
+    const initCode = bytecode + encoder([ 'address' ], [ deployerWallet.address ], 2);
     const create2Addr = create2Address(hre, factoryAddr, initCode, saltHex);
     console.log('precomputed address:', networkName, create2Addr);
 
@@ -113,12 +113,12 @@ const deployOne = async (
     const log = txReceipt.logs.find((log: { fragment: { name: string } }) => {
         return log.fragment.name === 'Deployed';
     });
-    const contractAddress = log.args[0];
+    const contractAddress = log.args[ 0 ];
     console.log('Contract deployed to:', networkName, '::', contractAddress);
 
     // verify
     if (contract.verify) {
-        const networkConfigFile = NetworkConfigFile[networkNameKey as keyof typeof NetworkConfigFile];
+        const networkConfigFile = NetworkConfigFile[ networkNameKey as keyof typeof NetworkConfigFile ];
         exec(
             `npx hardhat verify ${contractAddress} ${deployerWallet.address} --network ${networkName} --config ${networkConfigFile}`,
             (error) => {
@@ -150,7 +150,7 @@ const deployOne = async (
 };
 
 const getDependencies = (contractName: string, chain: string) => {
-    const dependencies = new Set([contractName]);
+    const dependencies = new Set([ contractName ]);
 
     function collect(contractName: string) {
         const contract = CONTRACTS.find((c) => c.name === contractName && c.chain === chain);
@@ -166,7 +166,7 @@ const getDependencies = (contractName: string, chain: string) => {
 
     collect(contractName);
 
-    return [...dependencies];
+    return [ ...dependencies ];
 };
 
 task('deploy-nonce', 'Deploys Smart contracts to same address across chain')
@@ -174,12 +174,13 @@ task('deploy-nonce', 'Deploys Smart contracts to same address across chain')
     .addParam('tenant', 'Tenant you want to deploy', undefined, types.string)
     .addParam('salt', 'Fixed Salt', undefined, types.string)
     .addParam('chains', 'Chains in this order chain1,chain2,chain3', undefined, types.string)
+    .addFlag('submit', 'Do you want to submit to db?')
     .setAction(
         async (
-            _args: { name: CONTRACT_NAME; tenant: TENANT; chains: string; salt: string },
+            _args: { name: CONTRACT_NAME; tenant: TENANT; chains: string; salt: string; submit: boolean },
             hre: HardhatRuntimeEnvironment
         ) => {
-            const { name, tenant, chains, salt } = _args;
+            const { name, tenant, chains, salt, submit } = _args;
             log('└─ args :\n');
             log(`   ├─ Tenant : ${tenant}\n`);
             log(`   ├─ Contract name : ${name}\n`);
@@ -195,10 +196,10 @@ task('deploy-nonce', 'Deploys Smart contracts to same address across chain')
 
             const infoPerNetwork = await Promise.all(
                 networksToDeploy.map(async (networkName: NetworkName) => {
-                    const networkNameKey = Object.keys(NetworkName)[Object.values(NetworkName).indexOf(networkName)];
-                    const chainId = ChainId[networkNameKey as keyof typeof ChainId];
+                    const networkNameKey = Object.keys(NetworkName)[ Object.values(NetworkName).indexOf(networkName) ];
+                    const chainId = ChainId[ networkNameKey as keyof typeof ChainId ];
 
-                    const rpcUrl = rpcUrls[chainId];
+                    const rpcUrl = rpcUrls[ chainId ];
                     const provider = new hre.ethers.JsonRpcProvider(rpcUrl);
                     const wallet = new hre.ethers.Wallet(PRIVATE_KEY, provider);
                     const nonce = await provider.getTransactionCount(wallet.address);
@@ -289,18 +290,20 @@ task('deploy-nonce', 'Deploys Smart contracts to same address across chain')
             );
 
             // submit to db
-            try {
-                log('*******************************************');
-                log('[SUBMITTING] Deployments to db');
-                log('*******************************************');
-                await submitContractDeploymentsToDB(deployments, tenant);
-                log('*******************************************');
-                log('*** Deployments submitted to db ***');
-                log('*******************************************');
-            } catch (error: any) {
-                log('*******************************************');
-                log('***', error.message, '***');
-                log('*******************************************');
+            if (submit) {
+                try {
+                    log('*******************************************');
+                    log('[SUBMITTING] Deployments to db');
+                    log('*******************************************');
+                    await submitContractDeploymentsToDB(deployments, tenant);
+                    log('*******************************************');
+                    log('*** Deployments submitted to db ***');
+                    log('*******************************************');
+                } catch (error: any) {
+                    log('*******************************************');
+                    log('***', error.message, '***');
+                    log('*******************************************');
+                }
             }
 
             for (const deployment of deployments) {
@@ -327,16 +330,16 @@ task('deploy-nonce', 'Deploys Smart contracts to same address across chain')
 
                 console.log('deployedContract', deployedContract);
 
-                const networkNameKey = Object.keys(NetworkName)[Object.values(NetworkName).indexOf(networkName)];
-                const chainId = ChainId[networkNameKey as keyof typeof ChainId];
-                const rpcUrl = rpcUrls[chainId];
+                const networkNameKey = Object.keys(NetworkName)[ Object.values(NetworkName).indexOf(networkName) ];
+                const chainId = ChainId[ networkNameKey as keyof typeof ChainId ];
+                const rpcUrl = rpcUrls[ chainId ];
 
                 const provider = new hre.ethers.JsonRpcProvider(rpcUrl);
                 const deployerWallet = new hre.ethers.Wallet(PRIVATE_KEY, provider);
 
                 const initializeArgs = [];
                 for (const key in deployedContract?.args) {
-                    const arg = populateNonceParam(deployedContract?.args[key], networkName, deployments, salt);
+                    const arg = populateNonceParam(deployedContract?.args[ key ], networkName, deployments, salt);
                     console.log('key:', key, 'arg:', arg);
                     initializeArgs.push(arg);
                 }

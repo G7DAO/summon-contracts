@@ -52,8 +52,7 @@ export async function populateParam(
         console.log('goingToDeploy->', name, goingToDeploy);
 
         const filePathDeploymentLatest = path.resolve(
-            `${ACHIEVO_TMP_DIR}/${contract?.chain}/${contract?.upgradable ? 'upgradeables/' : ''}deployments-${
-                contract?.name
+            `${ACHIEVO_TMP_DIR}/${contract?.chain}/${contract?.upgradable ? 'upgradeables/' : ''}deployments-${contract?.name
             }-${tenant}-latest.json`
         );
 
@@ -103,7 +102,7 @@ export async function populateConstructorArgs(
     tenant: string
 ) {
     for (const key in constructorArgs) {
-        constructorArgs[key] = await populateParam(hre, constructorArgs[key], tenant);
+        constructorArgs[ key ] = await populateParam(hre, constructorArgs[ key ], tenant);
     }
     return constructorArgs;
 }
@@ -125,8 +124,7 @@ const deployOne = async (
     }
 
     const filePathDeploymentLatest = path.resolve(
-        `${ACHIEVO_TMP_DIR}/${contract.chain}/${contract.upgradable ? 'upgradeables/' : ''}deployments-${
-            contract.name
+        `${ACHIEVO_TMP_DIR}/${contract.chain}/${contract.upgradable ? 'upgradeables/' : ''}deployments-${contract.name
         }-${tenant}-latest.json`
     );
 
@@ -175,7 +173,7 @@ export const prepFunctionOne = async (
 };
 
 const getDependencies = (contractName: string, chain: string) => {
-    const dependencies = new Set([contractName]);
+    const dependencies = new Set([ contractName ]);
 
     function collect(contractName: string) {
         const contract = CONTRACTS.find((c) => c.name === contractName && c.chain === chain);
@@ -191,14 +189,15 @@ const getDependencies = (contractName: string, chain: string) => {
 
     collect(contractName);
 
-    return [...dependencies];
+    return [ ...dependencies ];
 };
 
 task('deploy', 'Deploys Smart contracts')
     .addParam('name', 'Contract Name you want to deploy', undefined, types.string)
     .addFlag('force', 'Do you want to force deploy?')
-    .setAction(async (_args: { name: string; force: boolean }, hre: HardhatRuntimeEnvironment) => {
-        const { name, force } = _args;
+    .addFlag('submit', 'Do you want to submit to db?')
+    .setAction(async (_args: { name: string; force: boolean; submit: boolean }, hre: HardhatRuntimeEnvironment) => {
+        const { name, force, submit } = _args;
         const network = hre.network.name;
         log('└─ args :\n');
         log(`   ├─ contractFileName : ${name}\n`);
@@ -249,18 +248,20 @@ task('deploy', 'Deploys Smart contracts')
             log('\n');
 
             // submit to db
-            try {
-                log('*******************************************');
-                log('[SUBMITTING] Deployments to db');
-                log('*******************************************');
-                await submitContractDeploymentsToDB(deployments, tenant);
-                log('*******************************************');
-                log('*** Deployments submitted to db ***');
-                log('*******************************************');
-            } catch (error: any) {
-                log('*******************************************');
-                log('***', error.message, '***');
-                log('*******************************************');
+            if (submit) {
+                try {
+                    log('*******************************************');
+                    log('[SUBMITTING] Deployments to db');
+                    log('*******************************************');
+                    await submitContractDeploymentsToDB(deployments, tenant);
+                    log('*******************************************');
+                    log('*** Deployments submitted to db ***');
+                    log('*******************************************');
+                } catch (error: any) {
+                    log('*******************************************');
+                    log('***', error.message, '***');
+                    log('*******************************************');
+                }
             }
 
             const calls = [];
@@ -268,8 +269,7 @@ task('deploy', 'Deploys Smart contracts')
                 // write deployment payload per tenant
                 // Define the path to the file
                 const filePath = path.resolve(
-                    `${ACHIEVO_TMP_DIR}/deployments/${contract.chain}/${
-                        contract.upgradable ? 'upgradeables/' : ''
+                    `${ACHIEVO_TMP_DIR}/deployments/${contract.chain}/${contract.upgradable ? 'upgradeables/' : ''
                     }deployments-${deployment.type}-${tenant}-${Date.now()}.json`
                 );
                 // Convert deployments to JSON

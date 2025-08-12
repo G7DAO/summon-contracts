@@ -29,11 +29,11 @@ const deployOne = async (
 
     const abiPath = getABIFilePath(contractFileName);
 
-    const networkNameKey = Object.keys(NetworkName)[Object.values(NetworkName).indexOf(networkName as NetworkName)];
-    const chainId = ChainId[networkNameKey as keyof typeof ChainId];
-    const blockExplorerBaseUrl = NetworkExplorer[networkNameKey as keyof typeof NetworkExplorer];
-    const rpcUrl = rpcUrls[chainId];
-    const currency = Currency[networkNameKey as keyof typeof Currency];
+    const networkNameKey = Object.keys(NetworkName)[ Object.values(NetworkName).indexOf(networkName as NetworkName) ];
+    const chainId = ChainId[ networkNameKey as keyof typeof ChainId ];
+    const blockExplorerBaseUrl = NetworkExplorer[ networkNameKey as keyof typeof NetworkExplorer ];
+    const rpcUrl = rpcUrls[ chainId ];
+    const currency = Currency[ networkNameKey as keyof typeof Currency ];
 
     const abiContent = fs.readFileSync(path.resolve(abiPath as string), 'utf8');
     const { abi: contractAbi } = JSON.parse(abiContent);
@@ -41,7 +41,7 @@ const deployOne = async (
     const provider = new hre.ethers.JsonRpcProvider(rpcUrl);
     const deployerWallet = new hre.ethers.Wallet(DETERMINISTIC_DEPLOYER_PRIVATE_KEY, provider);
     const managerWallet = new hre.ethers.Wallet(PRIVATE_KEY, provider);
-    const achievoContract = await hre.ethers.deployContract(contractFileName, [managerWallet.address], deployerWallet);
+    const achievoContract = await hre.ethers.deployContract(contractFileName, [ managerWallet.address ], deployerWallet);
 
     await achievoContract.waitForDeployment();
 
@@ -50,7 +50,7 @@ const deployOne = async (
 
     console.log('Factory deployed to:', networkName, '::', contractAddress);
 
-    const networkConfigFile = NetworkConfigFile[networkNameKey as keyof typeof NetworkConfigFile];
+    const networkConfigFile = NetworkConfigFile[ networkNameKey as keyof typeof NetworkConfigFile ];
     exec(
         `npx hardhat verify ${contractAddress} ${managerWallet.address} --network ${networkName} --config ${networkConfigFile}`,
         (error) => {
@@ -105,10 +105,10 @@ task('deploy-create2', 'Deploys Create2 Smart contracts')
 
         const walletData = await Promise.all(
             networksToDeploy.map(async (networkName: NetworkName) => {
-                const networkNameKey = Object.keys(NetworkName)[Object.values(NetworkName).indexOf(networkName)];
-                const chainId = ChainId[networkNameKey as keyof typeof ChainId];
+                const networkNameKey = Object.keys(NetworkName)[ Object.values(NetworkName).indexOf(networkName) ];
+                const chainId = ChainId[ networkNameKey as keyof typeof ChainId ];
 
-                const rpcUrl = rpcUrls[chainId];
+                const rpcUrl = rpcUrls[ chainId ];
                 const provider = new hre.ethers.JsonRpcProvider(rpcUrl);
                 const wallet = new hre.ethers.Wallet(DETERMINISTIC_DEPLOYER_PRIVATE_KEY, provider);
                 const nonce = await provider.getTransactionCount(wallet.address);
@@ -122,7 +122,7 @@ task('deploy-create2', 'Deploys Create2 Smart contracts')
 
         console.log('walletData', walletData);
 
-        const isSameNonce = walletData.every(({ nonce }) => nonce === walletData[0].nonce);
+        const isSameNonce = walletData.every(({ nonce }) => nonce === walletData[ 0 ].nonce);
 
         console.log('isSameNonce', isSameNonce);
         // if (!isSameNonce) {

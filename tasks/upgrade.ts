@@ -19,8 +19,7 @@ const upgradeOne = async (
 ): Promise<Deployment> => {
     // const abiPath = getABIFilePath(contract.contractName); // No longer needed here
     const filePathDeploymentLatest = path.resolve(
-        `${ACHIEVO_TMP_DIR}/${contract.chain}/${contract.upgradable ? 'upgradeables/' : ''}deployments-${
-            contract.type
+        `${ACHIEVO_TMP_DIR}/${contract.chain}/${contract.upgradable ? 'upgradeables/' : ''}deployments-${contract.type
         }-${tenant}-latest.json`
     );
 
@@ -42,8 +41,9 @@ const upgradeOne = async (
 task('upgrade', 'Upgrade Smart contracts')
     .addParam('name', 'Contract Name you want to upgrade', undefined, types.string)
     .addParam('contractversion', 'Version you want to upgrade to, eg: 2', undefined, types.int)
-    .setAction(async (_args: { name: string; contractversion: number }, hre: HardhatRuntimeEnvironment) => {
-        const { name, contractversion: contractVersion } = _args;
+    .addFlag('submit', 'Do you want to submit to db?')
+    .setAction(async (_args: { name: string; contractversion: number; submit: boolean }, hre: HardhatRuntimeEnvironment) => {
+        const { name, contractversion: contractVersion, submit } = _args;
         const network = hre.network.name;
         log('└─ args :\n');
         log(`   ├─ contractName : ${name}\n`);
@@ -79,20 +79,22 @@ task('upgrade', 'Upgrade Smart contracts')
             log('\n');
 
             // submit to db - Adapted for single upgrade
-            try {
-                log('*******************************************');
-                log('[SUBMITTING] Upgrade info to db');
-                log('*******************************************');
-                // Assuming submitContractDeploymentsToDB can take Deployment[] and upgradedContract is a single Deployment object
-                await submitContractDeploymentsToDB([upgradedContract], tenant);
-                log('*******************************************');
-                log('*** Upgrade info submitted to db ***');
-                log('*******************************************');
-            } catch (error: any) {
-                console.error('Error submitting upgrade info to db:', JSON.stringify(error, null, 2));
-                log('*******************************************');
-                log('*** DB Submission Error:', error.message, '***');
-                log('*******************************************');
+            if (submit) {
+                try {
+                    log('*******************************************');
+                    log('[SUBMITTING] Upgrade info to db');
+                    log('*******************************************');
+                    // Assuming submitContractDeploymentsToDB can take Deployment[] and upgradedContract is a single Deployment object
+                    await submitContractDeploymentsToDB([ upgradedContract ], tenant);
+                    log('*******************************************');
+                    log('*** Upgrade info submitted to db ***');
+                    log('*******************************************');
+                } catch (error: any) {
+                    console.error('Error submitting upgrade info to db:', JSON.stringify(error, null, 2));
+                    log('*******************************************');
+                    log('*** DB Submission Error:', error.message, '***');
+                    log('*******************************************');
+                }
             }
         }
     });
