@@ -28,6 +28,7 @@ export enum CONTRACT_TYPE {
     GUnits = 'GUnits',
     MockUSDC = 'MockUSDC',
     GReceipts = 'GReceipts',
+    MockWETH = 'MockWETH',
 }
 
 export enum PROXY_CONTRACT_TYPE {
@@ -88,6 +89,7 @@ export enum CONTRACT_UPGRADABLE_FILE_NAME {
     GUnits = 'GUnits',
     MockUSDC = 'MockUSDC',
     GReceipts = 'GReceipts',
+    MockWETH = 'MockWETH',
 }
 
 export enum CONTRACT_UPGRADABLE_FILE_NAME_V2 {
@@ -131,6 +133,7 @@ export enum CONTRACT_NAME {
     GUnits = 'GUnits',
     MockUSDC = 'MockUSDC',
     GReceipts = 'GReceipts',
+    MockWETH = 'MockWETH',
 }
 
 export enum CONTRACT_UPGRADABLE_NAME {
