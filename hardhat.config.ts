@@ -17,7 +17,7 @@ import { ChainId, NetworkName, rpcUrls } from '@constants/network';
 dotenv.config();
 log(`Using Default Hardhat config`);
 
-const { PRIVATE_KEY, DEPLOYER_PRIVATE_KEY, REPORT_GAS, ETHSCAN_API_KEY } = process.env;
+const { PRIVATE_KEY, DEPLOYER_PRIVATE_KEY, REPORT_GAS, ETHSCAN_API_KEY, SEPOLIA_RPC_URL } = process.env;
 
 if (!PRIVATE_KEY) {
     throw new Error('The private key is required');
@@ -47,7 +47,7 @@ const config: HardhatUserConfig = {
         },
         [NetworkName.Sepolia]: {
             accounts: [DEPLOYER_PRIVATE_KEY || PRIVATE_KEY],
-            url: rpcUrls[ChainId.Sepolia],
+            url: SEPOLIA_RPC_URL || rpcUrls[ChainId.Sepolia],
             chainId: ChainId.Sepolia,
         },
         [NetworkName.Ethereum]: {
@@ -62,6 +62,27 @@ const config: HardhatUserConfig = {
     },
     etherscan: {
         apiKey: ETHSCAN_API_KEY,
+        customChains: [
+            {
+                network: NetworkName.Sepolia,
+                chainId: ChainId.Sepolia,
+                urls: {
+                    apiURL: 'https://api.etherscan.io/v2/api',
+                    browserURL: 'https://sepolia.etherscan.io',
+                },
+            },
+            {
+                network: NetworkName.Ethereum,
+                chainId: ChainId.Ethereum,
+                urls: {
+                    apiURL: 'https://api.etherscan.io/v2/api',
+                    browserURL: 'https://etherscan.io',
+                },
+            },
+        ],
+    },
+    sourcify: {
+        enabled: false,
     },
 };
 

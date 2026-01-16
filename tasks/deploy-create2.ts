@@ -16,9 +16,10 @@ import { Deployment } from 'types/deployment-type';
 
 const { DETERMINISTIC_DEPLOYER_PRIVATE_KEY = '', PRIVATE_KEY = '' } = process.env;
 
-if (!DETERMINISTIC_DEPLOYER_PRIVATE_KEY && PRIVATE_KEY) {
-    throw new Error('DETERMINISTIC_DEPLOYER_PRIVATE_KEY not detected! Add it to the .env file!');
-}
+// Only throw if this task is being used (checked inside the task itself)
+// if (!DETERMINISTIC_DEPLOYER_PRIVATE_KEY && PRIVATE_KEY) {
+//     throw new Error('DETERMINISTIC_DEPLOYER_PRIVATE_KEY not detected! Add it to the .env file!');
+// }
 
 const deployOne = async (
     hre: HardhatRuntimeEnvironment,
