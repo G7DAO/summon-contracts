@@ -25,11 +25,11 @@ if (!PRIVATE_KEY) {
 
 const config: HardhatUserConfig = {
     solidity: {
-        version: '0.8.24',
+        version: '0.8.28',
         settings: {
             optimizer: {
                 enabled: true,
-                runs: 200, // need to reduce this so it can compile ERC1155RoyaltiesSoulbound contract :'(
+                runs: 200,
                 details: {
                     yul: true,
                 },

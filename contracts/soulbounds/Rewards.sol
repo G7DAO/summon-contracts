@@ -1,5 +1,5 @@
-// SPDX-License-Identifier: UNLICENSED
-pragma solidity ^0.8.24;
+// SPDX-License-Identifier: MIT
+pragma solidity ^0.8.28;
 
 // @author Summon.xyz Team - https://summon.xyz
 // @contributors: [ @ogarciarevett, @vasinl124]
@@ -20,19 +20,12 @@ pragma solidity ^0.8.24;
 //....................&&&&&&&.........................................................................................................................
 //....................................................................................................................................................
 
-import { ERC1155 } from "@openzeppelin/contracts/token/ERC1155/ERC1155.sol";
 import { IERC1155 } from "@openzeppelin/contracts/token/ERC1155/IERC1155.sol";
 import { IERC721 } from "@openzeppelin/contracts/token/ERC721/IERC721.sol";
 import { IERC20 } from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {
     SafeERC20
 } from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
-import {
-    ERC1155Burnable
-} from "@openzeppelin/contracts/token/ERC1155/extensions/ERC1155Burnable.sol";
-import {
-    ERC1155Supply
-} from "@openzeppelin/contracts/token/ERC1155/extensions/ERC1155Supply.sol";
 import {
     ERC1155Holder
 } from "@openzeppelin/contracts/token/ERC1155/utils/ERC1155Holder.sol";
@@ -43,8 +36,6 @@ import {
     AccessControl
 } from "@openzeppelin/contracts/access/AccessControl.sol";
 import { Pausable } from "@openzeppelin/contracts/utils/Pausable.sol";
-import { Strings } from "@openzeppelin/contracts/utils/Strings.sol";
-import { ECDSA } from "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
 import {
     ReentrancyGuard
 } from "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
@@ -56,19 +47,6 @@ import { AccessToken } from "../soulbounds/AccessToken.sol";
 import { ERCWhitelistSignature } from "../ercs/ERCWhitelistSignature.sol";
 import { LibItems } from "../libraries/LibItems.sol";
 
-error AddressIsZero();
-error InvalidTokenId();
-error InvalidAmount();
-error ExceedMaxSupply();
-error InvalidLength();
-error TokenNotExist();
-error InvalidInput();
-error InsufficientBalance();
-error TransferFailed();
-error MintPaused();
-error ClaimRewardPaused();
-error DupTokenId();
-
 contract Rewards is
     ERCWhitelistSignature,
     AccessControl,
@@ -78,12 +56,32 @@ contract Rewards is
     ERC1155Holder,
     ERC721Holder
 {
+    /*//////////////////////////////////////////////////////////////
+                               ERRORS
+    //////////////////////////////////////////////////////////////*/
+    error AddressIsZero();
+    error InvalidTokenId();
+    error InvalidAmount();
+    error ExceedMaxSupply();
+    error InvalidLength();
+    error TokenNotExist();
+    error InvalidInput();
+    error InsufficientBalance();
+    error TransferFailed();
+    error MintPaused();
+    error ClaimRewardPaused();
+    error DupTokenId();
+
+    /*//////////////////////////////////////////////////////////////
+                               CONSTANTS
+    //////////////////////////////////////////////////////////////*/
     bytes32 public constant MINTER_ROLE = keccak256("MINTER_ROLE");
     bytes32 public constant MANAGER_ROLE = keccak256("MANAGER_ROLE");
     bytes32 public constant DEV_CONFIG_ROLE = keccak256("DEV_CONFIG_ROLE");
 
-    using Strings for uint256;
-
+    /*//////////////////////////////////////////////////////////////
+                               STATE-VARS
+    //////////////////////////////////////////////////////////////*/
     AccessToken private rewardTokenContract;
 
     uint256[] public itemIds;
@@ -95,6 +93,9 @@ contract Rewards is
         private erc721RewardCurrentIndex; // rewardTokenId => rewardIndex => erc721RewardCurrentIndex
     mapping(uint256 => uint256) public currentRewardSupply; // rewardTokenId => currentRewardSupply
 
+    /*//////////////////////////////////////////////////////////////
+                               EVENTS
+    //////////////////////////////////////////////////////////////*/
     event TokenAdded(uint256 indexed tokenId);
     event Minted(
         address indexed to,
@@ -103,6 +104,13 @@ contract Rewards is
         bool soulbound
     );
     event Claimed(address indexed to, uint256 indexed tokenId, uint256 amount);
+    event TokenMintPausedUpdated(uint256 indexed tokenId, bool isPaused);
+    event ClaimRewardPausedUpdated(uint256 indexed tokenId, bool isPaused);
+    event AssetsWithdrawn(
+        LibItems.RewardType rewardType,
+        address indexed to,
+        uint256 amount
+    );
 
     constructor(address devWallet) {
         if (devWallet == address(0)) {
@@ -145,16 +153,21 @@ contract Rewards is
     }
 
     function isTokenExist(uint256 _tokenId) public view returns (bool) {
-        if (!tokenExists[_tokenId]) {
-            return false;
-        }
-        return true;
+        return tokenExists[_tokenId];
+    }
+
+    function getRewardTokenContract() external view returns (address) {
+        return address(rewardTokenContract);
+    }
+
+    function getAllItemIds() external view returns (uint256[] memory) {
+        return itemIds;
     }
 
     function decodeData(
         bytes calldata _data
     )
-        public
+        external
         view
         onlyRole(DEV_CONFIG_ROLE)
         returns (address, uint256, uint256[] memory)
@@ -328,6 +341,7 @@ contract Rewards is
         bool _isTokenMintPaused
     ) public onlyRole(MANAGER_ROLE) {
         isTokenMintPaused[_tokenId] = _isTokenMintPaused;
+        emit TokenMintPausedUpdated(_tokenId, _isTokenMintPaused);
     }
 
     function updateClaimRewardPaused(
@@ -335,6 +349,7 @@ contract Rewards is
         bool _isClaimRewardPaused
     ) public onlyRole(MANAGER_ROLE) {
         isClaimRewardPaused[_tokenId] = _isClaimRewardPaused;
+        emit ClaimRewardPausedUpdated(_tokenId, _isClaimRewardPaused);
     }
 
     /**
@@ -381,6 +396,8 @@ contract Rewards is
                 );
             }
         }
+
+        emit AssetsWithdrawn(_rewardType, _to, _amounts.length > 0 ? _amounts[0] : 0);
     }
 
     function _transferEther(address payable _to, uint256 _amount) private {
@@ -442,6 +459,9 @@ contract Rewards is
         address _to,
         uint256[] calldata _tokenIds
     ) external onlyRole(MANAGER_ROLE) whenNotPaused {
+        if (_to == address(0)) {
+            revert AddressIsZero();
+        }
         for (uint256 i = 0; i < _tokenIds.length; i++) {
             _claimReward(_to, _tokenIds[i]);
         }
@@ -557,12 +577,11 @@ contract Rewards is
             revert InvalidAmount();
         }
 
-        uint256 currentSupply = currentRewardSupply[_tokenId] + _amount;
-        currentRewardSupply[_tokenId] += _amount;
-
-        if (currentSupply > tokenRewards[_tokenId].maxSupply) {
+        uint256 newSupply = currentRewardSupply[_tokenId] + _amount;
+        if (newSupply > tokenRewards[_tokenId].maxSupply) {
             revert ExceedMaxSupply();
         }
+        currentRewardSupply[_tokenId] = newSupply;
 
         // claim the reward
         if (isClaimReward) {
