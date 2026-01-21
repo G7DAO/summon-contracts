@@ -1,5 +1,5 @@
-// SPDX-License-Identifier: UNLICENSED
-pragma solidity ^0.8.24;
+// SPDX-License-Identifier: MIT
+pragma solidity ^0.8.28;
 
 // @author Summon.xyz Team - https://summon.xyz
 // @contributors: [ @ogarciarevett, @vasinl124]
@@ -20,19 +20,12 @@ pragma solidity ^0.8.24;
 //....................&&&&&&&.........................................................................................................................
 //....................................................................................................................................................
 
-import { ERC1155 } from "@openzeppelin/contracts/token/ERC1155/ERC1155.sol";
 import { IERC1155 } from "@openzeppelin/contracts/token/ERC1155/IERC1155.sol";
 import { IERC721 } from "@openzeppelin/contracts/token/ERC721/IERC721.sol";
 import { IERC20 } from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {
     SafeERC20
 } from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
-import {
-    ERC1155Burnable
-} from "@openzeppelin/contracts/token/ERC1155/extensions/ERC1155Burnable.sol";
-import {
-    ERC1155Supply
-} from "@openzeppelin/contracts/token/ERC1155/extensions/ERC1155Supply.sol";
 import {
     ERC1155Holder
 } from "@openzeppelin/contracts/token/ERC1155/utils/ERC1155Holder.sol";
@@ -43,8 +36,6 @@ import {
     AccessControl
 } from "@openzeppelin/contracts/access/AccessControl.sol";
 import { Pausable } from "@openzeppelin/contracts/utils/Pausable.sol";
-import { Strings } from "@openzeppelin/contracts/utils/Strings.sol";
-import { ECDSA } from "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
 import {
     ReentrancyGuard
 } from "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
@@ -56,19 +47,6 @@ import { AccessToken } from "../soulbounds/AccessToken.sol";
 import { ERCWhitelistSignature } from "../ercs/ERCWhitelistSignature.sol";
 import { LibItems } from "../libraries/LibItems.sol";
 
-error AddressIsZero();
-error InvalidTokenId();
-error InvalidAmount();
-error ExceedMaxSupply();
-error InvalidLength();
-error TokenNotExist();
-error InvalidInput();
-error InsufficientBalance();
-error TransferFailed();
-error MintPaused();
-error ClaimRewardPaused();
-error DupTokenId();
-
 contract Rewards is
     ERCWhitelistSignature,
     AccessControl,
@@ -78,12 +56,37 @@ contract Rewards is
     ERC1155Holder,
     ERC721Holder
 {
+    /*//////////////////////////////////////////////////////////////
+                               ERRORS
+    //////////////////////////////////////////////////////////////*/
+    error AddressIsZero();
+    error InvalidTokenId();
+    error InvalidAmount();
+    error ExceedMaxSupply();
+    error InvalidLength();
+    error TokenNotExist();
+    error InvalidInput();
+    error InsufficientBalance();
+    error TransferFailed();
+    error MintPaused();
+    error ClaimRewardPaused();
+    error DupTokenId();
+    error TokenNotWhitelisted();
+    error TokenAlreadyWhitelisted();
+    error InsufficientTreasuryBalance();
+    error CannotReduceSupply();
+    error TokenHasReserves();
+
+    /*//////////////////////////////////////////////////////////////
+                               CONSTANTS
+    //////////////////////////////////////////////////////////////*/
     bytes32 public constant MINTER_ROLE = keccak256("MINTER_ROLE");
     bytes32 public constant MANAGER_ROLE = keccak256("MANAGER_ROLE");
     bytes32 public constant DEV_CONFIG_ROLE = keccak256("DEV_CONFIG_ROLE");
 
-    using Strings for uint256;
-
+    /*//////////////////////////////////////////////////////////////
+                               STATE-VARS
+    //////////////////////////////////////////////////////////////*/
     AccessToken private rewardTokenContract;
 
     uint256[] public itemIds;
@@ -95,6 +98,14 @@ contract Rewards is
         private erc721RewardCurrentIndex; // rewardTokenId => rewardIndex => erc721RewardCurrentIndex
     mapping(uint256 => uint256) public currentRewardSupply; // rewardTokenId => currentRewardSupply
 
+    // Treasury system
+    mapping(address => bool) public whitelistedTokens; // token address => whitelisted
+    address[] private whitelistedTokenList; // list of whitelisted token addresses
+    mapping(address => uint256) public reservedAmounts; // token address => reserved amount
+
+    /*//////////////////////////////////////////////////////////////
+                               EVENTS
+    //////////////////////////////////////////////////////////////*/
     event TokenAdded(uint256 indexed tokenId);
     event Minted(
         address indexed to,
@@ -103,6 +114,22 @@ contract Rewards is
         bool soulbound
     );
     event Claimed(address indexed to, uint256 indexed tokenId, uint256 amount);
+    event TokenMintPausedUpdated(uint256 indexed tokenId, bool isPaused);
+    event ClaimRewardPausedUpdated(uint256 indexed tokenId, bool isPaused);
+    event AssetsWithdrawn(
+        LibItems.RewardType rewardType,
+        address indexed to,
+        uint256 amount
+    );
+    event TokenWhitelisted(address indexed token);
+    event TokenRemovedFromWhitelist(address indexed token);
+    event TreasuryDeposit(address indexed token, uint256 amount);
+    event RewardSupplyChanged(
+        uint256 indexed tokenId,
+        uint256 oldSupply,
+        uint256 newSupply
+    );
+    event TokenURIChanged(uint256 indexed tokenId, string newUri);
 
     constructor(address devWallet) {
         if (devWallet == address(0)) {
@@ -145,16 +172,21 @@ contract Rewards is
     }
 
     function isTokenExist(uint256 _tokenId) public view returns (bool) {
-        if (!tokenExists[_tokenId]) {
-            return false;
-        }
-        return true;
+        return tokenExists[_tokenId];
+    }
+
+    function getRewardTokenContract() external view returns (address) {
+        return address(rewardTokenContract);
+    }
+
+    function getAllItemIds() external view returns (uint256[] memory) {
+        return itemIds;
     }
 
     function decodeData(
         bytes calldata _data
     )
-        public
+        external
         view
         onlyRole(DEV_CONFIG_ROLE)
         returns (address, uint256, uint256[] memory)
@@ -246,26 +278,41 @@ contract Rewards is
         // have to approve all the assets first
         // Validate token inputs
         _validateTokenInputs(_token);
+
+        // Validate ERC20 tokens are whitelisted and reserve amounts
+        for (uint256 i = 0; i < _token.rewards.length; i++) {
+            LibItems.Reward memory reward = _token.rewards[i];
+            if (reward.rewardType == LibItems.RewardType.ERC20) {
+                if (!whitelistedTokens[reward.rewardTokenAddress]) {
+                    revert TokenNotWhitelisted();
+                }
+                uint256 totalAmount = reward.rewardAmount * _token.maxSupply;
+                uint256 balance = IERC20(reward.rewardTokenAddress).balanceOf(
+                    address(this)
+                );
+                uint256 reserved = reservedAmounts[reward.rewardTokenAddress];
+                if (balance < reserved + totalAmount) {
+                    revert InsufficientTreasuryBalance();
+                }
+                // Reserve the amount
+                reservedAmounts[reward.rewardTokenAddress] += totalAmount;
+            }
+        }
+
         tokenRewards[_token.tokenId] = _token;
         tokenExists[_token.tokenId] = true;
         itemIds.push(_token.tokenId);
         rewardTokenContract.addNewToken(_token.tokenId);
 
-        // Transfer rewards
+        // Transfer rewards (for non-ERC20 types that are not from treasury)
         address _from = _msgSender();
         address _to = address(this);
 
         for (uint256 i = 0; i < _token.rewards.length; i++) {
             LibItems.Reward memory reward = _token.rewards[i];
-            if (reward.rewardType == LibItems.RewardType.ERC20) {
-                IERC20 token = IERC20(reward.rewardTokenAddress);
-                SafeERC20.safeTransferFrom(
-                    token,
-                    _from,
-                    _to,
-                    reward.rewardAmount * _token.maxSupply
-                );
-            } else if (reward.rewardType == LibItems.RewardType.ERC721) {
+            // ERC20 rewards now come from treasury (already deposited)
+            // So we skip transferFrom for ERC20
+            if (reward.rewardType == LibItems.RewardType.ERC721) {
                 IERC721 token = IERC721(reward.rewardTokenAddress);
                 for (uint256 j = 0; j < reward.rewardTokenIds.length; j++) {
                     _transferERC721(
@@ -328,6 +375,7 @@ contract Rewards is
         bool _isTokenMintPaused
     ) public onlyRole(MANAGER_ROLE) {
         isTokenMintPaused[_tokenId] = _isTokenMintPaused;
+        emit TokenMintPausedUpdated(_tokenId, _isTokenMintPaused);
     }
 
     function updateClaimRewardPaused(
@@ -335,6 +383,272 @@ contract Rewards is
         bool _isClaimRewardPaused
     ) public onlyRole(MANAGER_ROLE) {
         isClaimRewardPaused[_tokenId] = _isClaimRewardPaused;
+        emit ClaimRewardPausedUpdated(_tokenId, _isClaimRewardPaused);
+    }
+
+    /*//////////////////////////////////////////////////////////////
+                         TREASURY MANAGEMENT
+    //////////////////////////////////////////////////////////////*/
+
+    /**
+     * @dev Whitelist a token for use in the treasury system.
+     * @param _token The address of the ERC20 token to whitelist.
+     */
+    function whitelistToken(address _token) external onlyRole(MANAGER_ROLE) {
+        if (_token == address(0)) {
+            revert AddressIsZero();
+        }
+        if (whitelistedTokens[_token]) {
+            revert TokenAlreadyWhitelisted();
+        }
+        whitelistedTokens[_token] = true;
+        whitelistedTokenList.push(_token);
+        reservedAmounts[_token] = 0;
+        emit TokenWhitelisted(_token);
+    }
+
+    /**
+     * @dev Remove a token from the whitelist.
+     * @param _token The address of the ERC20 token to remove.
+     */
+    function removeTokenFromWhitelist(
+        address _token
+    ) external onlyRole(MANAGER_ROLE) {
+        if (!whitelistedTokens[_token]) {
+            revert TokenNotWhitelisted();
+        }
+        // Ensure no reserved amounts before removing
+        if (reservedAmounts[_token] > 0) {
+            revert TokenHasReserves();
+        }
+        // Ensure contract has no balance for this token
+        uint256 balance = IERC20(_token).balanceOf(address(this));
+        if (balance > 0) {
+            revert TokenHasReserves();
+        }
+
+        whitelistedTokens[_token] = false;
+
+        // Remove from list
+        for (uint256 i = 0; i < whitelistedTokenList.length; i++) {
+            if (whitelistedTokenList[i] == _token) {
+                whitelistedTokenList[i] = whitelistedTokenList[
+                    whitelistedTokenList.length - 1
+                ];
+                whitelistedTokenList.pop();
+                break;
+            }
+        }
+        emit TokenRemovedFromWhitelist(_token);
+    }
+
+    /**
+     * @dev Deposit tokens to the treasury.
+     * @param _token The address of the ERC20 token to deposit.
+     * @param _amount The amount to deposit.
+     */
+    function depositToTreasury(address _token, uint256 _amount) external {
+        if (!whitelistedTokens[_token]) {
+            revert TokenNotWhitelisted();
+        }
+        if (_amount == 0) {
+            revert InvalidAmount();
+        }
+        SafeERC20.safeTransferFrom(
+            IERC20(_token),
+            _msgSender(),
+            address(this),
+            _amount
+        );
+        emit TreasuryDeposit(_token, _amount);
+    }
+
+    /**
+     * @dev Withdraw unreserved tokens from the treasury.
+     * @param _token The address of the ERC20 token to withdraw.
+     * @param _to The address to send the tokens to.
+     */
+    function withdrawUnreservedTreasury(
+        address _token,
+        address _to
+    ) external onlyRole(MANAGER_ROLE) {
+        if (_to == address(0)) {
+            revert AddressIsZero();
+        }
+        if (!whitelistedTokens[_token]) {
+            revert TokenNotWhitelisted();
+        }
+
+        uint256 balance = IERC20(_token).balanceOf(address(this));
+        uint256 reserved = reservedAmounts[_token];
+
+        if (balance <= reserved) {
+            revert InsufficientBalance();
+        }
+
+        uint256 withdrawable = balance - reserved;
+        SafeERC20.safeTransfer(IERC20(_token), _to, withdrawable);
+    }
+
+    /**
+     * @dev Get the treasury balance for a token.
+     * @param _token The address of the ERC20 token.
+     * @return The balance of the token in the treasury.
+     */
+    function getTreasuryBalance(
+        address _token
+    ) external view returns (uint256) {
+        return IERC20(_token).balanceOf(address(this));
+    }
+
+    /**
+     * @dev Get the reserved amount for a token.
+     * @param _token The address of the ERC20 token.
+     * @return The reserved amount of the token.
+     */
+    function getReservedAmount(address _token) external view returns (uint256) {
+        return reservedAmounts[_token];
+    }
+
+    /**
+     * @dev Get the available (unreserved) treasury balance for a token.
+     * @param _token The address of the ERC20 token.
+     * @return The available balance.
+     */
+    function getAvailableTreasuryBalance(
+        address _token
+    ) external view returns (uint256) {
+        uint256 balance = IERC20(_token).balanceOf(address(this));
+        uint256 reserved = reservedAmounts[_token];
+        if (balance <= reserved) {
+            return 0;
+        }
+        return balance - reserved;
+    }
+
+    /**
+     * @dev Get all whitelisted tokens.
+     * @return Array of whitelisted token addresses.
+     */
+    function getWhitelistedTokens() external view returns (address[] memory) {
+        return whitelistedTokenList;
+    }
+
+    /**
+     * @dev Check if a token is whitelisted.
+     * @param _token The address of the ERC20 token.
+     * @return True if whitelisted, false otherwise.
+     */
+    function isWhitelistedToken(address _token) external view returns (bool) {
+        return whitelistedTokens[_token];
+    }
+
+    /*//////////////////////////////////////////////////////////////
+                          SUPPLY MANAGEMENT
+    //////////////////////////////////////////////////////////////*/
+
+    /**
+     * @dev Increase the max supply of a reward token.
+     * @param _tokenId The ID of the reward token.
+     * @param _additionalSupply The amount to increase the supply by.
+     */
+    function increaseRewardSupply(
+        uint256 _tokenId,
+        uint256 _additionalSupply
+    ) external onlyRole(MANAGER_ROLE) {
+        if (!isTokenExist(_tokenId)) {
+            revert TokenNotExist();
+        }
+        if (_additionalSupply == 0) {
+            revert InvalidAmount();
+        }
+
+        LibItems.RewardToken storage rewardToken = tokenRewards[_tokenId];
+        uint256 oldSupply = rewardToken.maxSupply;
+        uint256 newSupply = oldSupply + _additionalSupply;
+
+        // Validate treasury has enough balance for ERC20 rewards
+        for (uint256 i = 0; i < rewardToken.rewards.length; i++) {
+            LibItems.Reward memory reward = rewardToken.rewards[i];
+            if (reward.rewardType == LibItems.RewardType.ERC20) {
+                uint256 additionalAmount = reward.rewardAmount * _additionalSupply;
+                uint256 balance = IERC20(reward.rewardTokenAddress).balanceOf(
+                    address(this)
+                );
+                uint256 reserved = reservedAmounts[reward.rewardTokenAddress];
+                if (balance < reserved + additionalAmount) {
+                    revert InsufficientTreasuryBalance();
+                }
+                // Reserve additional amount
+                reservedAmounts[reward.rewardTokenAddress] += additionalAmount;
+            }
+        }
+
+        rewardToken.maxSupply = newSupply;
+        emit RewardSupplyChanged(_tokenId, oldSupply, newSupply);
+    }
+
+    /**
+     * @dev Reduce the max supply of a reward token.
+     * @param _tokenId The ID of the reward token.
+     * @param _reduceBy The amount to reduce the supply by.
+     */
+    function reduceRewardSupply(
+        uint256 _tokenId,
+        uint256 _reduceBy
+    ) external onlyRole(MANAGER_ROLE) {
+        if (!isTokenExist(_tokenId)) {
+            revert TokenNotExist();
+        }
+        if (_reduceBy == 0) {
+            revert InvalidAmount();
+        }
+
+        LibItems.RewardToken storage rewardToken = tokenRewards[_tokenId];
+        uint256 oldSupply = rewardToken.maxSupply;
+
+        // Ensure we don't reduce below current supply (already minted)
+        if (oldSupply < _reduceBy) {
+            revert CannotReduceSupply();
+        }
+        uint256 newSupply = oldSupply - _reduceBy;
+        if (newSupply < currentRewardSupply[_tokenId]) {
+            revert CannotReduceSupply();
+        }
+
+        // Release reserved amounts for ERC20 rewards
+        for (uint256 i = 0; i < rewardToken.rewards.length; i++) {
+            LibItems.Reward memory reward = rewardToken.rewards[i];
+            if (reward.rewardType == LibItems.RewardType.ERC20) {
+                uint256 releaseAmount = reward.rewardAmount * _reduceBy;
+                if (reservedAmounts[reward.rewardTokenAddress] >= releaseAmount) {
+                    reservedAmounts[reward.rewardTokenAddress] -= releaseAmount;
+                }
+            }
+        }
+
+        rewardToken.maxSupply = newSupply;
+        emit RewardSupplyChanged(_tokenId, oldSupply, newSupply);
+    }
+
+    /*//////////////////////////////////////////////////////////////
+                          TOKEN MANAGEMENT
+    //////////////////////////////////////////////////////////////*/
+
+    /**
+     * @dev Update the token URI for a reward token.
+     * @param _tokenId The ID of the reward token.
+     * @param _newUri The new URI.
+     */
+    function updateTokenUri(
+        uint256 _tokenId,
+        string calldata _newUri
+    ) external onlyRole(MANAGER_ROLE) {
+        if (!isTokenExist(_tokenId)) {
+            revert TokenNotExist();
+        }
+        tokenRewards[_tokenId].tokenUri = _newUri;
+        emit TokenURIChanged(_tokenId, _newUri);
     }
 
     /**
@@ -361,6 +675,14 @@ contract Rewards is
         if (_rewardType == LibItems.RewardType.ETHER) {
             _transferEther(payable(_to), _amounts[0]);
         } else if (_rewardType == LibItems.RewardType.ERC20) {
+            // Check if withdrawal would violate reserved amounts
+            if (whitelistedTokens[_tokenAddress]) {
+                uint256 balance = IERC20(_tokenAddress).balanceOf(address(this));
+                uint256 reserved = reservedAmounts[_tokenAddress];
+                if (balance < reserved + _amounts[0]) {
+                    revert InsufficientTreasuryBalance();
+                }
+            }
             _transferERC20(IERC20(_tokenAddress), _to, _amounts[0]);
         } else if (_rewardType == LibItems.RewardType.ERC721) {
             IERC721 token = IERC721(_tokenAddress);
@@ -381,6 +703,8 @@ contract Rewards is
                 );
             }
         }
+
+        emit AssetsWithdrawn(_rewardType, _to, _amounts.length > 0 ? _amounts[0] : 0);
     }
 
     function _transferEther(address payable _to, uint256 _amount) private {
@@ -442,6 +766,9 @@ contract Rewards is
         address _to,
         uint256[] calldata _tokenIds
     ) external onlyRole(MANAGER_ROLE) whenNotPaused {
+        if (_to == address(0)) {
+            revert AddressIsZero();
+        }
         for (uint256 i = 0; i < _tokenIds.length; i++) {
             _claimReward(_to, _tokenIds[i]);
         }
@@ -483,6 +810,10 @@ contract Rewards is
                     _to,
                     reward.rewardAmount
                 );
+                // Reduce reserved amount
+                if (reservedAmounts[reward.rewardTokenAddress] >= reward.rewardAmount) {
+                    reservedAmounts[reward.rewardTokenAddress] -= reward.rewardAmount;
+                }
             } else if (reward.rewardType == LibItems.RewardType.ERC721) {
                 uint256 currentIndex = erc721RewardCurrentIndex[_rewardTokenId][
                     i
@@ -557,12 +888,11 @@ contract Rewards is
             revert InvalidAmount();
         }
 
-        uint256 currentSupply = currentRewardSupply[_tokenId] + _amount;
-        currentRewardSupply[_tokenId] += _amount;
-
-        if (currentSupply > tokenRewards[_tokenId].maxSupply) {
+        uint256 newSupply = currentRewardSupply[_tokenId] + _amount;
+        if (newSupply > tokenRewards[_tokenId].maxSupply) {
             revert ExceedMaxSupply();
         }
+        currentRewardSupply[_tokenId] = newSupply;
 
         // claim the reward
         if (isClaimReward) {
@@ -624,6 +954,87 @@ contract Rewards is
             rewardTokenIds[i] = rewards[i].rewardTokenIds;
             rewardTokenId[i] = rewards[i].rewardTokenId;
         }
+    }
+
+    /*//////////////////////////////////////////////////////////////
+                          ADDITIONAL VIEW FUNCTIONS
+    //////////////////////////////////////////////////////////////*/
+
+    /**
+     * @dev Get the balance of reward tokens a user holds (how many can be claimed).
+     * @param _user The address of the user.
+     * @param _tokenId The ID of the reward token.
+     * @return The balance of reward tokens.
+     */
+    function getUserRewardBalance(
+        address _user,
+        uint256 _tokenId
+    ) external view returns (uint256) {
+        return rewardTokenContract.balanceOf(_user, _tokenId);
+    }
+
+    /**
+     * @dev Check if a user can claim a reward.
+     * @param _user The address of the user.
+     * @param _tokenId The ID of the reward token.
+     * @return True if the user can claim, false otherwise.
+     */
+    function canUserClaim(
+        address _user,
+        uint256 _tokenId
+    ) external view returns (bool) {
+        if (!isTokenExist(_tokenId)) {
+            return false;
+        }
+        if (isClaimRewardPaused[_tokenId]) {
+            return false;
+        }
+        return rewardTokenContract.balanceOf(_user, _tokenId) > 0;
+    }
+
+    /**
+     * @dev Get the NFT distribution progress for a reward token.
+     * @param _tokenId The ID of the reward token.
+     * @param _rewardIndex The index of the reward in the rewards array.
+     * @return distributed The number of NFTs already distributed.
+     * @return total The total number of NFTs for this reward.
+     */
+    function getNftDistributionProgress(
+        uint256 _tokenId,
+        uint256 _rewardIndex
+    ) external view returns (uint256 distributed, uint256 total) {
+        if (!isTokenExist(_tokenId)) {
+            return (0, 0);
+        }
+        LibItems.RewardToken memory rewardToken = tokenRewards[_tokenId];
+        if (_rewardIndex >= rewardToken.rewards.length) {
+            return (0, 0);
+        }
+        LibItems.Reward memory reward = rewardToken.rewards[_rewardIndex];
+        if (reward.rewardType != LibItems.RewardType.ERC721) {
+            return (0, 0);
+        }
+        distributed = erc721RewardCurrentIndex[_tokenId][_rewardIndex];
+        total = reward.rewardTokenIds.length;
+    }
+
+    /**
+     * @dev Get the remaining supply for a reward token.
+     * @param _tokenId The ID of the reward token.
+     * @return The remaining supply (maxSupply - currentSupply).
+     */
+    function getRemainingSupply(
+        uint256 _tokenId
+    ) external view returns (uint256) {
+        if (!isTokenExist(_tokenId)) {
+            return 0;
+        }
+        uint256 maxSupply = tokenRewards[_tokenId].maxSupply;
+        uint256 current = currentRewardSupply[_tokenId];
+        if (current >= maxSupply) {
+            return 0;
+        }
+        return maxSupply - current;
     }
 
     function mint(
