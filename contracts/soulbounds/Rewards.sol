@@ -76,6 +76,8 @@ contract Rewards is
     error InsufficientTreasuryBalance();
     error CannotReduceSupply();
     error TokenHasReserves();
+    error SignatureExpired();
+    error NonceAlreadyUsed();
 
     /*//////////////////////////////////////////////////////////////
                                CONSTANTS
@@ -102,6 +104,9 @@ contract Rewards is
     mapping(address => bool) public whitelistedTokens; // token address => whitelisted
     address[] private whitelistedTokenList; // list of whitelisted token addresses
     mapping(address => uint256) public reservedAmounts; // token address => reserved amount
+
+    // Per-user nonce tracking
+    mapping(address => mapping(uint256 => bool)) public userNonces; // user => nonce => used
 
     /*//////////////////////////////////////////////////////////////
                                EVENTS
@@ -189,20 +194,21 @@ contract Rewards is
         external
         view
         onlyRole(DEV_CONFIG_ROLE)
-        returns (address, uint256, uint256[] memory)
+        returns (address, uint256, uint256, uint256[] memory)
     {
         return _decodeData(_data);
     }
 
     function _decodeData(
         bytes calldata _data
-    ) private pure returns (address, uint256, uint256[] memory) {
+    ) private pure returns (address, uint256, uint256, uint256[] memory) {
         (
             address contractAddress,
             uint256 chainId,
+            uint256 expiration,
             uint256[] memory _itemIds
-        ) = abi.decode(_data, (address, uint256, uint256[]));
-        return (contractAddress, chainId, _itemIds);
+        ) = abi.decode(_data, (address, uint256, uint256, uint256[]));
+        return (contractAddress, chainId, expiration, _itemIds);
     }
 
     function pause() external onlyRole(MANAGER_ROLE) {
@@ -913,12 +919,19 @@ contract Rewards is
         (
             address contractAddress,
             uint256 chainId,
+            uint256 expiration,
             uint256[] memory tokenIds
         ) = _decodeData(data);
 
         if (chainId != currentChainId || contractAddress != address(this)) {
             revert InvalidInput();
         }
+
+        // Verify expiration
+        if (block.timestamp >= expiration) {
+            revert SignatureExpired();
+        }
+
         return tokenIds;
     }
 
@@ -1037,6 +1050,27 @@ contract Rewards is
         return maxSupply - current;
     }
 
+    /**
+     * @dev Check if a nonce has been used by a user.
+     * @param _user The address of the user.
+     * @param _nonce The nonce to check.
+     * @return True if the nonce has been used, false otherwise.
+     */
+    function isNonceUsed(
+        address _user,
+        uint256 _nonce
+    ) external view returns (bool) {
+        return userNonces[_user][_nonce];
+    }
+
+    /**
+     * @dev Get all whitelist signers.
+     * @return Array of whitelisted signer addresses.
+     */
+    function getWhitelistSigners() external view returns (address[] memory) {
+        return _getWhitelistSigners();
+    }
+
     function mint(
         bytes calldata data,
         bool isSoulbound,
@@ -1049,9 +1083,17 @@ contract Rewards is
         signatureCheck(_msgSender(), nonce, data, signature)
         whenNotPaused
     {
+        // Check user nonce not already used
+        address user = _msgSender();
+        if (userNonces[user][nonce]) {
+            revert NonceAlreadyUsed();
+        }
+        // Mark nonce as used
+        userNonces[user][nonce] = true;
+
         uint256[] memory _tokenIds = _verifyContractChainIdAndDecode(data);
         _mintAndClaimRewardTokenBatch(
-            _msgSender(),
+            user,
             _tokenIds,
             1,
             isSoulbound,

@@ -26,6 +26,7 @@ import "@openzeppelin/contracts/utils/cryptography/MessageHashUtils.sol";
 contract ERCWhitelistSignature {
     mapping(address => bool) public whitelistSigners;
     mapping(bytes => bool) private usedSignatures;
+    address[] private whitelistSignerList;
 
     event WhitelistSignerAdded(address indexed signer);
     event WhitelistSignerRemoved(address indexed signer);
@@ -47,7 +48,10 @@ contract ERCWhitelistSignature {
             _signer != address(0),
             "ERCWhitelistSignature: signer is the zero address"
         );
-        whitelistSigners[_signer] = true;
+        if (!whitelistSigners[_signer]) {
+            whitelistSigners[_signer] = true;
+            whitelistSignerList.push(_signer);
+        }
         emit WhitelistSignerAdded(_signer);
     }
 
@@ -57,6 +61,16 @@ contract ERCWhitelistSignature {
             "ERCWhitelistSignature: signer is the zero address"
         );
         whitelistSigners[_signer] = false;
+        // Remove from list
+        for (uint256 i = 0; i < whitelistSignerList.length; i++) {
+            if (whitelistSignerList[i] == _signer) {
+                whitelistSignerList[i] = whitelistSignerList[
+                    whitelistSignerList.length - 1
+                ];
+                whitelistSignerList.pop();
+                break;
+            }
+        }
         emit WhitelistSignerRemoved(_signer);
     }
 
@@ -101,5 +115,13 @@ contract ERCWhitelistSignature {
     ) internal virtual returns (uint256[] memory) {
         uint256[] memory values = abi.decode(_data, (uint256[]));
         return values;
+    }
+
+    function _getWhitelistSigners()
+        internal
+        view
+        returns (address[] memory)
+    {
+        return whitelistSignerList;
     }
 }
