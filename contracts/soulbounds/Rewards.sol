@@ -27,34 +27,39 @@ import {
     SafeERC20
 } from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import {
-    ERC1155Holder
-} from "@openzeppelin/contracts/token/ERC1155/utils/ERC1155Holder.sol";
+    AccessControlUpgradeable
+} from "@openzeppelin/contracts-upgradeable/access/AccessControlUpgradeable.sol";
 import {
-    ERC721Holder
-} from "@openzeppelin/contracts/token/ERC721/utils/ERC721Holder.sol";
+    ERC1155HolderUpgradeable
+} from "@openzeppelin/contracts-upgradeable/token/ERC1155/utils/ERC1155HolderUpgradeable.sol";
 import {
-    AccessControl
-} from "@openzeppelin/contracts/access/AccessControl.sol";
-import { Pausable } from "@openzeppelin/contracts/utils/Pausable.sol";
+    ERC721HolderUpgradeable
+} from "@openzeppelin/contracts-upgradeable/token/ERC721/utils/ERC721HolderUpgradeable.sol";
 import {
-    ReentrancyGuard
-} from "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
+    ContextUpgradeable
+} from "@openzeppelin/contracts-upgradeable/utils/ContextUpgradeable.sol";
+import { PausableUpgradeable } from "@openzeppelin/contracts-upgradeable/utils/PausableUpgradeable.sol";
+import {
+    ReentrancyGuardUpgradeable
+} from "@openzeppelin/contracts-upgradeable/utils/ReentrancyGuardUpgradeable.sol";
 import {
     Initializable
-} from "@openzeppelin/contracts/proxy/utils/Initializable.sol";
+} from "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
+import { UUPSUpgradeable } from "@openzeppelin/contracts/proxy/utils/UUPSUpgradeable.sol";
 
 import { AccessToken } from "../soulbounds/AccessToken.sol";
 import { ERCWhitelistSignature } from "../ercs/ERCWhitelistSignature.sol";
 import { LibItems } from "../libraries/LibItems.sol";
 
 contract Rewards is
-    ERCWhitelistSignature,
-    AccessControl,
-    Pausable,
-    ReentrancyGuard,
     Initializable,
-    ERC1155Holder,
-    ERC721Holder
+    ERCWhitelistSignature,
+    AccessControlUpgradeable,
+    PausableUpgradeable,
+    ReentrancyGuardUpgradeable,
+    UUPSUpgradeable,
+    ERC1155HolderUpgradeable,
+    ERC721HolderUpgradeable
 {
     /*//////////////////////////////////////////////////////////////
                                ERRORS
@@ -85,6 +90,7 @@ contract Rewards is
     bytes32 public constant MINTER_ROLE = keccak256("MINTER_ROLE");
     bytes32 public constant MANAGER_ROLE = keccak256("MANAGER_ROLE");
     bytes32 public constant DEV_CONFIG_ROLE = keccak256("DEV_CONFIG_ROLE");
+    bytes32 public constant UPGRADER_ROLE = keccak256("UPGRADER_ROLE");
 
     /*//////////////////////////////////////////////////////////////
                                STATE-VARS
@@ -145,19 +151,21 @@ contract Rewards is
     );
     event TokenURIChanged(uint256 indexed tokenId, string newUri);
 
-    constructor(address devWallet) {
-        if (devWallet == address(0)) {
-            revert AddressIsZero();
-        }
-        _grantRole(DEFAULT_ADMIN_ROLE, devWallet);
-    }
-
     function initialize(
         address _devWallet,
         address _managerWallet,
         address _minterWallet,
         address _rewardTokenAddress
-    ) external initializer onlyRole(DEFAULT_ADMIN_ROLE) {
+    ) external initializer {
+         if (_devWallet == address(0)) {
+            revert AddressIsZero();
+         }
+
+        __AccessControl_init();
+        __Pausable_init();
+        __ReentrancyGuard_init();
+        __ERC1155Holder_init();
+        __ERC721Holder_init();
         if (
             _devWallet == address(0) ||
             _managerWallet == address(0) ||
@@ -172,7 +180,14 @@ contract Rewards is
         _grantRole(DEV_CONFIG_ROLE, _devWallet);
         _grantRole(MANAGER_ROLE, _managerWallet);
         _grantRole(MINTER_ROLE, _minterWallet);
+        _grantRole(UPGRADER_ROLE, _devWallet);
         _addWhitelistSigner(_devWallet);
+    }
+
+    function _authorizeUpgrade(
+        address newImplementation
+    ) internal override {
+        _checkRole(UPGRADER_ROLE);
     }
 
     function updateRewardTokenContract(
@@ -1291,7 +1306,7 @@ contract Rewards is
 
     function supportsInterface(
         bytes4 interfaceId
-    ) public view override(AccessControl, ERC1155Holder) returns (bool) {
+    ) public view override(AccessControlUpgradeable, ERC1155HolderUpgradeable) returns (bool) {
         return super.supportsInterface(interfaceId);
     }
 
