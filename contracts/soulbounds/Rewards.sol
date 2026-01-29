@@ -962,7 +962,7 @@ contract Rewards is
                 ];
                 uint256[] memory tokenIds = reward.rewardTokenIds;
                 for (uint256 j = 0; j < reward.rewardAmount; j++) {
-                    if (currentIndex + j > tokenIds.length) {
+                    if (currentIndex + j >= tokenIds.length) {
                         revert InsufficientBalance();
                     }
                     uint256 tokenId = tokenIds[currentIndex + j];
