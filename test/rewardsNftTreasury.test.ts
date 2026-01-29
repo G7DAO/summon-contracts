@@ -1,5 +1,5 @@
 import { expect } from 'chai';
-import { ethers } from 'hardhat';
+import { ethers, upgrades } from 'hardhat';
 import { loadFixture } from '@nomicfoundation/hardhat-network-helpers';
 
 /**
@@ -35,9 +35,13 @@ describe('Rewards NFT Treasury', function () {
         const accessToken = await AccessToken.deploy(devWallet.address);
         await accessToken.waitForDeployment();
 
-        // Deploy Rewards contract
+        // Deploy Rewards contract (UUPS proxy)
         const Rewards = await ethers.getContractFactory('Rewards');
-        const rewards = await Rewards.deploy(devWallet.address);
+        const rewards = await upgrades.deployProxy(
+            Rewards,
+            [devWallet.address, managerWallet.address, minterWallet.address, accessToken.target],
+            { kind: 'uups', initializer: 'initialize' }
+        );
         await rewards.waitForDeployment();
 
         // Initialize AccessToken with Rewards as minter
@@ -49,9 +53,6 @@ describe('Rewards NFT Treasury', function () {
             devWallet.address,
             rewards.target
         );
-
-        // Initialize Rewards contract
-        await rewards.initialize(devWallet.address, managerWallet.address, minterWallet.address, accessToken.target);
 
         // Whitelist tokens (unified whitelist for all token types)
         await rewards.connect(managerWallet).whitelistToken(mockERC20.target, 1); // ERC20

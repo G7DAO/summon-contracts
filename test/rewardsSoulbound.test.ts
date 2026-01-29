@@ -1,5 +1,5 @@
 import { expect } from 'chai';
-import { ethers } from 'hardhat';
+import { ethers, upgrades } from 'hardhat';
 import { loadFixture } from '@nomicfoundation/hardhat-network-helpers';
 
 /**
@@ -39,9 +39,13 @@ describe('Rewards with Soulbound Tokens', function () {
         );
         await soulboundBadge.waitForDeployment();
 
-        // Deploy Rewards contract
+        // Deploy Rewards contract (UUPS proxy)
         const Rewards = await ethers.getContractFactory('Rewards');
-        const rewards = await Rewards.deploy(devWallet.address);
+        const rewards = await upgrades.deployProxy(
+            Rewards,
+            [devWallet.address, managerWallet.address, minterWallet.address, accessToken.target],
+            { kind: 'uups', initializer: 'initialize' }
+        );
         await rewards.waitForDeployment();
 
         // Initialize AccessToken with Rewards as minter
@@ -53,9 +57,6 @@ describe('Rewards with Soulbound Tokens', function () {
             devWallet.address,
             rewards.target
         );
-
-        // Initialize Rewards contract
-        await rewards.initialize(devWallet.address, managerWallet.address, minterWallet.address, accessToken.target);
 
         // Setup: Add a token to the soulbound badge contract
         const badgeTokenId = 1;
