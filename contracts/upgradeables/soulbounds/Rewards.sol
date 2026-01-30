@@ -47,9 +47,9 @@ import {
 } from "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
 import { UUPSUpgradeable } from "@openzeppelin/contracts/proxy/utils/UUPSUpgradeable.sol";
 
-import { AccessToken } from "../soulbounds/AccessToken.sol";
-import { ERCWhitelistSignature } from "../ercs/ERCWhitelistSignature.sol";
-import { LibItems } from "../libraries/LibItems.sol";
+import { AccessToken } from "../../soulbounds/AccessToken.sol";
+import { ERCWhitelistSignature } from "../../ercs/ERCWhitelistSignature.sol";
+import { LibItems } from "../../libraries/LibItems.sol";
 
 contract Rewards is
     Initializable,
