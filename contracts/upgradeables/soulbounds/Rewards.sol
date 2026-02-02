@@ -48,12 +48,12 @@ import {
 import { UUPSUpgradeable } from "@openzeppelin/contracts/proxy/utils/UUPSUpgradeable.sol";
 
 import { AccessToken } from "../../soulbounds/AccessToken.sol";
-import { ERCWhitelistSignature } from "../../ercs/ERCWhitelistSignature.sol";
+import { ERCWhitelistSignatureUpgradeable } from "../ercs/ERCWhitelistSignatureUpgradeable.sol";
 import { LibItems } from "../../libraries/LibItems.sol";
 
 contract Rewards is
     Initializable,
-    ERCWhitelistSignature,
+    ERCWhitelistSignatureUpgradeable,
     AccessControlUpgradeable,
     PausableUpgradeable,
     ReentrancyGuardUpgradeable,
@@ -123,6 +123,8 @@ contract Rewards is
     mapping(address => uint256) public erc1155TotalReserved; // token address => total reserved (all IDs)
     mapping(address => LibItems.RewardType) public tokenTypes; // token address => type
 
+    uint256[33] private __gap;
+
     /*//////////////////////////////////////////////////////////////
                                EVENTS
     //////////////////////////////////////////////////////////////*/
@@ -166,6 +168,8 @@ contract Rewards is
         __ReentrancyGuard_init();
         __ERC1155Holder_init();
         __ERC721Holder_init();
+        __ERCWhitelistSignatureUpgradeable_init();
+
         if (
             _devWallet == address(0) ||
             _managerWallet == address(0) ||
