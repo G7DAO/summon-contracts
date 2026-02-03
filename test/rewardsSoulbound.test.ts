@@ -1,5 +1,5 @@
 import { expect } from 'chai';
-import { ethers } from 'hardhat';
+import { ethers, upgrades } from 'hardhat';
 import { loadFixture } from '@nomicfoundation/hardhat-network-helpers';
 
 /**
@@ -39,9 +39,13 @@ describe('Rewards with Soulbound Tokens', function () {
         );
         await soulboundBadge.waitForDeployment();
 
-        // Deploy Rewards contract
+        // Deploy Rewards contract (UUPS proxy)
         const Rewards = await ethers.getContractFactory('Rewards');
-        const rewards = await Rewards.deploy(devWallet.address);
+        const rewards = await upgrades.deployProxy(
+            Rewards,
+            [devWallet.address, managerWallet.address, minterWallet.address, accessToken.target],
+            { kind: 'uups', initializer: 'initialize' }
+        );
         await rewards.waitForDeployment();
 
         // Initialize AccessToken with Rewards as minter
@@ -54,14 +58,6 @@ describe('Rewards with Soulbound Tokens', function () {
             rewards.target
         );
 
-        // Initialize Rewards contract
-        await rewards.initialize(
-            devWallet.address,
-            managerWallet.address,
-            minterWallet.address,
-            accessToken.target
-        );
-
         // Setup: Add a token to the soulbound badge contract
         const badgeTokenId = 1;
         await soulboundBadge.connect(devWallet).addNewToken({
@@ -72,7 +68,7 @@ describe('Rewards with Soulbound Tokens', function () {
         });
 
         // Whitelist ERC20 for treasury
-        await rewards.connect(managerWallet).whitelistToken(mockERC20.target);
+        await rewards.connect(managerWallet).whitelistToken(mockERC20.target, 1); // ERC20
 
         // Mint ERC20 to manager and deposit to treasury
         await mockERC20.mint(managerWallet.address, ethers.parseEther('1000'));
@@ -179,8 +175,17 @@ describe('Rewards with Soulbound Tokens', function () {
         });
 
         it('Complete flow: Create reward with ERC1155 soulbound badge as prize', async function () {
-            const { rewards, accessToken, soulboundBadge, mockERC20, devWallet, managerWallet, minterWallet, user1, badgeTokenId } =
-                await loadFixture(deployRewardsWithSoulboundFixture);
+            const {
+                rewards,
+                accessToken,
+                soulboundBadge,
+                mockERC20,
+                devWallet,
+                managerWallet,
+                minterWallet,
+                user1,
+                badgeTokenId,
+            } = await loadFixture(deployRewardsWithSoulboundFixture);
 
             // Step 1: Whitelist Rewards contract AND managerWallet on soulbound badge contract
             // - Rewards contract needs whitelist to RECEIVE and DISTRIBUTE soulbound badges
@@ -188,16 +193,22 @@ describe('Rewards with Soulbound Tokens', function () {
             await soulboundBadge.connect(devWallet).updateWhitelistAddress(rewards.target, true);
             await soulboundBadge.connect(devWallet).updateWhitelistAddress(managerWallet.address, true);
 
-            // Step 2: Mint soulbound badges to managerWallet (who will deposit them)
-            // NOTE: If we mint directly to Rewards without whitelist, we'd need a different approach
-            await soulboundBadge.connect(devWallet).adminMintId(managerWallet.address, badgeTokenId, 100, true);
+            // Step 2: Whitelist the ERC1155 (soulbound badge) in the Rewards treasury (unified whitelistToken)
+            await rewards.connect(managerWallet).whitelistToken(soulboundBadge.target, 3); // ERC1155
 
-            // Step 3: Manager approves Rewards contract to transfer badges
+            // Step 3: Mint soulbound badges to managerWallet, then transfer to Rewards contract
+            await soulboundBadge.connect(devWallet).adminMintId(managerWallet.address, badgeTokenId, 100, true);
             await soulboundBadge.connect(managerWallet).setApprovalForAll(rewards.target, true);
+            await soulboundBadge
+                .connect(managerWallet)
+                .safeTransferFrom(managerWallet.address, rewards.target, badgeTokenId, 10, '0x');
+
+            // Verify Rewards contract now has the badges
+            expect(await soulboundBadge.balanceOf(rewards.target, badgeTokenId)).to.equal(10);
 
             // Step 4: Create a reward token that gives:
             // - 10 ERC20 tokens (from treasury)
-            // - 1 soulbound badge (transferred from manager during create)
+            // - 1 soulbound badge (from contract balance; createTokenAndDepositRewards reserves them)
             const rewardTokenId = 1001;
             const rewardToken = {
                 tokenId: rewardTokenId,
@@ -221,11 +232,11 @@ describe('Rewards with Soulbound Tokens', function () {
                 ],
             };
 
-            // This transfers 10 soulbound badges (1 per maxSupply) from manager to Rewards
+            // This reserves 10 soulbound badges (1 per maxSupply)
             await rewards.connect(managerWallet).createTokenAndDepositRewards(rewardToken);
 
-            // Verify Rewards contract now has the badges
-            expect(await soulboundBadge.balanceOf(rewards.target, badgeTokenId)).to.equal(10);
+            // Verify reserved amounts (ERC1155 treasury tracking)
+            expect(await rewards.erc1155ReservedAmounts(soulboundBadge.target, badgeTokenId)).to.equal(10);
 
             // Step 5: Mint reward token to user (tokenId, amount, isSoulbound)
             await rewards.connect(minterWallet).adminMintById(user1.address, rewardTokenId, 1, true);
@@ -251,8 +262,9 @@ describe('Rewards with Soulbound Tokens', function () {
                 soulboundBadge.connect(user1).safeTransferFrom(user1.address, devWallet.address, badgeTokenId, 1, '0x')
             ).to.be.revertedWithCustomError(soulboundBadge, 'SoulboundAmountError');
 
-            // Step 8: Verify Rewards contract still has remaining badges
+            // Step 8: Verify Rewards contract still has remaining badges and reserved amount decreased
             expect(await soulboundBadge.balanceOf(rewards.target, badgeTokenId)).to.equal(9);
+            expect(await rewards.erc1155ReservedAmounts(soulboundBadge.target, badgeTokenId)).to.equal(9);
         });
     });
 

@@ -39,6 +39,9 @@ const config: HardhatUserConfig = {
     },
     defaultNetwork: 'hardhat',
     networks: {
+        hardhat: {
+            allowUnlimitedContractSize: true,
+        },
         localhost: {
             accounts: [DEPLOYER_PRIVATE_KEY || PRIVATE_KEY],
             url: 'http://127.0.0.1:7545/',

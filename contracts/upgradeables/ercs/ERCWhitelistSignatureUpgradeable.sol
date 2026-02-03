@@ -29,6 +29,7 @@ import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
 contract ERCWhitelistSignatureUpgradeable is Initializable {
     mapping(address => bool) public whitelistSigners;
     mapping(bytes => bool) private usedSignatures;
+    address[] private whitelistSignerList;
 
     event WhitelistSignerAdded(address indexed signer);
     event WhitelistSignerRemoved(address indexed signer);
@@ -51,6 +52,7 @@ contract ERCWhitelistSignatureUpgradeable is Initializable {
         require(_signer != address(0), "ERCWhitelistSignature: signer is the zero address");
         require(!whitelistSigners[_signer], "ERCWhitelistSignature: signer is already in the whitelist");
         whitelistSigners[_signer] = true;
+        whitelistSignerList.push(_signer);
         emit WhitelistSignerAdded(_signer);
     }
 
@@ -58,6 +60,16 @@ contract ERCWhitelistSignatureUpgradeable is Initializable {
         require(_signer != address(0), "ERCWhitelistSignature: signer is the zero address");
         require(whitelistSigners[_signer], "ERCWhitelistSignature: signer is not in the whitelist");
         whitelistSigners[_signer] = false;
+        // Remove from list
+        for (uint256 i = 0; i < whitelistSignerList.length; i++) {
+            if (whitelistSignerList[i] == _signer) {
+                whitelistSignerList[i] = whitelistSignerList[
+                    whitelistSignerList.length - 1
+                ];
+                whitelistSignerList.pop();
+                break;
+            }
+        }
         emit WhitelistSignerRemoved(_signer);
     }
 
@@ -100,6 +112,14 @@ contract ERCWhitelistSignatureUpgradeable is Initializable {
         return values;
     }
 
+    function _getWhitelistSigners()
+        internal
+        view
+        returns (address[] memory)
+    {
+        return whitelistSignerList;
+    }
+
     // Reserved storage space to allow for layout changes in the future.
-    uint256[48] private __gap;
+    uint256[47] private __gap;
 }
