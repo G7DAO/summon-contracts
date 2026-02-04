@@ -370,21 +370,10 @@ contract Rewards is
                     reservedBalances[currentIndex] = reserved;
                     availableBalances[currentIndex] = balance > reserved ? balance - reserved : 0;
 
-                    // Try to get ERC1155 metadata (note: name() and symbol() are not part of ERC1155 standard,
-                    // but many implementations include them). Using IERC20Metadata for the interface since it
-                    // has the same name()/symbol() signatures.
-                    try IERC20Metadata(erc1155Address).name() returns (string memory contractName) {
-                        names[currentIndex] = contractName;
-                    } catch {
-                        names[currentIndex] = "ERC1155 Collection";
-                    }
-
-                    try IERC20Metadata(erc1155Address).symbol() returns (string memory contractSymbol) {
-                        symbols[currentIndex] = contractSymbol;
-                    } catch {
-                        symbols[currentIndex] = "ERC1155";
-                    }
-
+                    // ERC1155 standard does not include name() or symbol() functions
+                    // Use generic names for ERC1155 tokens
+                    names[currentIndex] = "ERC1155 Collection";
+                    symbols[currentIndex] = "ERC1155";
                     types[currentIndex] = "nft";
                     currentIndex++;
                 }
