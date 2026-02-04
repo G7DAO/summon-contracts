@@ -377,15 +377,19 @@ describe('Rewards with Soulbound Tokens', function () {
             const accessToken = await AccessToken.deploy(devWallet.address);
             await accessToken.waitForDeployment();
 
+            // Deploy Rewards using UUPS proxy
             const Rewards = await ethers.getContractFactory('Rewards');
-            const rewards = await Rewards.deploy(devWallet.address);
+            const rewards = await upgrades.deployProxy(
+                Rewards,
+                [devWallet.address, managerWallet.address, minterWallet.address, accessToken.target],
+                { kind: 'uups', initializer: 'initialize' }
+            );
             await rewards.waitForDeployment();
 
             await accessToken.initialize(
                 'G7Reward', 'G7R', 'https://example.com/token/', 'https://example.com/contract/',
                 devWallet.address, rewards.target
             );
-            await rewards.initialize(devWallet.address, managerWallet.address, minterWallet.address, accessToken.target);
 
             const result = await rewards.getAllTreasuryBalances();
 
@@ -422,11 +426,20 @@ describe('Rewards with Soulbound Tokens', function () {
             await soulboundBadge.connect(devWallet).updateWhitelistAddress(rewards.target, true);
             await soulboundBadge.connect(devWallet).updateWhitelistAddress(managerWallet.address, true);
 
+            // Whitelist soulboundBadge in Rewards treasury
+            await rewards.connect(managerWallet).whitelistToken(soulboundBadge.target, 3); // 3 = ERC1155
+
             // Mint badges to manager
             await soulboundBadge.connect(devWallet).adminMintId(managerWallet.address, badgeTokenId, 100, true);
 
-            // Manager approves and creates reward
-            await soulboundBadge.connect(managerWallet).setApprovalForAll(rewards.target, true);
+            // Transfer badges to Rewards contract
+            await soulboundBadge.connect(managerWallet).safeTransferFrom(
+                managerWallet.address,
+                rewards.target,
+                badgeTokenId,
+                10, // Transfer 10 badges (same as maxSupply * rewardAmount)
+                '0x'
+            );
 
             const rewardTokenId = 1001;
             await rewards.connect(managerWallet).createTokenAndDepositRewards({
@@ -467,11 +480,20 @@ describe('Rewards with Soulbound Tokens', function () {
             await soulboundBadge.connect(devWallet).updateWhitelistAddress(rewards.target, true);
             await soulboundBadge.connect(devWallet).updateWhitelistAddress(managerWallet.address, true);
 
+            // Whitelist soulboundBadge in Rewards treasury
+            await rewards.connect(managerWallet).whitelistToken(soulboundBadge.target, 3); // 3 = ERC1155
+
             // Mint badges to manager
             await soulboundBadge.connect(devWallet).adminMintId(managerWallet.address, badgeTokenId, 100, true);
 
-            // Manager approves badge
-            await soulboundBadge.connect(managerWallet).setApprovalForAll(rewards.target, true);
+            // Transfer badges to Rewards contract (5 maxSupply * 2 rewardAmount = 10 badges)
+            await soulboundBadge.connect(managerWallet).safeTransferFrom(
+                managerWallet.address,
+                rewards.target,
+                badgeTokenId,
+                10,
+                '0x'
+            );
 
             // Create reward with BOTH ERC20 and ERC1155
             const rewardTokenId = 2001;
@@ -522,8 +544,17 @@ describe('Rewards with Soulbound Tokens', function () {
             // Setup: Whitelist and mint badges
             await soulboundBadge.connect(devWallet).updateWhitelistAddress(rewards.target, true);
             await soulboundBadge.connect(devWallet).updateWhitelistAddress(managerWallet.address, true);
+            await rewards.connect(managerWallet).whitelistToken(soulboundBadge.target, 3); // 3 = ERC1155
             await soulboundBadge.connect(devWallet).adminMintId(managerWallet.address, badgeTokenId, 100, true);
-            await soulboundBadge.connect(managerWallet).setApprovalForAll(rewards.target, true);
+
+            // Transfer badges to Rewards contract (10 maxSupply * 1 rewardAmount = 10 badges)
+            await soulboundBadge.connect(managerWallet).safeTransferFrom(
+                managerWallet.address,
+                rewards.target,
+                badgeTokenId,
+                10,
+                '0x'
+            );
 
             // Create reward with ERC20 and ERC1155
             const rewardTokenId = 3001;
@@ -602,13 +633,29 @@ describe('Rewards with Soulbound Tokens', function () {
             await secondBadge.connect(devWallet).updateWhitelistAddress(rewards.target, true);
             await secondBadge.connect(devWallet).updateWhitelistAddress(managerWallet.address, true);
 
+            // Whitelist both badges in Rewards treasury
+            await rewards.connect(managerWallet).whitelistToken(soulboundBadge.target, 3); // 3 = ERC1155
+            await rewards.connect(managerWallet).whitelistToken(secondBadge.target, 3); // 3 = ERC1155
+
             // Mint badges to manager
             await soulboundBadge.connect(devWallet).adminMintId(managerWallet.address, badgeTokenId, 50, true);
             await secondBadge.connect(devWallet).adminMintId(managerWallet.address, secondBadgeTokenId, 50, true);
 
-            // Approve both
-            await soulboundBadge.connect(managerWallet).setApprovalForAll(rewards.target, true);
-            await secondBadge.connect(managerWallet).setApprovalForAll(rewards.target, true);
+            // Transfer badges to Rewards contract
+            await soulboundBadge.connect(managerWallet).safeTransferFrom(
+                managerWallet.address,
+                rewards.target,
+                badgeTokenId,
+                5, // First reward: 5 maxSupply * 1 rewardAmount = 5 badges
+                '0x'
+            );
+            await secondBadge.connect(managerWallet).safeTransferFrom(
+                managerWallet.address,
+                rewards.target,
+                secondBadgeTokenId,
+                10, // Second reward: 5 maxSupply * 2 rewardAmount = 10 badges
+                '0x'
+            );
 
             // Create rewards with both badges
             await rewards.connect(managerWallet).createTokenAndDepositRewards({
@@ -662,6 +709,9 @@ describe('Rewards with Soulbound Tokens', function () {
             await soulboundBadge.connect(devWallet).updateWhitelistAddress(rewards.target, true);
             await soulboundBadge.connect(devWallet).updateWhitelistAddress(managerWallet.address, true);
 
+            // Whitelist soulboundBadge in Rewards treasury
+            await rewards.connect(managerWallet).whitelistToken(soulboundBadge.target, 3); // 3 = ERC1155
+
             // Add another token ID to the same badge contract
             const secondTokenId = 2;
             await soulboundBadge.connect(devWallet).addNewToken({
@@ -674,7 +724,22 @@ describe('Rewards with Soulbound Tokens', function () {
             // Mint badges
             await soulboundBadge.connect(devWallet).adminMintId(managerWallet.address, badgeTokenId, 50, true);
             await soulboundBadge.connect(devWallet).adminMintId(managerWallet.address, secondTokenId, 50, true);
-            await soulboundBadge.connect(managerWallet).setApprovalForAll(rewards.target, true);
+
+            // Transfer both token IDs to Rewards contract
+            await soulboundBadge.connect(managerWallet).safeTransferFrom(
+                managerWallet.address,
+                rewards.target,
+                badgeTokenId,
+                5, // First reward: 5 maxSupply * 1 rewardAmount = 5 badges
+                '0x'
+            );
+            await soulboundBadge.connect(managerWallet).safeTransferFrom(
+                managerWallet.address,
+                rewards.target,
+                secondTokenId,
+                5, // Second reward: 5 maxSupply * 1 rewardAmount = 5 badges
+                '0x'
+            );
 
             // Create two rewards using SAME badge contract but different token IDs
             await rewards.connect(managerWallet).createTokenAndDepositRewards({
@@ -705,11 +770,17 @@ describe('Rewards with Soulbound Tokens', function () {
 
             const result = await rewards.getAllTreasuryBalances();
 
-            // Should have 2 entries: 1 ERC20 + 1 ERC1155 (not duplicated)
-            expect(result.addresses.length).to.equal(2);
+            // Should have 3 entries: 1 ERC20 + 2 ERC1155 token IDs (tracked separately)
+            // Each unique ERC1155 token ID is tracked separately since they have independent balances
+            expect(result.addresses.length).to.equal(3);
 
             const nftCount = result.types.filter((t: string) => t === 'nft').length;
-            expect(nftCount).to.equal(1); // Only one NFT entry despite two rewards using same contract
+            expect(nftCount).to.equal(2); // Two NFT entries (same contract, different token IDs)
+
+            // Verify both use the same contract address
+            const nftAddresses = result.addresses.filter((_: string, idx: number) => result.types[idx] === 'nft');
+            expect(nftAddresses[0]).to.equal(soulboundBadge.target);
+            expect(nftAddresses[1]).to.equal(soulboundBadge.target);
         });
     });
 });
