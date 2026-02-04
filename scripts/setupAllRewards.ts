@@ -22,7 +22,7 @@ const F1_BADGES_ADDRESS = process.env.F1_BADGES_ADDRESS || '0x1a7a1879bE0C3fD48e
 const NEWJEANS_BADGES_ADDRESS = process.env.NEWJEANS_BADGES_ADDRESS || '0x4afF7E3F1191b4dEE2a0358417a750C1c6fF9b62';
 const QUINCE_BADGES_ADDRESS = process.env.QUINCE_BADGES_ADDRESS || '0x40813d715Ed741C0bA6848763c93aaF75fEA7F55';
 const MOCK_USDC_ADDRESS = process.env.MOCK_USDC_ADDRESS || '0x3E3a445731d7881a3729A3898D532D5290733Eb5';
-const REWARDS_ADDRESS = process.env.REWARDS_ADDRESS || '0x2E028B97F8E72b8FD934953Ee676feBdfb420C4f';
+const REWARDS_ADDRESS = process.env.REWARDS_ADDRESS || '0x4163079Aa7d3ed57755c7278BA4156a826E25Ad4';
 
 // Configuration
 const BADGES_TO_MINT = 100000; // How many badges to mint per contract
@@ -63,34 +63,24 @@ async function setupBadgeReward(
 
     const badge = await ethers.getContractAt('ERC1155Soulbound', badgeConfig.address);
 
-    // Step 1: Whitelist Rewards contract
-    console.log('Step 1: Whitelisting Rewards contract...');
+    // Step 1: Whitelist Rewards contract on badge
+    console.log('Step 1: Whitelisting Rewards contract on badge...');
     try {
-        const isWhitelisted = await badge.whitelistAddresses(REWARDS_ADDRESS);
-        if (isWhitelisted) {
-            console.log('  Already whitelisted');
-        } else {
-            const tx = await badge.updateWhitelistAddress(REWARDS_ADDRESS, true);
-            await tx.wait();
-            console.log('  Rewards contract whitelisted');
-        }
+        const tx = await badge.updateWhitelistAddress(REWARDS_ADDRESS, true);
+        await tx.wait();
+        console.log('  Rewards contract whitelisted');
     } catch (error: any) {
-        console.log('  Error:', error.message);
+        console.log('  Error or already whitelisted:', error.message?.slice(0, 50));
     }
 
-    // Step 2: Whitelist Manager wallet
-    console.log('\nStep 2: Whitelisting Manager wallet...');
+    // Step 2: Whitelist Manager wallet on badge
+    console.log('\nStep 2: Whitelisting Manager wallet on badge...');
     try {
-        const isWhitelisted = await badge.whitelistAddresses(deployer.address);
-        if (isWhitelisted) {
-            console.log('  Already whitelisted');
-        } else {
-            const tx = await badge.updateWhitelistAddress(deployer.address, true);
-            await tx.wait();
-            console.log('  Manager wallet whitelisted');
-        }
+        const tx = await badge.updateWhitelistAddress(deployer.address, true);
+        await tx.wait();
+        console.log('  Manager wallet whitelisted');
     } catch (error: any) {
-        console.log('  Error:', error.message);
+        console.log('  Error or already whitelisted:', error.message?.slice(0, 50));
     }
 
     // Step 3: Mint badges to Manager
@@ -193,15 +183,22 @@ async function setupUSDCReward(rewards: any, deployer: any) {
         console.log('  Whitelist not required or function not available');
     }
 
-    // Step 2: Approve Rewards to spend USDC
-    console.log('\nStep 2: Approving Rewards to spend USDC...');
+    // Step 2: Approve and deposit USDC to treasury
+    console.log('\nStep 2: Approving and depositing USDC to treasury...');
     try {
         const totalNeeded = USDC_REWARD_AMOUNT * BigInt(REWARD_MAX_SUPPLY);
-        const tx = await usdc.approve(REWARDS_ADDRESS, totalNeeded);
-        await tx.wait();
+
+        // Approve
+        const approveTx = await usdc.approve(REWARDS_ADDRESS, totalNeeded);
+        await approveTx.wait();
         console.log(`  Approved ${ethers.formatUnits(totalNeeded, 6)} USDC`);
+
+        // Deposit to treasury
+        const depositTx = await rewards.depositToTreasury(MOCK_USDC_ADDRESS, totalNeeded);
+        await depositTx.wait();
+        console.log(`  Deposited ${ethers.formatUnits(totalNeeded, 6)} USDC to treasury`);
     } catch (error: any) {
-        console.log('  Error:', error.message);
+        console.log('  Error:', error.message?.slice(0, 80));
     }
 
     // Step 3: Create USDC reward token

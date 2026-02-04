@@ -17,22 +17,25 @@ async function main() {
     console.log('Account balance:', (await ethers.provider.getBalance(deployer.address)).toString());
 
     // Get Rewards contract address from env or use the deployed one
-    const REWARDS_CONTRACT = process.env.REWARDS_CONTRACT || '0x2E028B97F8E72b8FD934953Ee676feBdfb420C4f';
+    const REWARDS_CONTRACT = process.env.REWARDS_CONTRACT || '0x5d62C8cfDe4a1B0be2Cc102023F2563bc29221Cc';
 
     // Badge configurations
+    // NOTE: KPOP and F1 already deployed, only deploying remaining badges
     const badges = [
-        {
-            name: 'KPOP Badges',
-            symbol: 'KPOP',
-            baseURI: 'https://summon.xyz/kpop/badges/',
-            contractURI: 'https://summon.xyz/kpop/contract/',
-        },
-        {
-            name: 'F1 Grand Prix VIP Ticket',
-            symbol: 'F1VIP',
-            baseURI: 'https://summon.xyz/rewards/badges/',
-            contractURI: 'https://summon.xyz/rewards/contract/',
-        },
+        // Already deployed: 0x3D62Dbe1806437bCA71e52Ee9581dee37a608cd8
+        // {
+        //     name: 'KPOP Badges',
+        //     symbol: 'KPOP',
+        //     baseURI: 'https://summon.xyz/kpop/badges/',
+        //     contractURI: 'https://summon.xyz/kpop/contract/',
+        // },
+        // Already deployed: 0xd7B81ABA27cDB68D79aCB1B6E6b198fF4D8EeAd7
+        // {
+        //     name: 'F1 Grand Prix VIP Ticket',
+        //     symbol: 'F1VIP',
+        //     baseURI: 'https://summon.xyz/rewards/badges/',
+        //     contractURI: 'https://summon.xyz/rewards/contract/',
+        // },
         {
             name: 'New Jeans New Album',
             symbol: 'NJALBUM',
@@ -124,10 +127,12 @@ async function main() {
     console.log('\n========================================');
     console.log('Environment Variables for Setup Script');
     console.log('========================================');
-    console.log(`KPOP_BADGES_ADDRESS=${deployedBadges[0].address}`);
-    console.log(`F1_BADGES_ADDRESS=${deployedBadges[1].address}`);
-    console.log(`NEWJEANS_BADGES_ADDRESS=${deployedBadges[2].address}`);
-    console.log(`QUINCE_BADGES_ADDRESS=${deployedBadges[3].address}`);
+    // Already deployed badges
+    console.log(`KPOP_BADGES_ADDRESS=0x3D62Dbe1806437bCA71e52Ee9581dee37a608cd8`);
+    console.log(`F1_BADGES_ADDRESS=0xd7B81ABA27cDB68D79aCB1B6E6b198fF4D8EeAd7`);
+    // Newly deployed badges
+    console.log(`NEWJEANS_BADGES_ADDRESS=${deployedBadges[0]?.address || 'NOT_DEPLOYED'}`);
+    console.log(`QUINCE_BADGES_ADDRESS=${deployedBadges[1]?.address || 'NOT_DEPLOYED'}`);
     console.log(`MOCK_USDC_ADDRESS=${usdcAddress}`);
     console.log(`REWARDS_ADDRESS=${REWARDS_CONTRACT}`);
 
