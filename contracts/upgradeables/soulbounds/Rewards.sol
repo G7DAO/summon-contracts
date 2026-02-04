@@ -21,8 +21,11 @@ pragma solidity ^0.8.28;
 //....................................................................................................................................................
 
 import { IERC1155 } from "@openzeppelin/contracts/token/ERC1155/IERC1155.sol";
+import { IERC1155MetadataURI } from "@openzeppelin/contracts/token/ERC1155/extensions/IERC1155MetadataURI.sol";
 import { IERC721 } from "@openzeppelin/contracts/token/ERC721/IERC721.sol";
+import { IERC721Metadata } from "@openzeppelin/contracts/token/ERC721/extensions/IERC721Metadata.sol";
 import { IERC20 } from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import { IERC20Metadata } from "@openzeppelin/contracts/token/ERC20/extensions/IERC20Metadata.sol";
 import {
     SafeERC20
 } from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
@@ -211,6 +214,215 @@ contract Rewards is
     function getRewardTokenContract() external view returns (address) {
         return address(rewardTokenContract);
     }
+
+    /**
+     * @dev Get treasury balances for all whitelisted tokens with full balance breakdown.
+     * Includes ERC20 tokens (fa), ERC721 tokens (nft), and ERC1155 tokens (nft) from the treasury.
+     * @return addresses Array of token addresses.
+     * @return totalBalances Array of total balances in the contract.
+     * @return reservedBalances Array of reserved amounts for rewards.
+     * @return availableBalances Array of available (unreserved) balances.
+     * @return symbols Array of token symbols.
+     * @return names Array of token names.
+     * @return types Array of token types ("fa" for fungible assets, "nft" for NFTs).
+     */
+    function getAllTreasuryBalances()
+        external
+        view
+        returns (
+            address[] memory addresses,
+            uint256[] memory totalBalances,
+            uint256[] memory reservedBalances,
+            uint256[] memory availableBalances,
+            string[] memory symbols,
+            string[] memory names,
+            string[] memory types
+        )
+    {
+        // Count ERC20 and ERC721 tokens from whitelistedTokenList (excluding ERC1155)
+        uint256 erc20AndErc721Count = 0;
+        for (uint256 i = 0; i < whitelistedTokenList.length; i++) {
+            LibItems.RewardType tokenType = tokenTypes[whitelistedTokenList[i]];
+            if (tokenType == LibItems.RewardType.ERC20 || tokenType == LibItems.RewardType.ERC721) {
+                erc20AndErc721Count++;
+            }
+        }
+
+        // Count unique ERC1155 token IDs (since one ERC1155 contract can have multiple token IDs)
+        uint256 erc1155Count = _countUniqueErc1155TokenIds();
+        uint256 totalCount = erc20AndErc721Count + erc1155Count;
+
+        addresses = new address[](totalCount);
+        totalBalances = new uint256[](totalCount);
+        reservedBalances = new uint256[](totalCount);
+        availableBalances = new uint256[](totalCount);
+        symbols = new string[](totalCount);
+        names = new string[](totalCount);
+        types = new string[](totalCount);
+
+        uint256 currentIndex = 0;
+
+        // Process all whitelisted tokens
+        for (uint256 i = 0; i < whitelistedTokenList.length; i++) {
+            address tokenAddress = whitelistedTokenList[i];
+            LibItems.RewardType tokenType = tokenTypes[tokenAddress];
+
+            addresses[currentIndex] = tokenAddress;
+
+            if (tokenType == LibItems.RewardType.ERC20) {
+                // ERC20 token
+                uint256 totalBalance = IERC20(tokenAddress).balanceOf(address(this));
+                uint256 reserved = reservedAmounts[tokenAddress];
+
+                totalBalances[currentIndex] = totalBalance;
+                reservedBalances[currentIndex] = reserved;
+                availableBalances[currentIndex] = totalBalance > reserved ? totalBalance - reserved : 0;
+
+                try IERC20Metadata(tokenAddress).symbol() returns (string memory symbol) {
+                    symbols[currentIndex] = symbol;
+                } catch {
+                    symbols[currentIndex] = "UNKNOWN";
+                }
+
+                try IERC20Metadata(tokenAddress).name() returns (string memory name) {
+                    names[currentIndex] = name;
+                } catch {
+                    names[currentIndex] = "Unknown Token";
+                }
+
+                types[currentIndex] = "fa";
+                currentIndex++;
+
+            } else if (tokenType == LibItems.RewardType.ERC721) {
+                // ERC721 token
+                uint256 totalBalance = IERC721(tokenAddress).balanceOf(address(this));
+                uint256 reserved = erc721TotalReserved[tokenAddress];
+
+                totalBalances[currentIndex] = totalBalance;
+                reservedBalances[currentIndex] = reserved;
+                availableBalances[currentIndex] = totalBalance > reserved ? totalBalance - reserved : 0;
+
+                // Try to get ERC721 metadata
+                try IERC721Metadata(tokenAddress).symbol() returns (string memory symbol) {
+                    symbols[currentIndex] = symbol;
+                } catch {
+                    symbols[currentIndex] = "ERC721";
+                }
+
+                try IERC721Metadata(tokenAddress).name() returns (string memory name) {
+                    names[currentIndex] = name;
+                } catch {
+                    names[currentIndex] = "NFT Collection";
+                }
+
+                types[currentIndex] = "nft";
+                currentIndex++;
+
+            } else if (tokenType == LibItems.RewardType.ERC1155) {
+                // ERC1155 tokens - need to iterate through rewards to get token IDs
+                // We'll handle these separately below
+                continue;
+            }
+        }
+
+        // Process ERC1155 tokens separately (since they have multiple token IDs per contract)
+        // Track processed ERC1155 combinations to avoid duplicates
+        address[] memory processedErc1155Addresses = new address[](erc1155Count);
+        uint256[] memory processedErc1155TokenIds = new uint256[](erc1155Count);
+        uint256 processedCount = 0;
+
+        for (uint256 i = 0; i < itemIds.length; i++) {
+            uint256 tokenId = itemIds[i];
+            LibItems.RewardToken storage rewardToken = tokenRewards[tokenId];
+
+            for (uint256 j = 0; j < rewardToken.rewards.length; j++) {
+                LibItems.Reward storage reward = rewardToken.rewards[j];
+
+                if (reward.rewardType != LibItems.RewardType.ERC1155) {
+                    continue;
+                }
+
+                address erc1155Address = reward.rewardTokenAddress;
+                uint256 erc1155TokenId = reward.rewardTokenId;
+
+                // Check if this exact address+tokenID combination was already added
+                bool alreadyAdded = false;
+                for (uint256 k = 0; k < processedCount; k++) {
+                    if (processedErc1155Addresses[k] == erc1155Address &&
+                        processedErc1155TokenIds[k] == erc1155TokenId) {
+                        alreadyAdded = true;
+                        break;
+                    }
+                }
+
+                if (!alreadyAdded && currentIndex < totalCount) {
+                    // Track this combination
+                    processedErc1155Addresses[processedCount] = erc1155Address;
+                    processedErc1155TokenIds[processedCount] = erc1155TokenId;
+                    processedCount++;
+
+                    addresses[currentIndex] = erc1155Address;
+
+                    uint256 balance = IERC1155(erc1155Address).balanceOf(address(this), erc1155TokenId);
+                    uint256 reserved = erc1155ReservedAmounts[erc1155Address][erc1155TokenId];
+
+                    totalBalances[currentIndex] = balance;
+                    reservedBalances[currentIndex] = reserved;
+                    availableBalances[currentIndex] = balance > reserved ? balance - reserved : 0;
+
+                    // ERC1155 standard does not include name() or symbol() functions
+                    // Use generic names for ERC1155 tokens
+                    names[currentIndex] = "ERC1155 Collection";
+                    symbols[currentIndex] = "ERC1155";
+                    types[currentIndex] = "nft";
+                    currentIndex++;
+                }
+            }
+        }
+    }
+    
+    /**
+     * @dev Count unique ERC1155 token IDs used in rewards.
+     * ERC1155 contracts can have multiple token IDs, so we need to count them separately.
+     */
+    function _countUniqueErc1155TokenIds() private view returns (uint256) {
+        // Use a large enough array to track unique combinations
+        address[] memory uniqueAddresses = new address[](itemIds.length * 10);
+        uint256[] memory uniqueTokenIds = new uint256[](itemIds.length * 10);
+        uint256 count = 0;
+
+        for (uint256 i = 0; i < itemIds.length; i++) {
+            uint256 tokenId = itemIds[i];
+            LibItems.RewardToken storage rewardToken = tokenRewards[tokenId];
+
+            for (uint256 j = 0; j < rewardToken.rewards.length; j++) {
+                LibItems.Reward storage reward = rewardToken.rewards[j];
+
+                if (reward.rewardType == LibItems.RewardType.ERC1155) {
+                    address erc1155Address = reward.rewardTokenAddress;
+                    uint256 erc1155TokenId = reward.rewardTokenId;
+
+                    // Check if this combination already exists
+                    bool found = false;
+                    for (uint256 k = 0; k < count; k++) {
+                        if (uniqueAddresses[k] == erc1155Address && uniqueTokenIds[k] == erc1155TokenId) {
+                            found = true;
+                            break;
+                        }
+                    }
+
+                    if (!found) {
+                        uniqueAddresses[count] = erc1155Address;
+                        uniqueTokenIds[count] = erc1155TokenId;
+                        count++;
+                    }
+                }
+            }
+        }
+
+        return count;
+    }
+
 
     function getAllItemIds() external view returns (uint256[] memory) {
         return itemIds;

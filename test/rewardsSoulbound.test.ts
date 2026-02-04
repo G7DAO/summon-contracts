@@ -367,4 +367,420 @@ describe('Rewards with Soulbound Tokens', function () {
             expect(await soulboundBadge.balanceOf(user2.address, badgeTokenId)).to.equal(1);
         });
     });
+
+    describe('getAllTreasuryBalances', function () {
+        it('Should return empty arrays when no tokens are deposited', async function () {
+            const [devWallet, managerWallet, minterWallet] = await ethers.getSigners();
+
+            // Deploy fresh contracts without any deposits
+            const AccessToken = await ethers.getContractFactory('AccessToken');
+            const accessToken = await AccessToken.deploy(devWallet.address);
+            await accessToken.waitForDeployment();
+
+            // Deploy Rewards using UUPS proxy
+            const Rewards = await ethers.getContractFactory('Rewards');
+            const rewards = await upgrades.deployProxy(
+                Rewards,
+                [devWallet.address, managerWallet.address, minterWallet.address, accessToken.target],
+                { kind: 'uups', initializer: 'initialize' }
+            );
+            await rewards.waitForDeployment();
+
+            await accessToken.initialize(
+                'G7Reward', 'G7R', 'https://example.com/token/', 'https://example.com/contract/',
+                devWallet.address, rewards.target
+            );
+
+            const result = await rewards.getAllTreasuryBalances();
+
+            expect(result.addresses.length).to.equal(0);
+            expect(result.totalBalances.length).to.equal(0);
+            expect(result.reservedBalances.length).to.equal(0);
+            expect(result.availableBalances.length).to.equal(0);
+            expect(result.symbols.length).to.equal(0);
+            expect(result.names.length).to.equal(0);
+            expect(result.types.length).to.equal(0);
+        });
+
+        it('Should return ERC20 token with type "fa" after deposit to treasury', async function () {
+            const { rewards, mockERC20, managerWallet } = await loadFixture(deployRewardsWithSoulboundFixture);
+
+            // Fixture already deposits 1000 MTK to treasury
+            const result = await rewards.getAllTreasuryBalances();
+
+            expect(result.addresses.length).to.equal(1);
+            expect(result.addresses[0]).to.equal(mockERC20.target);
+            expect(result.totalBalances[0]).to.equal(ethers.parseEther('1000'));
+            expect(result.reservedBalances[0]).to.equal(0n); // No rewards created yet
+            expect(result.availableBalances[0]).to.equal(ethers.parseEther('1000'));
+            expect(result.symbols[0]).to.equal('MTK');
+            expect(result.names[0]).to.equal('Mock Token');
+            expect(result.types[0]).to.equal('fa');
+        });
+
+        it('Should return ERC1155 badge with type "nft" after creating reward', async function () {
+            const { rewards, soulboundBadge, mockERC20, devWallet, managerWallet, badgeTokenId } =
+                await loadFixture(deployRewardsWithSoulboundFixture);
+
+            // Whitelist Rewards and manager on badge contract
+            await soulboundBadge.connect(devWallet).updateWhitelistAddress(rewards.target, true);
+            await soulboundBadge.connect(devWallet).updateWhitelistAddress(managerWallet.address, true);
+
+            // Whitelist soulboundBadge in Rewards treasury
+            await rewards.connect(managerWallet).whitelistToken(soulboundBadge.target, 3); // 3 = ERC1155
+
+            // Mint badges to manager
+            await soulboundBadge.connect(devWallet).adminMintId(managerWallet.address, badgeTokenId, 100, true);
+
+            // Transfer badges to Rewards contract
+            await soulboundBadge.connect(managerWallet).safeTransferFrom(
+                managerWallet.address,
+                rewards.target,
+                badgeTokenId,
+                10, // Transfer 10 badges (same as maxSupply * rewardAmount)
+                '0x'
+            );
+
+            const rewardTokenId = 1001;
+            await rewards.connect(managerWallet).createTokenAndDepositRewards({
+                tokenId: rewardTokenId,
+                maxSupply: 10,
+                tokenUri: 'https://example.com/reward/1001',
+                rewards: [{
+                    rewardType: 3, // ERC1155
+                    rewardAmount: 1,
+                    rewardTokenAddress: soulboundBadge.target,
+                    rewardTokenIds: [],
+                    rewardTokenId: badgeTokenId,
+                }],
+            });
+
+            const result = await rewards.getAllTreasuryBalances();
+
+            // Should have ERC20 (from fixture) + ERC1155 badge
+            expect(result.addresses.length).to.equal(2);
+
+            // First is ERC20 (fa)
+            expect(result.addresses[0]).to.equal(mockERC20.target);
+            expect(result.types[0]).to.equal('fa');
+
+            // Second is ERC1155 (nft)
+            expect(result.addresses[1]).to.equal(soulboundBadge.target);
+            expect(result.totalBalances[1]).to.equal(10n); // 10 badges deposited
+            expect(result.reservedBalances[1]).to.equal(10n); // All reserved for rewards
+            expect(result.availableBalances[1]).to.equal(0n);
+            expect(result.types[1]).to.equal('nft');
+        });
+
+        it('Should return both ERC20 and ERC1155 with correct types in mixed reward', async function () {
+            const { rewards, soulboundBadge, mockERC20, devWallet, managerWallet, badgeTokenId } =
+                await loadFixture(deployRewardsWithSoulboundFixture);
+
+            // Whitelist Rewards and manager on badge contract
+            await soulboundBadge.connect(devWallet).updateWhitelistAddress(rewards.target, true);
+            await soulboundBadge.connect(devWallet).updateWhitelistAddress(managerWallet.address, true);
+
+            // Whitelist soulboundBadge in Rewards treasury
+            await rewards.connect(managerWallet).whitelistToken(soulboundBadge.target, 3); // 3 = ERC1155
+
+            // Mint badges to manager
+            await soulboundBadge.connect(devWallet).adminMintId(managerWallet.address, badgeTokenId, 100, true);
+
+            // Transfer badges to Rewards contract (5 maxSupply * 2 rewardAmount = 10 badges)
+            await soulboundBadge.connect(managerWallet).safeTransferFrom(
+                managerWallet.address,
+                rewards.target,
+                badgeTokenId,
+                10,
+                '0x'
+            );
+
+            // Create reward with BOTH ERC20 and ERC1155
+            const rewardTokenId = 2001;
+            await rewards.connect(managerWallet).createTokenAndDepositRewards({
+                tokenId: rewardTokenId,
+                maxSupply: 5,
+                tokenUri: 'https://example.com/reward/2001',
+                rewards: [
+                    {
+                        rewardType: 1, // ERC20
+                        rewardAmount: ethers.parseEther('10'),
+                        rewardTokenAddress: mockERC20.target,
+                        rewardTokenIds: [],
+                        rewardTokenId: 0,
+                    },
+                    {
+                        rewardType: 3, // ERC1155
+                        rewardAmount: 2, // 2 badges per claim
+                        rewardTokenAddress: soulboundBadge.target,
+                        rewardTokenIds: [],
+                        rewardTokenId: badgeTokenId,
+                    },
+                ],
+            });
+
+            const result = await rewards.getAllTreasuryBalances();
+
+            // Should have 2 entries: ERC20 + ERC1155
+            expect(result.addresses.length).to.equal(2);
+
+            // ERC20 (fa)
+            const erc20Index = result.addresses.findIndex((addr: string) => addr === mockERC20.target);
+            expect(result.types[erc20Index]).to.equal('fa');
+            expect(result.symbols[erc20Index]).to.equal('MTK');
+            expect(result.reservedBalances[erc20Index]).to.equal(ethers.parseEther('50')); // 5 * 10 ETH
+
+            // ERC1155 (nft)
+            const nftIndex = result.addresses.findIndex((addr: string) => addr === soulboundBadge.target);
+            expect(result.types[nftIndex]).to.equal('nft');
+            expect(result.totalBalances[nftIndex]).to.equal(10n); // 5 * 2 badges deposited
+            expect(result.reservedBalances[nftIndex]).to.equal(10n); // All reserved
+        });
+
+        it('Should update balances after user claims reward', async function () {
+            const { rewards, accessToken, soulboundBadge, mockERC20, devWallet, managerWallet, minterWallet, user1, badgeTokenId } =
+                await loadFixture(deployRewardsWithSoulboundFixture);
+
+            // Setup: Whitelist and mint badges
+            await soulboundBadge.connect(devWallet).updateWhitelistAddress(rewards.target, true);
+            await soulboundBadge.connect(devWallet).updateWhitelistAddress(managerWallet.address, true);
+            await rewards.connect(managerWallet).whitelistToken(soulboundBadge.target, 3); // 3 = ERC1155
+            await soulboundBadge.connect(devWallet).adminMintId(managerWallet.address, badgeTokenId, 100, true);
+
+            // Transfer badges to Rewards contract (10 maxSupply * 1 rewardAmount = 10 badges)
+            await soulboundBadge.connect(managerWallet).safeTransferFrom(
+                managerWallet.address,
+                rewards.target,
+                badgeTokenId,
+                10,
+                '0x'
+            );
+
+            // Create reward with ERC20 and ERC1155
+            const rewardTokenId = 3001;
+            await rewards.connect(managerWallet).createTokenAndDepositRewards({
+                tokenId: rewardTokenId,
+                maxSupply: 10,
+                tokenUri: 'https://example.com/reward/3001',
+                rewards: [
+                    {
+                        rewardType: 1, // ERC20
+                        rewardAmount: ethers.parseEther('5'),
+                        rewardTokenAddress: mockERC20.target,
+                        rewardTokenIds: [],
+                        rewardTokenId: 0,
+                    },
+                    {
+                        rewardType: 3, // ERC1155
+                        rewardAmount: 1,
+                        rewardTokenAddress: soulboundBadge.target,
+                        rewardTokenIds: [],
+                        rewardTokenId: badgeTokenId,
+                    },
+                ],
+            });
+
+            // Check initial treasury state
+            let result = await rewards.getAllTreasuryBalances();
+            const erc20Index = result.addresses.findIndex((addr: string) => addr === mockERC20.target);
+            const nftIndex = result.addresses.findIndex((addr: string) => addr === soulboundBadge.target);
+
+            expect(result.totalBalances[erc20Index]).to.equal(ethers.parseEther('1000'));
+            expect(result.reservedBalances[erc20Index]).to.equal(ethers.parseEther('50')); // 10 * 5
+            expect(result.totalBalances[nftIndex]).to.equal(10n);
+            expect(result.reservedBalances[nftIndex]).to.equal(10n);
+
+            // Mint reward token to user and claim
+            await rewards.connect(minterWallet).adminMintById(user1.address, rewardTokenId, 1, true);
+            await rewards.connect(user1).claimReward(rewardTokenId);
+
+            // Check treasury state after claim
+            result = await rewards.getAllTreasuryBalances();
+
+            // ERC20: balance decreased by 5 ETH, reserved decreased by 5 ETH
+            expect(result.totalBalances[erc20Index]).to.equal(ethers.parseEther('995'));
+            expect(result.reservedBalances[erc20Index]).to.equal(ethers.parseEther('45')); // 9 remaining * 5
+
+            // ERC1155: balance decreased by 1, reserved decreased by 1
+            expect(result.totalBalances[nftIndex]).to.equal(9n);
+            expect(result.reservedBalances[nftIndex]).to.equal(9n);
+        });
+
+        it('Should handle multiple ERC1155 badge contracts', async function () {
+            const { rewards, soulboundBadge, mockERC20, devWallet, managerWallet, badgeTokenId } =
+                await loadFixture(deployRewardsWithSoulboundFixture);
+
+            // Deploy a second ERC1155Soulbound badge contract
+            const ERC1155Soulbound = await ethers.getContractFactory('ERC1155Soulbound');
+            const secondBadge = await ERC1155Soulbound.deploy(
+                'F1 Badges', 'F1', 'https://f1.xyz/badges/', 'https://f1.xyz/contract/',
+                100, false, devWallet.address
+            );
+            await secondBadge.waitForDeployment();
+
+            // Add token to second badge
+            const secondBadgeTokenId = 2;
+            await secondBadge.connect(devWallet).addNewToken({
+                tokenId: secondBadgeTokenId,
+                tokenUri: 'https://f1.xyz/badges/2',
+                receiver: ethers.ZeroAddress,
+                feeBasisPoints: 0,
+            });
+
+            // Whitelist Rewards on both badge contracts
+            await soulboundBadge.connect(devWallet).updateWhitelistAddress(rewards.target, true);
+            await soulboundBadge.connect(devWallet).updateWhitelistAddress(managerWallet.address, true);
+            await secondBadge.connect(devWallet).updateWhitelistAddress(rewards.target, true);
+            await secondBadge.connect(devWallet).updateWhitelistAddress(managerWallet.address, true);
+
+            // Whitelist both badges in Rewards treasury
+            await rewards.connect(managerWallet).whitelistToken(soulboundBadge.target, 3); // 3 = ERC1155
+            await rewards.connect(managerWallet).whitelistToken(secondBadge.target, 3); // 3 = ERC1155
+
+            // Mint badges to manager
+            await soulboundBadge.connect(devWallet).adminMintId(managerWallet.address, badgeTokenId, 50, true);
+            await secondBadge.connect(devWallet).adminMintId(managerWallet.address, secondBadgeTokenId, 50, true);
+
+            // Transfer badges to Rewards contract
+            await soulboundBadge.connect(managerWallet).safeTransferFrom(
+                managerWallet.address,
+                rewards.target,
+                badgeTokenId,
+                5, // First reward: 5 maxSupply * 1 rewardAmount = 5 badges
+                '0x'
+            );
+            await secondBadge.connect(managerWallet).safeTransferFrom(
+                managerWallet.address,
+                rewards.target,
+                secondBadgeTokenId,
+                10, // Second reward: 5 maxSupply * 2 rewardAmount = 10 badges
+                '0x'
+            );
+
+            // Create rewards with both badges
+            await rewards.connect(managerWallet).createTokenAndDepositRewards({
+                tokenId: 4001,
+                maxSupply: 5,
+                tokenUri: 'https://example.com/reward/4001',
+                rewards: [{
+                    rewardType: 3,
+                    rewardAmount: 1,
+                    rewardTokenAddress: soulboundBadge.target,
+                    rewardTokenIds: [],
+                    rewardTokenId: badgeTokenId,
+                }],
+            });
+
+            await rewards.connect(managerWallet).createTokenAndDepositRewards({
+                tokenId: 4002,
+                maxSupply: 5,
+                tokenUri: 'https://example.com/reward/4002',
+                rewards: [{
+                    rewardType: 3,
+                    rewardAmount: 2,
+                    rewardTokenAddress: secondBadge.target,
+                    rewardTokenIds: [],
+                    rewardTokenId: secondBadgeTokenId,
+                }],
+            });
+
+            const result = await rewards.getAllTreasuryBalances();
+
+            // Should have 3 entries: 1 ERC20 + 2 ERC1155
+            expect(result.addresses.length).to.equal(3);
+
+            // Count types
+            const faCount = result.types.filter((t: string) => t === 'fa').length;
+            const nftCount = result.types.filter((t: string) => t === 'nft').length;
+
+            expect(faCount).to.equal(1);
+            expect(nftCount).to.equal(2);
+
+            // Verify both NFT addresses are present
+            expect(result.addresses).to.include(soulboundBadge.target);
+            expect(result.addresses).to.include(secondBadge.target);
+        });
+
+        it('Should not duplicate NFT addresses when same badge used in multiple rewards', async function () {
+            const { rewards, soulboundBadge, mockERC20, devWallet, managerWallet, badgeTokenId } =
+                await loadFixture(deployRewardsWithSoulboundFixture);
+
+            // Whitelist
+            await soulboundBadge.connect(devWallet).updateWhitelistAddress(rewards.target, true);
+            await soulboundBadge.connect(devWallet).updateWhitelistAddress(managerWallet.address, true);
+
+            // Whitelist soulboundBadge in Rewards treasury
+            await rewards.connect(managerWallet).whitelistToken(soulboundBadge.target, 3); // 3 = ERC1155
+
+            // Add another token ID to the same badge contract
+            const secondTokenId = 2;
+            await soulboundBadge.connect(devWallet).addNewToken({
+                tokenId: secondTokenId,
+                tokenUri: 'https://kpop.xyz/badges/2',
+                receiver: ethers.ZeroAddress,
+                feeBasisPoints: 0,
+            });
+
+            // Mint badges
+            await soulboundBadge.connect(devWallet).adminMintId(managerWallet.address, badgeTokenId, 50, true);
+            await soulboundBadge.connect(devWallet).adminMintId(managerWallet.address, secondTokenId, 50, true);
+
+            // Transfer both token IDs to Rewards contract
+            await soulboundBadge.connect(managerWallet).safeTransferFrom(
+                managerWallet.address,
+                rewards.target,
+                badgeTokenId,
+                5, // First reward: 5 maxSupply * 1 rewardAmount = 5 badges
+                '0x'
+            );
+            await soulboundBadge.connect(managerWallet).safeTransferFrom(
+                managerWallet.address,
+                rewards.target,
+                secondTokenId,
+                5, // Second reward: 5 maxSupply * 1 rewardAmount = 5 badges
+                '0x'
+            );
+
+            // Create two rewards using SAME badge contract but different token IDs
+            await rewards.connect(managerWallet).createTokenAndDepositRewards({
+                tokenId: 5001,
+                maxSupply: 5,
+                tokenUri: 'https://example.com/reward/5001',
+                rewards: [{
+                    rewardType: 3,
+                    rewardAmount: 1,
+                    rewardTokenAddress: soulboundBadge.target,
+                    rewardTokenIds: [],
+                    rewardTokenId: badgeTokenId,
+                }],
+            });
+
+            await rewards.connect(managerWallet).createTokenAndDepositRewards({
+                tokenId: 5002,
+                maxSupply: 5,
+                tokenUri: 'https://example.com/reward/5002',
+                rewards: [{
+                    rewardType: 3,
+                    rewardAmount: 1,
+                    rewardTokenAddress: soulboundBadge.target,
+                    rewardTokenIds: [],
+                    rewardTokenId: secondTokenId,
+                }],
+            });
+
+            const result = await rewards.getAllTreasuryBalances();
+
+            // Should have 3 entries: 1 ERC20 + 2 ERC1155 token IDs (tracked separately)
+            // Each unique ERC1155 token ID is tracked separately since they have independent balances
+            expect(result.addresses.length).to.equal(3);
+
+            const nftCount = result.types.filter((t: string) => t === 'nft').length;
+            expect(nftCount).to.equal(2); // Two NFT entries (same contract, different token IDs)
+
+            // Verify both use the same contract address
+            const nftAddresses = result.addresses.filter((_: string, idx: number) => result.types[idx] === 'nft');
+            expect(nftAddresses[0]).to.equal(soulboundBadge.target);
+            expect(nftAddresses[1]).to.equal(soulboundBadge.target);
+        });
+    });
 });
