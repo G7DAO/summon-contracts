@@ -297,7 +297,9 @@ contract Rewards is
         // Validate token inputs
         _validateTokenInputs(_token);
 
-        // Validate ERC20 tokens are whitelisted and reserve amounts
+        // Validate tokens are whitelisted and reserve amounts
+        // Assets are held in Treasury contract
+        address treasuryAddr = treasury;
         for (uint256 i = 0; i < _token.rewards.length; i++) {
             LibItems.Reward memory reward = _token.rewards[i];
             if (reward.rewardType == LibItems.RewardType.ERC20) {
@@ -305,9 +307,7 @@ contract Rewards is
                     revert TokenNotWhitelisted();
                 }
                 uint256 totalAmount = reward.rewardAmount * _token.maxSupply;
-                uint256 balance = IERC20(reward.rewardTokenAddress).balanceOf(
-                    address(this)
-                );
+                uint256 balance = IERC20(reward.rewardTokenAddress).balanceOf(treasuryAddr);
                 uint256 reserved = _state().reservedAmounts(reward.rewardTokenAddress);
                 if (balance < reserved + totalAmount) {
                     revert InsufficientTreasuryBalance();
@@ -320,11 +320,11 @@ contract Rewards is
                     revert TokenNotWhitelisted();
                 }
                 IERC721 nftContract = IERC721(reward.rewardTokenAddress);
-                // Verify all tokenIds are owned by this contract and unreserved
+                // Verify all tokenIds are owned by Treasury and unreserved
                 for (uint256 j = 0; j < reward.rewardTokenIds.length; j++) {
                     uint256 tokenId = reward.rewardTokenIds[j];
-                    // Check contract owns this NFT and it is not already reserved
-                    if (nftContract.ownerOf(tokenId) != address(this) || _state().isErc721Reserved(reward.rewardTokenAddress, tokenId)) {
+                    // Check Treasury owns this NFT and it is not already reserved
+                    if (nftContract.ownerOf(tokenId) != treasuryAddr || _state().isErc721Reserved(reward.rewardTokenAddress, tokenId)) {
                         revert InsufficientTreasuryBalance();
                     }
                 }
@@ -339,7 +339,7 @@ contract Rewards is
                     revert TokenNotWhitelisted();
                 }
                 uint256 totalAmount = reward.rewardAmount * _token.maxSupply;
-                uint256 balance = IERC1155(reward.rewardTokenAddress).balanceOf(address(this), reward.rewardTokenId);
+                uint256 balance = IERC1155(reward.rewardTokenAddress).balanceOf(treasuryAddr, reward.rewardTokenId);
                 uint256 reserved = _state().erc1155ReservedAmounts(reward.rewardTokenAddress, reward.rewardTokenId);
                 if (balance < reserved + totalAmount) {
                     revert InsufficientTreasuryBalance();
@@ -758,19 +758,16 @@ contract Rewards is
     function _distributeReward(address _to, uint256 _rewardTokenId) private {
         LibItems.RewardToken memory _rewardToken = _state().getRewardToken(_rewardTokenId);
         LibItems.Reward[] memory rewards = _rewardToken.rewards;
+        Treasury treasuryContract = Treasury(treasury);
 
         for (uint256 i = 0; i < rewards.length; i++) {
             LibItems.Reward memory reward = rewards[i];
-            address _from = address(this);
 
             if (reward.rewardType == LibItems.RewardType.ETHER) {
                 _transferEther(payable(_to), reward.rewardAmount);
             } else if (reward.rewardType == LibItems.RewardType.ERC20) {
-                _transferERC20(
-                    IERC20(reward.rewardTokenAddress),
-                    _to,
-                    reward.rewardAmount
-                );
+                // Distribute from Treasury
+                treasuryContract.distributeERC20(reward.rewardTokenAddress, _to, reward.rewardAmount);
                 // Reduce reserved amount
                 _state().decreaseERC20Reserved(reward.rewardTokenAddress, reward.rewardAmount);
             } else if (reward.rewardType == LibItems.RewardType.ERC721) {
@@ -785,12 +782,8 @@ contract Rewards is
                     // Release reservation
                     _state().releaseERC721(reward.rewardTokenAddress, tokenId);
 
-                    _transferERC721(
-                        IERC721(reward.rewardTokenAddress),
-                        _from,
-                        _to,
-                        tokenId
-                    );
+                    // Distribute from Treasury
+                    treasuryContract.distributeERC721(reward.rewardTokenAddress, _to, tokenId);
                 }
 
                 _state().incrementERC721RewardIndex(_rewardTokenId, i);
@@ -798,13 +791,8 @@ contract Rewards is
                 // Release reservation
                 _state().decreaseERC1155Reserved(reward.rewardTokenAddress, reward.rewardTokenId, reward.rewardAmount);
 
-                _transferERC1155(
-                    IERC1155(reward.rewardTokenAddress),
-                    _from,
-                    _to,
-                    reward.rewardTokenId,
-                    reward.rewardAmount
-                );
+                // Distribute from Treasury
+                treasuryContract.distributeERC1155(reward.rewardTokenAddress, _to, reward.rewardTokenId, reward.rewardAmount);
             }
         }
 

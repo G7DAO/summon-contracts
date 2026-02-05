@@ -145,6 +145,22 @@ contract Treasury is Initializable, AccessControlUpgradeable, UUPSUpgradeable, E
     }
 
     /*//////////////////////////////////////////////////////////////
+                      DISTRIBUTION FUNCTIONS (for claims)
+    //////////////////////////////////////////////////////////////*/
+
+    function distributeERC20(address _token, address _to, uint256 _amount) external onlyRole(REWARDS_MANAGER_ROLE) {
+        SafeERC20.safeTransfer(IERC20(_token), _to, _amount);
+    }
+
+    function distributeERC721(address _token, address _to, uint256 _tokenId) external onlyRole(REWARDS_MANAGER_ROLE) {
+        IERC721(_token).safeTransferFrom(address(this), _to, _tokenId);
+    }
+
+    function distributeERC1155(address _token, address _to, uint256 _tokenId, uint256 _amount) external onlyRole(REWARDS_MANAGER_ROLE) {
+        IERC1155(_token).safeTransferFrom(address(this), _to, _tokenId, _amount, "");
+    }
+
+    /*//////////////////////////////////////////////////////////////
                          TREASURY VIEW FUNCTIONS
     //////////////////////////////////////////////////////////////*/
 
@@ -204,16 +220,16 @@ contract Treasury is Initializable, AccessControlUpgradeable, UUPSUpgradeable, E
         return (addresses, totalBalances, reservedBalances, availableBalances, symbols, names, types);
     }
 
-    function getTreasuryBalance(address rewardsContract, address _token) external view returns (uint256) {
-        return IERC20(_token).balanceOf(rewardsContract);
+    function getTreasuryBalance(address, address _token) external view returns (uint256) {
+        return IERC20(_token).balanceOf(address(this));
     }
 
     function getReservedAmount(address, address _token) external view returns (uint256) {
         return rewardsState.reservedAmounts(_token);
     }
 
-    function getAvailableTreasuryBalance(address rewardsContract, address _token) external view returns (uint256) {
-        uint256 balance = IERC20(_token).balanceOf(rewardsContract);
+    function getAvailableTreasuryBalance(address, address _token) external view returns (uint256) {
+        uint256 balance = IERC20(_token).balanceOf(address(this));
         uint256 reserved = rewardsState.reservedAmounts(_token);
         return balance > reserved ? balance - reserved : 0;
     }
@@ -231,7 +247,7 @@ contract Treasury is Initializable, AccessControlUpgradeable, UUPSUpgradeable, E
     //////////////////////////////////////////////////////////////*/
 
     function _processERC20Token(
-        address rewardsContract,
+        address,
         address tokenAddress,
         uint256 index,
         uint256[] memory totalBalances,
@@ -241,7 +257,7 @@ contract Treasury is Initializable, AccessControlUpgradeable, UUPSUpgradeable, E
         string[] memory names,
         string[] memory types
     ) private view {
-        uint256 totalBalance = IERC20(tokenAddress).balanceOf(rewardsContract);
+        uint256 totalBalance = IERC20(tokenAddress).balanceOf(address(this));
         uint256 reserved = rewardsState.reservedAmounts(tokenAddress);
 
         totalBalances[index] = totalBalance;
@@ -264,7 +280,7 @@ contract Treasury is Initializable, AccessControlUpgradeable, UUPSUpgradeable, E
     }
 
     function _processERC721Token(
-        address rewardsContract,
+        address,
         address tokenAddress,
         uint256 index,
         uint256[] memory totalBalances,
@@ -274,7 +290,7 @@ contract Treasury is Initializable, AccessControlUpgradeable, UUPSUpgradeable, E
         string[] memory names,
         string[] memory types
     ) private view {
-        uint256 totalBalance = IERC721(tokenAddress).balanceOf(rewardsContract);
+        uint256 totalBalance = IERC721(tokenAddress).balanceOf(address(this));
         uint256 reserved = rewardsState.erc721TotalReserved(tokenAddress);
 
         totalBalances[index] = totalBalance;
@@ -343,7 +359,7 @@ contract Treasury is Initializable, AccessControlUpgradeable, UUPSUpgradeable, E
 
                     addresses[currentIndex] = erc1155Address;
 
-                    uint256 balance = IERC1155(erc1155Address).balanceOf(rewardsContract, erc1155TokenId);
+                    uint256 balance = IERC1155(erc1155Address).balanceOf(address(this), erc1155TokenId);
                     uint256 reserved = rewardsState.erc1155ReservedAmounts(erc1155Address, erc1155TokenId);
 
                     totalBalances[currentIndex] = balance;
