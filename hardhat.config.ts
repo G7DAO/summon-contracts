@@ -29,7 +29,7 @@ const config: HardhatUserConfig = {
         settings: {
             optimizer: {
                 enabled: true,
-                runs: 5, // Minimal runs for maximum size reduction
+                runs: 1, // Minimal runs for maximum size reduction
                 details: {
                     yul: true,
                 },

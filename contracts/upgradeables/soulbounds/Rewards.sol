@@ -211,17 +211,6 @@ contract Rewards is
         return _state().getRewardToken(_tokenId).rewards;
     }
 
-    function decodeData(
-        bytes calldata _data
-    )
-        external
-        view
-        onlyRole(DEV_CONFIG_ROLE)
-        returns (address, uint256, uint256, uint256[] memory)
-    {
-        return _decodeData(_data);
-    }
-
     function _decodeData(
         bytes calldata _data
     ) private pure returns (address, uint256, uint256, uint256[] memory) {
@@ -884,7 +873,7 @@ contract Rewards is
     function _verifyContractChainIdAndDecode(
         bytes calldata data
     ) private view returns (uint256[] memory) {
-        uint256 currentChainId = getChainID();
+        uint256 currentChainId = block.chainid;
         (
             address contractAddress,
             uint256 chainId,
@@ -973,32 +962,6 @@ contract Rewards is
             return false;
         }
         return rewardTokenContract.balanceOf(_user, _tokenId) > 0;
-    }
-
-    /**
-     * @dev Get the NFT distribution progress for a reward token.
-     * @param _tokenId The ID of the reward token.
-     * @param _rewardIndex The index of the reward in the rewards array.
-     * @return distributed The number of NFTs already distributed.
-     * @return total The total number of NFTs for this reward.
-     */
-    function getNftDistributionProgress(
-        uint256 _tokenId,
-        uint256 _rewardIndex
-    ) external view returns (uint256 distributed, uint256 total) {
-        if (!isTokenExist(_tokenId)) {
-            return (0, 0);
-        }
-        LibItems.RewardToken memory rewardToken = _state().getRewardToken(_tokenId);
-        if (_rewardIndex >= rewardToken.rewards.length) {
-            return (0, 0);
-        }
-        LibItems.Reward memory reward = rewardToken.rewards[_rewardIndex];
-        if (reward.rewardType != LibItems.RewardType.ERC721) {
-            return (0, 0);
-        }
-        distributed = _state().getERC721RewardCurrentIndex(_tokenId, _rewardIndex);
-        total = reward.rewardTokenIds.length;
     }
 
     /**
@@ -1135,15 +1098,6 @@ contract Rewards is
     // Fallback function is called when msg.data is not empty
     fallback() external payable {}
 
-    function adminVerifySignature(
-        address to,
-        uint256 nonce,
-        bytes calldata data,
-        bytes calldata signature
-    ) public onlyRole(DEV_CONFIG_ROLE) returns (bool) {
-        return _verifySignature(to, nonce, data, signature);
-    }
-
     function addWhitelistSigner(
         address _signer
     ) external onlyRole(DEV_CONFIG_ROLE) {
@@ -1154,13 +1108,5 @@ contract Rewards is
         address signer
     ) external onlyRole(DEV_CONFIG_ROLE) {
         _removeWhitelistSigner(signer);
-    }
-
-    function getChainID() public view returns (uint256) {
-        uint256 id;
-        assembly {
-            id := chainid()
-        }
-        return id;
     }
 }
