@@ -557,20 +557,26 @@ contract Rewards is
         uint256 oldSupply = rewardToken.maxSupply;
         uint256 newSupply = oldSupply + _additionalSupply;
 
-        // Validate treasury has enough balance for ERC20 rewards
+        // Validate treasury has enough balance for rewards
+        address treasuryAddr = treasury;
         for (uint256 i = 0; i < rewardToken.rewards.length; i++) {
             LibItems.Reward memory reward = rewardToken.rewards[i];
             if (reward.rewardType == LibItems.RewardType.ERC20) {
                 uint256 additionalAmount = reward.rewardAmount * _additionalSupply;
-                uint256 balance = IERC20(reward.rewardTokenAddress).balanceOf(
-                    address(this)
-                );
+                uint256 balance = IERC20(reward.rewardTokenAddress).balanceOf(treasuryAddr);
                 uint256 reserved = _state().reservedAmounts(reward.rewardTokenAddress);
                 if (balance < reserved + additionalAmount) {
                     revert InsufficientTreasuryBalance();
                 }
-                // Reserve additional amount
                 _state().increaseERC20Reserved(reward.rewardTokenAddress, additionalAmount);
+            } else if (reward.rewardType == LibItems.RewardType.ERC1155) {
+                uint256 additionalAmount = reward.rewardAmount * _additionalSupply;
+                uint256 balance = IERC1155(reward.rewardTokenAddress).balanceOf(treasuryAddr, reward.rewardTokenId);
+                uint256 reserved = _state().erc1155ReservedAmounts(reward.rewardTokenAddress, reward.rewardTokenId);
+                if (balance < reserved + additionalAmount) {
+                    revert InsufficientTreasuryBalance();
+                }
+                _state().increaseERC1155Reserved(reward.rewardTokenAddress, reward.rewardTokenId, additionalAmount);
             }
         }
 
@@ -620,48 +626,22 @@ contract Rewards is
             revert AddressIsZero();
         }
 
-        address _from = address(this);
+        Treasury treasuryContract = Treasury(treasury);
 
         if (_rewardType == LibItems.RewardType.ETHER) {
             _transferEther(payable(_to), _amounts[0]);
         } else if (_rewardType == LibItems.RewardType.ERC20) {
-            // Check if withdrawal would violate reserved amounts
-            if (_state().whitelistedTokens(_tokenAddress)) {
-                uint256 balance = IERC20(_tokenAddress).balanceOf(address(this));
-                uint256 reserved = _state().reservedAmounts(_tokenAddress);
-                if (balance < reserved + _amounts[0]) {
-                    revert InsufficientTreasuryBalance();
-                }
-            }
-            _transferERC20(IERC20(_tokenAddress), _to, _amounts[0]);
+            treasuryContract.withdrawUnreservedTreasury(_tokenAddress, _to);
         } else if (_rewardType == LibItems.RewardType.ERC721) {
-            IERC721 token = IERC721(_tokenAddress);
             for (uint256 i = 0; i < _tokenIds.length; i++) {
-                // Check if NFT is reserved
-                if (_state().isErc721Reserved(_tokenAddress, _tokenIds[i])) {
-                    revert InsufficientTreasuryBalance();
-                }
-                _transferERC721(token, _from, _to, _tokenIds[i]);
+                treasuryContract.withdrawERC721UnreservedTreasury(_tokenAddress, _to, _tokenIds[i]);
             }
         } else if (_rewardType == LibItems.RewardType.ERC1155) {
             if (_tokenIds.length != _amounts.length) {
                 revert InvalidLength();
             }
             for (uint256 i = 0; i < _tokenIds.length; i++) {
-                // Check if amount exceeds unreserved balance
-                uint256 balance = IERC1155(_tokenAddress).balanceOf(address(this), _tokenIds[i]);
-                uint256 reserved = _state().erc1155ReservedAmounts(_tokenAddress, _tokenIds[i]);
-                uint256 available = balance > reserved ? balance - reserved : 0;
-                if (_amounts[i] > available) {
-                    revert InsufficientTreasuryBalance();
-                }
-                _transferERC1155(
-                    IERC1155(_tokenAddress),
-                    _from,
-                    _to,
-                    _tokenIds[i],
-                    _amounts[i]
-                );
+                treasuryContract.withdrawERC1155UnreservedTreasury(_tokenAddress, _to, _tokenIds[i], _amounts[i]);
             }
         }
 

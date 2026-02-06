@@ -26,9 +26,9 @@ import { ethers, upgrades, run } from 'hardhat';
 
 // Default addresses (update after initial deployment)
 const DEFAULT_ADDRESSES = {
-    REWARDS_PROXY: process.env.REWARDS_PROXY_ADDRESS || '',
-    REWARDS_STATE: process.env.REWARDS_STATE_ADDRESS || '',
-    TREASURY: process.env.TREASURY_ADDRESS || '',
+    REWARDS_PROXY: process.env.REWARDS_PROXY_ADDRESS || '0x08809093Bd3B1d02EC55E263f4350de99557E59C',
+    REWARDS_STATE: process.env.REWARDS_STATE_ADDRESS || '0xf1a09e84366B68125eDEDB91535c5D39AB8E0373',
+    TREASURY: process.env.TREASURY_ADDRESS || '0x85974902415e87Ae6F94253648f1033163479e38',
 };
 
 interface UpgradeResult {
@@ -39,10 +39,7 @@ interface UpgradeResult {
     upgraded: boolean;
 }
 
-async function upgradeContract(
-    contractName: string,
-    proxyAddress: string
-): Promise<UpgradeResult> {
+async function upgradeContract(contractName: string, proxyAddress: string): Promise<UpgradeResult> {
     console.log(`\nUpgrading ${contractName}...`);
     console.log(`   Proxy: ${proxyAddress}`);
 
@@ -55,26 +52,22 @@ async function upgradeContract(
         throw new Error(`Could not get implementation for ${proxyAddress}. Is this a valid proxy?`);
     }
 
-    // Get contract factory
+    // Deploy new implementation directly (bypasses OZ plugin bytecode deduplication)
     const ContractFactory = await ethers.getContractFactory(contractName);
+    console.log('   Deploying new implementation...');
+    const newImplContract = await ContractFactory.deploy();
+    await newImplContract.waitForDeployment();
+    const newImplAddress = await newImplContract.getAddress();
+    console.log(`   New implementation deployed at: ${newImplAddress}`);
 
-    // Force import (required if not originally deployed via hardhat-upgrades)
-    try {
-        await upgrades.forceImport(proxyAddress, ContractFactory);
-        console.log('   Proxy registered with upgrades plugin');
-    } catch (e: any) {
-        if (!e.message.includes('already been imported')) {
-            console.log('   Note:', e.message);
-        }
-    }
+    // Call upgradeToAndCall on the UUPS proxy
+    const proxy = await ethers.getContractAt(contractName, proxyAddress);
+    console.log('   Calling upgradeToAndCall on proxy...');
+    const tx = await proxy.upgradeToAndCall(newImplAddress, '0x');
+    await tx.wait();
+    console.log(`   Upgrade tx confirmed: ${tx.hash}`);
 
-    // Upgrade
-    const upgraded = await upgrades.upgradeProxy(proxyAddress, ContractFactory, {
-        kind: 'uups',
-    });
-    await upgraded.waitForDeployment();
-
-    // Get new implementation
+    // Verify new implementation
     const newImplementation = await upgrades.erc1967.getImplementationAddress(proxyAddress);
     console.log(`   New implementation: ${newImplementation}`);
 

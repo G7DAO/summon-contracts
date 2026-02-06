@@ -590,6 +590,179 @@ describe('Rewards NFT Treasury', function () {
     });
 
 
+    describe('withdrawAssets via Treasury', function () {
+        it('Should withdraw unreserved ERC20 from Treasury via withdrawAssets', async function () {
+            const { rewards, treasury, mockERC20, managerWallet, user1 } = await loadFixture(deployRewardsNftTreasuryFixture);
+
+            const initialBalance = await mockERC20.balanceOf(user1.address);
+            const treasuryBalance = await mockERC20.balanceOf(treasury.target);
+
+            // withdrawAssets for ERC20 should pull from Treasury
+            await rewards.connect(managerWallet).withdrawAssets(
+                1, // ERC20
+                user1.address,
+                mockERC20.target,
+                [], // no tokenIds for ERC20
+                [treasuryBalance] // withdraw all
+            );
+
+            expect(await mockERC20.balanceOf(user1.address)).to.equal(initialBalance + treasuryBalance);
+            expect(await mockERC20.balanceOf(treasury.target)).to.equal(0);
+        });
+
+        it('Should withdraw unreserved ERC721 from Treasury via withdrawAssets', async function () {
+            const { rewards, treasury, mockERC721, managerWallet, user1 } = await loadFixture(deployRewardsNftTreasuryFixture);
+
+            // Transfer NFTs to Treasury
+            await mockERC721.mint(managerWallet.address);
+            await mockERC721.connect(managerWallet).transferFrom(managerWallet.address, treasury.target, 0);
+
+            // withdrawAssets for ERC721 should pull from Treasury
+            await rewards.connect(managerWallet).withdrawAssets(
+                2, // ERC721
+                user1.address,
+                mockERC721.target,
+                [0], // tokenIds
+                [] // no amounts for ERC721
+            );
+
+            expect(await mockERC721.ownerOf(0)).to.equal(user1.address);
+        });
+
+        it('Should not withdraw reserved ERC721 via withdrawAssets', async function () {
+            const { rewards, treasury, mockERC721, managerWallet, user1 } = await loadFixture(deployRewardsNftTreasuryFixture);
+
+            await mockERC721.mint(managerWallet.address);
+            await mockERC721.connect(managerWallet).transferFrom(managerWallet.address, treasury.target, 0);
+
+            // Reserve the NFT
+            await rewards.connect(managerWallet).createTokenAndDepositRewards({
+                tokenId: 1,
+                tokenUri: 'https://example.com/reward/1',
+                rewards: [{
+                    rewardType: 2,
+                    rewardAmount: 1,
+                    rewardTokenAddress: mockERC721.target,
+                    rewardTokenIds: [0],
+                    rewardTokenId: 0,
+                }],
+                maxSupply: 1,
+            });
+
+            // Should revert - NFT is reserved
+            await expect(
+                rewards.connect(managerWallet).withdrawAssets(
+                    2, user1.address, mockERC721.target, [0], []
+                )
+            ).to.be.revertedWithCustomError(treasury, 'InsufficientTreasuryBalance');
+        });
+
+        it('Should withdraw unreserved ERC1155 from Treasury via withdrawAssets', async function () {
+            const { rewards, treasury, mockERC1155, managerWallet, user1 } = await loadFixture(deployRewardsNftTreasuryFixture);
+
+            await mockERC1155.mint(managerWallet.address, 1, 100, '0x');
+            await mockERC1155.connect(managerWallet).safeTransferFrom(managerWallet.address, treasury.target, 1, 100, '0x');
+
+            // withdrawAssets for ERC1155 should pull from Treasury
+            await rewards.connect(managerWallet).withdrawAssets(
+                3, // ERC1155
+                user1.address,
+                mockERC1155.target,
+                [1], // tokenIds
+                [50] // amounts
+            );
+
+            expect(await mockERC1155.balanceOf(user1.address, 1)).to.equal(50);
+            expect(await mockERC1155.balanceOf(treasury.target, 1)).to.equal(50);
+        });
+
+        it('Should not withdraw reserved ERC1155 via withdrawAssets', async function () {
+            const { rewards, treasury, mockERC1155, managerWallet, user1 } = await loadFixture(deployRewardsNftTreasuryFixture);
+
+            await mockERC1155.mint(managerWallet.address, 1, 100, '0x');
+            await mockERC1155.connect(managerWallet).safeTransferFrom(managerWallet.address, treasury.target, 1, 100, '0x');
+
+            // Reserve 80 tokens
+            await rewards.connect(managerWallet).createTokenAndDepositRewards({
+                tokenId: 1,
+                tokenUri: 'https://example.com/reward/1',
+                rewards: [{
+                    rewardType: 3,
+                    rewardAmount: 8,
+                    rewardTokenAddress: mockERC1155.target,
+                    rewardTokenIds: [],
+                    rewardTokenId: 1,
+                }],
+                maxSupply: 10,
+            });
+
+            // Try to withdraw 30 (only 20 unreserved) - should revert
+            await expect(
+                rewards.connect(managerWallet).withdrawAssets(
+                    3, user1.address, mockERC1155.target, [1], [30]
+                )
+            ).to.be.revertedWithCustomError(treasury, 'InsufficientBalance');
+        });
+    });
+
+    describe('increaseRewardSupply with Treasury', function () {
+        it('Should check ERC20 balance on Treasury (not Rewards) when increasing supply', async function () {
+            const { rewards, treasury, mockERC20, managerWallet } = await loadFixture(deployRewardsNftTreasuryFixture);
+
+            // Create ERC20 reward
+            await rewards.connect(managerWallet).createTokenAndDepositRewards({
+                tokenId: 1,
+                tokenUri: 'https://example.com/reward/1',
+                rewards: [{
+                    rewardType: 1,
+                    rewardAmount: ethers.parseEther('100'),
+                    rewardTokenAddress: mockERC20.target,
+                    rewardTokenIds: [],
+                    rewardTokenId: 0,
+                }],
+                maxSupply: 10, // reserves 1000 of 10000
+            });
+
+            // Increase supply - Treasury has 9000 unreserved, enough for 90 more
+            await rewards.connect(managerWallet).increaseRewardSupply(1, 90);
+
+            // Now all 10000 are reserved, so adding more should fail
+            await expect(
+                rewards.connect(managerWallet).increaseRewardSupply(1, 1)
+            ).to.be.revertedWithCustomError(rewards, 'InsufficientTreasuryBalance');
+        });
+
+        it('Should check ERC1155 balance on Treasury when increasing supply', async function () {
+            const { rewards, treasury, mockERC1155, managerWallet } = await loadFixture(deployRewardsNftTreasuryFixture);
+
+            // Transfer tokens to Treasury
+            await mockERC1155.mint(managerWallet.address, 1, 100, '0x');
+            await mockERC1155.connect(managerWallet).safeTransferFrom(managerWallet.address, treasury.target, 1, 100, '0x');
+
+            // Create ERC1155 reward (reserves 50 of 100)
+            await rewards.connect(managerWallet).createTokenAndDepositRewards({
+                tokenId: 1,
+                tokenUri: 'https://example.com/reward/1',
+                rewards: [{
+                    rewardType: 3,
+                    rewardAmount: 5,
+                    rewardTokenAddress: mockERC1155.target,
+                    rewardTokenIds: [],
+                    rewardTokenId: 1,
+                }],
+                maxSupply: 10,
+            });
+
+            // Increase supply by 10 more (needs 50 more, exactly matches unreserved)
+            await rewards.connect(managerWallet).increaseRewardSupply(1, 10);
+
+            // Now all 100 are reserved, adding more should fail
+            await expect(
+                rewards.connect(managerWallet).increaseRewardSupply(1, 1)
+            ).to.be.revertedWithCustomError(rewards, 'InsufficientTreasuryBalance');
+        });
+    });
+
     describe('Treasury Withdrawal Protection', function () {
         it('Should protect reserved ERC721 via withdrawERC721UnreservedTreasury', async function () {
             const { rewards, treasury, mockERC721, managerWallet, user1 } = await loadFixture(deployRewardsNftTreasuryFixture);

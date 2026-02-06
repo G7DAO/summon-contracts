@@ -23,6 +23,11 @@ interface IRewards {
     function getTokenRewards(uint256 tokenId) external view returns (LibItems.Reward[] memory);
 }
 
+interface IERC1155Metadata {
+    function name() external view returns (string memory);
+    function symbol() external view returns (string memory);
+}
+
 /**
  * @title Treasury
  * @notice Treasury contract for managing token deposits, withdrawals, and whitelisting
@@ -366,8 +371,18 @@ contract Treasury is Initializable, AccessControlUpgradeable, UUPSUpgradeable, E
                     reservedBalances[currentIndex] = reserved;
                     availableBalances[currentIndex] = balance > reserved ? balance - reserved : 0;
 
-                    names[currentIndex] = "ERC1155 Collection";
-                    symbols[currentIndex] = "ERC1155";
+                    try IERC1155Metadata(erc1155Address).name() returns (string memory _name) {
+                        names[currentIndex] = _name;
+                    } catch {
+                        names[currentIndex] = "ERC1155 Collection";
+                    }
+
+                    try IERC1155Metadata(erc1155Address).symbol() returns (string memory _symbol) {
+                        symbols[currentIndex] = _symbol;
+                    } catch {
+                        symbols[currentIndex] = "ERC1155";
+                    }
+
                     types[currentIndex] = "nft";
 
                     currentIndex++;
