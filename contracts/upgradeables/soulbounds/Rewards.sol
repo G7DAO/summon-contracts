@@ -447,6 +447,7 @@ contract Rewards is
      * @return symbols Array of token symbols.
      * @return names Array of token names.
      * @return types Array of token types ("fa" for fungible assets, "nft" for NFTs).
+     * @return tokenIds Array of token IDs (0 for ERC20/ERC721, actual rewardTokenId for ERC1155).
      */
     function getAllTreasuryBalances()
         external
@@ -458,7 +459,8 @@ contract Rewards is
             uint256[] memory availableBalances,
             string[] memory symbols,
             string[] memory names,
-            string[] memory types
+            string[] memory types,
+            uint256[] memory tokenIds
         )
     {
         return Treasury(treasury).getAllTreasuryBalances(address(this));

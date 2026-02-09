@@ -461,6 +461,7 @@ describe('Rewards with Soulbound Tokens', function () {
             expect(result.symbols.length).to.equal(0);
             expect(result.names.length).to.equal(0);
             expect(result.types.length).to.equal(0);
+            expect(result.tokenIds.length).to.equal(0);
         });
 
         it('Should return ERC20 token with type "fa" after deposit to treasury', async function () {
@@ -477,6 +478,7 @@ describe('Rewards with Soulbound Tokens', function () {
             expect(result.symbols[0]).to.equal('MTK');
             expect(result.names[0]).to.equal('Mock Token');
             expect(result.types[0]).to.equal('fa');
+            expect(result.tokenIds[0]).to.equal(0n);
         });
 
         it('Should return ERC1155 badge with type "nft" after creating reward', async function () {
@@ -524,6 +526,7 @@ describe('Rewards with Soulbound Tokens', function () {
             // First is ERC20 (fa)
             expect(result.addresses[0]).to.equal(mockERC20.target);
             expect(result.types[0]).to.equal('fa');
+            expect(result.tokenIds[0]).to.equal(0n);
 
             // Second is ERC1155 (nft)
             expect(result.addresses[1]).to.equal(soulboundBadge.target);
@@ -531,6 +534,7 @@ describe('Rewards with Soulbound Tokens', function () {
             expect(result.reservedBalances[1]).to.equal(10n); // All reserved for rewards
             expect(result.availableBalances[1]).to.equal(0n);
             expect(result.types[1]).to.equal('nft');
+            expect(result.tokenIds[1]).to.equal(BigInt(badgeTokenId));
         });
 
         it('Should return both ERC20 and ERC1155 with correct types in mixed reward', async function () {
@@ -590,12 +594,14 @@ describe('Rewards with Soulbound Tokens', function () {
             expect(result.types[erc20Index]).to.equal('fa');
             expect(result.symbols[erc20Index]).to.equal('MTK');
             expect(result.reservedBalances[erc20Index]).to.equal(ethers.parseEther('50')); // 5 * 10 ETH
+            expect(result.tokenIds[erc20Index]).to.equal(0n);
 
             // ERC1155 (nft)
             const nftIndex = result.addresses.findIndex((addr: string) => addr === soulboundBadge.target);
             expect(result.types[nftIndex]).to.equal('nft');
             expect(result.totalBalances[nftIndex]).to.equal(10n); // 5 * 2 badges deposited
             expect(result.reservedBalances[nftIndex]).to.equal(10n); // All reserved
+            expect(result.tokenIds[nftIndex]).to.equal(BigInt(badgeTokenId));
         });
 
         it('Should update balances after user claims reward', async function () {
@@ -648,8 +654,10 @@ describe('Rewards with Soulbound Tokens', function () {
 
             expect(result.totalBalances[erc20Index]).to.equal(ethers.parseEther('1000'));
             expect(result.reservedBalances[erc20Index]).to.equal(ethers.parseEther('50')); // 10 * 5
+            expect(result.tokenIds[erc20Index]).to.equal(0n);
             expect(result.totalBalances[nftIndex]).to.equal(10n);
             expect(result.reservedBalances[nftIndex]).to.equal(10n);
+            expect(result.tokenIds[nftIndex]).to.equal(BigInt(badgeTokenId));
 
             // Mint reward token to user and claim
             await rewards.connect(minterWallet).adminMintById(user1.address, rewardTokenId, 1, true);
