@@ -86,7 +86,6 @@ contract Rewards is
     error InsufficientTreasuryBalance();
     error CannotReduceSupply();
     error TokenHasReserves();
-    error SignatureExpired();
     error NonceAlreadyUsed();
 
     /*//////////////////////////////////////////////////////////////
@@ -213,14 +212,13 @@ contract Rewards is
 
     function _decodeData(
         bytes calldata _data
-    ) private pure returns (address, uint256, uint256, uint256[] memory) {
+    ) private pure returns (address, uint256, uint256[] memory) {
         (
             address contractAddress,
             uint256 chainId,
-            uint256 expiration,
             uint256[] memory _itemIds
-        ) = abi.decode(_data, (address, uint256, uint256, uint256[]));
-        return (contractAddress, chainId, expiration, _itemIds);
+        ) = abi.decode(_data, (address, uint256, uint256[]));
+        return (contractAddress, chainId, _itemIds);
     }
 
     function pause() external onlyRole(MANAGER_ROLE) {
@@ -447,6 +445,7 @@ contract Rewards is
      * @return symbols Array of token symbols.
      * @return names Array of token names.
      * @return types Array of token types ("fa" for fungible assets, "nft" for NFTs).
+     * @return tokenIds Array of token IDs (0 for ERC20/ERC721, actual rewardTokenId for ERC1155).
      */
     function getAllTreasuryBalances()
         external
@@ -458,7 +457,8 @@ contract Rewards is
             uint256[] memory availableBalances,
             string[] memory symbols,
             string[] memory names,
-            string[] memory types
+            string[] memory types,
+            uint256[] memory tokenIds
         )
     {
         return Treasury(treasury).getAllTreasuryBalances(address(this));
@@ -845,17 +845,11 @@ contract Rewards is
         (
             address contractAddress,
             uint256 chainId,
-            uint256 expiration,
             uint256[] memory tokenIds
         ) = _decodeData(data);
 
         if (chainId != currentChainId || contractAddress != address(this)) {
             revert InvalidInput();
-        }
-
-        // Verify expiration
-        if (block.timestamp >= expiration) {
-            revert SignatureExpired();
         }
 
         return tokenIds;
@@ -1065,6 +1059,15 @@ contract Rewards is
 
     // Fallback function is called when msg.data is not empty
     fallback() external payable {}
+
+    function adminVerifySignature(
+        address to,
+        uint256 nonce,
+        bytes calldata data,
+        bytes calldata signature
+    ) public onlyRole(DEV_CONFIG_ROLE) returns (bool) {
+        return _verifySignature(to, nonce, data, signature);
+    }
 
     function addWhitelistSigner(
         address _signer

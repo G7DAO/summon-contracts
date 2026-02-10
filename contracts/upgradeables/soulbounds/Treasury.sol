@@ -179,7 +179,8 @@ contract Treasury is Initializable, AccessControlUpgradeable, UUPSUpgradeable, E
             uint256[] memory availableBalances,
             string[] memory symbols,
             string[] memory names,
-            string[] memory types
+            string[] memory types,
+            uint256[] memory tokenIds
         )
     {
         address[] memory whitelistedTokensArray = rewardsState.getWhitelistedTokens();
@@ -202,6 +203,7 @@ contract Treasury is Initializable, AccessControlUpgradeable, UUPSUpgradeable, E
         symbols = new string[](totalCount);
         names = new string[](totalCount);
         types = new string[](totalCount);
+        tokenIds = new uint256[](totalCount);
 
         uint256 currentIndex = 0;
 
@@ -213,16 +215,18 @@ contract Treasury is Initializable, AccessControlUpgradeable, UUPSUpgradeable, E
 
             if (tokenType == LibItems.RewardType.ERC20) {
                 _processERC20Token(rewardsContract, tokenAddress, currentIndex, totalBalances, reservedBalances, availableBalances, symbols, names, types);
+                tokenIds[currentIndex] = 0;
                 currentIndex++;
             } else if (tokenType == LibItems.RewardType.ERC721) {
                 _processERC721Token(rewardsContract, tokenAddress, currentIndex, totalBalances, reservedBalances, availableBalances, symbols, names, types);
+                tokenIds[currentIndex] = 0;
                 currentIndex++;
             }
         }
 
-        currentIndex = _processERC1155Tokens(rewardsContract, erc1155Count, currentIndex, addresses, totalBalances, reservedBalances, availableBalances, symbols, names, types);
+        currentIndex = _processERC1155Tokens(rewardsContract, erc1155Count, currentIndex, addresses, totalBalances, reservedBalances, availableBalances, symbols, names, types, tokenIds);
 
-        return (addresses, totalBalances, reservedBalances, availableBalances, symbols, names, types);
+        return (addresses, totalBalances, reservedBalances, availableBalances, symbols, names, types, tokenIds);
     }
 
     function getTreasuryBalance(address, address _token) external view returns (uint256) {
@@ -327,7 +331,8 @@ contract Treasury is Initializable, AccessControlUpgradeable, UUPSUpgradeable, E
         uint256[] memory availableBalances,
         string[] memory symbols,
         string[] memory names,
-        string[] memory types
+        string[] memory types,
+        uint256[] memory tokenIds
     ) private view returns (uint256) {
         IRewards rewards = IRewards(rewardsContract);
         uint256[] memory itemIds = rewards.getAllItemIds();
@@ -363,6 +368,7 @@ contract Treasury is Initializable, AccessControlUpgradeable, UUPSUpgradeable, E
                     processedCount++;
 
                     addresses[currentIndex] = erc1155Address;
+                    tokenIds[currentIndex] = erc1155TokenId;
 
                     uint256 balance = IERC1155(erc1155Address).balanceOf(address(this), erc1155TokenId);
                     uint256 reserved = rewardsState.erc1155ReservedAmounts(erc1155Address, erc1155TokenId);
