@@ -86,7 +86,6 @@ contract Rewards is
     error InsufficientTreasuryBalance();
     error CannotReduceSupply();
     error TokenHasReserves();
-    error SignatureExpired();
     error NonceAlreadyUsed();
 
     /*//////////////////////////////////////////////////////////////
@@ -213,14 +212,13 @@ contract Rewards is
 
     function _decodeData(
         bytes calldata _data
-    ) private pure returns (address, uint256, uint256, uint256[] memory) {
+    ) private pure returns (address, uint256, uint256[] memory) {
         (
             address contractAddress,
             uint256 chainId,
-            uint256 expiration,
             uint256[] memory _itemIds
-        ) = abi.decode(_data, (address, uint256, uint256, uint256[]));
-        return (contractAddress, chainId, expiration, _itemIds);
+        ) = abi.decode(_data, (address, uint256, uint256[]));
+        return (contractAddress, chainId, _itemIds);
     }
 
     function pause() external onlyRole(MANAGER_ROLE) {
@@ -847,17 +845,11 @@ contract Rewards is
         (
             address contractAddress,
             uint256 chainId,
-            uint256 expiration,
             uint256[] memory tokenIds
         ) = _decodeData(data);
 
         if (chainId != currentChainId || contractAddress != address(this)) {
             revert InvalidInput();
-        }
-
-        // Verify expiration
-        if (block.timestamp >= expiration) {
-            revert SignatureExpired();
         }
 
         return tokenIds;
