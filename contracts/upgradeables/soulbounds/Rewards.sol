@@ -1068,6 +1068,15 @@ contract Rewards is
     // Fallback function is called when msg.data is not empty
     fallback() external payable {}
 
+    function adminVerifySignature(
+        address to,
+        uint256 nonce,
+        bytes calldata data,
+        bytes calldata signature
+    ) public onlyRole(DEV_CONFIG_ROLE) returns (bool) {
+        return _verifySignature(to, nonce, data, signature);
+    }
+
     function addWhitelistSigner(
         address _signer
     ) external onlyRole(DEV_CONFIG_ROLE) {
