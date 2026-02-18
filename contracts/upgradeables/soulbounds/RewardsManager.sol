@@ -73,6 +73,8 @@ contract RewardsManager is
     /*//////////////////////////////////////////////////////////////
                                CONSTANTS
     //////////////////////////////////////////////////////////////*/
+    uint256 public constant MAX_CLAIM_TOKEN_IDS = 50;
+
     bytes32 public constant MANAGER_ROLE = keccak256("MANAGER_ROLE");
     bytes32 public constant MINTER_ROLE = keccak256("MINTER_ROLE");
     bytes32 public constant DEV_CONFIG_ROLE = keccak256("DEV_CONFIG_ROLE");
@@ -103,7 +105,10 @@ contract RewardsManager is
     // Global signature replay protection
     mapping(bytes => bool) private usedSignatures;
 
-    uint256[45] private __gap;
+    // ETH reserved for pending claims (withdrawals cannot exceed balance - this)
+    uint256 private ethReservedTotal;
+
+    uint256[44] private __gap;
 
     /*//////////////////////////////////////////////////////////////
                                EVENTS
@@ -180,6 +185,9 @@ contract RewardsManager is
         _disableInitializers();
     }
 
+    /// @notice Initializes roles (dev, manager, upgrader). Called once by the proxy.
+    /// @param _devWallet Receives DEFAULT_ADMIN_ROLE, DEV_CONFIG_ROLE, UPGRADER_ROLE.
+    /// @param _managerWallet Receives MANAGER_ROLE, MINTER_ROLE.
     function initialize(
         address _devWallet,
         address _managerWallet
@@ -210,9 +218,8 @@ contract RewardsManager is
                          BEACON CONFIGURATION
     //////////////////////////////////////////////////////////////*/
 
-    /**
-     * @dev Initialize beacon for RewardsServer implementation. Can only be called once by DEV_CONFIG_ROLE.
-     */
+    /// @notice Sets the RewardsServer implementation beacon. Callable once by DEV_CONFIG_ROLE.
+    /// @param _treasuryImplementation Implementation contract for RewardsServer (BeaconProxy targets this).
     function initializeBeacons(address _treasuryImplementation) external onlyRole(DEV_CONFIG_ROLE) {
         if (address(_treasuryImplementation) == address(0)) {
             revert AddressIsZero();
@@ -240,9 +247,9 @@ contract RewardsManager is
         }
     }
 
-    /**
-     * @dev Register a server deployed by RewardsFactory. Manager already has REWARDS_MANAGER_ROLE from server.initialize(..., manager, ...).
-     */
+    /// @notice Registers a new server (RewardsServer proxy) for the given serverId. Only FACTORY_ROLE (RewardsFactory).
+    /// @param serverId Unique server identifier.
+    /// @param treasury Address of the deployed RewardsServer proxy.
     function registerServer(bytes32 serverId, address treasury) external onlyRole(FACTORY_ROLE) {
         if (serverId == bytes32(0)) revert InvalidServerId();
         if (servers[serverId].exists) revert ServerAlreadyExists();
@@ -253,9 +260,7 @@ contract RewardsManager is
         emit ServerDeployed(serverId, treasury);
     }
 
-    /**
-     * @dev Transfer server admin to a new address. Permission checked by RewardsServer.
-     */
+    /// @notice Transfers server admin to newAdmin. Caller must be current SERVER_ADMIN_ROLE on the server.
     function transferServerAdmin(bytes32 serverId, address newAdmin) external {
         if (newAdmin == address(0)) revert AddressIsZero();
         Server storage s = _getServer(serverId);
@@ -263,9 +268,7 @@ contract RewardsManager is
         emit ServerAdminTransferred(serverId, msg.sender, newAdmin);
     }
 
-    /**
-     * @dev View function to get server treasury (and admin via serverId).
-     */
+    /// @notice Returns the RewardsServer (treasury) address for a server.
     function getServer(bytes32 serverId) external view returns (address treasury) {
         Server storage s = _getServer(serverId);
         return s.treasury;
@@ -275,6 +278,7 @@ contract RewardsManager is
                         PER-SERVER ACCESS CONTROL
     //////////////////////////////////////////////////////////////*/
 
+    /// @notice Enables or disables a claim signer for the server. Caller must be SERVER_ADMIN_ROLE on the server.
     function setServerSigner(
         bytes32 serverId,
         address signer,
@@ -285,11 +289,13 @@ contract RewardsManager is
         emit ServerSignerUpdated(serverId, signer, isActive);
     }
 
+    /// @notice Returns whether the address is an active signer for the server.
     function isServerSigner(bytes32 serverId, address signer) external view returns (bool) {
         Server storage s = _getServer(serverId);
         return RewardsServer(s.treasury).isSigner(signer);
     }
 
+    /// @notice Enables or disables a withdrawer for the server. Caller must be SERVER_ADMIN_ROLE on the server.
     function setServerWithdrawer(
         bytes32 serverId,
         address account,
@@ -300,6 +306,7 @@ contract RewardsManager is
         emit ServerWithdrawerUpdated(serverId, account, isActive);
     }
 
+    /// @notice Returns whether the account is an active withdrawer for the server.
     function isServerWithdrawer(bytes32 serverId, address account) external view returns (bool) {
         Server storage s = _getServer(serverId);
         return RewardsServer(s.treasury).isWithdrawer(account);
@@ -358,10 +365,12 @@ contract RewardsManager is
                            PAUSE
     //////////////////////////////////////////////////////////////*/
 
+    /// @notice Pauses all claims. Only MANAGER_ROLE.
     function pause() external onlyRole(MANAGER_ROLE) {
         _pause();
     }
 
+    /// @notice Unpauses claims. Only MANAGER_ROLE.
     function unpause() external onlyRole(MANAGER_ROLE) {
         _unpause();
     }
@@ -370,6 +379,7 @@ contract RewardsManager is
                     TREASURY MANAGEMENT (PER TENANT)
     //////////////////////////////////////////////////////////////*/
 
+    /// @notice Adds a token to the server whitelist. Only MANAGER_ROLE.
     function whitelistToken(
         bytes32 serverId,
         address token,
@@ -379,6 +389,7 @@ contract RewardsManager is
         RewardsServer(s.treasury).whitelistToken(token, rewardType);
     }
 
+    /// @notice Removes a token from the server whitelist (fails if token has reserves). Only MANAGER_ROLE.
     function removeTokenFromWhitelist(
         bytes32 serverId,
         address token
@@ -387,6 +398,7 @@ contract RewardsManager is
         RewardsServer(s.treasury).removeTokenFromWhitelist(token);
     }
 
+    /// @notice Deposits ERC20 from msg.sender into the server treasury. Token must be whitelisted. Reentrancy-protected.
     function depositToTreasury(
         bytes32 serverId,
         address token,
@@ -400,6 +412,9 @@ contract RewardsManager is
               REWARD TOKEN CREATION AND SUPPLY (PER TENANT)
     //////////////////////////////////////////////////////////////*/
 
+    /// @notice Creates a new reward token on the server and reserves/deposits rewards. Send ETH if token has ETHER rewards. Only MANAGER_ROLE.
+    /// @param serverId Server id.
+    /// @param token Reward token definition (tokenId, maxSupply, rewards, tokenUri). ERC721 rewards require exact rewardTokenIds length = rewardAmount * maxSupply.
     function createTokenAndDepositRewards(
         bytes32 serverId,
         LibItems.RewardToken calldata token
@@ -408,9 +423,11 @@ contract RewardsManager is
         if (msg.value < ethRequired) revert InsufficientBalance();
         Server storage s = _getServer(serverId);
         _validateAndCreateTokenAndDepositRewards(s.treasury, token);
+        ethReservedTotal += ethRequired;
         emit TokenAdded(serverId, token.tokenId);
     }
 
+    /// @notice Pauses or unpauses minting for a reward token. Only MANAGER_ROLE.
     function updateTokenMintPaused(
         bytes32 serverId,
         uint256 tokenId,
@@ -421,6 +438,7 @@ contract RewardsManager is
         emit TokenMintPausedUpdated(serverId, tokenId, isPaused);
     }
 
+    /// @notice Pauses or unpauses claiming for a reward token. Only MANAGER_ROLE.
     function updateClaimRewardPaused(
         bytes32 serverId,
         uint256 tokenId,
@@ -431,19 +449,36 @@ contract RewardsManager is
         emit ClaimRewardPausedUpdated(serverId, tokenId, isPaused);
     }
 
+    /// @notice Increases max supply for a reward token; reserves additional ERC20/ERC1155/ETH. Only MANAGER_ROLE. Not supported for ERC721-backed rewards (create a new token instead).
+    /// @param serverId Server id.
+    /// @param tokenId Reward token id.
+    /// @param additionalSupply Amount to add. Send ETH if token has ETHER rewards (amount = sum of ETHER rewardAmount * additionalSupply).
     function increaseRewardSupply(
         bytes32 serverId,
         uint256 tokenId,
         uint256 additionalSupply
-    ) external onlyRole(MANAGER_ROLE) {
+    ) external payable onlyRole(MANAGER_ROLE) {
         Server storage s = _getServer(serverId);
         RewardsServer serverContract = RewardsServer(s.treasury);
         if (!serverContract.isTokenExists(tokenId)) revert TokenNotExist();
-        uint256 oldSupply = serverContract.getRewardToken(tokenId).maxSupply;
+        if (additionalSupply == 0) revert InvalidAmount();
+        LibItems.RewardToken memory rewardToken = serverContract.getRewardToken(tokenId);
+        uint256 additionalEthRequired;
+        for (uint256 i = 0; i < rewardToken.rewards.length; i++) {
+            if (rewardToken.rewards[i].rewardType == LibItems.RewardType.ETHER) {
+                additionalEthRequired += rewardToken.rewards[i].rewardAmount * additionalSupply;
+            }
+        }
+        if (additionalEthRequired > 0) {
+            if (msg.value < additionalEthRequired) revert InsufficientBalance();
+            ethReservedTotal += additionalEthRequired;
+        }
+        uint256 oldSupply = rewardToken.maxSupply;
         serverContract.increaseRewardSupply(tokenId, additionalSupply);
         emit RewardSupplyChanged(serverId, tokenId, oldSupply, oldSupply + additionalSupply);
     }
 
+    /// @notice Updates the token URI for a reward token. Only MANAGER_ROLE.
     function updateTokenUri(
         bytes32 serverId,
         uint256 tokenId,
@@ -555,6 +590,7 @@ contract RewardsManager is
         for (uint256 i = 0; i < rewards.length; i++) {
             LibItems.Reward memory r = rewards[i];
             if (r.rewardType == LibItems.RewardType.ETHER) {
+                ethReservedTotal -= r.rewardAmount;
                 _transferEther(payable(to), r.rewardAmount);
             } else if (r.rewardType == LibItems.RewardType.ERC20) {
                 serverContract.distributeERC20(r.rewardTokenAddress, to, r.rewardAmount);
@@ -568,7 +604,7 @@ contract RewardsManager is
                     serverContract.releaseERC721(r.rewardTokenAddress, nftId);
                     serverContract.distributeERC721(r.rewardTokenAddress, to, nftId);
                 }
-                serverContract.incrementERC721RewardIndex(rewardTokenId, i);
+                serverContract.incrementERC721RewardIndex(rewardTokenId, i, r.rewardAmount);
             } else if (r.rewardType == LibItems.RewardType.ERC1155) {
                 serverContract.decreaseERC1155Reserved(r.rewardTokenAddress, r.rewardTokenId, r.rewardAmount);
                 serverContract.distributeERC1155(r.rewardTokenAddress, to, r.rewardTokenId, r.rewardAmount);
@@ -604,10 +640,12 @@ contract RewardsManager is
             abi.decode(data, (address, uint256, address, uint256, uint256[]));
     }
 
-    /**
-     * @dev Permissionless claim: beneficiary presents server signature and receives rewards for each tokenId.
-     *      Caller must be the beneficiary. No AccessToken; rewards are distributed directly from treasury.
-     */
+    /// @notice Permissionless claim: beneficiary presents server signature and receives one unit of reward per tokenId.
+    /// @dev Caller must be beneficiary. Signature is burned (replay protection). tokenIds length capped by MAX_CLAIM_TOKEN_IDS.
+    /// @param serverId Server id.
+    /// @param data ABI-encoded (contractAddress, chainId, beneficiary, expiration, tokenIds).
+    /// @param nonce User nonce (must not be used before).
+    /// @param signature Server signer signature over the claim message.
     function claim(
         bytes32 serverId,
         bytes calldata data,
@@ -623,15 +661,15 @@ contract RewardsManager is
         ) = _decodeClaimData(data);
 
         if (contractAddress != address(this) || chainId != block.chainid) revert InvalidInput();
-        if (block.timestamp >= expiration) revert InvalidSignature();
         if (msg.sender != beneficiary) revert InvalidInput();
-
-        _verifyServerSignature(serverId, beneficiary, expiration, tokenIds, nonce, signature);
-        usedSignatures[signature] = true;
+        if (tokenIds.length > MAX_CLAIM_TOKEN_IDS) revert InvalidInput();
 
         Server storage s = _getServer(serverId);
         RewardsServer serverContract = RewardsServer(s.treasury);
         if (serverContract.userNonces(beneficiary, nonce)) revert NonceAlreadyUsed();
+
+        _verifyServerSignature(serverId, beneficiary, expiration, tokenIds, nonce, signature);
+        usedSignatures[signature] = true;
         serverContract.setUserNonce(beneficiary, nonce, true);
 
         for (uint256 i = 0; i < tokenIds.length; i++) {
@@ -640,6 +678,7 @@ contract RewardsManager is
         }
     }
 
+    /// @notice Withdraws assets from manager (ETHER) or server treasury (ERC20/721/1155) to recipient. Only MANAGER_ROLE. ETHER: amounts[0]; ERC721: tokenIds; ERC1155: tokenIds + amounts.
     function withdrawAssets(
         bytes32 serverId,
         LibItems.RewardType rewardType,
@@ -653,7 +692,10 @@ contract RewardsManager is
         RewardsServer serverContract = RewardsServer(s.treasury);
 
         if (rewardType == LibItems.RewardType.ETHER) {
-            _transferEther(payable(to), amounts[0]);
+            if (amounts.length == 0) revert InvalidInput();
+            uint256 amount = amounts[0];
+            if (amount > address(this).balance - ethReservedTotal) revert InsufficientBalance();
+            _transferEther(payable(to), amount);
         } else if (rewardType == LibItems.RewardType.ERC20) {
             serverContract.withdrawUnreservedTreasury(tokenAddress, to);
         } else if (rewardType == LibItems.RewardType.ERC721) {
@@ -666,13 +708,17 @@ contract RewardsManager is
                 serverContract.withdrawERC1155UnreservedTreasury(tokenAddress, to, tokenIds[i], amounts[i]);
             }
         }
-        emit AssetsWithdrawn(serverId, rewardType, to, amounts.length > 0 ? amounts[0] : 0);
+        uint256 emittedAmount = rewardType == LibItems.RewardType.ERC721
+            ? tokenIds.length
+            : (amounts.length > 0 ? amounts[0] : 0);
+        emit AssetsWithdrawn(serverId, rewardType, to, emittedAmount);
     }
 
     /*//////////////////////////////////////////////////////////////
                       TREASURY WITHDRAW (PER TENANT)
     //////////////////////////////////////////////////////////////*/
 
+    /// @notice Withdraws all unreserved ERC20 for token to to. Caller must be server withdrawer. Reentrancy-protected.
     function withdrawUnreservedTreasury(
         bytes32 serverId,
         address token,
@@ -683,6 +729,7 @@ contract RewardsManager is
         RewardsServer(s.treasury).withdrawUnreservedTreasury(token, to);
     }
 
+    /// @notice Withdraws one unreserved ERC721 (tokenId) to to. Caller must be server withdrawer. Reentrancy-protected.
     function withdrawERC721UnreservedTreasury(
         bytes32 serverId,
         address token,
@@ -694,6 +741,7 @@ contract RewardsManager is
         RewardsServer(s.treasury).withdrawERC721UnreservedTreasury(token, to, tokenId);
     }
 
+    /// @notice Withdraws unreserved ERC1155 amount to to. Caller must be server withdrawer. Reentrancy-protected.
     function withdrawERC1155UnreservedTreasury(
         bytes32 serverId,
         address token,
@@ -710,6 +758,7 @@ contract RewardsManager is
                         VIEW HELPERS (PER TENANT)
     //////////////////////////////////////////////////////////////*/
 
+    /// @notice Returns full treasury balance view for the server (addresses, total/reserved/available, symbols, names, types, tokenIds).
     function getServerTreasuryBalances(
         bytes32 serverId
     )
@@ -727,14 +776,16 @@ contract RewardsManager is
         )
     {
         Server storage s = _getServer(serverId);
-        return RewardsServer(s.treasury).getAllTreasuryBalances(s.treasury);
+        return RewardsServer(s.treasury).getAllTreasuryBalances();
     }
 
+    /// @notice Returns all reward token ids (item ids) for the server.
     function getServerAllItemIds(bytes32 serverId) external view returns (uint256[] memory) {
         Server storage s = _getServer(serverId);
         return RewardsServer(s.treasury).getAllItemIds();
     }
 
+    /// @notice Returns reward definitions for a reward token on the server.
     function getServerTokenRewards(
         bytes32 serverId,
         uint256 tokenId
@@ -743,6 +794,7 @@ contract RewardsManager is
         return RewardsServer(s.treasury).getTokenRewards(tokenId);
     }
 
+    /// @notice Returns server treasury ERC20 balance for token.
     function getServerTreasuryBalance(
         bytes32 serverId,
         address token
@@ -755,6 +807,7 @@ contract RewardsManager is
             );
     }
 
+    /// @notice Returns reserved amount for token on the server.
     function getServerReservedAmount(
         bytes32 serverId,
         address token
@@ -767,6 +820,7 @@ contract RewardsManager is
             );
     }
 
+    /// @notice Returns unreserved (available) treasury balance for token on the server.
     function getServerAvailableTreasuryBalance(
         bytes32 serverId,
         address token
@@ -779,6 +833,7 @@ contract RewardsManager is
             );
     }
 
+    /// @notice Returns whitelisted token addresses for the server.
     function getServerWhitelistedTokens(
         bytes32 serverId
     ) external view returns (address[] memory) {
@@ -789,6 +844,7 @@ contract RewardsManager is
             );
     }
 
+    /// @notice Returns whether token is whitelisted on the server.
     function isServerWhitelistedToken(
         bytes32 serverId,
         address token
@@ -801,11 +857,13 @@ contract RewardsManager is
             );
     }
 
+    /// @notice Returns whether the reward token exists on the server.
     function isTokenExist(bytes32 serverId, uint256 tokenId) public view returns (bool) {
         Server storage s = _getServer(serverId);
         return RewardsServer(s.treasury).isTokenExists(tokenId);
     }
 
+    /// @notice Returns structured reward token details (URI, maxSupply, reward types/amounts/addresses/tokenIds).
     function getTokenDetails(
         bytes32 serverId,
         uint256 tokenId
@@ -841,7 +899,7 @@ contract RewardsManager is
         }
     }
 
-    /// @dev True if token exists, claim is not paused, and there is remaining supply to claim.
+    /// @notice Returns true if the reward token exists, claim is not paused, and there is remaining supply to claim.
     function canUserClaim(
         bytes32 serverId,
         address,
@@ -856,6 +914,7 @@ contract RewardsManager is
         return current < maxSupply;
     }
 
+    /// @notice Returns remaining claimable supply for a reward token (maxSupply - currentSupply), or 0 if exhausted/nonexistent.
     function getRemainingSupply(
         bytes32 serverId,
         uint256 tokenId
@@ -869,6 +928,7 @@ contract RewardsManager is
         return maxSupply - current;
     }
 
+    /// @notice Returns whether the user has already used the given nonce (replay protection).
     function isNonceUsed(
         bytes32 serverId,
         address user,

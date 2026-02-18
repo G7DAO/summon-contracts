@@ -6,7 +6,7 @@ import { ethers, upgrades } from 'hardhat';
  * 1. Deploy RewardsServer implementation (for beacon)
  * 2. Deploy RewardsManager (UUPS proxy), initialize with (dev, manager)
  * 3. initializeBeacons(rewardsServerImpl)
- * 4. Deploy RewardsFactory(manager), setBeacons, grant FACTORY_ROLE
+ * 4. Deploy RewardsFactory(manager), setBeacons, grant FACTORY_ROLE to factory on manager (required for deployServer to succeed)
  *
  * After this, anyone can call factory.deployServer(serverId) to create a server.
  *
