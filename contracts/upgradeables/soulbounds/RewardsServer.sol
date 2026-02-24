@@ -372,43 +372,43 @@ contract RewardsServer is Initializable, AccessControlUpgradeable, ERC721HolderU
         return (addresses, totalBalances, reservedBalances, availableBalances, symbols, names, types, tokenIds);
     }
 
-    /// @notice ERC20 balance of this contract for _token (IRewards-compatible signature; first param ignored).
-    function getTreasuryBalance(address, address _token) external view returns (uint256) {
+    /// @notice ERC20 balance of this contract for _token.
+    function getTreasuryBalance(address _token) external view returns (uint256) {
         return IERC20(_token).balanceOf(address(this));
     }
 
-    /// @notice Reserved amount for _token (IRewards-compatible signature; first param ignored).
-    function getReservedAmount(address, address _token) external view returns (uint256) {
+    /// @notice Reserved amount for _token.
+    function getReservedAmount(address _token) external view returns (uint256) {
         return reservedAmounts[_token];
     }
 
-    /// @notice Unreserved ERC20 balance for _token (IRewards-compatible signature; first param ignored).
-    function getAvailableTreasuryBalance(address, address _token) external view returns (uint256) {
+    /// @notice Unreserved ERC20 balance for _token.
+    function getAvailableTreasuryBalance(address _token) external view returns (uint256) {
         uint256 balance = IERC20(_token).balanceOf(address(this));
         uint256 reserved = reservedAmounts[_token];
         return balance > reserved ? balance - reserved : 0;
     }
 
-    /// @notice List of whitelisted token addresses (IRewards-compatible; first param ignored).
-    function getWhitelistedTokens(address) external view returns (address[] memory) {
+    /// @notice List of whitelisted token addresses.
+    function getWhitelistedTokens() external view returns (address[] memory) {
         return whitelistedTokenList;
     }
 
-    /// @notice Whether _token is whitelisted (IRewards-compatible; first param ignored).
-    function isWhitelistedToken(address, address _token) external view returns (bool) {
+    /// @notice Whether _token is whitelisted.
+    function isWhitelistedToken(address _token) external view returns (bool) {
         return whitelistedTokens[_token];
     }
 
     /*//////////////////////////////////////////////////////////////
-                    REWARD RESERVE & VIEW (for IRewards)
+                         REWARD RESERVE & VIEW
     //////////////////////////////////////////////////////////////*/
 
-    /// @notice All reward token ids (item ids) defined on this server. IRewards interface.
+    /// @notice All reward token ids (item ids) defined on this server.
     function getAllItemIds() external view returns (uint256[] memory) {
         return itemIds;
     }
 
-    /// @notice Reward definitions for a given reward token id. IRewards interface.
+    /// @notice Reward definitions for a given reward token id.
     function getTokenRewards(uint256 _tokenId) external view returns (LibItems.Reward[] memory) {
         return tokenRewards[_tokenId].rewards;
     }

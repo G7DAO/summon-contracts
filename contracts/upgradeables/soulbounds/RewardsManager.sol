@@ -54,7 +54,6 @@ contract RewardsManager is
     error BeaconNotInitialized();
     error BeaconsAlreadyInitialized();
     error InvalidSignature();
-    error AlreadyUsedSignature();
     error UnauthorizedServerAdmin();
     error InsufficientBalance();
     error InvalidAmount();
@@ -101,9 +100,6 @@ contract RewardsManager is
 
     // Beacons (single implementation per type, upgradeable for all servers)
     UpgradeableBeacon public treasuryBeacon;
-
-    // Global signature replay protection
-    mapping(bytes => bool) private usedSignatures;
 
     // ETH reserved for pending claims (withdrawals cannot exceed balance - this)
     uint256 private ethReservedTotal;
@@ -330,10 +326,6 @@ contract RewardsManager is
         uint256 nonce,
         bytes calldata signature
     ) internal view returns (address) {
-        if (usedSignatures[signature]) {
-            revert AlreadyUsedSignature();
-        }
-
         uint256 currentChainId = block.chainid;
         bytes32 message = keccak256(
             abi.encode(
@@ -626,11 +618,12 @@ contract RewardsManager is
 
         uint256 newSupply = server.currentRewardSupply(tokenId) + amount;
         if (newSupply > server.getRewardToken(tokenId).maxSupply) revert ExceedMaxSupply();
-        server.increaseCurrentSupply(tokenId, amount);
 
         for (uint256 i = 0; i < amount; i++) {
             _distributeReward(treasuryAddr, to, tokenId);
         }
+
+        server.increaseCurrentSupply(tokenId, amount);
     }
 
     function _decodeClaimData(
@@ -640,8 +633,8 @@ contract RewardsManager is
             abi.decode(data, (address, uint256, address, uint256, uint256[]));
     }
 
-    /// @notice Permissionless claim: beneficiary presents server signature and receives one unit of reward per tokenId.
-    /// @dev Caller must be beneficiary. Signature is burned (replay protection). tokenIds length capped by MAX_CLAIM_TOKEN_IDS.
+    /// @notice Permissionless claim: anyone may submit; rewards are sent to the beneficiary in the signed data.
+    /// @dev Caller may be beneficiary or a relayer. Signature is burned (replay protection). tokenIds length capped by MAX_CLAIM_TOKEN_IDS.
     /// @param serverId Server id.
     /// @param data ABI-encoded (contractAddress, chainId, beneficiary, expiration, tokenIds).
     /// @param nonce User nonce (must not be used before).
@@ -661,7 +654,6 @@ contract RewardsManager is
         ) = _decodeClaimData(data);
 
         if (contractAddress != address(this) || chainId != block.chainid) revert InvalidInput();
-        if (msg.sender != beneficiary) revert InvalidInput();
         if (tokenIds.length > MAX_CLAIM_TOKEN_IDS) revert InvalidInput();
 
         Server storage s = _getServer(serverId);
@@ -669,7 +661,6 @@ contract RewardsManager is
         if (serverContract.userNonces(beneficiary, nonce)) revert NonceAlreadyUsed();
 
         _verifyServerSignature(serverId, beneficiary, expiration, tokenIds, nonce, signature);
-        usedSignatures[signature] = true;
         serverContract.setUserNonce(beneficiary, nonce, true);
 
         for (uint256 i = 0; i < tokenIds.length; i++) {
@@ -800,11 +791,7 @@ contract RewardsManager is
         address token
     ) external view returns (uint256) {
         Server storage s = _getServer(serverId);
-        return
-            RewardsServer(s.treasury).getTreasuryBalance(
-                s.treasury,
-                token
-            );
+        return RewardsServer(s.treasury).getTreasuryBalance(token);
     }
 
     /// @notice Returns reserved amount for token on the server.
@@ -813,11 +800,7 @@ contract RewardsManager is
         address token
     ) external view returns (uint256) {
         Server storage s = _getServer(serverId);
-        return
-            RewardsServer(s.treasury).getReservedAmount(
-                s.treasury,
-                token
-            );
+        return RewardsServer(s.treasury).getReservedAmount(token);
     }
 
     /// @notice Returns unreserved (available) treasury balance for token on the server.
@@ -826,11 +809,7 @@ contract RewardsManager is
         address token
     ) external view returns (uint256) {
         Server storage s = _getServer(serverId);
-        return
-            RewardsServer(s.treasury).getAvailableTreasuryBalance(
-                s.treasury,
-                token
-            );
+        return RewardsServer(s.treasury).getAvailableTreasuryBalance(token);
     }
 
     /// @notice Returns whitelisted token addresses for the server.
@@ -838,10 +817,7 @@ contract RewardsManager is
         bytes32 serverId
     ) external view returns (address[] memory) {
         Server storage s = _getServer(serverId);
-        return
-            RewardsServer(s.treasury).getWhitelistedTokens(
-                s.treasury
-            );
+        return RewardsServer(s.treasury).getWhitelistedTokens();
     }
 
     /// @notice Returns whether token is whitelisted on the server.
@@ -850,11 +826,7 @@ contract RewardsManager is
         address token
     ) external view returns (bool) {
         Server storage s = _getServer(serverId);
-        return
-            RewardsServer(s.treasury).isWhitelistedToken(
-                s.treasury,
-                token
-            );
+        return RewardsServer(s.treasury).isWhitelistedToken(token);
     }
 
     /// @notice Returns whether the reward token exists on the server.
@@ -897,21 +869,6 @@ contract RewardsManager is
             rewardTokenIds[i] = rewards[i].rewardTokenIds;
             rewardTokenId[i] = rewards[i].rewardTokenId;
         }
-    }
-
-    /// @notice Returns true if the reward token exists, claim is not paused, and there is remaining supply to claim.
-    function canUserClaim(
-        bytes32 serverId,
-        address,
-        uint256 tokenId
-    ) external view returns (bool) {
-        Server storage s = _getServer(serverId);
-        RewardsServer serverContract = RewardsServer(s.treasury);
-        if (!serverContract.isTokenExists(tokenId)) return false;
-        if (serverContract.isClaimRewardPaused(tokenId)) return false;
-        uint256 maxSupply = serverContract.getRewardToken(tokenId).maxSupply;
-        uint256 current = serverContract.currentRewardSupply(tokenId);
-        return current < maxSupply;
     }
 
     /// @notice Returns remaining claimable supply for a reward token (maxSupply - currentSupply), or 0 if exhausted/nonexistent.
