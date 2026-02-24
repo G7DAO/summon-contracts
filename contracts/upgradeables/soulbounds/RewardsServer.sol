@@ -62,6 +62,7 @@ contract RewardsServer is Initializable, AccessControlUpgradeable, ERC721HolderU
 
     // Server-level access (admin, signers for claim, withdrawers)
     mapping(address => bool) public signers;
+    address[] private signerList;
     mapping(address => bool) public withdrawers;
 
     // Whitelist
@@ -88,7 +89,7 @@ contract RewardsServer is Initializable, AccessControlUpgradeable, ERC721HolderU
     // Per-user nonce (for mint/claim signatures)
     mapping(address => mapping(uint256 => bool)) public userNonces;
 
-    uint256[33] private __gap;
+    uint256[32] private __gap;
 
     /*//////////////////////////////////////////////////////////////
                                EVENTS
@@ -133,7 +134,17 @@ contract RewardsServer is Initializable, AccessControlUpgradeable, ERC721HolderU
     /// @param active True to allow signing, false to revoke.
     function setSigner(address account, bool active) external onlyRole(SERVER_ADMIN_ROLE) {
         if (account == address(0)) revert AddressIsZero();
-        signers[account] = active;
+        if (active) {
+            if (!signers[account]) {
+                signers[account] = true;
+                signerList.push(account);
+            }
+        } else {
+            if (signers[account]) {
+                signers[account] = false;
+                _removeFromSignerList(account);
+            }
+        }
         emit SignerUpdated(account, active);
     }
 
@@ -161,6 +172,11 @@ contract RewardsServer is Initializable, AccessControlUpgradeable, ERC721HolderU
         return signers[account];
     }
 
+    /// @notice Returns list of all active signer addresses (for rewards-get-whitelist-signers).
+    function getSigners() external view returns (address[] memory) {
+        return signerList;
+    }
+
     /// @notice Returns whether the account is an active withdrawer.
     function isWithdrawer(address account) external view returns (bool) {
         return withdrawers[account];
@@ -170,8 +186,28 @@ contract RewardsServer is Initializable, AccessControlUpgradeable, ERC721HolderU
     function setSignerAllowedBy(address caller, address account, bool active) external onlyRole(REWARDS_MANAGER_ROLE) {
         if (!hasRole(SERVER_ADMIN_ROLE, caller)) revert UnauthorizedServerAdmin();
         if (account == address(0)) revert AddressIsZero();
-        signers[account] = active;
+        if (active) {
+            if (!signers[account]) {
+                signers[account] = true;
+                signerList.push(account);
+            }
+        } else {
+            if (signers[account]) {
+                signers[account] = false;
+                _removeFromSignerList(account);
+            }
+        }
         emit SignerUpdated(account, active);
+    }
+
+    function _removeFromSignerList(address account) private {
+        for (uint256 i = 0; i < signerList.length; i++) {
+            if (signerList[i] == account) {
+                signerList[i] = signerList[signerList.length - 1];
+                signerList.pop();
+                return;
+            }
+        }
     }
 
     /// @notice Same as setWithdrawer but called by RewardsManager; caller must be SERVER_ADMIN_ROLE.
@@ -511,6 +547,36 @@ contract RewardsServer is Initializable, AccessControlUpgradeable, ERC721HolderU
                 erc1155ReservedAmounts[r.rewardTokenAddress][r.rewardTokenId] += addAmount;
                 erc1155TotalReserved[r.rewardTokenAddress] += addAmount;
             }
+        }
+
+        rewardToken.maxSupply = newSupply;
+        tokenRewards[_tokenId] = rewardToken;
+    }
+
+    /// @notice Reduces max supply for a reward token; releases proportional ERC20/ERC1155 reservations. Only REWARDS_MANAGER_ROLE.
+    /// @dev New max supply must not be below currentRewardSupply. ERC721: only maxSupply is reduced (reserved NFT ids unchanged).
+    /// @param _tokenId Reward token id.
+    /// @param _reduceBy Amount to subtract from max supply (must be > 0).
+    function reduceRewardSupply(uint256 _tokenId, uint256 _reduceBy) external onlyRole(REWARDS_MANAGER_ROLE) {
+        if (!tokenExists[_tokenId]) revert TokenNotExist();
+        if (_reduceBy == 0) revert InvalidAmount();
+
+        LibItems.RewardToken memory rewardToken = tokenRewards[_tokenId];
+        uint256 current = currentRewardSupply[_tokenId];
+        uint256 newSupply = rewardToken.maxSupply - _reduceBy;
+        if (current > newSupply) revert InsufficientBalance();
+
+        for (uint256 i = 0; i < rewardToken.rewards.length; i++) {
+            LibItems.Reward memory r = rewardToken.rewards[i];
+            if (r.rewardType == LibItems.RewardType.ERC20) {
+                uint256 releaseAmount = r.rewardAmount * _reduceBy;
+                reservedAmounts[r.rewardTokenAddress] -= releaseAmount;
+            } else if (r.rewardType == LibItems.RewardType.ERC1155) {
+                uint256 releaseAmount = r.rewardAmount * _reduceBy;
+                erc1155ReservedAmounts[r.rewardTokenAddress][r.rewardTokenId] -= releaseAmount;
+                erc1155TotalReserved[r.rewardTokenAddress] -= releaseAmount;
+            }
+            // ERC721: no reserved amount to release; maxSupply reduction only
         }
 
         rewardToken.maxSupply = newSupply;

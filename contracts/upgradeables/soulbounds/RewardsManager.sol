@@ -285,10 +285,30 @@ contract RewardsManager is
         emit ServerSignerUpdated(serverId, signer, isActive);
     }
 
+    /// @notice Adds a claim signer for the server. Caller must be SERVER_ADMIN_ROLE on the server. For admin/DB parity.
+    function addWhitelistSigner(bytes32 serverId, address signer) external {
+        Server storage s = _getServer(serverId);
+        RewardsServer(s.treasury).setSignerAllowedBy(msg.sender, signer, true);
+        emit ServerSignerUpdated(serverId, signer, true);
+    }
+
+    /// @notice Removes a claim signer for the server. Caller must be SERVER_ADMIN_ROLE on the server. For admin/DB parity.
+    function removeWhitelistSigner(bytes32 serverId, address signer) external {
+        Server storage s = _getServer(serverId);
+        RewardsServer(s.treasury).setSignerAllowedBy(msg.sender, signer, false);
+        emit ServerSignerUpdated(serverId, signer, false);
+    }
+
     /// @notice Returns whether the address is an active signer for the server.
     function isServerSigner(bytes32 serverId, address signer) external view returns (bool) {
         Server storage s = _getServer(serverId);
         return RewardsServer(s.treasury).isSigner(signer);
+    }
+
+    /// @notice Returns list of all active signer addresses for the server (rewards-get-whitelist-signers).
+    function getServerSigners(bytes32 serverId) external view returns (address[] memory) {
+        Server storage s = _getServer(serverId);
+        return RewardsServer(s.treasury).getSigners();
     }
 
     /// @notice Enables or disables a withdrawer for the server. Caller must be SERVER_ADMIN_ROLE on the server.
@@ -470,6 +490,19 @@ contract RewardsManager is
         emit RewardSupplyChanged(serverId, tokenId, oldSupply, oldSupply + additionalSupply);
     }
 
+    /// @notice Reduces max supply of a reward token on the server. Only MANAGER_ROLE. For admin/DB parity.
+    function reduceRewardSupply(
+        bytes32 serverId,
+        uint256 tokenId,
+        uint256 reduceBy
+    ) external onlyRole(MANAGER_ROLE) {
+        Server storage s = _getServer(serverId);
+        RewardsServer serverContract = RewardsServer(s.treasury);
+        uint256 oldSupply = serverContract.getRewardToken(tokenId).maxSupply;
+        serverContract.reduceRewardSupply(tokenId, reduceBy);
+        emit RewardSupplyChanged(serverId, tokenId, oldSupply, oldSupply - reduceBy);
+    }
+
     /// @notice Updates the token URI for a reward token. Only MANAGER_ROLE.
     function updateTokenUri(
         bytes32 serverId,
@@ -624,6 +657,14 @@ contract RewardsManager is
         }
 
         server.increaseCurrentSupply(tokenId, amount);
+    }
+
+    /// @notice Decodes claim data for debugging. Same encoding as used in claim(serverId, data, nonce, signature).
+    function decodeData(
+        bytes calldata data
+    ) external pure returns (address contractAddress, uint256 chainId, address beneficiary, uint256 expiration, uint256[] memory tokenIds) {
+        (contractAddress, chainId, beneficiary, expiration, tokenIds) =
+            abi.decode(data, (address, uint256, address, uint256, uint256[]));
     }
 
     function _decodeClaimData(
@@ -833,6 +874,18 @@ contract RewardsManager is
     function isTokenExist(bytes32 serverId, uint256 tokenId) public view returns (bool) {
         Server storage s = _getServer(serverId);
         return RewardsServer(s.treasury).isTokenExists(tokenId);
+    }
+
+    /// @notice Returns whether minting is paused for the reward token on the server.
+    function isTokenMintPaused(bytes32 serverId, uint256 tokenId) external view returns (bool) {
+        Server storage s = _getServer(serverId);
+        return RewardsServer(s.treasury).isTokenMintPaused(tokenId);
+    }
+
+    /// @notice Returns whether claiming is paused for the reward token on the server.
+    function isClaimRewardPaused(bytes32 serverId, uint256 tokenId) external view returns (bool) {
+        Server storage s = _getServer(serverId);
+        return RewardsServer(s.treasury).isClaimRewardPaused(tokenId);
     }
 
     /// @notice Returns structured reward token details (URI, maxSupply, reward types/amounts/addresses/tokenIds).
