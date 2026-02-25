@@ -2,15 +2,15 @@ import { expect } from 'chai';
 import { ethers, upgrades } from 'hardhat';
 import { loadFixture } from '@nomicfoundation/hardhat-network-helpers';
 
-describe('RewardsManager', function () {
-    const SERVER_ID = ethers.keccak256(ethers.toUtf8Bytes('server-1'));
+describe('RewardsRouter', function () {
+    const SERVER_ID = 1;
 
     async function deployRewardsManagerFixture() {
         const [devWallet, managerWallet, user1, user2] = await ethers.getSigners();
 
-        const RewardsManager = await ethers.getContractFactory('RewardsManager');
+        const RewardsRouter = await ethers.getContractFactory('RewardsRouter');
         const manager = await upgrades.deployProxy(
-            RewardsManager,
+            RewardsRouter,
             [devWallet.address, managerWallet.address],
             { kind: 'uups', initializer: 'initialize' }
         );
@@ -22,15 +22,8 @@ describe('RewardsManager', function () {
 
         await manager.connect(devWallet).initializeBeacons(await rewardsServerImpl.getAddress());
 
-        const RewardsFactory = await ethers.getContractFactory('RewardsFactory');
-        const factory = await RewardsFactory.deploy(await manager.getAddress());
-        await factory.waitForDeployment();
-        await factory.setBeacons(await manager.treasuryBeacon());
-        await manager.connect(devWallet).grantRole(await manager.FACTORY_ROLE(), await factory.getAddress());
-
         return {
             manager,
-            factory,
             devWallet,
             managerWallet,
             user1,
@@ -40,8 +33,11 @@ describe('RewardsManager', function () {
 
     async function deployWithServerAndTokenFixture() {
         const base = await loadFixture(deployRewardsManagerFixture);
-        await base.factory.connect(base.user1).deployServer(SERVER_ID);
-        await base.manager.connect(base.user1).setServerSigner(SERVER_ID, base.managerWallet.address, true);
+        await base.manager.connect(base.managerWallet).deployServer(SERVER_ID, base.devWallet.address);
+        const SERVER_ADMIN_ROLE = ethers.keccak256(ethers.toUtf8Bytes('SERVER_ADMIN_ROLE'));
+        // devWallet is initial server admin; use manager helper to grant SERVER_ADMIN_ROLE to managerWallet
+        await base.manager.connect(base.devWallet).grantServerRole(SERVER_ID, SERVER_ADMIN_ROLE, base.managerWallet.address);
+        await base.manager.connect(base.managerWallet).addWhitelistSigner(SERVER_ID, base.managerWallet.address);
 
         const MockERC20 = await ethers.getContractFactory('MockERC20');
         const mockERC20 = await MockERC20.deploy('Mock', 'M');
@@ -63,94 +59,50 @@ describe('RewardsManager', function () {
 
     describe('deployServer', function () {
         it('should deploy a server with RewardsServer', async function () {
-            const { manager, factory, user1 } = await loadFixture(deployRewardsManagerFixture);
-            await factory.connect(user1).deployServer(SERVER_ID);
+            const { manager, devWallet, managerWallet } = await loadFixture(deployRewardsManagerFixture);
+            await manager.connect(managerWallet).deployServer(SERVER_ID, devWallet.address);
 
             const serverAddr = await manager.getServer(SERVER_ID);
             expect(serverAddr).to.properAddress;
         });
 
         it('should revert when serverId already exists', async function () {
-            const { manager, factory, user1 } = await loadFixture(deployRewardsManagerFixture);
-            await factory.connect(user1).deployServer(SERVER_ID);
-            await expect(factory.connect(user1).deployServer(SERVER_ID))
+            const { manager, devWallet, managerWallet } = await loadFixture(deployRewardsManagerFixture);
+            await manager.connect(managerWallet).deployServer(SERVER_ID, devWallet.address);
+            await expect(manager.connect(managerWallet).deployServer(SERVER_ID, devWallet.address))
                 .to.be.revertedWithCustomError(manager, 'ServerAlreadyExists');
         });
 
         it('should revert when serverId is zero', async function () {
-            const { manager, factory, user1 } = await loadFixture(deployRewardsManagerFixture);
-            await expect(factory.connect(user1).deployServer(ethers.ZeroHash))
+            const { manager, devWallet, managerWallet } = await loadFixture(deployRewardsManagerFixture);
+            await expect(manager.connect(managerWallet).deployServer(0, devWallet.address))
                 .to.be.revertedWithCustomError(manager, 'InvalidServerId');
         });
     });
 
-    describe('RewardsFactory ownership', function () {
-        it('owner can call transferOwnership and pendingOwner is set', async function () {
-            const { factory, devWallet, managerWallet } = await loadFixture(deployRewardsManagerFixture);
-            expect(await factory.owner()).to.equal(devWallet.address);
-            await factory.connect(devWallet).transferOwnership(managerWallet.address);
-            expect(await factory.pendingOwner()).to.equal(managerWallet.address);
-            expect(await factory.owner()).to.equal(devWallet.address);
-        });
-
-        it('non-owner cannot call transferOwnership or setBeacons', async function () {
-            const { manager, factory, user1 } = await loadFixture(deployRewardsManagerFixture);
-            await expect(
-                factory.connect(user1).transferOwnership(user1.address)
-            ).to.be.revertedWithCustomError(factory, 'Unauthorized');
-            const RewardsFactory = await ethers.getContractFactory('RewardsFactory');
-            const newFactory = await RewardsFactory.deploy(await manager.getAddress());
-            await newFactory.waitForDeployment();
-            await expect(
-                newFactory.connect(user1).setBeacons(await factory.treasuryBeacon())
-            ).to.be.revertedWithCustomError(newFactory, 'Unauthorized');
-        });
-
-        it('only pendingOwner can call acceptOwnership; owner and pendingOwner updated', async function () {
-            const { factory, devWallet, managerWallet, user1 } = await loadFixture(deployRewardsManagerFixture);
-            await factory.connect(devWallet).transferOwnership(managerWallet.address);
-            await expect(factory.connect(user1).acceptOwnership()).to.be.revertedWithCustomError(factory, 'Unauthorized');
-            await factory.connect(managerWallet).acceptOwnership();
-            expect(await factory.owner()).to.equal(managerWallet.address);
-            expect(await factory.pendingOwner()).to.equal(ethers.ZeroAddress);
-        });
-
-        it('after transfer old owner cannot call setBeacons', async function () {
-            const { manager, factory, devWallet, managerWallet } = await loadFixture(deployRewardsManagerFixture);
-            const beaconAddr = await factory.treasuryBeacon();
-            const RewardsFactory = await ethers.getContractFactory('RewardsFactory');
-            const factory2 = await RewardsFactory.deploy(await manager.getAddress());
-            await factory2.waitForDeployment();
-            expect(await factory2.owner()).to.equal(devWallet.address);
-            await factory2.connect(devWallet).transferOwnership(managerWallet.address);
-            await factory2.connect(managerWallet).acceptOwnership();
-            expect(await factory2.owner()).to.equal(managerWallet.address);
-            await expect(factory2.connect(devWallet).setBeacons(beaconAddr)).to.be.revertedWithCustomError(
-                factory2,
-                'Unauthorized'
-            );
-        });
-    });
+    // RewardsFactory ownership tests removed: deployment is now handled directly by RewardsManager.deployServer.
 
     describe('server admin and signers', function () {
-        it('server admin can set signer and withdrawer', async function () {
-            const { manager, factory, user1, user2 } = await loadFixture(deployRewardsManagerFixture);
-            await factory.connect(user1).deployServer(SERVER_ID);
+        it('server admin can set signer', async function () {
+            const { manager, devWallet, managerWallet, user1, user2 } = await loadFixture(deployRewardsManagerFixture);
+            await manager.connect(managerWallet).deployServer(SERVER_ID, devWallet.address);
+            const SERVER_ADMIN_ROLE = ethers.keccak256(ethers.toUtf8Bytes('SERVER_ADMIN_ROLE'));
+            // devWallet (initial server admin) grants SERVER_ADMIN_ROLE to user1 via manager helper
+            await manager.connect(devWallet).grantServerRole(SERVER_ID, SERVER_ADMIN_ROLE, user1.address);
 
-            await manager.connect(user1).setServerSigner(SERVER_ID, user2.address, true);
+            await manager.connect(user1).addWhitelistSigner(SERVER_ID, user2.address);
             expect(await manager.isServerSigner(SERVER_ID, user2.address)).to.be.true;
-
-            await manager.connect(user1).setServerWithdrawer(SERVER_ID, user2.address, true);
-            expect(await manager.isServerWithdrawer(SERVER_ID, user2.address)).to.be.true;
         });
 
         it('non-admin cannot set signer', async function () {
-            const { manager, factory, user1, user2 } = await loadFixture(deployRewardsManagerFixture);
-            await factory.connect(user1).deployServer(SERVER_ID);
+            const { manager, devWallet, managerWallet, user1, user2 } = await loadFixture(deployRewardsManagerFixture);
+            await manager.connect(managerWallet).deployServer(SERVER_ID, devWallet.address);
+            const SERVER_ADMIN_ROLE = ethers.keccak256(ethers.toUtf8Bytes('SERVER_ADMIN_ROLE'));
+            await manager.connect(devWallet).grantServerRole(SERVER_ID, SERVER_ADMIN_ROLE, user1.address);
             const serverAddr = await manager.getServer(SERVER_ID);
             const server = await ethers.getContractAt('RewardsServer', serverAddr);
             await expect(
-                manager.connect(user2).setServerSigner(SERVER_ID, user2.address, true)
+                manager.connect(user2).addWhitelistSigner(SERVER_ID, user2.address)
             ).to.be.revertedWithCustomError(server, 'UnauthorizedServerAdmin');
         });
     });
@@ -158,7 +110,7 @@ describe('RewardsManager', function () {
     /** Build claim data and signature for claim(). Signer must be set as server signer. */
     async function buildClaimDataAndSignature(
         manager: Awaited<ReturnType<typeof ethers.getContractAt>>,
-        serverId: string,
+        serverId: number,
         signer: Awaited<ReturnType<typeof ethers.getSigners>>[0],
         beneficiary: string,
         tokenIds: number[],
@@ -173,7 +125,7 @@ describe('RewardsManager', function () {
         );
         const messageHash = ethers.keccak256(
             ethers.AbiCoder.defaultAbiCoder().encode(
-                ['address', 'uint256', 'bytes32', 'address', 'uint256', 'uint256[]', 'uint256'],
+                ['address', 'uint256', 'uint8', 'address', 'uint256', 'uint256[]', 'uint256'],
                 [managerAddress, chainId, serverId, beneficiary, expiration, tokenIds, nonce]
             )
         );
@@ -272,7 +224,7 @@ describe('RewardsManager', function () {
                 expect(after_ - (before - gasCost)).to.equal(rewardAmount);
             });
 
-            it('MANAGER_ROLE can withdraw unreserved ETHER from manager', async function () {
+            it('MANAGER_ROLE can withdraw unreserved ETHER from server treasury', async function () {
                 const { manager, managerWallet, user1 } = await loadFixture(deployWithServerAndTokenFixture);
                 const tokenId = 3;
                 const rewardToken = {
@@ -304,8 +256,9 @@ describe('RewardsManager', function () {
                 );
                 await manager.connect(user1).claim(SERVER_ID, data, 0, signature);
                 const extraEth = ethers.parseEther('0.3');
+                const serverTreasury = await manager.getServer(SERVER_ID);
                 await managerWallet.sendTransaction({
-                    to: await manager.getAddress(),
+                    to: serverTreasury,
                     value: extraEth,
                 });
                 const before = await ethers.provider.getBalance(user1.address);
@@ -507,24 +460,29 @@ describe('RewardsManager', function () {
     });
 
     describe('access control', function () {
-        it('non-MANAGER cannot call whitelistToken', async function () {
-            const { manager, factory, user1, user2 } = await loadFixture(deployRewardsManagerFixture);
-            await factory.connect(user1).deployServer(SERVER_ID);
+        it('non-server-admin cannot call whitelistToken', async function () {
+            const { manager, devWallet, managerWallet, user1, user2 } = await loadFixture(deployRewardsManagerFixture);
+            await manager.connect(managerWallet).deployServer(SERVER_ID, devWallet.address);
+            const SERVER_ADMIN_ROLE = ethers.keccak256(ethers.toUtf8Bytes('SERVER_ADMIN_ROLE'));
+            await manager.connect(devWallet).grantServerRole(SERVER_ID, SERVER_ADMIN_ROLE, user1.address);
             const MockERC20 = await ethers.getContractFactory('MockERC20');
             const mockERC20 = await MockERC20.deploy('M', 'M');
             await mockERC20.waitForDeployment();
             await expect(
                 manager.connect(user2).whitelistToken(SERVER_ID, await mockERC20.getAddress(), 1)
-            ).to.be.revertedWithCustomError(manager, 'AccessControlUnauthorizedAccount');
+            ).to.be.revertedWithCustomError(manager, 'UnauthorizedServerAdmin');
         });
 
-        it('non-MANAGER cannot call createTokenAndDepositRewards', async function () {
+        it('non-server-admin cannot call createTokenAndDepositRewards', async function () {
             const base = await loadFixture(deployRewardsManagerFixture);
-            await base.factory.connect(base.user1).deployServer(SERVER_ID);
+            await base.manager.connect(base.managerWallet).deployServer(SERVER_ID, base.devWallet.address);
+            const SERVER_ADMIN_ROLE = ethers.keccak256(ethers.toUtf8Bytes('SERVER_ADMIN_ROLE'));
+            await base.manager.connect(base.devWallet).grantServerRole(SERVER_ID, SERVER_ADMIN_ROLE, base.user1.address);
             const MockERC20 = await ethers.getContractFactory('MockERC20');
             const mockERC20 = await MockERC20.deploy('M', 'M');
             await mockERC20.waitForDeployment();
-            await base.manager.connect(base.managerWallet).whitelistToken(SERVER_ID, await mockERC20.getAddress(), 1);
+            // whitelist by server admin
+            await base.manager.connect(base.user1).whitelistToken(SERVER_ID, await mockERC20.getAddress(), 1);
             const rewardToken = {
                 tokenId: 1,
                 tokenUri: 'u',
@@ -540,26 +498,25 @@ describe('RewardsManager', function () {
                 ],
             };
             await expect(
-                base.manager.connect(base.user1).createTokenAndDepositRewards(SERVER_ID, rewardToken, { value: 0 })
-            ).to.be.revertedWithCustomError(base.manager, 'AccessControlUnauthorizedAccount');
+                base.manager.connect(base.user2).createTokenAndDepositRewards(SERVER_ID, rewardToken, { value: 0 })
+            ).to.be.revertedWithCustomError(base.manager, 'UnauthorizedServerAdmin');
         });
 
-        it('non-MANAGER cannot call withdrawAssets', async function () {
+        it('non-server-admin cannot call withdrawAssets', async function () {
             const base = await loadFixture(deployRewardsManagerFixture);
-            await base.factory.connect(base.user1).deployServer(SERVER_ID);
+            await base.manager.connect(base.managerWallet).deployServer(SERVER_ID, base.devWallet.address);
+            const SERVER_ADMIN_ROLE = ethers.keccak256(ethers.toUtf8Bytes('SERVER_ADMIN_ROLE'));
+            await base.manager.connect(base.devWallet).grantServerRole(SERVER_ID, SERVER_ADMIN_ROLE, base.user1.address);
             await expect(
                 base.manager
-                    .connect(base.user1)
+                    .connect(base.user2)
                     .withdrawAssets(SERVER_ID, 1, base.user2.address, ethers.ZeroAddress, [], [])
-            ).to.be.revertedWithCustomError(base.manager, 'AccessControlUnauthorizedAccount');
+            ).to.be.revertedWithCustomError(base.manager, 'UnauthorizedServerAdmin');
         });
 
         it('non-MANAGER cannot call pause', async function () {
             const { manager, user1 } = await loadFixture(deployRewardsManagerFixture);
-            await expect(manager.connect(user1).pause()).to.be.revertedWithCustomError(
-                manager,
-                'AccessControlUnauthorizedAccount'
-            );
+            await expect(manager.connect(user1).pause()).to.be.revertedWithCustomError(manager, 'AccessControlUnauthorizedAccount');
         });
 
         it('only FACTORY_ROLE can call registerServer', async function () {
@@ -567,9 +524,8 @@ describe('RewardsManager', function () {
             const RewardsServerImpl = await ethers.getContractFactory('RewardsServer');
             const impl = await RewardsServerImpl.deploy();
             await impl.waitForDeployment();
-            const serverId2 = ethers.keccak256(ethers.toUtf8Bytes('server-2'));
             await expect(
-                manager.connect(user1).registerServer(serverId2, await impl.getAddress())
+                manager.connect(user1).registerServer(2, await impl.getAddress())
             ).to.be.revertedWithCustomError(manager, 'AccessControlUnauthorizedAccount');
         });
     });
@@ -603,40 +559,19 @@ describe('RewardsManager', function () {
             });
         });
 
-        describe('decodeData', function () {
-            it('decodes claim data for debugging', async function () {
-                const { manager } = await loadFixture(deployRewardsManagerFixture);
-                const chainId = (await ethers.provider.getNetwork()).chainId;
-                const managerAddress = await manager.getAddress();
-                const beneficiary = '0x0000000000000000000000000000000000000001';
-                const expiration = 999999;
-                const tokenIds = [1, 2];
-                const data = ethers.AbiCoder.defaultAbiCoder().encode(
-                    ['address', 'uint256', 'address', 'uint256', 'uint256[]'],
-                    [managerAddress, chainId, beneficiary, expiration, tokenIds]
-                );
-                const decoded = await manager.decodeData(data);
-                expect(decoded.contractAddress).to.equal(managerAddress);
-                expect(decoded.chainId).to.equal(chainId);
-                expect(decoded.beneficiary).to.equal(beneficiary);
-                expect(decoded.expiration).to.equal(expiration);
-                expect(decoded.tokenIds.length).to.equal(2);
-                expect(decoded.tokenIds[0]).to.equal(1);
-                expect(decoded.tokenIds[1]).to.equal(2);
-            });
-        });
-
         describe('getServerSigners', function () {
             it('returns empty when no signers added', async function () {
-                const { manager, factory } = await loadFixture(deployRewardsManagerFixture);
-                await factory.connect((await ethers.getSigners())[2]).deployServer(SERVER_ID);
+                const { manager, devWallet, managerWallet } = await loadFixture(deployRewardsManagerFixture);
+                await manager.connect(managerWallet).deployServer(SERVER_ID, devWallet.address);
                 const list = await manager.getServerSigners(SERVER_ID);
                 expect(list.length).to.equal(0);
             });
 
             it('returns signers after addWhitelistSigner', async function () {
-                const { manager, factory, user1, user2 } = await loadFixture(deployRewardsManagerFixture);
-                await factory.connect(user1).deployServer(SERVER_ID);
+                const { manager, devWallet, managerWallet, user1, user2 } = await loadFixture(deployRewardsManagerFixture);
+                await manager.connect(managerWallet).deployServer(SERVER_ID, devWallet.address);
+                const SERVER_ADMIN_ROLE = ethers.keccak256(ethers.toUtf8Bytes('SERVER_ADMIN_ROLE'));
+                await manager.connect(devWallet).grantServerRole(SERVER_ID, SERVER_ADMIN_ROLE, user1.address);
                 let list = await manager.getServerSigners(SERVER_ID);
                 expect(list.length).to.equal(0);
                 await manager.connect(user1).addWhitelistSigner(SERVER_ID, user2.address);
@@ -655,10 +590,38 @@ describe('RewardsManager', function () {
             });
         });
 
+        describe('claim ETH rewards', function () {
+            it('sends ETH to beneficiary for ETHER rewards on claim', async function () {
+                const { manager, devWallet, managerWallet, user1 } = await loadFixture(deployRewardsManagerFixture);
+                await manager.connect(managerWallet).deployServer(SERVER_ID, devWallet.address);
+                const SERVER_ADMIN_ROLE = ethers.keccak256(ethers.toUtf8Bytes('SERVER_ADMIN_ROLE'));
+                await manager.connect(devWallet).grantServerRole(SERVER_ID, SERVER_ADMIN_ROLE, managerWallet.address);
+                await manager.connect(managerWallet).addWhitelistSigner(SERVER_ID, managerWallet.address);
+                const tokenId = 1;
+                const rewardToken = {
+                    tokenId,
+                    tokenUri: 'https://example.com/eth',
+                    maxSupply: 2,
+                    rewards: [{ rewardType: 0, rewardAmount: ethers.parseEther('1'), rewardTokenAddress: ethers.ZeroAddress, rewardTokenIds: [], rewardTokenId: 0 }],
+                };
+                await manager.connect(managerWallet).createTokenAndDepositRewards(SERVER_ID, rewardToken, { value: ethers.parseEther('2') });
+                const expiration = Math.floor(Date.now() / 1000) + 3600;
+                const { data, signature } = await buildClaimDataAndSignature(manager, SERVER_ID, managerWallet, user1.address, [tokenId], expiration, 0);
+                const beforeBalance = await ethers.provider.getBalance(user1.address);
+                const tx = await manager.connect(user1).claim(SERVER_ID, data, 0, signature);
+                const receipt = await tx.wait();
+                const gasCost = receipt!.gasUsed * receipt!.gasPrice;
+                const afterBalance = await ethers.provider.getBalance(user1.address);
+                expect(afterBalance - (beforeBalance - gasCost)).to.equal(ethers.parseEther('1'));
+            });
+        });
+
         describe('addWhitelistSigner and removeWhitelistSigner', function () {
             it('addWhitelistSigner enables signer, removeWhitelistSigner disables', async function () {
-                const { manager, factory, user1, user2 } = await loadFixture(deployRewardsManagerFixture);
-                await factory.connect(user1).deployServer(SERVER_ID);
+                const { manager, devWallet, managerWallet, user1, user2 } = await loadFixture(deployRewardsManagerFixture);
+                await manager.connect(managerWallet).deployServer(SERVER_ID, devWallet.address);
+                const SERVER_ADMIN_ROLE = ethers.keccak256(ethers.toUtf8Bytes('SERVER_ADMIN_ROLE'));
+                await manager.connect(devWallet).grantServerRole(SERVER_ID, SERVER_ADMIN_ROLE, user1.address);
                 expect(await manager.isServerSigner(SERVER_ID, user2.address)).to.be.false;
                 await manager.connect(user1).addWhitelistSigner(SERVER_ID, user2.address);
                 expect(await manager.isServerSigner(SERVER_ID, user2.address)).to.be.true;
@@ -696,7 +659,7 @@ describe('RewardsManager', function () {
                 expect(await manager.getRemainingSupply(SERVER_ID, tokenId)).to.equal(7);
             });
 
-            it('non-MANAGER cannot call reduceRewardSupply', async function () {
+            it('non-server-admin cannot call reduceRewardSupply', async function () {
                 const { manager, managerWallet, user1, mockERC20 } = await loadFixture(deployWithServerAndTokenFixture);
                 const tokenId = 1;
                 const rewardToken = {
@@ -713,10 +676,11 @@ describe('RewardsManager', function () {
                         },
                     ],
                 };
+                // Server admin (managerWallet) creates the reward
                 await manager.connect(managerWallet).createTokenAndDepositRewards(SERVER_ID, rewardToken, { value: 0 });
                 await expect(
                     manager.connect(user1).reduceRewardSupply(SERVER_ID, tokenId, 2)
-                ).to.be.revertedWithCustomError(manager, 'AccessControlUnauthorizedAccount');
+                ).to.be.revertedWithCustomError(manager, 'UnauthorizedServerAdmin');
             });
         });
     });

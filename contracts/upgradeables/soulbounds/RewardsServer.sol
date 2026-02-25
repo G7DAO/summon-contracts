@@ -16,11 +16,6 @@ import { ERC721HolderUpgradeable } from "@openzeppelin/contracts-upgradeable/tok
 import { ERC1155HolderUpgradeable } from "@openzeppelin/contracts-upgradeable/token/ERC1155/utils/ERC1155HolderUpgradeable.sol";
 import { LibItems } from "../../libraries/LibItems.sol";
 
-interface IRewards {
-    function getAllItemIds() external view returns (uint256[] memory);
-    function getTokenRewards(uint256 tokenId) external view returns (LibItems.Reward[] memory);
-}
-
 interface IERC1155Metadata {
     function name() external view returns (string memory);
     function symbol() external view returns (string memory);
@@ -49,21 +44,25 @@ contract RewardsServer is Initializable, AccessControlUpgradeable, ERC721HolderU
     error InsufficientBalance();
     error UnauthorizedServerAdmin();
     error InsufficientERC721Ids();
+    error ExceedMaxSupply();
+    error ClaimRewardPaused();
+    error InvalidInput();
+    error DupTokenId();
+    error TransferFailed();
 
     /*//////////////////////////////////////////////////////////////
                                CONSTANTS
     //////////////////////////////////////////////////////////////*/
-    bytes32 public constant REWARDS_MANAGER_ROLE = keccak256("REWARDS_MANAGER_ROLE");
+    bytes32 public constant REWARDS_ROUTER_ROLE = keccak256("REWARDS_ROUTER_ROLE");
     bytes32 public constant SERVER_ADMIN_ROLE = keccak256("SERVER_ADMIN_ROLE");
 
     /*//////////////////////////////////////////////////////////////
                            STATE VARIABLES
     //////////////////////////////////////////////////////////////*/
 
-    // Server-level access (admin, signers for claim, withdrawers)
+    // Server-level access (admin, signers for claim)
     mapping(address => bool) public signers;
     address[] private signerList;
-    mapping(address => bool) public withdrawers;
 
     // Whitelist
     mapping(address => bool) public whitelistedTokens;
@@ -89,14 +88,19 @@ contract RewardsServer is Initializable, AccessControlUpgradeable, ERC721HolderU
     // Per-user nonce (for mint/claim signatures)
     mapping(address => mapping(uint256 => bool)) public userNonces;
 
-    uint256[32] private __gap;
+    // RewardsRouter (has REWARDS_ROUTER_ROLE on this server)
+    address private rewardsRouter;
+
+    // ETH reserved for pending ETHER rewards (this server holds all its treasury ETH)
+    uint256 public ethReservedTotal;
+
+    uint256[30] private __gap;
 
     /*//////////////////////////////////////////////////////////////
                                EVENTS
     //////////////////////////////////////////////////////////////*/
     event TreasuryDeposit(address indexed token, uint256 amount);
     event SignerUpdated(address indexed account, bool active);
-    event WithdrawerUpdated(address indexed account, bool active);
     event ServerAdminTransferred(address indexed oldAdmin, address indexed newAdmin);
 
     /*//////////////////////////////////////////////////////////////
@@ -108,8 +112,8 @@ contract RewardsServer is Initializable, AccessControlUpgradeable, ERC721HolderU
     }
 
     /// @notice Initializes the server: access roles and server admin. Called once by the proxy.
-    /// @param _admin Default admin (e.g. RewardsManager or deployer).
-    /// @param _rewardsContract Address that receives REWARDS_MANAGER_ROLE (typically RewardsManager).
+    /// @param _admin Default admin (e.g. RewardsRouter or deployer).
+    /// @param _rewardsContract Address that receives REWARDS_ROUTER_ROLE (typically RewardsRouter).
     /// @param _serverAdmin Address that receives SERVER_ADMIN_ROLE (signers, withdrawers, transfer).
     function initialize(address _admin, address _rewardsContract, address _serverAdmin) external initializer {
         if (_admin == address(0) || _rewardsContract == address(0) || _serverAdmin == address(0)) {
@@ -121,51 +125,15 @@ contract RewardsServer is Initializable, AccessControlUpgradeable, ERC721HolderU
         __ERC1155Holder_init();
 
         _grantRole(DEFAULT_ADMIN_ROLE, _admin);
-        _grantRole(REWARDS_MANAGER_ROLE, _rewardsContract);
+        _grantRole(REWARDS_ROUTER_ROLE, _rewardsContract);
         _grantRole(SERVER_ADMIN_ROLE, _serverAdmin);
+        rewardsRouter = _rewardsContract;
     }
 
     /*//////////////////////////////////////////////////////////////
-                    SERVER ACCESS CONTROL (admin, signers, withdrawers)
+                    SERVER ACCESS CONTROL (admin, signers)
     //////////////////////////////////////////////////////////////*/
 
-    /// @notice Enables or disables a claim signer. Only SERVER_ADMIN_ROLE.
-    /// @param account Signer address.
-    /// @param active True to allow signing, false to revoke.
-    function setSigner(address account, bool active) external onlyRole(SERVER_ADMIN_ROLE) {
-        if (account == address(0)) revert AddressIsZero();
-        if (active) {
-            if (!signers[account]) {
-                signers[account] = true;
-                signerList.push(account);
-            }
-        } else {
-            if (signers[account]) {
-                signers[account] = false;
-                _removeFromSignerList(account);
-            }
-        }
-        emit SignerUpdated(account, active);
-    }
-
-    /// @notice Enables or disables a withdrawer. Only SERVER_ADMIN_ROLE.
-    /// @param account Withdrawer address.
-    /// @param active True to allow withdrawals, false to revoke.
-    function setWithdrawer(address account, bool active) external onlyRole(SERVER_ADMIN_ROLE) {
-        if (account == address(0)) revert AddressIsZero();
-        withdrawers[account] = active;
-        emit WithdrawerUpdated(account, active);
-    }
-
-    /// @notice Transfers SERVER_ADMIN_ROLE to another address. Caller loses the role.
-    /// @param newAdmin Address to receive SERVER_ADMIN_ROLE.
-    function transferServerAdmin(address newAdmin) external onlyRole(SERVER_ADMIN_ROLE) {
-        if (newAdmin == address(0)) revert AddressIsZero();
-        address oldAdmin = msg.sender;
-        _revokeRole(SERVER_ADMIN_ROLE, oldAdmin);
-        _grantRole(SERVER_ADMIN_ROLE, newAdmin);
-        emit ServerAdminTransferred(oldAdmin, newAdmin);
-    }
 
     /// @notice Returns whether the account is an active signer for claims.
     function isSigner(address account) external view returns (bool) {
@@ -177,14 +145,13 @@ contract RewardsServer is Initializable, AccessControlUpgradeable, ERC721HolderU
         return signerList;
     }
 
-    /// @notice Returns whether the account is an active withdrawer.
-    function isWithdrawer(address account) external view returns (bool) {
-        return withdrawers[account];
+    /// @notice Returns whether the account is server admin for this RewardsServer.
+    function isServerAdmin(address account) external view returns (bool) {
+        return hasRole(SERVER_ADMIN_ROLE, account);
     }
 
-    /// @notice Same as setSigner but called by RewardsManager; caller must be SERVER_ADMIN_ROLE.
-    function setSignerAllowedBy(address caller, address account, bool active) external onlyRole(REWARDS_MANAGER_ROLE) {
-        if (!hasRole(SERVER_ADMIN_ROLE, caller)) revert UnauthorizedServerAdmin();
+    /// @notice Same as setSigner but called by RewardsRouter; caller must be SERVER_ADMIN_ROLE.
+    function setSigner(address account, bool active) external onlyRole(REWARDS_ROUTER_ROLE) {
         if (account == address(0)) revert AddressIsZero();
         if (active) {
             if (!signers[account]) {
@@ -210,16 +177,8 @@ contract RewardsServer is Initializable, AccessControlUpgradeable, ERC721HolderU
         }
     }
 
-    /// @notice Same as setWithdrawer but called by RewardsManager; caller must be SERVER_ADMIN_ROLE.
-    function setWithdrawerAllowedBy(address caller, address account, bool active) external onlyRole(REWARDS_MANAGER_ROLE) {
-        if (!hasRole(SERVER_ADMIN_ROLE, caller)) revert UnauthorizedServerAdmin();
-        if (account == address(0)) revert AddressIsZero();
-        withdrawers[account] = active;
-        emit WithdrawerUpdated(account, active);
-    }
-
-    /// @notice Same as transferServerAdmin but initiated by RewardsManager; caller becomes new admin.
-    function transferServerAdminAllowedBy(address caller, address newAdmin) external onlyRole(REWARDS_MANAGER_ROLE) {
+    /// @notice Same as transferServerAdmin but initiated by RewardsRouter; caller becomes new admin.
+    function transferServerAdminAllowedBy(address caller, address newAdmin) external onlyRole(REWARDS_ROUTER_ROLE) {
         if (!hasRole(SERVER_ADMIN_ROLE, caller)) revert UnauthorizedServerAdmin();
         if (newAdmin == address(0)) revert AddressIsZero();
         _revokeRole(SERVER_ADMIN_ROLE, caller);
@@ -231,10 +190,10 @@ contract RewardsServer is Initializable, AccessControlUpgradeable, ERC721HolderU
                       TREASURY MANAGEMENT FUNCTIONS
     //////////////////////////////////////////////////////////////*/
 
-    /// @notice Adds a token to the whitelist for use in rewards. Only REWARDS_MANAGER_ROLE.
+    /// @notice Adds a token to the whitelist for use in rewards. Only REWARDS_ROUTER_ROLE.
     /// @param _token Token contract address.
     /// @param _type One of ERC20, ERC721, ERC1155.
-    function whitelistToken(address _token, LibItems.RewardType _type) external onlyRole(REWARDS_MANAGER_ROLE) {
+    function whitelistToken(address _token, LibItems.RewardType _type) external onlyRole(REWARDS_ROUTER_ROLE) {
         if (_token == address(0)) revert AddressIsZero();
         if (whitelistedTokens[_token]) revert TokenAlreadyWhitelisted();
 
@@ -247,9 +206,9 @@ contract RewardsServer is Initializable, AccessControlUpgradeable, ERC721HolderU
         }
     }
 
-    /// @notice Removes a token from the whitelist. Fails if the token has any reserves. Only REWARDS_MANAGER_ROLE.
+    /// @notice Removes a token from the whitelist. Fails if the token has any reserves. Only REWARDS_ROUTER_ROLE.
     /// @param _token Token contract address.
-    function removeTokenFromWhitelist(address _token) external onlyRole(REWARDS_MANAGER_ROLE) {
+    function removeTokenFromWhitelist(address _token) external onlyRole(REWARDS_ROUTER_ROLE) {
         LibItems.RewardType _type = tokenTypes[_token];
         if (!whitelistedTokens[_token]) revert TokenNotWhitelisted();
 
@@ -268,11 +227,11 @@ contract RewardsServer is Initializable, AccessControlUpgradeable, ERC721HolderU
         }
     }
 
-    /// @notice Transfers tokens from _from into this treasury. Only REWARDS_MANAGER_ROLE. Token must be whitelisted.
+    /// @notice Transfers tokens from _from into this treasury. Only REWARDS_ROUTER_ROLE. Token must be whitelisted.
     /// @param _token Token address (ERC20).
     /// @param _amount Amount to transfer.
     /// @param _from Source address (must have approved this contract).
-    function depositToTreasury(address _token, uint256 _amount, address _from) external onlyRole(REWARDS_MANAGER_ROLE) {
+    function depositToTreasury(address _token, uint256 _amount, address _from) external onlyRole(REWARDS_ROUTER_ROLE) {
         if (!whitelistedTokens[_token]) revert TokenNotWhitelisted();
         if (_amount == 0) revert InvalidAmount();
 
@@ -280,8 +239,8 @@ contract RewardsServer is Initializable, AccessControlUpgradeable, ERC721HolderU
         emit TreasuryDeposit(_token, _amount);
     }
 
-    /// @notice Sends all unreserved ERC20 balance of _token to _to. Only REWARDS_MANAGER_ROLE.
-    function withdrawUnreservedTreasury(address _token, address _to) external onlyRole(REWARDS_MANAGER_ROLE) {
+    /// @notice Sends all unreserved ERC20 balance of _token to _to. Only REWARDS_ROUTER_ROLE.
+    function withdrawUnreservedTreasury(address _token, address _to) external onlyRole(REWARDS_ROUTER_ROLE) {
         if (_to == address(0)) revert AddressIsZero();
         if (!whitelistedTokens[_token]) revert TokenNotWhitelisted();
 
@@ -293,8 +252,8 @@ contract RewardsServer is Initializable, AccessControlUpgradeable, ERC721HolderU
         SafeERC20.safeTransfer(IERC20(_token), _to, balance - reserved);
     }
 
-    /// @notice Sends one unreserved ERC721 token to _to. Only REWARDS_MANAGER_ROLE. Fails if _tokenId is reserved.
-    function withdrawERC721UnreservedTreasury(address _token, address _to, uint256 _tokenId) external onlyRole(REWARDS_MANAGER_ROLE) {
+    /// @notice Sends one unreserved ERC721 token to _to. Only REWARDS_ROUTER_ROLE. Fails if _tokenId is reserved.
+    function withdrawERC721UnreservedTreasury(address _token, address _to, uint256 _tokenId) external onlyRole(REWARDS_ROUTER_ROLE) {
         if (_to == address(0)) revert AddressIsZero();
         if (!whitelistedTokens[_token]) revert TokenNotWhitelisted();
         if (isErc721Reserved[_token][_tokenId]) revert InsufficientTreasuryBalance();
@@ -302,8 +261,8 @@ contract RewardsServer is Initializable, AccessControlUpgradeable, ERC721HolderU
         IERC721(_token).safeTransferFrom(address(this), _to, _tokenId);
     }
 
-    /// @notice Sends unreserved ERC1155 amount to _to. Only REWARDS_MANAGER_ROLE.
-    function withdrawERC1155UnreservedTreasury(address _token, address _to, uint256 _tokenId, uint256 _amount) external onlyRole(REWARDS_MANAGER_ROLE) {
+    /// @notice Sends unreserved ERC1155 amount to _to. Only REWARDS_ROUTER_ROLE.
+    function withdrawERC1155UnreservedTreasury(address _token, address _to, uint256 _tokenId, uint256 _amount) external onlyRole(REWARDS_ROUTER_ROLE) {
         if (_to == address(0)) revert AddressIsZero();
         if (!whitelistedTokens[_token]) revert TokenNotWhitelisted();
 
@@ -316,22 +275,31 @@ contract RewardsServer is Initializable, AccessControlUpgradeable, ERC721HolderU
         IERC1155(_token).safeTransferFrom(address(this), _to, _tokenId, _amount, "");
     }
 
+    /// @notice Sends unreserved ETH from this server's treasury to _to. Only REWARDS_ROUTER_ROLE.
+    function withdrawEtherUnreservedTreasury(address _to, uint256 _amount) external onlyRole(REWARDS_ROUTER_ROLE) {
+        if (_to == address(0)) revert AddressIsZero();
+        uint256 available = address(this).balance - ethReservedTotal;
+        if (_amount > available) revert InsufficientBalance();
+        (bool ok, ) = payable(_to).call{ value: _amount }("");
+        if (!ok) revert TransferFailed();
+    }
+
     /*//////////////////////////////////////////////////////////////
                       DISTRIBUTION FUNCTIONS (for claims)
     //////////////////////////////////////////////////////////////*/
 
-    /// @notice Transfers ERC20 to recipient (used when fulfilling claims). Only REWARDS_MANAGER_ROLE.
-    function distributeERC20(address _token, address _to, uint256 _amount) external onlyRole(REWARDS_MANAGER_ROLE) {
+    /// @notice Transfers ERC20 to recipient (used when fulfilling claims). Only REWARDS_ROUTER_ROLE.
+    function distributeERC20(address _token, address _to, uint256 _amount) external onlyRole(REWARDS_ROUTER_ROLE) {
         SafeERC20.safeTransfer(IERC20(_token), _to, _amount);
     }
 
-    /// @notice Transfers ERC721 to recipient (used when fulfilling claims). Only REWARDS_MANAGER_ROLE.
-    function distributeERC721(address _token, address _to, uint256 _tokenId) external onlyRole(REWARDS_MANAGER_ROLE) {
+    /// @notice Transfers ERC721 to recipient (used when fulfilling claims). Only REWARDS_ROUTER_ROLE.
+    function distributeERC721(address _token, address _to, uint256 _tokenId) external onlyRole(REWARDS_ROUTER_ROLE) {
         IERC721(_token).safeTransferFrom(address(this), _to, _tokenId);
     }
 
-    /// @notice Transfers ERC1155 amount to recipient (used when fulfilling claims). Only REWARDS_MANAGER_ROLE.
-    function distributeERC1155(address _token, address _to, uint256 _tokenId, uint256 _amount) external onlyRole(REWARDS_MANAGER_ROLE) {
+    /// @notice Transfers ERC1155 amount to recipient (used when fulfilling claims). Only REWARDS_ROUTER_ROLE.
+    function distributeERC1155(address _token, address _to, uint256 _tokenId, uint256 _amount) external onlyRole(REWARDS_ROUTER_ROLE) {
         IERC1155(_token).safeTransferFrom(address(this), _to, _tokenId, _amount, "");
     }
 
@@ -454,6 +422,51 @@ contract RewardsServer is Initializable, AccessControlUpgradeable, ERC721HolderU
         return tokenRewards[_tokenId];
     }
 
+    /// @notice ETH required to increase supply by _additionalSupply for a reward token that has ETHER rewards.
+    function getEthRequiredForIncreaseSupply(uint256 _tokenId, uint256 _additionalSupply) external view returns (uint256) {
+        if (!tokenExists[_tokenId] || _additionalSupply == 0) return 0;
+        LibItems.RewardToken memory rewardToken = tokenRewards[_tokenId];
+        uint256 additionalEthRequired;
+        for (uint256 i = 0; i < rewardToken.rewards.length; i++) {
+            if (rewardToken.rewards[i].rewardType == LibItems.RewardType.ETHER) {
+                additionalEthRequired += rewardToken.rewards[i].rewardAmount * _additionalSupply;
+            }
+        }
+        return additionalEthRequired;
+    }
+
+    /// @notice Returns structured reward token details (URI, maxSupply, reward types/amounts/addresses/tokenIds).
+    function getTokenDetails(uint256 _tokenId)
+        external
+        view
+        returns (
+            string memory tokenUri,
+            uint256 maxSupply,
+            LibItems.RewardType[] memory rewardTypes,
+            uint256[] memory rewardAmounts,
+            address[] memory rewardTokenAddresses,
+            uint256[][] memory rewardTokenIds,
+            uint256[] memory rewardTokenId
+        )
+    {
+        LibItems.RewardToken memory rt = tokenRewards[_tokenId];
+        tokenUri = rt.tokenUri;
+        maxSupply = rt.maxSupply;
+        LibItems.Reward[] memory rewards = rt.rewards;
+        rewardTypes = new LibItems.RewardType[](rewards.length);
+        rewardAmounts = new uint256[](rewards.length);
+        rewardTokenAddresses = new address[](rewards.length);
+        rewardTokenIds = new uint256[][](rewards.length);
+        rewardTokenId = new uint256[](rewards.length);
+        for (uint256 i = 0; i < rewards.length; i++) {
+            rewardTypes[i] = rewards[i].rewardType;
+            rewardAmounts[i] = rewards[i].rewardAmount;
+            rewardTokenAddresses[i] = rewards[i].rewardTokenAddress;
+            rewardTokenIds[i] = rewards[i].rewardTokenIds;
+            rewardTokenId[i] = rewards[i].rewardTokenId;
+        }
+    }
+
     /// @notice Whether a reward token with _tokenId exists.
     function isTokenExists(uint256 _tokenId) external view returns (bool) {
         return tokenExists[_tokenId];
@@ -465,66 +478,71 @@ contract RewardsServer is Initializable, AccessControlUpgradeable, ERC721HolderU
     }
 
     /*//////////////////////////////////////////////////////////////
-                    RESERVATION & REWARD MUTATORS (REWARDS_MANAGER_ROLE)
+              INTERNAL RESERVE / REWARD MUTATORS (for claim & create)
     //////////////////////////////////////////////////////////////*/
-
-    /// @notice Increases reserved ERC20 amount for _token (e.g. when creating or extending reward supply). Only REWARDS_MANAGER_ROLE.
-    function increaseERC20Reserved(address _token, uint256 _amount) external onlyRole(REWARDS_MANAGER_ROLE) {
+    function _increaseERC20Reserved(address _token, uint256 _amount) internal {
         reservedAmounts[_token] += _amount;
     }
 
-    /// @notice Decreases reserved ERC20 amount. Only REWARDS_MANAGER_ROLE. Reverts if would go below zero.
-    function decreaseERC20Reserved(address _token, uint256 _amount) external onlyRole(REWARDS_MANAGER_ROLE) {
+    function _decreaseERC20Reserved(address _token, uint256 _amount) internal {
         reservedAmounts[_token] -= _amount;
     }
 
-    /// @notice Marks an ERC721 token id as reserved for rewards. Only REWARDS_MANAGER_ROLE.
-    function reserveERC721(address _token, uint256 _tokenId) external onlyRole(REWARDS_MANAGER_ROLE) {
+    function _reserveERC721(address _token, uint256 _tokenId) internal {
         isErc721Reserved[_token][_tokenId] = true;
         erc721TotalReserved[_token]++;
     }
 
-    /// @notice Releases reservation of an ERC721 token id. Only REWARDS_MANAGER_ROLE.
-    function releaseERC721(address _token, uint256 _tokenId) external onlyRole(REWARDS_MANAGER_ROLE) {
+    function _releaseERC721(address _token, uint256 _tokenId) internal {
         isErc721Reserved[_token][_tokenId] = false;
         erc721TotalReserved[_token]--;
     }
 
-    /// @notice Increases reserved ERC1155 amount for (_token, _tokenId). Only REWARDS_MANAGER_ROLE.
-    function increaseERC1155Reserved(address _token, uint256 _tokenId, uint256 _amount) external onlyRole(REWARDS_MANAGER_ROLE) {
+    function _increaseERC1155Reserved(address _token, uint256 _tokenId, uint256 _amount) internal {
         erc1155ReservedAmounts[_token][_tokenId] += _amount;
         erc1155TotalReserved[_token] += _amount;
     }
 
-    /// @notice Decreases reserved ERC1155 amount. Only REWARDS_MANAGER_ROLE. Reverts if would go below zero.
-    function decreaseERC1155Reserved(address _token, uint256 _tokenId, uint256 _amount) external onlyRole(REWARDS_MANAGER_ROLE) {
+    function _decreaseERC1155Reserved(address _token, uint256 _tokenId, uint256 _amount) internal {
         erc1155ReservedAmounts[_token][_tokenId] -= _amount;
         erc1155TotalReserved[_token] -= _amount;
     }
 
-    /// @notice Registers a new reward token (item) with given id and reward definition. Only REWARDS_MANAGER_ROLE. Id must not exist.
-    function addRewardToken(uint256 _tokenId, LibItems.RewardToken memory _rewardToken) external onlyRole(REWARDS_MANAGER_ROLE) {
+    function _addRewardToken(uint256 _tokenId, LibItems.RewardToken memory _rewardToken) internal {
         if (tokenExists[_tokenId]) revert RewardTokenAlreadyExists();
-
         tokenExists[_tokenId] = true;
         tokenRewards[_tokenId] = _rewardToken;
         itemIds.push(_tokenId);
         currentRewardSupply[_tokenId] = 0;
     }
 
-    /// @notice Updates reward definition for an existing reward token (e.g. URI). Only REWARDS_MANAGER_ROLE. Does not extend ERC721 reward ids.
-    function updateRewardToken(uint256 _tokenId, LibItems.RewardToken memory _rewardToken) external onlyRole(REWARDS_MANAGER_ROLE) {
-        if (!tokenExists[_tokenId]) revert TokenNotWhitelisted();
+    function _updateRewardToken(uint256 _tokenId, LibItems.RewardToken memory _rewardToken) internal {
+        if (!tokenExists[_tokenId]) revert TokenNotExist();
         tokenRewards[_tokenId] = _rewardToken;
     }
 
-    /// @notice Increases max supply for a reward token; reserves additional ERC20/ERC1155 on this server. Only REWARDS_MANAGER_ROLE.
+    function _increaseCurrentSupply(uint256 _tokenId, uint256 _amount) internal {
+        currentRewardSupply[_tokenId] += _amount;
+    }
+
+    function _incrementERC721RewardIndex(uint256 _rewardTokenId, uint256 _rewardIndex, uint256 _delta) internal {
+        erc721RewardCurrentIndex[_rewardTokenId][_rewardIndex] += _delta;
+    }
+
+
+    /// @notice Increases max supply for a reward token; reserves additional ERC20/ERC1155/ETH on this server. Only REWARDS_ROUTER_ROLE. Send ETH if token has ETHER rewards.
     /// @dev ERC721-backed rewards cannot have supply increased: rewardTokenIds length is fixed at creation. When ERC721 supply is exhausted, create a new reward token.
     /// @param _tokenId Reward token id.
     /// @param _additionalSupply Extra supply to add (must be > 0). For ERC721 rewards this will revert.
-    function increaseRewardSupply(uint256 _tokenId, uint256 _additionalSupply) external onlyRole(REWARDS_MANAGER_ROLE) {
+    function increaseRewardSupply(uint256 _tokenId, uint256 _additionalSupply) external payable onlyRole(REWARDS_ROUTER_ROLE) {
         if (!tokenExists[_tokenId]) revert TokenNotExist();
         if (_additionalSupply == 0) revert InvalidAmount();
+
+        uint256 additionalEthRequired = this.getEthRequiredForIncreaseSupply(_tokenId, _additionalSupply);
+        if (additionalEthRequired > 0) {
+            if (msg.value < additionalEthRequired) revert InsufficientBalance();
+            ethReservedTotal += additionalEthRequired;
+        }
 
         LibItems.RewardToken memory rewardToken = tokenRewards[_tokenId];
         uint256 newSupply = rewardToken.maxSupply + _additionalSupply;
@@ -553,11 +571,11 @@ contract RewardsServer is Initializable, AccessControlUpgradeable, ERC721HolderU
         tokenRewards[_tokenId] = rewardToken;
     }
 
-    /// @notice Reduces max supply for a reward token; releases proportional ERC20/ERC1155 reservations. Only REWARDS_MANAGER_ROLE.
+    /// @notice Reduces max supply for a reward token; releases proportional ERC20/ERC1155 reservations. Only REWARDS_ROUTER_ROLE.
     /// @dev New max supply must not be below currentRewardSupply. ERC721: only maxSupply is reduced (reserved NFT ids unchanged).
     /// @param _tokenId Reward token id.
     /// @param _reduceBy Amount to subtract from max supply (must be > 0).
-    function reduceRewardSupply(uint256 _tokenId, uint256 _reduceBy) external onlyRole(REWARDS_MANAGER_ROLE) {
+    function reduceRewardSupply(uint256 _tokenId, uint256 _reduceBy) external onlyRole(REWARDS_ROUTER_ROLE) {
         if (!tokenExists[_tokenId]) revert TokenNotExist();
         if (_reduceBy == 0) revert InvalidAmount();
 
@@ -568,7 +586,9 @@ contract RewardsServer is Initializable, AccessControlUpgradeable, ERC721HolderU
 
         for (uint256 i = 0; i < rewardToken.rewards.length; i++) {
             LibItems.Reward memory r = rewardToken.rewards[i];
-            if (r.rewardType == LibItems.RewardType.ERC20) {
+            if (r.rewardType == LibItems.RewardType.ETHER) {
+                ethReservedTotal -= r.rewardAmount * _reduceBy;
+            } else if (r.rewardType == LibItems.RewardType.ERC20) {
                 uint256 releaseAmount = r.rewardAmount * _reduceBy;
                 reservedAmounts[r.rewardTokenAddress] -= releaseAmount;
             } else if (r.rewardType == LibItems.RewardType.ERC1155) {
@@ -583,34 +603,137 @@ contract RewardsServer is Initializable, AccessControlUpgradeable, ERC721HolderU
         tokenRewards[_tokenId] = rewardToken;
     }
 
-    /// @notice Pauses or unpauses minting for a reward token. Only REWARDS_MANAGER_ROLE.
-    function setTokenMintPaused(uint256 _tokenId, bool _isPaused) external onlyRole(REWARDS_MANAGER_ROLE) {
+    /// @notice Pauses or unpauses minting for a reward token. Only REWARDS_ROUTER_ROLE.
+    function setTokenMintPaused(uint256 _tokenId, bool _isPaused) external onlyRole(REWARDS_ROUTER_ROLE) {
         isTokenMintPaused[_tokenId] = _isPaused;
     }
 
-    /// @notice Pauses or unpauses claiming rewards for a reward token. Only REWARDS_MANAGER_ROLE.
-    function setClaimRewardPaused(uint256 _tokenId, bool _isPaused) external onlyRole(REWARDS_MANAGER_ROLE) {
+    /// @notice Pauses or unpauses claiming rewards for a reward token. Only REWARDS_ROUTER_ROLE.
+    function setClaimRewardPaused(uint256 _tokenId, bool _isPaused) external onlyRole(REWARDS_ROUTER_ROLE) {
         isClaimRewardPaused[_tokenId] = _isPaused;
     }
 
-    /// @notice Increments current minted supply for a reward token (e.g. after mint). Only REWARDS_MANAGER_ROLE.
-    function increaseCurrentSupply(uint256 _tokenId, uint256 _amount) external onlyRole(REWARDS_MANAGER_ROLE) {
-        currentRewardSupply[_tokenId] += _amount;
-    }
-
-    /// @notice Decrements current supply (e.g. burn or correction). Only REWARDS_MANAGER_ROLE.
-    function decreaseCurrentSupply(uint256 _tokenId, uint256 _amount) external onlyRole(REWARDS_MANAGER_ROLE) {
-        currentRewardSupply[_tokenId] -= _amount;
-    }
-
-    /// @notice Sets a user nonce as used/unused (replay protection for mint/claim). Only REWARDS_MANAGER_ROLE.
-    function setUserNonce(address _user, uint256 _nonce, bool _used) external onlyRole(REWARDS_MANAGER_ROLE) {
+    /// @notice Sets a user nonce as used/unused (replay protection for mint/claim). Only REWARDS_ROUTER_ROLE.
+    function setUserNonce(address _user, uint256 _nonce, bool _used) external onlyRole(REWARDS_ROUTER_ROLE) {
         userNonces[_user][_nonce] = _used;
     }
 
-    /// @notice Advances the ERC721 distribution index for a reward slot by _delta (e.g. after distributing rewardAmount NFTs). Only REWARDS_MANAGER_ROLE.
-    function incrementERC721RewardIndex(uint256 _rewardTokenId, uint256 _rewardIndex, uint256 _delta) external onlyRole(REWARDS_MANAGER_ROLE) {
-        erc721RewardCurrentIndex[_rewardTokenId][_rewardIndex] += _delta;
+    /// @notice Advances the ERC721 distribution index for a reward slot by _delta (e.g. after distributing rewardAmount NFTs). Only REWARDS_ROUTER_ROLE.
+    function incrementERC721RewardIndex(uint256 _rewardTokenId, uint256 _rewardIndex, uint256 _delta) external onlyRole(REWARDS_ROUTER_ROLE) {
+        _incrementERC721RewardIndex(_rewardTokenId, _rewardIndex, _delta);
+    }
+
+    /*//////////////////////////////////////////////////////////////
+         VALIDATE & CREATE / UPDATE URI / CLAIM (REWARDS_ROUTER_ROLE)
+    //////////////////////////////////////////////////////////////*/
+
+    /// @notice Validates and creates a new reward token; reserves ERC20/721/1155 and ETH on this server. Only REWARDS_ROUTER_ROLE. Send ETH if token has ETHER rewards.
+    function createTokenAndReserveRewards(LibItems.RewardToken calldata token) external payable onlyRole(REWARDS_ROUTER_ROLE) {
+        if (token.maxSupply == 0) revert InvalidAmount();
+        if (
+            bytes(token.tokenUri).length == 0 ||
+            token.rewards.length == 0 ||
+            token.tokenId == 0
+        ) revert InvalidInput();
+        if (tokenExists[token.tokenId]) revert DupTokenId();
+
+        uint256 ethRequired;
+        for (uint256 i = 0; i < token.rewards.length; i++) {
+            LibItems.Reward memory r = token.rewards[i];
+            if (r.rewardType != LibItems.RewardType.ETHER && r.rewardTokenAddress == address(0)) revert AddressIsZero();
+            if (r.rewardType == LibItems.RewardType.ETHER) {
+                ethRequired += r.rewardAmount * token.maxSupply;
+            } else if (r.rewardType == LibItems.RewardType.ERC721) {
+                if (
+                    r.rewardTokenIds.length == 0 ||
+                    r.rewardTokenIds.length != r.rewardAmount * token.maxSupply
+                ) revert InvalidInput();
+            }
+            if (r.rewardType != LibItems.RewardType.ERC721 && r.rewardAmount == 0) revert InvalidAmount();
+        }
+        if (ethRequired > 0) {
+            if (msg.value < ethRequired) revert InsufficientBalance();
+            ethReservedTotal += ethRequired;
+        }
+
+        for (uint256 i = 0; i < token.rewards.length; i++) {
+            LibItems.Reward memory r = token.rewards[i];
+            if (r.rewardType == LibItems.RewardType.ERC20) {
+                if (!whitelistedTokens[r.rewardTokenAddress]) revert TokenNotWhitelisted();
+                uint256 totalAmount = r.rewardAmount * token.maxSupply;
+                uint256 balance = IERC20(r.rewardTokenAddress).balanceOf(address(this));
+                uint256 reserved = reservedAmounts[r.rewardTokenAddress];
+                if (balance < reserved + totalAmount) revert InsufficientTreasuryBalance();
+                _increaseERC20Reserved(r.rewardTokenAddress, totalAmount);
+            } else if (r.rewardType == LibItems.RewardType.ERC721) {
+                if (!whitelistedTokens[r.rewardTokenAddress]) revert TokenNotWhitelisted();
+                IERC721 nft = IERC721(r.rewardTokenAddress);
+                for (uint256 j = 0; j < r.rewardTokenIds.length; j++) {
+                    uint256 tid = r.rewardTokenIds[j];
+                    if (nft.ownerOf(tid) != address(this) || isErc721Reserved[r.rewardTokenAddress][tid]) {
+                        revert InsufficientTreasuryBalance();
+                    }
+                }
+                for (uint256 j = 0; j < r.rewardTokenIds.length; j++) {
+                    _reserveERC721(r.rewardTokenAddress, r.rewardTokenIds[j]);
+                }
+            } else if (r.rewardType == LibItems.RewardType.ERC1155) {
+                if (!whitelistedTokens[r.rewardTokenAddress]) revert TokenNotWhitelisted();
+                uint256 totalAmount = r.rewardAmount * token.maxSupply;
+                uint256 balance = IERC1155(r.rewardTokenAddress).balanceOf(address(this), r.rewardTokenId);
+                uint256 reserved = erc1155ReservedAmounts[r.rewardTokenAddress][r.rewardTokenId];
+                if (balance < reserved + totalAmount) revert InsufficientTreasuryBalance();
+                _increaseERC1155Reserved(r.rewardTokenAddress, r.rewardTokenId, totalAmount);
+            }
+        }
+
+        LibItems.RewardToken memory tokenMem = token;
+        _addRewardToken(token.tokenId, tokenMem);
+    }
+
+    /// @notice Fulfills claim for a reward token: distributes rewards (including ETH from this server's treasury) to to and increments supply. Only REWARDS_ROUTER_ROLE (Router calls this from claim()).
+    function claimReward(address to, uint256 tokenId) external onlyRole(REWARDS_ROUTER_ROLE) {
+        if (to == address(0)) revert AddressIsZero();
+        if (!tokenExists[tokenId]) revert TokenNotExist();
+        if (isClaimRewardPaused[tokenId]) revert ClaimRewardPaused();
+
+        if (currentRewardSupply[tokenId] + 1 > tokenRewards[tokenId].maxSupply) revert ExceedMaxSupply();
+
+        _distributeReward(to, tokenId);
+
+        currentRewardSupply[tokenId]++;
+    }
+
+    /// @notice Internal: distributes one unit of a reward token to to (ETHER from this contract; ERC20/721/1155 from this contract).
+    function _distributeReward(address to, uint256 rewardTokenId) internal {
+        LibItems.RewardToken memory rewardToken = tokenRewards[rewardTokenId];
+        LibItems.Reward[] memory rewards = rewardToken.rewards;
+
+        for (uint256 i = 0; i < rewards.length; i++) {
+            LibItems.Reward memory r = rewards[i];
+            if (r.rewardType == LibItems.RewardType.ETHER) {
+                if (address(this).balance < r.rewardAmount || ethReservedTotal < r.rewardAmount) revert InsufficientBalance();
+                ethReservedTotal -= r.rewardAmount;
+                (bool ok, ) = payable(to).call{ value: r.rewardAmount }("");
+                if (!ok) revert TransferFailed();
+            } else if (r.rewardType == LibItems.RewardType.ERC20) {
+                SafeERC20.safeTransfer(IERC20(r.rewardTokenAddress), to, r.rewardAmount);
+                _decreaseERC20Reserved(r.rewardTokenAddress, r.rewardAmount);
+            } else if (r.rewardType == LibItems.RewardType.ERC721) {
+                uint256 currentIndex = erc721RewardCurrentIndex[rewardTokenId][i];
+                uint256[] memory tokenIds = r.rewardTokenIds;
+                for (uint256 j = 0; j < r.rewardAmount; j++) {
+                    if (currentIndex + j >= tokenIds.length) revert InsufficientBalance();
+                    uint256 nftId = tokenIds[currentIndex + j];
+                    _releaseERC721(r.rewardTokenAddress, nftId);
+                    IERC721(r.rewardTokenAddress).safeTransferFrom(address(this), to, nftId);
+                }
+                _incrementERC721RewardIndex(rewardTokenId, i, r.rewardAmount);
+            } else if (r.rewardType == LibItems.RewardType.ERC1155) {
+                _decreaseERC1155Reserved(r.rewardTokenAddress, r.rewardTokenId, r.rewardAmount);
+                IERC1155(r.rewardTokenAddress).safeTransferFrom(address(this), to, r.rewardTokenId, r.rewardAmount, "");
+            }
+        }
     }
 
     /*//////////////////////////////////////////////////////////////
@@ -805,4 +928,7 @@ contract RewardsServer is Initializable, AccessControlUpgradeable, ERC721HolderU
     function supportsInterface(bytes4 interfaceId) public view virtual override(AccessControlUpgradeable, ERC1155HolderUpgradeable) returns (bool) {
         return super.supportsInterface(interfaceId);
     }
+
+    /// @notice Accepts ETH sent to this server's treasury (e.g. for topping up unreserved ETH).
+    receive() external payable {}
 }
