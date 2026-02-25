@@ -85,6 +85,7 @@ contract RewardsRouter is
     /// @notice Initializes roles (dev, router, upgrader). Called once by the proxy.
     /// @param _devWallet Receives DEFAULT_ADMIN_ROLE, DEV_CONFIG_ROLE, UPGRADER_ROLE.
     /// @param _routerWallet Receives MANAGER_ROLE.
+    /// @dev _devWallet is a single point of failure: compromise allows router (and beacon) upgrades. Recommend using a multisig (e.g. Gnosis Safe) and timelock for UPGRADER_ROLE actions. See README Security / Operations.
     function initialize(
         address _devWallet,
         address _routerWallet

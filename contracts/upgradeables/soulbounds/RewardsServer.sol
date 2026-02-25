@@ -105,7 +105,7 @@ contract RewardsServer is Initializable, AccessControlUpgradeable, ERC721HolderU
 
     uint8 public id;
 
-    uint256[29] private __gap;
+    uint256[28] private __gap;
 
     /*//////////////////////////////////////////////////////////////
                                EVENTS
@@ -117,6 +117,8 @@ contract RewardsServer is Initializable, AccessControlUpgradeable, ERC721HolderU
         address indexed to,
         uint256 amount
     );
+    /// @param oldSupply Previous max supply (reduceRewardSupply) or current claim count (increaseRewardSupply).
+    /// @param newSupply New max supply after the change.
     event RewardSupplyChanged(
         uint256 indexed tokenId,
         uint256 oldSupply,
@@ -137,6 +139,7 @@ contract RewardsServer is Initializable, AccessControlUpgradeable, ERC721HolderU
 
     /// @notice Initializes the server: access roles and server admin. Called once by the proxy.
     /// @param _serverAdmin Address that receives SERVER_ADMIN_ROLE (signers, withdrawers, transfer).
+    /// @param _id Server id (must match router's serverId for this instance).
     function initialize(address _serverAdmin, uint8 _id) external initializer {
         if (_serverAdmin == address(0)) {
             revert AddressIsZero();
@@ -171,6 +174,7 @@ contract RewardsServer is Initializable, AccessControlUpgradeable, ERC721HolderU
                 if (signerList[i] == account) {
                     signerList[i] = signerList[signerList.length - 1];
                     signerList.pop();
+                    emit SignerUpdated(account, false);
                     return;
                 }
             }
@@ -217,18 +221,6 @@ contract RewardsServer is Initializable, AccessControlUpgradeable, ERC721HolderU
                 break;
             }
         }
-    }
-
-    /// @notice Transfers tokens from _from into this treasury. Token must be whitelisted.
-    /// @param _token Token address (ERC20).
-    /// @param _amount Amount to transfer.
-    /// @param _from Source address (must have approved this contract).
-    function depositToTreasury(address _token, uint256 _amount, address _from) external nonReentrant {
-        if (!whitelistedTokens[_token]) revert TokenNotWhitelisted();
-        if (_amount == 0) revert InvalidAmount();
-
-        SafeERC20.safeTransferFrom(IERC20(_token), _from, address(this), _amount);
-        emit TreasuryDeposit(_token, _amount);
     }
 
         /// @notice Withdraws assets from server treasury to recipient. Caller must be SERVER_ADMIN_ROLE on the server. ETHER: amounts[0]; ERC721: tokenIds; ERC1155: tokenIds + amounts.
@@ -404,8 +396,8 @@ contract RewardsServer is Initializable, AccessControlUpgradeable, ERC721HolderU
         _addRewardToken(token.tokenId, tokenMem);
     }
 
-    /// @notice Reduces max supply for a reward token; releases proportional ERC20/ERC1155 reservations. Only SERVER_ADMIN_ROLE.
-    /// @dev New max supply must not be below currentRewardSupply. ERC721: only maxSupply is reduced (reserved NFT ids unchanged).
+    /// @notice Reduces max supply for a reward token; releases proportional ERC20/ERC1155/ERC721 reservations. Only SERVER_ADMIN_ROLE.
+    /// @dev New max supply must not be below currentRewardSupply. ERC721: tail NFT IDs (no longer claimable) are un-reserved so they can be withdrawn.
     /// @param _tokenId Reward token id.
     /// @param _reduceBy Amount to subtract from max supply (must be > 0).
     function reduceRewardSupply(uint256 _tokenId, uint256 _reduceBy) external nonReentrant onlyRole(SERVER_ADMIN_ROLE) {
@@ -414,7 +406,8 @@ contract RewardsServer is Initializable, AccessControlUpgradeable, ERC721HolderU
 
         LibItems.RewardToken memory rewardToken = tokenRewards[_tokenId];
         uint256 current = currentRewardSupply[_tokenId];
-        uint256 newSupply = rewardToken.maxSupply - _reduceBy;
+        uint256 oldMaxSupply = rewardToken.maxSupply;
+        uint256 newSupply = oldMaxSupply - _reduceBy;
         if (current > newSupply) revert InsufficientBalance();
 
         for (uint256 i = 0; i < rewardToken.rewards.length; i++) {
@@ -428,21 +421,27 @@ contract RewardsServer is Initializable, AccessControlUpgradeable, ERC721HolderU
                 uint256 releaseAmount = r.rewardAmount * _reduceBy;
                 erc1155ReservedAmounts[r.rewardTokenAddress][r.rewardTokenId] -= releaseAmount;
                 erc1155TotalReserved[r.rewardTokenAddress] -= releaseAmount;
+            } else if (r.rewardType == LibItems.RewardType.ERC721) {
+                uint256 startIndex = newSupply * r.rewardAmount;
+                for (uint256 j = startIndex; j < r.rewardTokenIds.length; j++) {
+                    uint256 nftId = r.rewardTokenIds[j];
+                    isErc721Reserved[r.rewardTokenAddress][nftId] = false;
+                    erc721TotalReserved[r.rewardTokenAddress]--;
+                }
             }
-            // ERC721: no reserved amount to release; maxSupply reduction only
         }
 
         rewardToken.maxSupply = newSupply;
         tokenRewards[_tokenId] = rewardToken;
 
-        emit RewardSupplyChanged(_tokenId, current, newSupply);
+        emit RewardSupplyChanged(_tokenId, oldMaxSupply, newSupply);
     }
 
     /// @notice Increases max supply for a reward token; reserves additional ERC20/ERC1155/ETH on this server. Only SERVER_ADMIN_ROLE. Send ETH if token has ETHER rewards.
     /// @dev ERC721-backed rewards cannot have supply increased: rewardTokenIds length is fixed at creation. When ERC721 supply is exhausted, create a new reward token.
     /// @param _tokenId Reward token id.
     /// @param _additionalSupply Extra supply to add (must be > 0). For ERC721 rewards this will revert.
-    function increaseRewardSupply(uint256 _tokenId, uint256 _additionalSupply) external payable onlyRole(SERVER_ADMIN_ROLE) {
+    function increaseRewardSupply(uint256 _tokenId, uint256 _additionalSupply) external payable nonReentrant onlyRole(SERVER_ADMIN_ROLE) {
         if (!tokenExists[_tokenId]) revert TokenNotExist();
         if (_additionalSupply == 0) revert InvalidAmount();
 
@@ -671,6 +670,8 @@ contract RewardsServer is Initializable, AccessControlUpgradeable, ERC721HolderU
     }
 
     /// @notice Decodes claim data for debugging. Same encoding as used in claim(data, signature).
+    /// @dev Decoded data order: (contractAddress, chainId, beneficiary, userNonce, serverId, tokenIds).
+    ///      Hash for signing uses a different order: (contractAddress, chainId, serverId, beneficiary, userNonce, tokenIds). See _verifyServerSignature.
     function decodeClaimData(
         bytes calldata data
     ) public pure returns (address contractAddress, uint256 chainId, address beneficiary, uint256 userNonce, uint8 serverId, uint256[] memory tokenIds) {
@@ -705,8 +706,10 @@ contract RewardsServer is Initializable, AccessControlUpgradeable, ERC721HolderU
     /**
      * @dev Internal helper to verify a server-scoped signature.
      *
-     * Message format (hashed then wrapped in EIP-191 prefix):
-     * keccak256(abi.encodePacked(contractAddress, chainId, serverId, beneficiary, userNonce, tokenIds))
+     * Hash encoding order (for signing): contractAddress, chainId, serverId, beneficiary, userNonce, tokenIds.
+     * Decoded claim data order (decodeClaimData / ABI of data): contractAddress, chainId, beneficiary, userNonce, serverId, tokenIds.
+     * SDKs must use the hash order above when building the sign message; using the decode order will produce invalid signatures.
+     * Message format: keccak256(abi.encode(...)) then EIP-191 prefix.
      */
     function _verifyServerSignature(
         uint8 serverId,

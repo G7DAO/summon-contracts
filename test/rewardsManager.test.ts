@@ -6,7 +6,7 @@ import { loadFixture } from '@nomicfoundation/hardhat-network-helpers';
  * RewardsRouter + RewardsServer tests.
  * Security assumptions covered: (1) Claim signatures use per-user nonce for replay protection; no on-chain expiry.
  * (2) Claim data encodes contractAddress and chainId so claims are bound to the correct server and chain.
- * (3) depositToTreasury is permissionless; only SERVER_ADMIN can withdraw. (4) Signature for one server cannot
+ * (3) Treasury is funded by direct transfers; only SERVER_ADMIN can withdraw. (4) Signature for one server cannot
  * be replayed on another (contractAddress check in server.claim).
  */
 describe('RewardsRouter', function () {
@@ -53,8 +53,7 @@ describe('RewardsRouter', function () {
         await mockERC20.mint(base.managerWallet.address, ethers.parseEther('10000'));
 
         await server.connect(base.managerWallet).whitelistToken(await mockERC20.getAddress(), 1); // ERC20
-        await mockERC20.connect(base.managerWallet).approve(serverAddr, ethers.parseEther('1000'));
-        await server.connect(base.managerWallet).depositToTreasury(await mockERC20.getAddress(), ethers.parseEther('1000'), base.managerWallet.address);
+        await mockERC20.connect(base.managerWallet).transfer(serverAddr, ethers.parseEther('1000'));
 
         return { ...base, server, mockERC20 };
     }
@@ -489,12 +488,11 @@ describe('RewardsRouter', function () {
     });
 
     describe('security assumptions', function () {
-        it('depositToTreasury is permissionless; only SERVER_ADMIN can withdraw', async function () {
+        it('only SERVER_ADMIN can withdraw from treasury', async function () {
             const { manager, server, managerWallet, user1, user2, mockERC20 } = await loadFixture(deployWithServerAndTokenFixture);
             const extra = ethers.parseEther('100');
             await mockERC20.mint(user2.address, extra);
-            await mockERC20.connect(user2).approve(await server.getAddress(), extra);
-            await server.connect(user2).depositToTreasury(await mockERC20.getAddress(), extra, user2.address);
+            await mockERC20.connect(user2).transfer(await server.getAddress(), extra);
             expect(await manager.getServerTreasuryBalance(SERVER_ID, await mockERC20.getAddress())).to.be.gte(ethers.parseEther('1100'));
             await expect(
                 server.connect(user2).withdrawAssets(1, user2.address, await mockERC20.getAddress(), [], [])
@@ -707,8 +705,7 @@ describe('RewardsRouter', function () {
                 };
                 await server.connect(managerWallet).createTokenAndReserveRewards(rewardToken, { value: 0 });
                 expect(await manager.getRemainingSupply(SERVER_ID, tokenId)).to.equal(5);
-                await mockERC20.connect(managerWallet).approve(await server.getAddress(), ethers.parseEther('100'));
-                await server.connect(managerWallet).depositToTreasury(await mockERC20.getAddress(), ethers.parseEther('50'), managerWallet.address);
+                await mockERC20.connect(managerWallet).transfer(await server.getAddress(), ethers.parseEther('50'));
                 await server.connect(managerWallet).increaseRewardSupply(tokenId, 5, { value: 0 });
                 expect(await manager.getRemainingSupply(SERVER_ID, tokenId)).to.equal(10);
                 const details = await manager.getTokenDetails(SERVER_ID, tokenId);
@@ -840,7 +837,7 @@ describe('RewardsRouter', function () {
                 expect(details.maxSupply).to.equal(10);
                 await expect(server.connect(managerWallet).reduceRewardSupply(tokenId, 3))
                     .to.emit(server, 'RewardSupplyChanged')
-                    .withArgs(tokenId, 0, 7); // currentSupply was 0, newSupply 7
+                    .withArgs(tokenId, 10, 7); // oldMaxSupply 10, newSupply 7
                 details = await manager.getTokenDetails(SERVER_ID, tokenId);
                 expect(details.maxSupply).to.equal(7);
                 expect(await manager.getRemainingSupply(SERVER_ID, tokenId)).to.equal(7);
