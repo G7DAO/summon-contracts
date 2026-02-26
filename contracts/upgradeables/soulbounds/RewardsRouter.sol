@@ -44,8 +44,8 @@ contract RewardsRouter is
     error ServerDoesNotExist();
     error InvalidServerId();
     error BeaconNotInitialized();
-    error BeaconsAlreadyInitialized();
-    
+    event ServerBeaconSet(address indexed serverBeacon);
+
     /*//////////////////////////////////////////////////////////////
                                CONSTANTS
     //////////////////////////////////////////////////////////////*/
@@ -71,7 +71,8 @@ contract RewardsRouter is
                                EVENTS
     //////////////////////////////////////////////////////////////*/
 
-    event ServerDeployed(uint8 indexed serverId, address treasury);
+    event ServerDeployed(uint8 indexed serverId, address indexed server);
+    event RewardClaimed(uint8 indexed serverId, address indexed user, uint256 indexed nonce, uint256[] tokenIds);
 
     /*//////////////////////////////////////////////////////////////
                                INITIALIZER
@@ -84,16 +85,13 @@ contract RewardsRouter is
 
     /// @notice Initializes roles (dev, router, upgrader). Called once by the proxy.
     /// @param _devWallet Receives DEFAULT_ADMIN_ROLE, DEV_CONFIG_ROLE, UPGRADER_ROLE.
-    /// @param _routerWallet Receives MANAGER_ROLE.
+    /// @param _serverImplementation Address of the RewardsServer implementation.
     /// @dev _devWallet is a single point of failure: compromise allows router (and beacon) upgrades. Recommend using a multisig (e.g. Gnosis Safe) and timelock for UPGRADER_ROLE actions. See README Security / Operations.
     function initialize(
         address _devWallet,
-        address _routerWallet
+        address _serverImplementation
     ) external initializer {
-        if (
-            _devWallet == address(0) ||
-            _routerWallet == address(0)
-        ) {
+        if (_devWallet == address(0) || _serverImplementation == address(0)) {
             revert AddressIsZero();
         }
 
@@ -104,9 +102,13 @@ contract RewardsRouter is
         _grantRole(DEFAULT_ADMIN_ROLE, _devWallet);
         _grantRole(DEV_CONFIG_ROLE, _devWallet);
         _grantRole(UPGRADER_ROLE, _devWallet);
-        _grantRole(MANAGER_ROLE, _routerWallet);
+        _grantRole(MANAGER_ROLE, _devWallet);
+
+        serverBeacon = address(new UpgradeableBeacon(_serverImplementation, _devWallet));
+        emit ServerBeaconSet(serverBeacon);
     }
 
+    /// @notice Authorizes the upgrade of the RewardsRouter implementation. Only UPGRADER_ROLE.
     function _authorizeUpgrade(
         address newImplementation
     ) internal override onlyRole(UPGRADER_ROLE) {}
@@ -129,23 +131,19 @@ contract RewardsRouter is
                          BEACON CONFIGURATION
     //////////////////////////////////////////////////////////////*/
 
-    /// @notice Sets the RewardsServer implementation beacon. Callable once by DEV_CONFIG_ROLE.
-    /// @param _serverImplementation Implementation contract for RewardsServer (BeaconProxy targets this).
-    function initializeBeacons(address _serverImplementation) external onlyRole(DEV_CONFIG_ROLE) {
-        if (address(_serverImplementation) == address(0)) {
+    /// @notice Sets the RewardsServer beacon address. Callable once by DEV_CONFIG_ROLE.
+    /// @param _serverBeacon Address of the UpgradeableBeacon for RewardsServer (deployed off-router; e.g. deployer-owned).
+    function setServerBeacon(address _serverBeacon) external onlyRole(DEV_CONFIG_ROLE) {
+        if (address(_serverBeacon) == address(0)) {
             revert AddressIsZero();
         }
-        if (serverBeacon != address(0)) {
-            revert BeaconsAlreadyInitialized();
-        }
 
-        serverBeacon = address(new UpgradeableBeacon(
-            _serverImplementation,
-            address(this)
-        ));
+        serverBeacon = _serverBeacon;
+
+        emit ServerBeaconSet(serverBeacon);
     }
 
-    /// @notice Deploys and registers a new RewardsServer treasury for the given serverId. Only MANAGER_ROLE.
+    /// @notice Deploys and registers a new RewardsServer for the given serverId. Only MANAGER_ROLE.
     /// @dev Caller becomes SERVER_ADMIN_ROLE on the new server.
     /// @param serverId Unique server identifier (small uint8).
     function deployServer(uint8 serverId, address serverAdmin) external nonReentrant onlyRole(MANAGER_ROLE) returns (address server) {
@@ -170,12 +168,13 @@ contract RewardsRouter is
     /// @param data ABI-encoded (contractAddress, chainId, beneficiary, userNonce, serverId, tokenIds).
     /// @param signature Server signer signature over the claim message.
     function claim(
-        uint8 serverId,
         bytes calldata data,
         bytes calldata signature
     ) external nonReentrant whenNotPaused {
+        (,, address beneficiary, uint256 userNonce, uint8 serverId, uint256[] memory tokenIds) = decodeClaimData(data);
         RewardsServer server = getServer(serverId);
         server.claim(data, signature);
+        emit RewardClaimed(serverId, beneficiary, userNonce, tokenIds);
     }
 
     /*//////////////////////////////////////////////////////////////
@@ -304,7 +303,7 @@ contract RewardsRouter is
         return server.getSigners();
     }
 
-    /// @notice Returns the RewardsServer (treasury) address for a server.
+    /// @notice Returns the RewardsServer address for a server.
     function getServer(uint8 serverId) public view returns (RewardsServer) {
         address serverAddress = servers[serverId];
         if (serverAddress == address(0)) revert ServerDoesNotExist();

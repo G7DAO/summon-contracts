@@ -15,19 +15,20 @@ describe('RewardsRouter', function () {
     async function deployRewardsManagerFixture() {
         const [devWallet, managerWallet, user1, user2] = await ethers.getSigners();
 
-        const RewardsRouter = await ethers.getContractFactory('RewardsRouter');
-        const manager = await upgrades.deployProxy(
-            RewardsRouter,
-            [devWallet.address, managerWallet.address],
-            { kind: 'uups', initializer: 'initialize' }
-        );
-        await manager.waitForDeployment();
-
         const RewardsServerImpl = await ethers.getContractFactory('RewardsServer');
         const rewardsServerImpl = await RewardsServerImpl.deploy();
         await rewardsServerImpl.waitForDeployment();
 
-        await manager.connect(devWallet).initializeBeacons(await rewardsServerImpl.getAddress());
+        const RewardsRouter = await ethers.getContractFactory('RewardsRouter');
+        const manager = await upgrades.deployProxy(
+            RewardsRouter,
+            [devWallet.address, await rewardsServerImpl.getAddress()],
+            { kind: 'uups', initializer: 'initialize' }
+        );
+        await manager.waitForDeployment();
+
+        const MANAGER_ROLE = await manager.MANAGER_ROLE();
+        await manager.connect(devWallet).grantRole(MANAGER_ROLE, managerWallet.address);
 
         return {
             manager,
@@ -58,45 +59,28 @@ describe('RewardsRouter', function () {
         return { ...base, server, mockERC20 };
     }
 
-    describe('initializeBeacons', function () {
-        it('DEV_CONFIG_ROLE can call initializeBeacons with non-zero implementation', async function () {
-            const [devWallet, managerWallet] = await ethers.getSigners();
-            const RewardsRouter = await ethers.getContractFactory('RewardsRouter');
-            const router = await upgrades.deployProxy(
-                RewardsRouter,
-                [devWallet.address, managerWallet.address],
-                { kind: 'uups', initializer: 'initialize' }
-            );
-            await router.waitForDeployment();
-            const RewardsServerImpl = await ethers.getContractFactory('RewardsServer');
-            const impl = await RewardsServerImpl.deploy();
-            await impl.waitForDeployment();
-            const implAddress = await impl.getAddress();
-            expect(await router.serverBeacon()).to.equal(ethers.ZeroAddress);
-            await router.connect(devWallet).initializeBeacons(implAddress);
-            expect(await router.serverBeacon()).to.not.equal(ethers.ZeroAddress);
+    describe('setServerBeacon', function () {
+        it('reverts with AddressIsZero when beacon address is zero', async function () {
+            const { manager, devWallet } = await loadFixture(deployRewardsManagerFixture);
+            await expect(manager.connect(devWallet).setServerBeacon(ethers.ZeroAddress))
+                .to.be.revertedWithCustomError(manager, 'AddressIsZero');
         });
 
-        it('reverts with AddressIsZero when implementation is zero', async function () {
-            const [devWallet, managerWallet] = await ethers.getSigners();
-            const RewardsRouter = await ethers.getContractFactory('RewardsRouter');
-            const router = await upgrades.deployProxy(
-                RewardsRouter,
-                [devWallet.address, managerWallet.address],
-                { kind: 'uups', initializer: 'initialize' }
-            );
-            await router.waitForDeployment();
-            await expect(router.connect(devWallet).initializeBeacons(ethers.ZeroAddress))
-                .to.be.revertedWithCustomError(router, 'AddressIsZero');
-        });
-
-        it('reverts with BeaconsAlreadyInitialized when called twice', async function () {
-            const { manager, devWallet, managerWallet } = await loadFixture(deployRewardsManagerFixture);
+        it('DEV_CONFIG_ROLE can update beacon by calling setServerBeacon again', async function () {
+            const { manager, devWallet } = await loadFixture(deployRewardsManagerFixture);
             const RewardsServerImpl = await ethers.getContractFactory('RewardsServer');
             const impl2 = await RewardsServerImpl.deploy();
             await impl2.waitForDeployment();
-            await expect(manager.connect(devWallet).initializeBeacons(await impl2.getAddress()))
-                .to.be.revertedWithCustomError(manager, 'BeaconsAlreadyInitialized');
+            const RewardsRouter = await ethers.getContractFactory('RewardsRouter');
+            const router2 = await upgrades.deployProxy(
+                RewardsRouter,
+                [devWallet.address, await impl2.getAddress()],
+                { kind: 'uups', initializer: 'initialize' }
+            );
+            await router2.waitForDeployment();
+            const beacon2Address = await router2.serverBeacon();
+            await manager.connect(devWallet).setServerBeacon(beacon2Address);
+            expect(await manager.serverBeacon()).to.equal(beacon2Address);
         });
     });
 
@@ -122,18 +106,6 @@ describe('RewardsRouter', function () {
                 .to.be.revertedWithCustomError(manager, 'InvalidServerId');
         });
 
-        it('reverts with BeaconNotInitialized when beacons not set', async function () {
-            const [devWallet, managerWallet] = await ethers.getSigners();
-            const RewardsRouter = await ethers.getContractFactory('RewardsRouter');
-            const router = await upgrades.deployProxy(
-                RewardsRouter,
-                [devWallet.address, managerWallet.address],
-                { kind: 'uups', initializer: 'initialize' }
-            );
-            await router.waitForDeployment();
-            await expect(router.connect(managerWallet).deployServer(SERVER_ID, devWallet.address))
-                .to.be.revertedWithCustomError(router, 'BeaconNotInitialized');
-        });
     });
 
     // RewardsFactory ownership tests removed: deployment is now handled directly by RewardsManager.deployServer.
@@ -228,7 +200,7 @@ describe('RewardsRouter', function () {
                 0
             );
             const before = await mockERC20.balanceOf(user1.address);
-            await manager.connect(user1).claim(SERVER_ID, data, signature);
+            await manager.connect(user1).claim(data, signature);
             const after_ = await mockERC20.balanceOf(user1.address);
             expect(after_ - before).to.equal(ethers.parseEther('10'));
         });
@@ -263,7 +235,7 @@ describe('RewardsRouter', function () {
                     0
                 );
                 const before = await ethers.provider.getBalance(user1.address);
-                const tx = await manager.connect(user1).claim(SERVER_ID, data, signature);
+                const tx = await manager.connect(user1).claim(data, signature);
                 const receipt = await tx.wait();
                 const gasCost = receipt!.gasUsed * receipt!.gasPrice;
                 const after_ = await ethers.provider.getBalance(user1.address);
@@ -296,7 +268,7 @@ describe('RewardsRouter', function () {
                     [tokenId],
                     0
                 );
-                await manager.connect(user1).claim(SERVER_ID, data, signature);
+                await manager.connect(user1).claim(data, signature);
                 const extraEth = ethers.parseEther('0.3');
                 const serverAddr = await manager.getServer(SERVER_ID);
                 await managerWallet.sendTransaction({
@@ -350,8 +322,8 @@ describe('RewardsRouter', function () {
                 [tokenId],
                 1
             );
-            await manager.connect(user1).claim(SERVER_ID, data1, sig1);
-            await manager.connect(user1).claim(SERVER_ID, data2, sig2);
+            await manager.connect(user1).claim(data1, sig1);
+            await manager.connect(user1).claim(data2, sig2);
 
             expect(await mockERC20.balanceOf(user1.address)).to.equal(ethers.parseEther('20'));
         });
@@ -383,7 +355,7 @@ describe('RewardsRouter', function () {
                 0
             );
             const before = await mockERC20.balanceOf(user1.address);
-            await manager.connect(user2).claim(SERVER_ID, data, signature);
+            await manager.connect(user2).claim(data, signature);
             const after_ = await mockERC20.balanceOf(user1.address);
             expect(after_ - before).to.equal(ethers.parseEther('10'));
         });
@@ -427,7 +399,7 @@ describe('RewardsRouter', function () {
                     [tokenId],
                     0
                 );
-                await manager.connect(user1).claim(SERVER_ID, data0, sig0);
+                await manager.connect(user1).claim(data0, sig0);
                 expect(await mockERC721.ownerOf(0)).to.equal(user1.address);
                 const { data: data1, signature: sig1 } = await buildClaimDataAndSignature(
                     serverAddr,
@@ -437,7 +409,7 @@ describe('RewardsRouter', function () {
                     [tokenId],
                     1
                 );
-                await manager.connect(user1).claim(SERVER_ID, data1, sig1);
+                await manager.connect(user1).claim(data1, sig1);
                 expect(await mockERC721.ownerOf(1)).to.equal(user1.address);
             });
         });
@@ -481,7 +453,7 @@ describe('RewardsRouter', function () {
                     [rewardTokenId],
                     0
                 );
-                await manager.connect(user1).claim(SERVER_ID, data, signature);
+                await manager.connect(user1).claim(data, signature);
                 expect(await mockERC1155.balanceOf(user1.address, erc1155TokenId)).to.equal(10);
             });
         });
@@ -605,10 +577,12 @@ describe('RewardsRouter', function () {
             await server.connect(managerWallet).createTokenAndReserveRewards(rewardToken, { value: 0 });
             const { data, signature } = await buildClaimDataAndSignature(await server.getAddress(), SERVER_ID, managerWallet, user1.address, [tokenId], 0);
             await manager.connect(managerWallet).pause();
-            await expect(manager.connect(user1).claim(SERVER_ID, data, signature))
-                .to.be.revertedWithCustomError(manager, 'EnforcedPause');
+            await expect(manager.connect(user1).claim(data, signature)).to.be.revertedWithCustomError(
+                manager,
+                'EnforcedPause'
+            );
             await manager.connect(managerWallet).unpause();
-            await manager.connect(user1).claim(SERVER_ID, data, signature);
+            await manager.connect(user1).claim(data, signature);
             expect(await mockERC20.balanceOf(user1.address)).to.equal(ethers.parseEther('10'));
         });
     });
@@ -666,7 +640,7 @@ describe('RewardsRouter', function () {
                 await serverContract.connect(managerWallet).createTokenAndReserveRewards(rewardToken, { value: ethers.parseEther('2') });
                 const { data, signature } = await buildClaimDataAndSignature(serverAddr, SERVER_ID, managerWallet, user1.address, [tokenId], 0);
                 const beforeBalance = await ethers.provider.getBalance(user1.address);
-                const tx = await manager.connect(user1).claim(SERVER_ID, data, signature);
+                const tx = await manager.connect(user1).claim(data, signature);
                 const receipt = await tx.wait();
                 const gasCost = receipt!.gasUsed * receipt!.gasPrice;
                 const afterBalance = await ethers.provider.getBalance(user1.address);
@@ -742,9 +716,11 @@ describe('RewardsRouter', function () {
                 };
                 await server.connect(managerWallet).createTokenAndReserveRewards(rewardToken, { value: 0 });
                 const { data, signature } = await buildClaimDataAndSignature(await server.getAddress(), SERVER_ID, managerWallet, user1.address, [tokenId], 0);
-                await manager.connect(user1).claim(SERVER_ID, data, signature);
-                await expect(manager.connect(user1).claim(SERVER_ID, data, signature))
-                    .to.be.revertedWithCustomError(server, 'NonceAlreadyUsed');
+                await manager.connect(user1).claim(data, signature);
+                await expect(manager.connect(user1).claim(data, signature)).to.be.revertedWithCustomError(
+                    server,
+                    'NonceAlreadyUsed'
+                );
             });
 
             it('reverts with InvalidSignature when signer not whitelisted', async function () {
@@ -760,8 +736,10 @@ describe('RewardsRouter', function () {
                 };
                 await server.connect(managerWallet).createTokenAndReserveRewards(rewardToken, { value: 0 });
                 const { data, signature } = await buildClaimDataAndSignature(await server.getAddress(), SERVER_ID, user2, user1.address, [tokenId], 0);
-                await expect(manager.connect(user1).claim(SERVER_ID, data, signature))
-                    .to.be.revertedWithCustomError(server, 'InvalidSignature');
+                await expect(manager.connect(user1).claim(data, signature)).to.be.revertedWithCustomError(
+                    server,
+                    'InvalidSignature'
+                );
             });
 
             it('signature for one server cannot be replayed on another server', async function () {
@@ -776,12 +754,19 @@ describe('RewardsRouter', function () {
                     ],
                 };
                 await server.connect(managerWallet).createTokenAndReserveRewards(rewardToken, { value: 0 });
-                const { data, signature } = await buildClaimDataAndSignature(await server.getAddress(), SERVER_ID, managerWallet, user1.address, [tokenId], 0);
+                const { signature } = await buildClaimDataAndSignature(await server.getAddress(), SERVER_ID, managerWallet, user1.address, [tokenId], 0);
                 await manager.connect(managerWallet).deployServer(2, managerWallet.address);
                 const server2Addr = await manager.getServer(2);
                 const server2 = await ethers.getContractAt('RewardsServer', server2Addr);
-                await expect(manager.connect(user1).claim(2, data, signature))
-                    .to.be.revertedWithCustomError(server2, 'InvalidInput');
+                const chainId = (await ethers.provider.getNetwork()).chainId;
+                const dataForServer2 = ethers.AbiCoder.defaultAbiCoder().encode(
+                    ['address', 'uint256', 'address', 'uint256', 'uint8', 'uint256[]'],
+                    [server2Addr, chainId, user1.address, 0n, 2, [tokenId]]
+                );
+                await expect(manager.connect(user1).claim(dataForServer2, signature)).to.be.revertedWithCustomError(
+                    server2,
+                    'InvalidSignature'
+                );
             });
 
             it('reverts with InvalidInput when claim data has wrong contract address', async function () {
@@ -809,8 +794,10 @@ describe('RewardsRouter', function () {
                     )
                 );
                 const signature = await managerWallet.signMessage(ethers.getBytes(messageHash));
-                await expect(manager.connect(user1).claim(SERVER_ID, data, signature))
-                    .to.be.revertedWithCustomError(server, 'InvalidInput');
+                await expect(manager.connect(user1).claim(data, signature)).to.be.revertedWithCustomError(
+                    server,
+                    'InvalidInput'
+                );
             });
         });
 

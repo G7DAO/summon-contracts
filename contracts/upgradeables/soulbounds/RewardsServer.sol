@@ -128,6 +128,7 @@ contract RewardsServer is Initializable, AccessControlUpgradeable, ERC721HolderU
         address indexed to,
         uint256 indexed tokenId
     );
+    event UserNonceUsed(address indexed user, uint256 indexed nonce);
 
     /*//////////////////////////////////////////////////////////////
                              INITIALIZER
@@ -738,6 +739,7 @@ contract RewardsServer is Initializable, AccessControlUpgradeable, ERC721HolderU
         if (serverId != id) revert InvalidServerId();
         if (isUserNonceUsed[beneficiary][userNonce]) revert NonceAlreadyUsed();
         isUserNonceUsed[beneficiary][userNonce] = true;
+        emit UserNonceUsed(beneficiary, userNonce);
     }
 
     /*//////////////////////////////////////////////////////////////

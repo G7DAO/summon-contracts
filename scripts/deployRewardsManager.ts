@@ -1,13 +1,13 @@
 import { ethers, upgrades } from 'hardhat';
 
 /**
- * Deploy RewardsRouter (one router, many servers) and beacon.
+ * Deploy RewardsRouter (one router, many servers).
  *
- * 1. Deploy RewardsServer implementation (for beacon)
- * 2. Deploy RewardsRouter (UUPS proxy), initialize with (dev, manager)
- * 3. initializeBeacons(rewardsServerImpl)
+ * 1. Deploy RewardsServer implementation
+ * 2. Deploy RewardsRouter (UUPS proxy), initialize(devWallet, serverImplementation)
+ *    — Router deploys UpgradeableBeacon(implementation, devWallet) internally; devWallet owns the beacon.
  *
- * After this, an account with MANAGER_ROLE can call router.deployServer(serverId, serverAdmin) to create a server.
+ * After this, an account with MANAGER_ROLE (granted to devWallet) can call router.deployServer(serverId, serverAdmin) to create a server.
  *
  * Usage:
  *   pnpm hardhat run scripts/deployRewardsManager.ts --network hardhat
@@ -24,9 +24,8 @@ async function main() {
     console.log('========================================\n');
 
     const devWallet = deployer.address;
-    const managerWallet = deployer.address;
 
-    // 1. Deploy RewardsServer implementation (no proxy - used as beacon implementation)
+    // 1. Deploy RewardsServer implementation (router will create beacon pointing to this)
     console.log('1. Deploying RewardsServer implementation...');
     const RewardsServer = await ethers.getContractFactory('RewardsServer');
     const rewardsServerImpl = await RewardsServer.deploy();
@@ -34,25 +33,19 @@ async function main() {
     const rewardsServerImplAddress = await rewardsServerImpl.getAddress();
     console.log('   RewardsServer impl:', rewardsServerImplAddress);
 
-    // 2. Deploy RewardsRouter (UUPS proxy)
+    // 2. Deploy RewardsRouter (UUPS proxy); initialize deploys UpgradeableBeacon(impl, devWallet)
     console.log('\n2. Deploying RewardsRouter (UUPS proxy)...');
     const RewardsRouter = await ethers.getContractFactory('RewardsRouter');
-    const router = await upgrades.deployProxy(
-        RewardsRouter,
-        [devWallet, managerWallet],
-        { kind: 'uups', initializer: 'initialize' }
-    );
+    const router = await upgrades.deployProxy(RewardsRouter, [devWallet, rewardsServerImplAddress], {
+        kind: 'uups',
+        initializer: 'initialize',
+    });
     await router.waitForDeployment();
     const routerAddress = await router.getAddress();
     const routerImpl = await upgrades.erc1967.getImplementationAddress(routerAddress);
     console.log('   RewardsRouter proxy:', routerAddress);
     console.log('   RewardsRouter impl:', routerImpl);
-
-    // 3. Initialize beacon
-    console.log('\n3. Initializing rewards server beacon...');
-    const tx = await router.initializeBeacons(rewardsServerImplAddress);
-    await tx.wait();
-    console.log('   Beacon initialized.');
+    console.log('   serverBeacon (owner: dev):', await router.serverBeacon());
 
     console.log('\n========================================');
     console.log('Deployment complete.');
