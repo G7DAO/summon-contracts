@@ -55,7 +55,6 @@ contract RewardsServer is Initializable, AccessControlUpgradeable, ERC721HolderU
     error InsufficientBalance();
     error InsufficientERC721Ids();
     error ExceedMaxSupply();
-    error ClaimRewardPaused();
     error InvalidInput();
     error DupTokenId();
     error TransferFailed();

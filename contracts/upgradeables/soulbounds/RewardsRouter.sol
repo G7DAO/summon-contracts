@@ -110,7 +110,7 @@ contract RewardsRouter is
 
     /// @notice Authorizes the upgrade of the RewardsRouter implementation. Only UPGRADER_ROLE.
     function _authorizeUpgrade(
-        address newImplementation
+        address /* newImplementation */
     ) internal override onlyRole(UPGRADER_ROLE) {}
 
     /*//////////////////////////////////////////////////////////////
@@ -146,6 +146,8 @@ contract RewardsRouter is
     /// @notice Deploys and registers a new RewardsServer for the given serverId. Only MANAGER_ROLE.
     /// @dev Caller becomes SERVER_ADMIN_ROLE on the new server.
     /// @param serverId Unique server identifier (small uint8).
+    /// @param serverAdmin Address that receives SERVER_ADMIN_ROLE (signers, withdrawers, transfer).
+    /// @return server Address of the deployed RewardsServer.
     function deployServer(uint8 serverId, address serverAdmin) external nonReentrant onlyRole(MANAGER_ROLE) returns (address server) {
         if (serverId == 0) revert InvalidServerId();
         if (servers[serverId] != address(0)) revert ServerAlreadyExists();
